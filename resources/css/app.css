@@ -1,0 +1,67 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+    --font-sans:
+        Instrument Sans, ui-sans-serif, system-ui, sans-serif,
+        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+        'Noto Color Emoji';
+    --font-display:
+        'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Palatino,
+        ui-serif, Georgia, serif;
+    --color-brand-50: #effcf7;
+    --color-brand-100: #d7f7e9;
+    --color-brand-200: #b2edd5;
+    --color-brand-300: #7fddba;
+    --color-brand-400: #48c59a;
+    --color-brand-500: #25a97e;
+    --color-brand-600: #188765;
+    --color-brand-700: #176b53;
+    --color-brand-800: #175544;
+    --color-brand-900: #144638;
+    --color-brand-950: #082820;
+}
+
+:root {
+    color-scheme: light;
+    --fiscal-grid: color-mix(in srgb, #0f766e 8%, transparent);
+}
+
+.dark {
+    color-scheme: dark;
+    --fiscal-grid: color-mix(in srgb, #5eead4 7%, transparent);
+}
+
+html {
+    background: #fafaf9;
+}
+
+html.dark {
+    background: #09090b;
+}
+
+body {
+    min-width: 320px;
+}
+
+.fiscal-grid {
+    background-image:
+        linear-gradient(to right, var(--fiscal-grid) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--fiscal-grid) 1px, transparent 1px);
+    background-size: 28px 28px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+    }
+}

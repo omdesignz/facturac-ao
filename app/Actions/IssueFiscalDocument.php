@@ -1,0 +1,422 @@
+<?php
+
+namespace App\Actions;
+
+use App\AgtConnectionStatus;
+use App\AgtSubmissionOperation;
+use App\AgtSubmissionStatus;
+use App\Exceptions\FiscalFinalizationBlocked;
+use App\Fiscal\Agt\Contracts\JwsSigner;
+use App\Fiscal\Agt\Support\CanonicalJson;
+use App\Fiscal\Agt\Support\CanonicalNumber;
+use App\Fiscal\Agt\V1_2\AgtRequestPayloadBuilder;
+use App\Fiscal\Calculation\CalculatedFiscalDocument;
+use App\Fiscal\Calculation\CalculatedFiscalLine;
+use App\Fiscal\Calculation\FiscalCalculator;
+use App\Fiscal\Documents\FiscalDocumentNumber;
+use App\Fiscal\Documents\V1_2\FiscalDocumentPayloadBuilder;
+use App\FiscalDocumentEventType;
+use App\FiscalDocumentStatus;
+use App\FiscalSeriesContingency;
+use App\FiscalSeriesStatus;
+use App\Jobs\SubmitAgtDocument;
+use App\Models\AgtConnection;
+use App\Models\AgtSubmission;
+use App\Models\FiscalDocument;
+use App\Models\FiscalDocumentLine;
+use App\Models\FiscalDocumentLineTax;
+use App\Models\FiscalSeries;
+use App\Models\User;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Throwable;
+
+final readonly class IssueFiscalDocument
+{
+    public function __construct(
+        private FiscalCalculator $calculator,
+        private FiscalDocumentNumber $documentNumber,
+        private FiscalDocumentPayloadBuilder $documentPayloadBuilder,
+        private AgtRequestPayloadBuilder $requestPayloadBuilder,
+        private JwsSigner $jwsSigner,
+        private CanonicalJson $canonicalJson,
+    ) {}
+
+    public function execute(
+        FiscalDocument $draft,
+        User $issuer,
+        string $seriesPublicId,
+        int $expectedRevision,
+    ): AgtSubmission {
+        $submission = DB::transaction(function () use (
+            $draft,
+            $issuer,
+            $seriesPublicId,
+            $expectedRevision,
+        ): AgtSubmission {
+            $document = $this->lockedDraft($draft);
+
+            if ($document->revision !== $expectedRevision) {
+                throw FiscalFinalizationBlocked::because(
+                    'O rascunho foi alterado noutra sessão. Recarregue a página antes de emitir.',
+                );
+            }
+
+            $series = $this->lockedSeries($document, $seriesPublicId);
+            $connection = $series->agtConnection;
+
+            $this->assertDocumentCanBeIssued($document, $series, $connection);
+            $this->assertCalculationIntegrity($document);
+
+            $issuedAt = now('Africa/Luanda');
+            $sequence = $series->next_number;
+            $documentNo = $this->documentNumber->compose(
+                $document->document_type,
+                $series->series_code,
+                $sequence,
+            );
+            $softwareKeyFingerprint = $this->fingerprint(
+                (string) $connection->software_key_reference,
+                'software',
+            );
+            $taxpayerKeyFingerprint = $this->fingerprint(
+                (string) $connection->taxpayer_key_reference,
+                'contribuinte',
+            );
+
+            if (! hash_equals((string) $connection->software_key_fingerprint, $softwareKeyFingerprint)
+                || ! hash_equals((string) $connection->taxpayer_key_fingerprint, $taxpayerKeyFingerprint)) {
+                throw FiscalFinalizationBlocked::because(
+                    'Uma chave fiscal mudou desde a última verificação. Teste novamente a ligação à AGT.',
+                );
+            }
+
+            $document->fill([
+                'fiscal_series_id' => $series->id,
+                'agt_connection_id' => $connection->id,
+                'issued_by_user_id' => $issuer->id,
+                'updated_by_user_id' => $issuer->id,
+                'status' => FiscalDocumentStatus::Issued,
+                'agt_document_status' => 'N',
+                'document_no' => $documentNo,
+                'issue_sequence' => $sequence,
+                'software_product_id' => $connection->product_id,
+                'software_product_version' => $connection->product_version,
+                'software_validation_number' => $connection->software_validation_number,
+                'software_key_fingerprint' => $softwareKeyFingerprint,
+                'taxpayer_key_fingerprint' => $taxpayerKeyFingerprint,
+                'system_entry_at' => $issuedAt,
+                'frozen_at' => $issuedAt,
+                'issued_at' => $issuedAt,
+            ]);
+
+            $signableObject = $this->documentPayloadBuilder->signableObject($document);
+            $document->signable_payload_sha256 = hash(
+                'sha256',
+                $this->canonicalJson->encode($signableObject),
+            );
+            $document->document_jws = $this->jwsSigner->sign(
+                $signableObject,
+                (string) $connection->taxpayer_key_reference,
+            );
+            $document->document_payload_sha256 = hash(
+                'sha256',
+                $this->canonicalJson->encode($this->documentPayloadBuilder->document($document)),
+            );
+
+            $submissionUuid = (string) Str::uuid();
+            $requestBody = $this->canonicalJson->encode(
+                $this->requestPayloadBuilder->registerInvoice(
+                    $connection,
+                    $document,
+                    $submissionUuid,
+                    $issuedAt,
+                ),
+            );
+
+            $document->save();
+
+            $submission = $document->submissions()->create([
+                'submission_uuid' => $submissionUuid,
+                'workspace_id' => $document->workspace_id,
+                'legal_entity_id' => $document->legal_entity_id,
+                'agt_connection_id' => $connection->id,
+                'operation' => AgtSubmissionOperation::RegisterInvoice,
+                'schema_version' => $document->payload_schema_version,
+                'status' => AgtSubmissionStatus::Pending,
+                'request_body' => $requestBody,
+                'request_body_sha256' => hash('sha256', $requestBody),
+                'safe_message' => 'Documento emitido e colocado na fila segura para a AGT.',
+                'attempt_count' => 0,
+                'next_attempt_at' => $issuedAt,
+            ]);
+
+            $series->forceFill([
+                'status' => $sequence >= $series->last_authorized_number
+                    ? FiscalSeriesStatus::Closed
+                    : FiscalSeriesStatus::InUse,
+                'next_number' => $sequence + 1,
+                'last_issued_number' => $sequence,
+                'last_document_date' => $document->document_date,
+            ])->save();
+
+            $document->events()->createMany([
+                [
+                    'workspace_id' => $document->workspace_id,
+                    'legal_entity_id' => $document->legal_entity_id,
+                    'actor_user_id' => $issuer->id,
+                    'event_type' => FiscalDocumentEventType::Issued,
+                    'agt_document_status' => 'N',
+                    'safe_context' => [
+                        'document_no' => $documentNo,
+                        'series_code' => $series->series_code,
+                        'sequence' => $sequence,
+                        'document_payload_sha256' => $document->document_payload_sha256,
+                    ],
+                    'occurred_at' => $issuedAt,
+                ],
+                [
+                    'workspace_id' => $document->workspace_id,
+                    'legal_entity_id' => $document->legal_entity_id,
+                    'agt_submission_id' => $submission->id,
+                    'actor_user_id' => $issuer->id,
+                    'event_type' => FiscalDocumentEventType::SubmissionQueued,
+                    'agt_document_status' => 'N',
+                    'safe_context' => [
+                        'submission_uuid' => $submissionUuid,
+                        'request_body_sha256' => $submission->request_body_sha256,
+                    ],
+                    'occurred_at' => $issuedAt,
+                ],
+            ]);
+
+            activity('fiscal-document')
+                ->causedBy($issuer)
+                ->performedOn($document)
+                ->event('fiscal-document-issued')
+                ->withProperties([
+                    'workspace_id' => $document->workspace_id,
+                    'legal_entity_id' => $document->legal_entity_id,
+                    'document_public_id' => $document->public_id,
+                    'document_no' => $documentNo,
+                    'series_code' => $series->series_code,
+                    'issue_sequence' => $sequence,
+                    'submission_public_id' => $submission->public_id,
+                    'request_body_sha256' => $submission->request_body_sha256,
+                ])
+                ->log('Documento fiscal emitido e transmissão AGT agendada.');
+
+            return $submission;
+        }, 5);
+
+        SubmitAgtDocument::dispatch($submission->id)->afterCommit();
+
+        return $submission;
+    }
+
+    private function lockedDraft(FiscalDocument $draft): FiscalDocument
+    {
+        $document = FiscalDocument::query()
+            ->with(['legalEntity', 'establishment', 'lines.taxes'])
+            ->whereKey($draft->id)
+            ->where('workspace_id', $draft->workspace_id)
+            ->where('legal_entity_id', $draft->legal_entity_id)
+            ->lockForUpdate()
+            ->first();
+
+        if (! $document instanceof FiscalDocument) {
+            throw (new ModelNotFoundException)->setModel(FiscalDocument::class, [$draft->id]);
+        }
+
+        if (! $document->isMutable()) {
+            throw FiscalFinalizationBlocked::because('Este documento já foi emitido e não pode ser repetido.');
+        }
+
+        return $document;
+    }
+
+    private function lockedSeries(FiscalDocument $document, string $seriesPublicId): FiscalSeries
+    {
+        $series = FiscalSeries::query()
+            ->with('agtConnection')
+            ->where('public_id', $seriesPublicId)
+            ->where('workspace_id', $document->workspace_id)
+            ->where('legal_entity_id', $document->legal_entity_id)
+            ->where('establishment_id', $document->establishment_id)
+            ->lockForUpdate()
+            ->first();
+
+        if (! $series instanceof FiscalSeries) {
+            throw FiscalFinalizationBlocked::because(
+                'A série seleccionada não está disponível para este estabelecimento.',
+            );
+        }
+
+        return $series;
+    }
+
+    private function assertDocumentCanBeIssued(
+        FiscalDocument $document,
+        FiscalSeries $series,
+        AgtConnection $connection,
+    ): void {
+        if ($document->lines->isEmpty() || $document->gross_total_minor <= 0) {
+            throw FiscalFinalizationBlocked::because('A factura deve ter pelo menos uma linha e total positivo.');
+        }
+
+        if ($series->document_type !== $document->document_type) {
+            throw FiscalFinalizationBlocked::because('A série não corresponde ao tipo deste documento.');
+        }
+
+        if ($series->series_year !== (int) $document->document_date->format('Y')) {
+            throw FiscalFinalizationBlocked::because('A série não corresponde ao ano fiscal do documento.');
+        }
+
+        if (! $series->canAllocate()) {
+            throw FiscalFinalizationBlocked::because('A série está fechada ou sem números autorizados disponíveis.');
+        }
+
+        if ($series->contingency_indicator !== FiscalSeriesContingency::Normal) {
+            throw FiscalFinalizationBlocked::because('A emissão em contingência ainda não está autorizada neste fluxo.');
+        }
+
+        if ($series->invoicing_method !== 'FESF') {
+            throw FiscalFinalizationBlocked::because('A série não está autorizada para emissão por software certificado.');
+        }
+
+        if ($series->last_document_date !== null
+            && $document->document_date->isBefore($series->last_document_date)) {
+            throw FiscalFinalizationBlocked::because(
+                'A data do documento é anterior à última factura emitida nesta série.',
+            );
+        }
+
+        if ($connection->status !== AgtConnectionStatus::Verified
+            || ! $connection->environment->isEnabled()
+            || ! $connection->hasBasicCredentials()
+            || blank($connection->software_key_reference)
+            || blank($connection->taxpayer_key_reference)
+            || blank($connection->software_key_fingerprint)
+            || blank($connection->taxpayer_key_fingerprint)) {
+            throw FiscalFinalizationBlocked::because(
+                'A ligação AGT deve estar verificada, activa e com as chaves fiscais disponíveis.',
+            );
+        }
+    }
+
+    private function assertCalculationIntegrity(FiscalDocument $document): void
+    {
+        try {
+            $calculationProfiles = [];
+
+            foreach ($document->lines as $line) {
+                $calculationProfiles[] = $this->calculationProfile($line);
+            }
+
+            $calculation = $this->calculator->calculate($calculationProfiles);
+            $fingerprint = hash(
+                'sha256',
+                $this->canonicalJson->encode($calculation->fingerprintData()),
+            );
+        } catch (Throwable) {
+            throw FiscalFinalizationBlocked::because(
+                'Os valores do rascunho não puderam ser novamente validados.',
+            );
+        }
+
+        if (! hash_equals($document->calculation_sha256, $fingerprint)
+            || ! $this->totalsMatch($document, $calculation)
+            || ! $this->linesMatch($document, $calculation)) {
+            throw FiscalFinalizationBlocked::because(
+                'A verificação independente dos valores falhou. Guarde novamente o rascunho.',
+            );
+        }
+    }
+
+    /**
+     * @return array{
+     *     operation_type: string,
+     *     product_code: string,
+     *     product_description: string,
+     *     quantity: string,
+     *     unit_of_measure: string,
+     *     unit_price: string,
+     *     discount_percentage: string,
+     *     tax_type: string,
+     *     tax_code: string|null,
+     *     tax_percentage: string,
+     *     tax_exemption_code: string|null
+     * }
+     */
+    private function calculationProfile(FiscalDocumentLine $line): array
+    {
+        if ($line->taxes->count() !== 1) {
+            throw FiscalFinalizationBlocked::because('Cada linha deve possuir exactamente um tratamento fiscal.');
+        }
+
+        /** @var FiscalDocumentLineTax $tax */
+        $tax = $line->taxes->first();
+
+        return [
+            'operation_type' => $line->operation_type->value,
+            'product_code' => $line->product_code,
+            'product_description' => $line->product_description,
+            'quantity' => (string) CanonicalNumber::fromScaledInteger($line->quantity_units, $line->quantity_scale),
+            'unit_of_measure' => $line->unit_of_measure,
+            'unit_price' => (string) CanonicalNumber::fromMinorUnits($line->unit_price_base_minor),
+            'discount_percentage' => (string) CanonicalNumber::fromBasisPoints($line->discount_rate_basis_points),
+            'tax_type' => $tax->tax_type->value,
+            'tax_code' => $tax->tax_code,
+            'tax_percentage' => (string) CanonicalNumber::fromBasisPoints($tax->tax_rate_basis_points),
+            'tax_exemption_code' => $tax->tax_exemption_code,
+        ];
+    }
+
+    private function totalsMatch(
+        FiscalDocument $document,
+        CalculatedFiscalDocument $calculation,
+    ): bool {
+        return $document->settlement_total_minor === $calculation->settlementTotalMinor
+            && $document->net_total_minor === $calculation->netTotalMinor
+            && $document->tax_payable_minor === $calculation->taxPayableMinor
+            && $document->gross_total_minor === $calculation->grossTotalMinor;
+    }
+
+    private function linesMatch(
+        FiscalDocument $document,
+        CalculatedFiscalDocument $calculation,
+    ): bool {
+        if ($document->lines->count() !== count($calculation->lines)) {
+            return false;
+        }
+
+        return $document->lines->values()->every(function (
+            FiscalDocumentLine $line,
+            int $index,
+        ) use ($calculation): bool {
+            $expected = $calculation->lines[$index] ?? null;
+
+            return $expected instanceof CalculatedFiscalLine
+                && $line->line_number === $expected->lineNumber
+                && $line->unit_price_micros === $expected->unitPriceMicros
+                && $line->base_amount_minor === $expected->baseAmountMinor
+                && $line->settlement_amount_minor === $expected->settlementAmountMinor
+                && $line->net_amount_minor === $expected->netAmountMinor
+                && $line->tax_amount_minor === $expected->taxAmountMinor
+                && $line->gross_amount_minor === $expected->grossAmountMinor
+                && $line->taxes->first()?->tax_contribution_minor === $expected->taxAmountMinor;
+        });
+    }
+
+    private function fingerprint(string $keyReference, string $keyLabel): string
+    {
+        try {
+            return $this->jwsSigner->fingerprint($keyReference);
+        } catch (Throwable) {
+            throw FiscalFinalizationBlocked::because(
+                "A chave do {$keyLabel} não está disponível no cofre seguro.",
+            );
+        }
+    }
+}
