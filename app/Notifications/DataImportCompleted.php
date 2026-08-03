@@ -49,7 +49,7 @@ class DataImportCompleted extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Importação concluída no VAP Fatura')
+            ->subject('Importação concluída no '.(string) config('app.name'))
             ->greeting('Importação concluída')
             ->line("Foram processados {$this->importedRows} registos de {$this->typeLabel}.")
             ->line("Novos: {$this->createdRows} · Actualizados: {$this->updatedRows}.")

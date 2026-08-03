@@ -149,7 +149,7 @@ function isCurrent(item: NavigationItem): boolean {
 
 <template>
     <div
-        class="flex h-full grow flex-col gap-y-6 overflow-y-auto bg-brand-950 px-5 pb-5 text-white dark:bg-[#061c17] dark:ring-1 dark:ring-white/10"
+        class="flex h-full grow flex-col gap-y-6 overflow-y-auto bg-brand-950 px-5 pb-5 text-white dark:bg-brand-950 dark:ring-1 dark:ring-white/10"
     >
         <div class="flex h-20 shrink-0 items-center">
             <AppLogo inverted />

@@ -32,7 +32,7 @@ function renderChart(): void {
             .matches
             ? 0
             : 650,
-        color: ['#25a97e', '#f59e0b'],
+        color: ['#575756', '#f9b233'],
         grid: { left: 8, right: 12, top: 18, bottom: 2, containLabel: true },
         tooltip: {
             trigger: 'axis',
@@ -125,7 +125,7 @@ onBeforeUnmount(() => {
         >
             <span class="inline-flex items-center gap-1.5"
                 ><span
-                    class="h-0.5 w-4 rounded-full bg-[#25a97e]"
+                    class="h-0.5 w-4 rounded-full bg-[#575756]"
                 />Emitido</span
             >
             <span class="inline-flex items-center gap-1.5"

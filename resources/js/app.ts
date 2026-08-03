@@ -5,7 +5,7 @@ import {
     watchSystemAppearance,
 } from '@/lib/appearance';
 
-const appName = import.meta.env.VITE_APP_NAME || 'VAP Fatura';
+const appName = import.meta.env.VITE_APP_NAME || 'facturac.ao';
 
 applyAppearance(getStoredAppearance());
 watchSystemAppearance();
@@ -13,6 +13,6 @@ watchSystemAppearance();
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     progress: {
-        color: '#4B5563',
+        color: '#F9B233',
     },
 });

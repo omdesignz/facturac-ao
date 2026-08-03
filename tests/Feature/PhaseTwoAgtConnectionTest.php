@@ -59,7 +59,7 @@ function validAgtConnectionProfile(array $overrides = []): array
     return [
         'basic_auth_username' => 'agt-hml-user',
         'basic_auth_password' => 'agt-hml-password',
-        'product_id' => 'VAP Fatura',
+        'product_id' => 'facturac.ao',
         'product_version' => '0.3.0',
         'software_validation_number' => 'AGT-SOFTWARE-001',
         'establishment_number' => 'EST-AGT-001',

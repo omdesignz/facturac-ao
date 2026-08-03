@@ -29,9 +29,52 @@ test('serves every phase zero prototype journey', function (string $routeName, s
 ]);
 
 test('uses the Angola fiscal defaults', function () {
-    expect(config('app.timezone'))->toBe('Africa/Luanda')
+    expect(config('app.name'))->toBe('facturac.ao')
+        ->and(config('app.timezone'))->toBe('Africa/Luanda')
         ->and(config('app.locale'))->toBe('pt_AO')
         ->and(config('app.fallback_locale'))->toBe('pt');
+});
+
+test('ships the facturac ao brand and complete browser icon set', function () {
+    $brandFiles = [
+        'brand/facturac-ao.svg',
+        'brand/facturac-ao-dark.svg',
+        'brand/facturac-ao-mark.svg',
+        'brand/facturac-ao-app-icon.svg',
+        'favicon.svg',
+        'favicon.ico',
+        'favicon-16x16.png',
+        'favicon-32x32.png',
+        'apple-touch-icon.png',
+        'android-chrome-192x192.png',
+        'android-chrome-512x512.png',
+        'safari-pinned-tab.svg',
+        'site.webmanifest',
+    ];
+
+    foreach ($brandFiles as $brandFile) {
+        expect(public_path($brandFile))->toBeFile();
+    }
+
+    $manifest = json_decode(
+        (string) file_get_contents(public_path('site.webmanifest')),
+        true,
+        flags: JSON_THROW_ON_ERROR,
+    );
+    $layout = file_get_contents(resource_path('views/app.blade.php'));
+    $masterLogo = file_get_contents(public_path('brand/facturac-ao.svg'));
+    $appIconSize = getimagesize(public_path('android-chrome-512x512.png'));
+
+    expect($manifest)
+        ->toBeArray()
+        ->and($manifest['name'])->toBe('facturac.ao')
+        ->and($manifest['theme_color'])->toBe('#171716')
+        ->and($layout)->not->toBeFalse()
+        ->toContain('/site.webmanifest', '/safari-pinned-tab.svg')
+        ->and($masterLogo)->not->toBeFalse()
+        ->toContain('#f9b233', '#575756')
+        ->and($appIconSize)->not->toBeFalse()
+        ->and([$appIconSize[0], $appIconSize[1]])->toBe([512, 512]);
 });
 
 test('ships the complete phase zero governance baseline', function () {

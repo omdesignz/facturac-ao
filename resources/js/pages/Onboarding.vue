@@ -516,7 +516,7 @@ const steps = computed(() => [
 
                     <aside class="space-y-5">
                         <section
-                            class="rounded-2xl bg-brand-950 p-5 text-white shadow-sm dark:bg-[#061c17] dark:ring-1 dark:ring-white/10"
+                            class="rounded-2xl bg-brand-950 p-5 text-white shadow-sm dark:bg-brand-950 dark:ring-1 dark:ring-white/10"
                         >
                             <div class="flex items-center gap-3">
                                 <span

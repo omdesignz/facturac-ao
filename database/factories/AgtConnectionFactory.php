@@ -35,7 +35,7 @@ class AgtConnectionFactory extends Factory
             'schema_version' => '1.2',
             'basic_auth_username' => fake()->userName(),
             'basic_auth_password' => fake()->password(16, 32),
-            'product_id' => 'VAP Fatura',
+            'product_id' => (string) config('app.name'),
             'product_version' => '0.2.0',
             'software_validation_number' => fake()->bothify('AGT-####-????'),
             'establishment_number' => fake()->numerify('########'),

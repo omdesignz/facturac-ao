@@ -13,31 +13,31 @@
     --font-display:
         'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Palatino,
         ui-serif, Georgia, serif;
-    --color-brand-50: #effcf7;
-    --color-brand-100: #d7f7e9;
-    --color-brand-200: #b2edd5;
-    --color-brand-300: #7fddba;
-    --color-brand-400: #48c59a;
-    --color-brand-500: #25a97e;
-    --color-brand-600: #188765;
-    --color-brand-700: #176b53;
-    --color-brand-800: #175544;
-    --color-brand-900: #144638;
-    --color-brand-950: #082820;
+    --color-brand-50: #f7f7f5;
+    --color-brand-100: #ececea;
+    --color-brand-200: #d9d9d5;
+    --color-brand-300: #bcbcb6;
+    --color-brand-400: #92928c;
+    --color-brand-500: #6f6f69;
+    --color-brand-600: #575756;
+    --color-brand-700: #454543;
+    --color-brand-800: #333332;
+    --color-brand-900: #232322;
+    --color-brand-950: #171716;
 }
 
 :root {
     color-scheme: light;
-    --fiscal-grid: color-mix(in srgb, #0f766e 8%, transparent);
+    --fiscal-grid: color-mix(in srgb, #f9b233 10%, transparent);
 }
 
 .dark {
     color-scheme: dark;
-    --fiscal-grid: color-mix(in srgb, #5eead4 7%, transparent);
+    --fiscal-grid: color-mix(in srgb, #f9b233 9%, transparent);
 }
 
 html {
-    background: #fafaf9;
+    background: #faf9f6;
 }
 
 html.dark {

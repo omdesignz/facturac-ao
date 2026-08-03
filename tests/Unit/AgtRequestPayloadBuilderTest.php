@@ -34,7 +34,7 @@ function phaseFourPayloadConnection(): AgtConnection
     return new AgtConnection([
         'schema_version' => '1.2',
         'establishment_number' => 'AO-LAD-001',
-        'product_id' => 'VAP Fatura',
+        'product_id' => 'facturac.ao',
         'product_version' => '0.5.0',
         'software_validation_number' => 'AGT-SW-2026',
         'software_key_reference' => 'software/vap',
@@ -67,12 +67,12 @@ test('the list series request signs only the official taxpayer field set', funct
         ->toBe('signed:taxpayer/5000000001:{"taxRegistrationNumber":"5000000001"}')
         ->and(data_get($payload, 'softwareInfo.softwareInfoDetail'))
         ->toBe([
-            'productId' => 'VAP Fatura',
+            'productId' => 'facturac.ao',
             'productVersion' => '0.5.0',
             'softwareValidationNumber' => 'AGT-SW-2026',
         ])
         ->and(data_get($payload, 'softwareInfo.jwsSoftwareSignature'))
-        ->toBe('signed:software/vap:{"productId":"VAP Fatura","productVersion":"0.5.0","softwareValidationNumber":"AGT-SW-2026"}');
+        ->toBe('signed:software/vap:{"productId":"facturac.ao","productVersion":"0.5.0","softwareValidationNumber":"AGT-SW-2026"}');
 });
 
 test('the status request signs the taxpayer and AGT request identifiers exactly', function () {

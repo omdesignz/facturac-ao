@@ -50,7 +50,7 @@ final readonly class StartSubscriptionCheckout
                 merchantReference: $charge->public_id,
                 amountMinor: $charge->amount_minor,
                 currencyCode: $charge->currency_code,
-                description: 'Assinatura VAP Fatura - '.$plan->name,
+                description: 'Assinatura '.(string) config('app.name').' - '.$plan->name,
                 requestedExpiresAt: $charge->due_at,
             ));
 

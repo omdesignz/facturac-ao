@@ -4,7 +4,7 @@
 
 **To:** Administração Geral Tributária / Equipa do Portal do Parceiro
 
-**From:** Produtor do software VAP Fatura
+**From:** Produtor do software facturac.ao
 
 **Environment requested:** Homologação and production
 
@@ -141,4 +141,3 @@ To make the response directly usable as a certification artefact, we request:
 - the name or role of the AGT owner who may approve follow-up interpretations.
 
 We are available to demonstrate an end-to-end homologation slice as soon as the contract points above are confirmed.
-

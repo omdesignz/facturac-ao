@@ -104,7 +104,7 @@ function phaseFourCompany(): array
         'status' => AgtConnectionStatus::Verified,
         'basic_auth_username' => 'agt-hml-user',
         'basic_auth_password' => 'agt-hml-password',
-        'product_id' => 'VAP Fatura',
+        'product_id' => 'facturac.ao',
         'product_version' => '0.5.0',
         'software_validation_number' => 'AGT-SW-2026',
         'establishment_number' => 'AO-LAD-001',

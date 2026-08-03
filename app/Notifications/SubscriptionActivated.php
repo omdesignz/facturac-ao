@@ -50,7 +50,7 @@ class SubscriptionActivated extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Assinatura VAP Fatura activada')
+            ->subject('Assinatura '.(string) config('app.name').' activada')
             ->greeting('Pagamento confirmado')
             ->line("A assinatura do plano {$this->planName} está activa.")
             ->line('A confirmação foi recebida através da Referência EMIS e registada no histórico de cobrança.')
