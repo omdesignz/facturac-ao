@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import { ArrowRight, Check, Menu, X } from '@lucide/vue';
-import { onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import BrandSymbol from '@/components/BrandSymbol.vue';
+import CookieConsent from '@/components/CookieConsent.vue';
+import FiscalStatusOrb from '@/components/FiscalStatusOrb.vue';
 import { vReveal } from '@/lib/reveal';
 import { login, register } from '@/routes';
 import { show as legalShow } from '@/routes/legal';
@@ -30,6 +32,13 @@ defineProps<{
  */
 const sealed = ref(false);
 const menuOpen = ref(false);
+const selectedMomentIndex = ref(0);
+const selectedLifecycleIndex = ref(0);
+const lifecycleTransitioning = ref(false);
+const prefersReducedMotion = ref(false);
+
+let lifecycleTransitionTimer: number | undefined;
+let reducedMotionQuery: MediaQueryList | undefined;
 
 /** Escape closes the menu, which is the one shortcut people try without asking. */
 function closeOnEscape(event: KeyboardEvent): void {
@@ -38,10 +47,21 @@ function closeOnEscape(event: KeyboardEvent): void {
     }
 }
 
+function syncReducedMotion(event: MediaQueryListEvent): void {
+    prefersReducedMotion.value = event.matches;
+
+    if (event.matches) {
+        lifecycleTransitioning.value = false;
+    }
+}
+
 onMounted(() => {
     window.addEventListener('keydown', closeOnEscape);
+    reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    prefersReducedMotion.value = reducedMotionQuery.matches;
+    reducedMotionQuery.addEventListener('change', syncReducedMotion);
 
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (prefersReducedMotion.value) {
         sealed.value = true;
 
         return;
@@ -54,6 +74,11 @@ onMounted(() => {
 
 onUnmounted(() => {
     window.removeEventListener('keydown', closeOnEscape);
+    reducedMotionQuery?.removeEventListener('change', syncReducedMotion);
+
+    if (lifecycleTransitionTimer !== undefined) {
+        window.clearTimeout(lifecycleTransitionTimer);
+    }
 });
 
 const sections = [
@@ -71,38 +96,132 @@ const sections = [
  * of these is a situation an Angolan business actually has; the answer is what
  * the application does about it.
  */
-const moments: { situation: string; answer: string; proof: string }[] = [
+type MomentPreviewRow = {
+    label: string;
+    value: string;
+    numeric?: boolean;
+};
+
+type Moment = {
+    situation: string;
+    answer: string;
+    proof: string;
+    preview: {
+        eyebrow: string;
+        title: string;
+        status: string;
+        rows: MomentPreviewRow[];
+        note: string;
+    };
+};
+
+const moments: Moment[] = [
     {
         situation: 'O cliente está à sua frente e pede a factura.',
         answer: 'Passa uma factura-recibo ali mesmo, do telemóvel, já com número, assinatura e QR. O cliente sai com o documento.',
         proof: 'FR',
+        preview: {
+            eyebrow: 'Documento emitido',
+            title: 'FR LOJA2026/00184',
+            status: 'Aceite pela AGT',
+            rows: [
+                { label: 'Cliente', value: 'Mercearia Kilamba' },
+                { label: 'Total', value: '139 080,00 Kz', numeric: true },
+                {
+                    label: 'Validação',
+                    value: '4192/AGT/2026',
+                    numeric: true,
+                },
+            ],
+            note: 'PDF assinado, guardado e pronto para entregar ao cliente.',
+        },
     },
     {
         situation: 'Vendeu fiado e já não sabe ao certo quem lhe deve.',
         answer: 'Cada cliente tem a sua conta corrente: o que comprou, o que pagou, o que falta e desde quando.',
         proof: 'Conta corrente',
+        preview: {
+            eyebrow: 'Conta corrente',
+            title: 'Mercearia Kilamba',
+            status: '62 000,00 Kz por receber',
+            rows: [
+                { label: 'Facturado', value: '201 080,00 Kz', numeric: true },
+                { label: 'Recebido', value: '139 080,00 Kz', numeric: true },
+                { label: 'Documentos em aberto', value: '1', numeric: true },
+            ],
+            note: 'O saldo nasce dos documentos e recibos — não de contas feitas à parte.',
+        },
     },
     {
         situation: 'A internet foi-se abaixo a meio da manhã.',
         answer: 'Continua a facturar. O que ficou por comunicar à AGT segue assim que a ligação voltar, sem repetir nada.',
         proof: 'Contingência',
+        preview: {
+            eyebrow: 'Fila de comunicação',
+            title: '3 documentos protegidos',
+            status: 'À espera de ligação',
+            rows: [
+                { label: 'Guardados localmente', value: '3', numeric: true },
+                { label: 'Envios duplicados', value: '0', numeric: true },
+                { label: 'Próxima tentativa', value: 'Automática' },
+            ],
+            note: 'Quando a rede regressar, a fila continua do ponto exacto onde parou.',
+        },
     },
     {
         situation: 'Enganou-se no valor de uma factura já emitida.',
         answer: 'Emite uma nota de crédito que aponta para a original e diz porquê. A emitida não se apaga — nem devia.',
         proof: 'NC',
+        preview: {
+            eyebrow: 'Correcção fiscal',
+            title: 'NC LOJA2026/00012',
+            status: 'Ligada à factura original',
+            rows: [
+                { label: 'Documento de origem', value: 'FT LOJA2026/00179' },
+                { label: 'Motivo', value: 'Valor facturado a mais' },
+                { label: 'Ajuste', value: '−12 400,00 Kz', numeric: true },
+            ],
+            note: 'A correcção fica auditável sem reescrever a história do documento.',
+        },
     },
     {
         situation: 'O contabilista pediu o ficheiro do trimestre.',
         answer: 'Escolhe as datas e descarrega o SAF-T (AO). Sem exportar folhas de cálculo nem remendar ficheiros à mão.',
         proof: 'SAF-T',
+        preview: {
+            eyebrow: 'Exportação fiscal',
+            title: '2.º trimestre de 2026',
+            status: 'Ficheiro validado',
+            rows: [
+                { label: 'Período', value: '01 Abr — 30 Jun' },
+                { label: 'Versão', value: 'SAF-T (AO) 1.01_01' },
+                { label: 'Documentos', value: '184', numeric: true },
+            ],
+            note: 'Um ficheiro pronto para entregar, com a ordem exigida pelo esquema.',
+        },
     },
     {
         situation: 'Vendeu ao Estado e retiveram-lhe parte do imposto.',
         answer: 'A retenção na fonte e o IVA cativo ficam no documento, cada um sobre a base certa, sem contas à parte.',
         proof: 'Retenção',
+        preview: {
+            eyebrow: 'Liquidação',
+            title: 'Venda ao Estado',
+            status: 'Bases separadas',
+            rows: [
+                { label: 'IVA cativo', value: 'Apurado no documento' },
+                { label: 'Retenção', value: 'Evidenciada à parte' },
+                {
+                    label: 'Líquido a receber',
+                    value: 'Calculado automaticamente',
+                },
+            ],
+            note: 'Cada imposto fica visível na base que lhe corresponde.',
+        },
     },
 ];
+
+const selectedMoment = computed(() => moments[selectedMomentIndex.value]!);
 
 /**
  * The real statuses a document moves through, in order.
@@ -116,32 +235,86 @@ const lifecycle: {
     label: string;
     detail: string;
     tone: string;
+    orb: 'breathing' | 'shaping' | 'connecting' | 'settling';
+    processing: string;
+    result: string;
+    documentNumber: string;
+    proofLabel: string;
+    proofValue: string;
 }[] = [
     {
         status: 'Rascunho',
         label: 'Escreve à vontade',
         detail: 'Nenhum número é consumido. Corrige, apaga e volta atrás as vezes que quiser.',
         tone: 'text-zinc-500 dark:text-zinc-400',
+        orb: 'breathing',
+        processing: 'A abrir uma área segura para editar…',
+        result: 'Pronto para continuar a escrever',
+        documentNumber: 'Ainda sem número',
+        proofLabel: 'Pode alterar',
+        proofValue: 'Todos os campos',
     },
     {
         status: 'Emitida',
         label: 'Recebe o número',
         detail: 'A série dá o número seguinte, sem saltos nem repetições. Daqui em diante é imutável.',
         tone: 'text-accent-600 dark:text-accent-300',
+        orb: 'shaping',
+        processing: 'A numerar e assinar o documento…',
+        result: 'Número e assinatura confirmados',
+        documentNumber: 'FR LOJA2026/00184',
+        proofLabel: 'Assinatura',
+        proofValue: '9F2C·A104·7B3E',
     },
     {
         status: 'Comunicada',
         label: 'Chega à AGT',
         detail: 'Assinada e submetida. A resposta fica guardada com o documento, como prova.',
         tone: 'text-emerald-700 dark:text-emerald-300',
+        orb: 'connecting',
+        processing: 'A comunicar o documento à AGT…',
+        result: 'Aceite e guardado como prova',
+        documentNumber: 'FR LOJA2026/00184',
+        proofLabel: 'Validação AGT',
+        proofValue: '4192/AGT/2026',
     },
     {
         status: 'Liquidada',
         label: 'Fica paga',
         detail: 'O recibo abate na dívida do cliente e o que falta receber fica à vista.',
         tone: 'text-emerald-700 dark:text-emerald-300',
+        orb: 'settling',
+        processing: 'A reconciliar o recebimento…',
+        result: 'Pagamento reflectido na conta corrente',
+        documentNumber: 'FR LOJA2026/00184',
+        proofLabel: 'Saldo do documento',
+        proofValue: '0,00 Kz',
     },
 ];
+
+const selectedLifecycle = computed(
+    () => lifecycle[selectedLifecycleIndex.value]!,
+);
+
+function selectLifecycle(index: number): void {
+    selectedLifecycleIndex.value = index;
+
+    if (lifecycleTransitionTimer !== undefined) {
+        window.clearTimeout(lifecycleTransitionTimer);
+    }
+
+    if (prefersReducedMotion.value) {
+        lifecycleTransitioning.value = false;
+
+        return;
+    }
+
+    lifecycleTransitioning.value = true;
+    lifecycleTransitionTimer = window.setTimeout(() => {
+        lifecycleTransitioning.value = false;
+        lifecycleTransitionTimer = undefined;
+    }, 820);
+}
 
 /**
  * The promises made to a one-person business, in its own terms.
@@ -524,34 +697,169 @@ const included: { group: string; items: string[] }[] = [
                         Isto não é uma lista de funcionalidades. São as coisas
                         que já lhe aconteceram.
                     </h2>
+                    <p
+                        class="mt-4 text-base/7 text-brand-600 dark:text-zinc-400"
+                    >
+                        Escolha uma situação para ver como a resposta aparece no
+                        produto.
+                    </p>
                 </div>
 
-                <ul
-                    class="mt-16 space-y-px overflow-hidden rounded-2xl bg-zinc-900/8 dark:bg-white/10"
+                <div
+                    class="mt-16 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,0.78fr)] lg:gap-12"
                 >
-                    <li
-                        v-for="(moment, index) in moments"
-                        :key="moment.proof"
-                        v-reveal="index % 3"
-                        class="group grid gap-x-10 gap-y-3 bg-[var(--surface-page)] px-6 py-8 transition-colors duration-300 hover:bg-white sm:px-9 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)_auto] lg:items-baseline dark:hover:bg-zinc-900"
+                    <ol
+                        v-reveal
+                        class="-mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-5 pb-3 motion-reduce:scroll-auto sm:-mx-8 sm:px-8 lg:mx-0 lg:block lg:space-y-2 lg:overflow-visible lg:px-0 lg:pb-0"
+                        aria-label="Escolher um momento do negócio"
                     >
-                        <p
-                            class="text-lg/8 font-medium text-balance text-brand-950 dark:text-white"
+                        <li
+                            v-for="(moment, index) in moments"
+                            :key="moment.proof"
+                            class="w-[82vw] max-w-80 shrink-0 snap-start lg:w-auto lg:max-w-none"
                         >
-                            {{ moment.situation }}
-                        </p>
-                        <p
-                            class="text-base/7 text-brand-600 dark:text-zinc-400"
+                            <button
+                                :id="`moment-trigger-${index}`"
+                                type="button"
+                                class="group flex h-full min-h-28 w-full items-center gap-4 rounded-2xl border px-5 py-5 text-left focus-ring transition duration-300 motion-reduce:transition-none sm:px-6 lg:min-h-0"
+                                :class="
+                                    selectedMomentIndex === index
+                                        ? 'border-accent-400/70 bg-white shadow-lg shadow-brand-950/5 dark:bg-zinc-900'
+                                        : 'border-zinc-900/8 bg-transparent hover:border-zinc-900/15 hover:bg-white/70 dark:border-white/10 dark:hover:border-white/20 dark:hover:bg-zinc-900/70'
+                                "
+                                :aria-pressed="selectedMomentIndex === index"
+                                aria-controls="moment-preview"
+                                @click="selectedMomentIndex = index"
+                            >
+                                <span
+                                    class="min-w-0 flex-1 text-base/7 font-medium text-balance text-brand-950 sm:text-lg/8 dark:text-white"
+                                >
+                                    {{ moment.situation }}
+                                </span>
+                                <span
+                                    class="hidden shrink-0 rounded-lg bg-accent-400/12 px-2.5 py-1 font-mono numeric text-[0.6875rem] font-semibold text-accent-700 sm:inline dark:bg-accent-400/15 dark:text-accent-300"
+                                >
+                                    {{ moment.proof }}
+                                </span>
+                                <ArrowRight
+                                    class="size-4 shrink-0 text-zinc-400 transition-transform duration-300 group-hover:translate-x-0.5 motion-reduce:transition-none"
+                                    :class="{
+                                        'translate-x-0.5 text-accent-600 dark:text-accent-300':
+                                            selectedMomentIndex === index,
+                                    }"
+                                    aria-hidden="true"
+                                />
+                            </button>
+                        </li>
+                    </ol>
+
+                    <div v-reveal="1" class="lg:sticky lg:top-24">
+                        <article
+                            id="moment-preview"
+                            class="relative overflow-hidden rounded-3xl bg-brand-950 p-6 text-white shadow-2xl shadow-brand-950/15 sm:p-8"
+                            :aria-labelledby="`moment-trigger-${selectedMomentIndex}`"
                         >
-                            {{ moment.answer }}
-                        </p>
-                        <span
-                            class="shrink-0 justify-self-start rounded-lg bg-accent-400/12 px-2.5 py-1 font-mono numeric text-xs font-semibold text-accent-700 lg:justify-self-end dark:bg-accent-400/15 dark:text-accent-300"
-                        >
-                            {{ moment.proof }}
-                        </span>
-                    </li>
-                </ul>
+                            <div
+                                class="fiscal-grid pointer-events-none absolute inset-0 opacity-40"
+                                aria-hidden="true"
+                            />
+
+                            <div class="relative">
+                                <div
+                                    class="flex items-center justify-between gap-4"
+                                >
+                                    <p class="eyebrow text-zinc-400">
+                                        Exemplo no produto
+                                    </p>
+                                    <span
+                                        class="rounded-lg bg-accent-400/12 px-2.5 py-1 font-mono numeric text-[0.6875rem] font-semibold text-accent-300"
+                                    >
+                                        {{ selectedMoment.proof }}
+                                    </span>
+                                </div>
+
+                                <Transition name="preview-swap" mode="out-in">
+                                    <div :key="selectedMoment.proof">
+                                        <p
+                                            class="mt-5 text-base/7 text-zinc-300"
+                                        >
+                                            {{ selectedMoment.answer }}
+                                        </p>
+
+                                        <div
+                                            class="mt-6 overflow-hidden rounded-2xl bg-[#fdfcfa] text-brand-950 shadow-xl"
+                                        >
+                                            <header
+                                                class="border-b border-zinc-900/8 px-5 py-5"
+                                            >
+                                                <p
+                                                    class="text-[0.625rem] font-semibold tracking-[0.16em] text-brand-500 uppercase"
+                                                >
+                                                    {{
+                                                        selectedMoment.preview
+                                                            .eyebrow
+                                                    }}
+                                                </p>
+                                                <h3
+                                                    class="mt-1.5 font-mono numeric text-base font-semibold text-brand-950"
+                                                >
+                                                    {{
+                                                        selectedMoment.preview
+                                                            .title
+                                                    }}
+                                                </h3>
+                                                <p
+                                                    class="mt-3 inline-flex items-center gap-2 text-xs font-medium text-emerald-700"
+                                                >
+                                                    <span
+                                                        class="size-1.5 rounded-full bg-current"
+                                                        aria-hidden="true"
+                                                    />
+                                                    {{
+                                                        selectedMoment.preview
+                                                            .status
+                                                    }}
+                                                </p>
+                                            </header>
+
+                                            <dl
+                                                class="divide-y divide-zinc-900/6 px-5"
+                                            >
+                                                <div
+                                                    v-for="row in selectedMoment
+                                                        .preview.rows"
+                                                    :key="row.label"
+                                                    class="flex items-baseline justify-between gap-5 py-3.5 text-sm"
+                                                >
+                                                    <dt class="text-brand-500">
+                                                        {{ row.label }}
+                                                    </dt>
+                                                    <dd
+                                                        class="text-right font-medium text-brand-900"
+                                                        :class="{
+                                                            'font-mono numeric':
+                                                                row.numeric,
+                                                        }"
+                                                    >
+                                                        {{ row.value }}
+                                                    </dd>
+                                                </div>
+                                            </dl>
+
+                                            <p
+                                                class="border-t border-zinc-900/8 bg-accent-400/8 px-5 py-4 text-xs/5 text-brand-600"
+                                            >
+                                                {{
+                                                    selectedMoment.preview.note
+                                                }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </Transition>
+                            </div>
+                        </article>
+                    </div>
+                </div>
             </section>
 
             <!-- ---------------------------------------------------- lifecycle -->
@@ -578,49 +886,183 @@ const included: { group: string; items: string[] }[] = [
                         </p>
                     </div>
 
-                    <ol
-                        class="mt-16 grid gap-px overflow-hidden rounded-2xl bg-zinc-900/8 sm:grid-cols-2 lg:grid-cols-4 dark:bg-white/10"
+                    <div
+                        class="mt-16 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(23rem,0.82fr)] lg:gap-12"
                     >
-                        <li
-                            v-for="(stage, index) in lifecycle"
-                            :key="stage.status"
-                            class="relative bg-white p-6 sm:p-7 dark:bg-zinc-900"
+                        <ol
+                            v-reveal
+                            class="-mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-5 pb-3 motion-reduce:scroll-auto sm:-mx-8 sm:px-8 lg:mx-0 lg:block lg:space-y-2 lg:overflow-visible lg:px-0 lg:pb-0"
+                            aria-label="Escolher estado do documento"
                         >
-                            <!--
-                                The rule fills further at each stage and draws
-                                itself as the section arrives, so the order is
-                                legible without anything having to repeat.
-                            -->
-                            <span
-                                class="absolute inset-x-0 top-0 h-0.5 bg-zinc-900/8 dark:bg-white/10"
-                                aria-hidden="true"
+                            <li
+                                v-for="(stage, index) in lifecycle"
+                                :key="stage.status"
+                                class="w-[82vw] max-w-80 shrink-0 snap-start lg:w-auto lg:max-w-none"
                             >
-                                <span
-                                    v-reveal="index"
-                                    class="reveal-rule block h-full bg-accent-400"
-                                    :style="{
-                                        width: `${((index + 1) / lifecycle.length) * 100}%`,
-                                    }"
-                                />
-                            </span>
+                                <button
+                                    type="button"
+                                    class="relative h-full min-h-40 w-full overflow-hidden rounded-2xl border px-6 py-5 text-left focus-ring transition duration-300 motion-reduce:transition-none lg:min-h-0"
+                                    :class="
+                                        selectedLifecycleIndex === index
+                                            ? 'border-accent-400/70 bg-accent-400/8 shadow-lg shadow-brand-950/5'
+                                            : 'border-zinc-900/8 bg-white hover:border-zinc-900/15 dark:border-white/10 dark:bg-zinc-900 dark:hover:border-white/20'
+                                    "
+                                    :aria-pressed="
+                                        selectedLifecycleIndex === index
+                                    "
+                                    aria-controls="lifecycle-preview"
+                                    @click="selectLifecycle(index)"
+                                >
+                                    <span
+                                        class="absolute inset-y-0 left-0 w-0.5 bg-accent-400 transition-transform duration-300 motion-reduce:transition-none"
+                                        :class="
+                                            selectedLifecycleIndex === index
+                                                ? 'scale-y-100'
+                                                : 'scale-y-0'
+                                        "
+                                        aria-hidden="true"
+                                    />
+                                    <span :class="['eyebrow', stage.tone]">{{
+                                        stage.status
+                                    }}</span>
+                                    <div
+                                        class="mt-2 grid gap-1 sm:grid-cols-[11rem_1fr] sm:items-baseline sm:gap-5"
+                                    >
+                                        <h3
+                                            class="text-base font-semibold text-brand-950 dark:text-white"
+                                        >
+                                            {{ stage.label }}
+                                        </h3>
+                                        <p
+                                            class="text-sm/6 text-brand-600 dark:text-zinc-400"
+                                        >
+                                            {{ stage.detail }}
+                                        </p>
+                                    </div>
+                                </button>
+                            </li>
+                        </ol>
 
-                            <div v-reveal="index">
-                                <span :class="['eyebrow', stage.tone]">{{
-                                    stage.status
-                                }}</span>
-                                <h3
-                                    class="mt-4 text-lg font-semibold text-brand-950 dark:text-white"
+                        <article
+                            id="lifecycle-preview"
+                            v-reveal="1"
+                            class="relative overflow-hidden rounded-3xl bg-brand-950 p-6 text-white shadow-2xl shadow-brand-950/15 sm:p-8 lg:sticky lg:top-24"
+                        >
+                            <div
+                                class="fiscal-grid pointer-events-none absolute inset-0 opacity-40"
+                                aria-hidden="true"
+                            />
+
+                            <div class="relative">
+                                <header
+                                    class="flex items-start justify-between gap-6"
                                 >
-                                    {{ stage.label }}
-                                </h3>
+                                    <div>
+                                        <p class="eyebrow text-accent-300">
+                                            Estado seleccionado
+                                        </p>
+                                        <h3
+                                            class="mt-2 text-2xl display text-white"
+                                        >
+                                            {{ selectedLifecycle.status }}
+                                        </h3>
+                                    </div>
+                                    <div
+                                        class="grid size-24 shrink-0 place-items-center rounded-full bg-white shadow-xl"
+                                    >
+                                        <FiscalStatusOrb
+                                            :active="lifecycleTransitioning"
+                                            :mode="selectedLifecycle.orb"
+                                            :label="
+                                                lifecycleTransitioning
+                                                    ? selectedLifecycle.processing
+                                                    : selectedLifecycle.result
+                                            "
+                                        />
+                                    </div>
+                                </header>
+
                                 <p
-                                    class="mt-2 text-sm/6 text-brand-600 dark:text-zinc-400"
+                                    class="mt-5 flex min-h-6 items-center gap-2 text-sm font-medium text-accent-300"
+                                    role="status"
+                                    aria-live="polite"
                                 >
-                                    {{ stage.detail }}
+                                    <span
+                                        class="size-1.5 rounded-full bg-current"
+                                        :class="{
+                                            'motion-safe:animate-pulse':
+                                                lifecycleTransitioning,
+                                        }"
+                                        aria-hidden="true"
+                                    />
+                                    {{
+                                        lifecycleTransitioning
+                                            ? selectedLifecycle.processing
+                                            : selectedLifecycle.result
+                                    }}
                                 </p>
+
+                                <div
+                                    class="mt-6 rounded-2xl bg-[#fdfcfa] p-5 text-brand-950 shadow-xl"
+                                >
+                                    <div
+                                        class="flex items-start justify-between gap-4 border-b border-zinc-900/8 pb-4"
+                                    >
+                                        <div>
+                                            <p
+                                                class="text-[0.625rem] font-semibold tracking-[0.16em] text-brand-500 uppercase"
+                                            >
+                                                Factura-recibo
+                                            </p>
+                                            <p
+                                                class="mt-1 font-mono numeric text-sm font-semibold"
+                                            >
+                                                {{
+                                                    selectedLifecycle.documentNumber
+                                                }}
+                                            </p>
+                                        </div>
+                                        <span
+                                            class="rounded-lg bg-accent-400/12 px-2.5 py-1 text-xs font-semibold text-accent-700"
+                                        >
+                                            {{ selectedLifecycle.status }}
+                                        </span>
+                                    </div>
+
+                                    <dl class="mt-4 space-y-3 text-sm">
+                                        <div
+                                            class="flex items-baseline justify-between gap-5"
+                                        >
+                                            <dt class="text-brand-500">
+                                                {{
+                                                    selectedLifecycle.proofLabel
+                                                }}
+                                            </dt>
+                                            <dd
+                                                class="font-mono numeric font-semibold text-brand-900"
+                                            >
+                                                {{
+                                                    selectedLifecycle.proofValue
+                                                }}
+                                            </dd>
+                                        </div>
+                                        <div
+                                            class="flex items-baseline justify-between gap-5"
+                                        >
+                                            <dt class="text-brand-500">
+                                                Total
+                                            </dt>
+                                            <dd
+                                                class="font-mono numeric font-semibold text-brand-900"
+                                            >
+                                                139 080,00 Kz
+                                            </dd>
+                                        </div>
+                                    </dl>
+                                </div>
                             </div>
-                        </li>
-                    </ol>
+                        </article>
+                    </div>
                 </div>
             </section>
 
@@ -971,10 +1413,31 @@ const included: { group: string; items: string[] }[] = [
                 </nav>
             </div>
         </footer>
+
+        <CookieConsent />
     </div>
 </template>
 
 <style scoped>
+/* ----------------------------------------------- interactive previews -- */
+
+.preview-swap-enter-active,
+.preview-swap-leave-active {
+    transition:
+        opacity 180ms ease,
+        transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.preview-swap-enter-from {
+    opacity: 0;
+    transform: translateY(8px);
+}
+
+.preview-swap-leave-to {
+    opacity: 0;
+    transform: translateY(-4px);
+}
+
 /* ------------------------------------------------------------- hero copy -- */
 
 .hero-copy > * {
@@ -1260,6 +1723,11 @@ const included: { group: string; items: string[] }[] = [
  * readable, so stillness costs the reader nothing.
  */
 @media (prefers-reduced-motion: reduce) {
+    .preview-swap-enter-active,
+    .preview-swap-leave-active {
+        transition: none;
+    }
+
     .hero-copy > *,
     .doc,
     .doc__line,

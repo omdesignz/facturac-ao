@@ -14,6 +14,36 @@ test('a visitor without an account gets the landing page', function () {
         ->assertInertia(fn (Assert $page) => $page->component('Landing'));
 });
 
+test('the landing page asks a first-time visitor about cookie choices', function () {
+    LegalDocument::factory()->ofType(LegalDocumentType::Cookies)->create();
+
+    $this->get('/')
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Landing')
+            ->where('legal.cookie_consent_required', true)
+            ->etc()
+        );
+
+    expect((string) file_get_contents(resource_path('js/pages/Landing.vue')))
+        ->toContain("import CookieConsent from '@/components/CookieConsent.vue';")
+        ->toContain('<CookieConsent />');
+});
+
+test('the landing page offers interactive product proof with accessible motion', function () {
+    $landing = (string) file_get_contents(resource_path('js/pages/Landing.vue'));
+    $orb = (string) file_get_contents(resource_path('js/components/FiscalStatusOrb.vue'));
+
+    expect($landing)
+        ->toContain("import FiscalStatusOrb from '@/components/FiscalStatusOrb.vue';")
+        ->toContain('aria-label="Escolher um momento do negócio"')
+        ->toContain('aria-label="Escolher estado do documento"')
+        ->toContain('@click="selectLifecycle(index)"')
+        ->toContain('<FiscalStatusOrb')
+        ->and($orb)
+        ->toContain('role="img"')
+        ->toContain('@media (prefers-reduced-motion: reduce)');
+});
+
 test('someone already signed in is sent to their dashboard', function () {
     // They did not come to the root to be sold the thing they already pay for.
     $this->actingAs(User::factory()->withWorkspace('VAP Landing')->create())
