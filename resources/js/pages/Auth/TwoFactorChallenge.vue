@@ -11,8 +11,8 @@ const useRecoveryCode = ref(false);
 
 <template>
     <AuthLayout
-        eyebrow="Segundo factor"
-        title="Valide o acesso"
+        eyebrow="Segundo passo"
+        title="Confirme que é você"
         :description="
             useRecoveryCode
                 ? 'Introduza um dos códigos de recuperação guardados quando activou o MFA.'

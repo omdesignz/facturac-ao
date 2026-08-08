@@ -1,8 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
   <title id="title">facturac.ao</title>
   <rect width="512" height="512" rx="112" fill="#171716"/>
-  <g transform="translate(-347 83) scale(.94)">
-    <path fill="#f9b233" d="M680.82 248.74a50.13 50.13 0 0 1-71 0l-71.09-71.08a50.17 50.17 0 1 1 71-71l35.61 35.59L743.65 44A183.12 183.12 0 0 0 624.44 0c-101.62 0-184 82.38-184 184a184 184 0 0 0 184 184c101.61 0 184-82.38 184-184a184.16 184.16 0 0 0-8.24-54.61Z"/>
-    <path fill="#f7f4ed" d="M645.34 230a16.63 16.63 0 0 1-11.82-4.9L562.43 154a16.72 16.72 0 0 1 23.65-23.65l59.26 59.26 168-168A16.73 16.73 0 1 1 837 45.28L657.17 225.09A16.64 16.64 0 0 1 645.34 230Z"/>
+  <!--
+    Carimbo, simplified for favicon sizes. Browsers render this at 16-32px,
+    where the perforated edge fills in and the inner ring collapses into the
+    outer one — so this cut drops to a single heavier ring. The full seal
+    lives in the 180px+ raster icons.
+  -->
+  <g transform="rotate(-8 256 256)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="256" cy="256" r="168" stroke="#f9b233" stroke-width="34"/>
+    <path d="M183 262L238 317L340 190" stroke="#f7f4ed" stroke-width="46"/>
   </g>
 </svg>

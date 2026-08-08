@@ -61,6 +61,17 @@ return [
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+
+                /*
+                 * On MySQL 5.7 only the first TIMESTAMP NOT NULL column in a
+                 * table gets an implicit default; every later one is handed
+                 * '0000-00-00 00:00:00', which this server's NO_ZERO_DATE mode
+                 * then rejects — so a table with two such columns cannot be
+                 * created at all. Turning this on makes TIMESTAMP behave like
+                 * every other type, which is already the default from MySQL 8
+                 * onwards, so this is a no-op on a current server.
+                 */
+                PDO::MYSQL_ATTR_INIT_COMMAND => 'SET SESSION explicit_defaults_for_timestamp = ON',
             ]) : [],
         ],
 

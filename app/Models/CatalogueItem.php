@@ -29,6 +29,9 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property string $tax_percentage
  * @property string|null $tax_exemption_code
  * @property bool $is_active
+ * @property bool $tracks_stock
+ * @property int $stock_scale
+ * @property int|null $reorder_level_units
  */
 #[Fillable([
     'workspace_id',
@@ -45,6 +48,8 @@ use Spatie\Activitylog\Support\LogOptions;
     'tax_percentage',
     'tax_exemption_code',
     'is_active',
+    'tracks_stock',
+    'reorder_level_units',
 ])]
 class CatalogueItem extends Model
 {
@@ -91,6 +96,8 @@ class CatalogueItem extends Model
             'unit_price_minor' => 'integer',
             'tax_percentage' => 'decimal:2',
             'is_active' => 'boolean',
+            'tracks_stock' => 'boolean',
+            'stock_scale' => 'integer',
         ];
     }
 }

@@ -143,6 +143,38 @@ final class FiscalCalculator
         return ($whole * $factor) + (int) $fraction;
     }
 
+    /**
+     * What the buyer keeps back, on whichever figure the rate is charged on.
+     *
+     * Separate from the line arithmetic because withholding is charged on the
+     * finished document, not on each line — rounding each line and adding up
+     * would produce a different figure from the one the buyer will declare.
+     */
+    public function withheldAmount(int $baseMinor, int $rateBasisPoints): int
+    {
+        if ($rateBasisPoints > 10_000) {
+            throw new InvalidArgumentException('A withholding rate cannot exceed 100%.');
+        }
+
+        return $this->roundHalfUpProduct([$baseMinor, $rateBasisPoints], 10_000);
+    }
+
+    /**
+     * An amount in the document's currency, restated in kwanzas.
+     *
+     * The rate is scaled by a million, so a document written in its own
+     * currency converts through a factor of exactly one and comes back
+     * unchanged rather than merely close.
+     */
+    public function convertedAmount(int $minor, int $exchangeRateMicro): int
+    {
+        if ($exchangeRateMicro < 1) {
+            throw new InvalidArgumentException('An exchange rate must be greater than zero.');
+        }
+
+        return $this->roundHalfUpProduct([$minor, $exchangeRateMicro], 1_000_000);
+    }
+
     /** @param list<int> $factors */
     private function roundHalfUpProduct(array $factors, int $denominator): int
     {

@@ -5,8 +5,11 @@ namespace App\Http\Requests;
 use App\FiscalDocumentType;
 use App\FiscalOperationType;
 use App\Models\FiscalDocument;
+use App\Models\FiscalDocumentSettlement;
 use App\Models\LegalEntity;
 use App\Models\Workspace;
+use App\PaymentMethod;
+use App\WithholdingType;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -32,10 +35,94 @@ class StoreFiscalDocumentRequest extends FormRequest
         $legalEntity = $this->currentLegalEntity();
 
         return [
-            'document_type' => ['required', Rule::in([FiscalDocumentType::Invoice->value])],
+            'document_type' => [
+                'required',
+                Rule::in(array_map(
+                    fn (FiscalDocumentType $type): string => $type->value,
+                    FiscalDocumentType::issuable(),
+                )),
+            ],
+            // An adjustment must name the issued document it corrects, and the
+            // AGT will not accept it without a reason.
+            'references_document_public_id' => [
+                Rule::requiredIf(fn (): bool => $this->isAdjustment()),
+                'nullable',
+                'string',
+                Rule::exists('fiscal_documents', 'public_id')->where(
+                    fn ($query) => $query
+                        ->where('workspace_id', $legalEntity->workspace_id ?? 0)
+                        ->where('legal_entity_id', $legalEntity->id ?? 0)
+                        ->whereNotNull('document_no'),
+                ),
+            ],
+            'payment_method' => [
+                Rule::requiredIf(fn (): bool => $this->isReceipt()),
+                'nullable',
+                Rule::enum(PaymentMethod::class),
+            ],
+            'payment_date' => [
+                Rule::requiredIf(fn (): bool => $this->isReceipt()),
+                'nullable',
+                'date_format:Y-m-d',
+                'before_or_equal:today',
+            ],
+            // A standalone receipt names the invoices it pays off.
+            'settlements' => $this->settlesOtherDocuments()
+                ? ['required', 'array', 'min:1', 'max:100']
+                : ['nullable', 'array', 'max:0'],
+            'settlements.*.document_public_id' => [
+                'required',
+                'string',
+                'distinct',
+                Rule::exists('fiscal_documents', 'public_id')->where(
+                    fn ($query) => $query
+                        ->where('workspace_id', $legalEntity->workspace_id ?? 0)
+                        ->where('legal_entity_id', $legalEntity->id ?? 0)
+                        ->whereNotNull('document_no'),
+                ),
+            ],
+            'settlements.*.amount' => [
+                'required',
+                'string',
+                'max:18',
+                'regex:/\A(?:0|[1-9]\d*)(?:\.\d{1,2})?\z/',
+                'not_in:0,0.0,0.00',
+            ],
+            'adjustment_reason' => [
+                Rule::requiredIf(fn (): bool => $this->isAdjustment()),
+                'nullable',
+                'string',
+                'min:5',
+                'max:200',
+            ],
             'document_date' => ['required', 'date_format:Y-m-d', 'before_or_equal:today'],
             'due_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:document_date'],
-            'currency_code' => ['required', Rule::in(['AOA'])],
+            'currency_code' => ['required', Rule::in((array) config('fiscal.currencies', ['AOA']))],
+            /*
+             * Kwanzas per one unit of the document's currency. Required as soon
+             * as the document leaves the kwanza, because the AGT compares the
+             * declared value against the converted one and a missing rate is
+             * indistinguishable from a rate of one.
+             */
+            'exchange_rate' => [
+                Rule::requiredIf(fn (): bool => $this->isForeignCurrency()),
+                'nullable',
+                'string',
+                'max:20',
+                'regex:/\A(?:0|[1-9]\d*)(?:\.\d{1,6})?\z/',
+                'not_in:0,0.0,0.00,0.000,0.0000,0.00000,0.000000',
+            ],
+            // Withholding is the buyer's affair, so at most one entry per tax.
+            'withholdings' => ['nullable', 'array', 'max:3'],
+            'withholdings.*' => ['required', 'array:type,rate_percentage'],
+            'withholdings.*.type' => ['required', 'distinct', Rule::enum(WithholdingType::class)],
+            'withholdings.*.rate_percentage' => [
+                'required',
+                'string',
+                'max:6',
+                'regex:/\A(?:100(?:\.0{1,2})?|(?:0|[1-9]\d?)(?:\.\d{1,2})?)\z/',
+                'not_in:0,0.0,0.00',
+            ],
             'establishment_public_id' => [
                 'required',
                 'string',
@@ -66,7 +153,11 @@ class StoreFiscalDocumentRequest extends FormRequest
             'customer.country_code' => ['required', 'string', 'regex:/\A[A-Z]{2}\z/'],
             'customer.address_line' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:4000'],
-            'lines' => ['required', 'array', 'min:1', 'max:500'],
+            'lines' => [
+                Rule::requiredIf(fn (): bool => $this->documentType()?->requiresLines() ?? true),
+                'array',
+                'max:500',
+            ],
             'lines.*' => [
                 'required',
                 'array:operation_type,product_code,product_description,quantity,unit_of_measure,unit_price,discount_percentage,tax',
@@ -87,15 +178,53 @@ class StoreFiscalDocumentRequest extends FormRequest
     }
 
     /**
+     * Credit and debit notes carry extra obligations the other types do not.
+     */
+    public function isAdjustment(): bool
+    {
+        return $this->documentType()?->isAdjustment() ?? false;
+    }
+
+    public function isReceipt(): bool
+    {
+        return $this->documentType()?->isReceipt() ?? false;
+    }
+
+    /** Whether this document is written in something other than kwanzas. */
+    public function isForeignCurrency(): bool
+    {
+        return $this->input('currency_code') !== 'AOA'
+            && is_string($this->input('currency_code'));
+    }
+
+    public function settlesOtherDocuments(): bool
+    {
+        return $this->documentType()?->settlesOtherDocuments() ?? false;
+    }
+
+    private function documentType(): ?FiscalDocumentType
+    {
+        return FiscalDocumentType::tryFrom((string) $this->input('document_type'));
+    }
+
+    /**
      * @return array{
      *     document_type: string,
      *     document_date: string,
      *     due_date: string|null,
      *     currency_code: string,
+     *     exchange_rate_micro: int,
+     *     withholdings: list<array{type: string, rate_basis_points: int}>,
      *     establishment_public_id: string,
      *     customer_public_id: string|null,
      *     customer: array{name: string, tax_identification_number: string, country_code: string, address_line: string|null},
      *     notes: string|null,
+     *     references_document_public_id: string|null,
+     *     adjustment_reason: string|null,
+     *     payment_method: string|null,
+     *     payment_amount_minor: int|null,
+     *     payment_date: string|null,
+     *     settlements: list<array{document_public_id: string, amount_minor: int}>,
      *     lines: list<array{
      *         operation_type: string,
      *         product_code: string,
@@ -142,6 +271,8 @@ class StoreFiscalDocumentRequest extends FormRequest
             'document_date' => (string) $validated['document_date'],
             'due_date' => $this->nullableString($validated['due_date'] ?? null),
             'currency_code' => (string) $validated['currency_code'],
+            'exchange_rate_micro' => $this->exchangeRateMicro(),
+            'withholdings' => $this->withholdingProfile(),
             'establishment_public_id' => (string) $validated['establishment_public_id'],
             'customer_public_id' => $this->nullableString($validated['customer_public_id'] ?? null),
             'customer' => [
@@ -151,14 +282,177 @@ class StoreFiscalDocumentRequest extends FormRequest
                 'address_line' => $this->nullableString($validated['customer']['address_line'] ?? null),
             ],
             'notes' => $this->nullableString($validated['notes'] ?? null),
+            'references_document_public_id' => $this->nullableString(
+                $validated['references_document_public_id'] ?? null,
+            ),
+            'adjustment_reason' => $this->nullableString($validated['adjustment_reason'] ?? null),
+            'payment_method' => $this->nullableString($validated['payment_method'] ?? null),
+            'payment_amount_minor' => $this->paymentAmountMinor(),
+            'payment_date' => $this->nullableString($validated['payment_date'] ?? null),
+            'settlements' => $this->settlementProfile(),
             'lines' => $lines,
         ];
+    }
+
+    /**
+     * A receipt may not collect more than an invoice still owes. The balance is
+     * the gross total less whatever earlier receipts already settled — and less
+     * this receipt's own previous revision, which is about to be replaced.
+     */
+    private function validateSettlementAmounts(Validator $validator): void
+    {
+        if (! $this->settlesOtherDocuments()) {
+            return;
+        }
+
+        $current = $this->route('fiscalDocument');
+        $currentId = $current instanceof FiscalDocument ? $current->id : null;
+
+        foreach ($this->settlementProfile() as $index => $settlement) {
+            $invoice = FiscalDocument::query()
+                ->where('public_id', $settlement['document_public_id'])
+                ->first();
+
+            if (! $invoice instanceof FiscalDocument) {
+                continue;
+            }
+
+            $alreadySettled = (int) FiscalDocumentSettlement::query()
+                ->where('settled_document_id', $invoice->id)
+                ->when($currentId !== null, fn ($query) => $query->where('fiscal_document_id', '!=', $currentId))
+                ->sum('amount_minor');
+            $outstanding = $invoice->gross_total_minor - $alreadySettled;
+
+            if ($settlement['amount_minor'] > $outstanding) {
+                $validator->errors()->add(
+                    "settlements.{$index}.amount",
+                    sprintf(
+                        'A factura %s tem apenas %s por liquidar.',
+                        $invoice->document_no,
+                        number_format($outstanding / 100, 2, ',', ' '),
+                    ),
+                );
+            }
+        }
+    }
+
+    /**
+     * A receipt is paid for exactly what it settles; FR settles its own gross
+     * total, which the action computes from the lines.
+     */
+    private function paymentAmountMinor(): ?int
+    {
+        if (! $this->isReceipt()) {
+            return null;
+        }
+
+        $total = 0;
+
+        foreach ($this->settlementProfile() as $settlement) {
+            $total += $settlement['amount_minor'];
+        }
+
+        return $total > 0 ? $total : null;
+    }
+
+    /**
+     * The rate as an integer scaled by a million.
+     *
+     * A kwanza document converts through exactly one. Storing that rather than
+     * leaving the column null means every document answers the question the
+     * same way, and the audit file never has to special-case the common one.
+     */
+    private function exchangeRateMicro(): int
+    {
+        $rate = $this->validated('exchange_rate');
+
+        /*
+         * A kwanza document is one to one whatever was submitted. The form
+         * hides the field once the currency goes back to AOA, so a rate
+         * arriving with one is a leftover value rather than a statement — and
+         * storing it would silently multiply every total in the audit file.
+         */
+        if (! $this->isForeignCurrency() || ! is_string($rate) || $rate === '') {
+            return 1_000_000;
+        }
+
+        $parts = explode('.', $rate);
+        $fraction = str_pad(substr($parts[1] ?? '', 0, 6), 6, '0');
+
+        return (int) $parts[0] * 1_000_000 + (int) $fraction;
+    }
+
+    /**
+     * @return list<array{type: string, rate_basis_points: int}>
+     */
+    private function withholdingProfile(): array
+    {
+        $withholdings = $this->validated('withholdings');
+
+        if (! is_array($withholdings)) {
+            return [];
+        }
+
+        $resolved = [];
+
+        foreach ($withholdings as $withholding) {
+            if (! is_array($withholding)) {
+                continue;
+            }
+
+            $resolved[] = [
+                'type' => (string) ($withholding['type'] ?? ''),
+                'rate_basis_points' => $this->toMinorUnits(
+                    (string) ($withholding['rate_percentage'] ?? '0'),
+                ),
+            ];
+        }
+
+        return $resolved;
+    }
+
+    /**
+     * @return list<array{document_public_id: string, amount_minor: int}>
+     */
+    private function settlementProfile(): array
+    {
+        $settlements = $this->validated('settlements');
+
+        if (! is_array($settlements)) {
+            return [];
+        }
+
+        $resolved = [];
+
+        foreach ($settlements as $settlement) {
+            if (! is_array($settlement)) {
+                continue;
+            }
+
+            $resolved[] = [
+                'document_public_id' => (string) ($settlement['document_public_id'] ?? ''),
+                'amount_minor' => $this->toMinorUnits((string) ($settlement['amount'] ?? '0')),
+            ];
+        }
+
+        return $resolved;
+    }
+
+    private function toMinorUnits(string $amount): int
+    {
+        $parts = explode('.', $amount);
+        $cents = str_pad($parts[1] ?? '', 2, '0');
+
+        return (int) $parts[0] * 100 + (int) $cents;
     }
 
     /** @return array<int, callable|ValidationRule> */
     public function after(): array
     {
         return [
+            function (Validator $validator): void {
+                $this->validateSettlementAmounts($validator);
+            },
             function (Validator $validator): void {
                 $lines = $this->input('lines', []);
 

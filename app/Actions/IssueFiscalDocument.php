@@ -37,6 +37,8 @@ final readonly class IssueFiscalDocument
     public function __construct(
         private FiscalCalculator $calculator,
         private FiscalDocumentNumber $documentNumber,
+        private ApplyFiscalDocumentStockMovements $applyStockMovements,
+        private SendFiscalDocumentToCustomer $sendToCustomer,
         private FiscalDocumentPayloadBuilder $documentPayloadBuilder,
         private AgtRequestPayloadBuilder $requestPayloadBuilder,
         private JwsSigner $jwsSigner,
@@ -152,6 +154,11 @@ final readonly class IssueFiscalDocument
                 'next_attempt_at' => $issuedAt,
             ]);
 
+            // Inside the same transaction as the issuance: a document that
+            // exists without its stock having moved is how an inventory quietly
+            // stops matching the shelf.
+            $this->applyStockMovements->execute($document, $issuer);
+
             $series->forceFill([
                 'status' => $sequence >= $series->last_authorized_number
                     ? FiscalSeriesStatus::Closed
@@ -212,7 +219,35 @@ final readonly class IssueFiscalDocument
 
         SubmitAgtDocument::dispatch($submission->id)->afterCommit();
 
+        $this->sendToCustomerIfConfigured($draft->fresh(), $issuer);
+
         return $submission;
+    }
+
+    /**
+     * Emails the document if this customer is set up for it.
+     *
+     * Outside the transaction and swallowing its own failure: a mail server
+     * being down is not a reason to unwind an issuance the AGT has already been
+     * told about. The failure is logged and the document can be resent by hand.
+     */
+    private function sendToCustomerIfConfigured(?FiscalDocument $document, User $issuer): void
+    {
+        if (! $document instanceof FiscalDocument) {
+            return;
+        }
+
+        $document->loadMissing('customer');
+
+        if (! $this->sendToCustomer->shouldSendAutomatically($document)) {
+            return;
+        }
+
+        try {
+            $this->sendToCustomer->execute($document, $issuer);
+        } catch (Throwable $exception) {
+            report($exception);
+        }
     }
 
     private function lockedDraft(FiscalDocument $draft): FiscalDocument

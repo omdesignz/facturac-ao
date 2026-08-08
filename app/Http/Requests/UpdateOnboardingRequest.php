@@ -4,10 +4,12 @@ namespace App\Http\Requests;
 
 use App\Models\LegalEntity;
 use App\Models\Workspace;
+use App\Province;
 use App\TaxRegime;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Enum;
 
 class UpdateOnboardingRequest extends FormRequest
 {
@@ -97,7 +99,12 @@ class UpdateOnboardingRequest extends FormRequest
             'establishment_name' => ['required', 'string', 'min:2', 'max:255'],
             'address_line' => ['required', 'string', 'min:5', 'max:255'],
             'municipality' => ['required', 'string', 'min:2', 'max:120'],
-            'province_code' => ['required', 'string', 'regex:/^[A-Z0-9]{2,8}$/'],
+            /*
+             * The same closed list the establishments screen uses. A province
+             * saved before the list existed still validates, because the enum
+             * keeps the province the 2024 reform abolished.
+             */
+            'province_code' => ['required', new Enum(Province::class)],
         ];
     }
 

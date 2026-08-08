@@ -7,7 +7,7 @@
 
 # facturac.ao
 
-**Facturação electrónica para Angola — fiscal, sem ruído.**
+**Facturação electrónica para Angola. Feito para humanos. Aceite pela AGT.**
 
 Uma plataforma SaaS multiempresa para emitir documentos fiscais, comunicar com a AGT, cobrar subscrições por Referência EMIS e migrar dados com segurança.
 

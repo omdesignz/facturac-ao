@@ -4,6 +4,7 @@ export type User = {
     email: string;
     email_verified_at: string | null;
     two_factor_enabled: boolean;
+    is_support_staff: boolean;
 };
 
 export type WorkspaceNavigation = {

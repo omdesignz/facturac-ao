@@ -1,7 +1,7 @@
 {
     "name": "facturac.ao",
     "short_name": "facturac.ao",
-    "description": "Facturação electrónica para Angola, fiscal sem ruído.",
+    "description": "Facturação electrónica para Angola. Feito para humanos. Aceite pela AGT.",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#faf9f6",

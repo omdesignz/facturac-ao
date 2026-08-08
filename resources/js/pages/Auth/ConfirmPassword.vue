@@ -8,9 +8,9 @@ import { store as passwordConfirmStore } from '@/routes/password/confirm';
 
 <template>
     <AuthLayout
-        eyebrow="Confirmação reforçada"
+        eyebrow="Mais uma confirmação"
         title="Confirme que é mesmo você"
-        description="Esta acção pode alterar a segurança da conta. Volte a indicar a palavra-passe para continuar."
+        description="O que se segue mexe na segurança da conta. Indique a palavra-passe outra vez para continuar."
     >
         <Head title="Confirmar palavra-passe" />
 

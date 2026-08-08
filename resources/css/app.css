@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import '@vuepic/vue-datepicker/dist/main.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
@@ -6,13 +7,19 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
+    /*
+     * One voice. Headings are the same sans as the UI, set heavier and tighter
+     * via the `display` utility — there is deliberately no second family.
+     */
     --font-sans:
-        Instrument Sans, ui-sans-serif, system-ui, sans-serif,
+        'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif,
         'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
         'Noto Color Emoji';
-    --font-display:
-        'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Palatino,
-        ui-serif, Georgia, serif;
+    --font-mono:
+        'IBM Plex Mono', ui-monospace, 'SF Mono', SFMono-Regular, Menlo,
+        Consolas, 'Liberation Mono', monospace;
+
+    /* Wordmark grey — brand-600 is the exact logo lettering colour. */
     --color-brand-50: #f7f7f5;
     --color-brand-100: #ececea;
     --color-brand-200: #d9d9d5;
@@ -24,28 +31,266 @@
     --color-brand-800: #333332;
     --color-brand-900: #232322;
     --color-brand-950: #171716;
+
+    /* Confirmation gold — accent-400 is the exact logo mark colour. */
+    --color-accent-50: #fffaeb;
+    --color-accent-100: #fef0c7;
+    --color-accent-200: #fddf8a;
+    --color-accent-300: #fbc94d;
+    --color-accent-400: #f9b233;
+    --color-accent-500: #f39c0b;
+    --color-accent-600: #d87706;
+    --color-accent-700: #b35309;
+    --color-accent-800: #91410e;
+    --color-accent-900: #78360f;
+    --color-accent-950: #451c03;
 }
 
 :root {
     color-scheme: light;
-    --fiscal-grid: color-mix(in srgb, #f9b233 10%, transparent);
+    --fiscal-grid: color-mix(in srgb, var(--color-accent-400) 10%, transparent);
+    --surface-page: #faf9f6;
 }
 
 .dark {
     color-scheme: dark;
-    --fiscal-grid: color-mix(in srgb, #f9b233 9%, transparent);
+    --fiscal-grid: color-mix(in srgb, var(--color-accent-400) 9%, transparent);
+    --surface-page: #09090b;
 }
 
 html {
-    background: #faf9f6;
-}
-
-html.dark {
-    background: #09090b;
+    background: var(--surface-page);
+    -webkit-text-size-adjust: 100%;
 }
 
 body {
     min-width: 320px;
+    font-optical-sizing: auto;
+    /*
+     * IBM Plex Sans ships 400–700 and Plex Mono 400–600. Disabling synthesis
+     * makes any request for a weight we do not ship fail loudly rather than
+     * being faked by the browser.
+     */
+    font-synthesis-weight: none;
+    text-rendering: optimizeLegibility;
+}
+
+/* Headings read better balanced; body copy better with no orphan last word. */
+h1,
+h2,
+h3 {
+    text-wrap: balance;
+}
+
+p {
+    text-wrap: pretty;
+}
+
+::selection {
+    background-color: color-mix(
+        in srgb,
+        var(--color-accent-400) 32%,
+        transparent
+    );
+    color: var(--color-brand-950);
+}
+
+.dark ::selection {
+    background-color: color-mix(
+        in srgb,
+        var(--color-accent-400) 28%,
+        transparent
+    );
+    color: #fff;
+}
+
+/* Native search affordances clash with the custom header field. */
+input[type='search']::-webkit-search-cancel-button,
+input[type='search']::-webkit-search-decoration {
+    appearance: none;
+}
+
+@supports (scrollbar-width: thin) {
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: var(--color-brand-300) transparent;
+    }
+
+    .dark * {
+        scrollbar-color: color-mix(in srgb, #fff 18%, transparent) transparent;
+    }
+}
+
+/**
+ * Display heading treatment. Since the serif was dropped there is no second
+ * family — a heading is the UI sans set heavier and tighter. Use in place of
+ * pairing `font-semibold` with `tracking-tight` on every headline.
+ */
+@utility display {
+    font-weight: 600;
+    letter-spacing: -0.028em;
+}
+
+/**
+ * Uppercase section label. Replaces the ad-hoc
+ * `text-xs font-semibold tracking-[0.1?em] uppercase` spellings that had
+ * drifted between 0.12em and 0.18em across pages.
+ */
+@utility eyebrow {
+    font-size: 0.6875rem;
+    line-height: 1.2;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+/**
+ * Lining, fixed-width figures. Required anywhere numbers stack in a column
+ * (money, totals, NIF, counters) so digits stay vertically aligned.
+ */
+@utility numeric {
+    font-variant-numeric: tabular-nums lining-nums;
+    font-feature-settings:
+        'tnum' 1,
+        'lnum' 1;
+}
+
+/** The standard raised panel: white in light, zinc-900 in dark, hairline ring. */
+@utility surface {
+    @apply bg-white shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-white/10;
+}
+
+/** Keyboard focus treatment shared by every interactive element. */
+@utility focus-ring {
+    @apply focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 dark:focus-visible:outline-brand-300;
+}
+
+/** Focus treatment for controls sitting on the dark brand surfaces. */
+@utility focus-ring-inverted {
+    @apply focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-400;
+}
+
+/**
+ * The wordmark is pinned to its own family and metrics rather than inheriting
+ * --font-sans, so changing the UI typeface can never silently change the logo.
+ * The durable fix is outlined vector artwork; this holds the line until then.
+ */
+.brand-wordmark {
+    font-family: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.035em;
+}
+
+/**
+ * @vuepic/vue-datepicker, retuned to the app's tokens. The popup teleports to
+ * <body>, so these live at the top level rather than in the component — and the
+ * dark rules key off `.dark` on <html>, which is an ancestor either way.
+ */
+.dp--theme-light,
+.dp--theme-dark {
+    --dp-font-family: var(--font-sans);
+    --dp-font-size: 0.875rem;
+    --dp-border-radius: 0.75rem;
+    --dp-cell-border-radius: 0.5rem;
+    --dp-cell-size: 34px;
+    --dp-background-color: #fff;
+    --dp-text-color: var(--color-zinc-900);
+    --dp-border-color: var(--color-zinc-300);
+    --dp-border-color-hover: var(--color-zinc-400);
+    --dp-border-color-focus: var(--color-brand-600);
+    --dp-menu-border-color: color-mix(
+        in srgb,
+        var(--color-zinc-900) 10%,
+        transparent
+    );
+    --dp-hover-color: var(--color-zinc-100);
+    --dp-hover-text-color: var(--color-zinc-900);
+    --dp-icon-color: var(--color-zinc-400);
+    --dp-hover-icon-color: var(--color-zinc-600);
+    --dp-primary-color: var(--color-brand-700);
+    --dp-primary-text-color: #fff;
+    --dp-primary-disabled-color: var(--color-brand-300);
+    --dp-secondary-color: var(--color-zinc-400);
+    --dp-disabled-color: var(--color-zinc-100);
+    --dp-disabled-color-text: var(--color-zinc-400);
+    --dp-highlight-color: color-mix(
+        in srgb,
+        var(--color-accent-400) 22%,
+        transparent
+    );
+    --dp-marker-color: var(--color-accent-500);
+    --dp-range-between-dates-background-color: var(--color-brand-100);
+    --dp-range-between-dates-text-color: var(--color-brand-900);
+    --dp-danger-color: var(--color-rose-600);
+    --dp-success-color: var(--color-emerald-600);
+}
+
+.dark .dp--theme-light,
+.dark .dp--theme-dark {
+    --dp-background-color: var(--color-zinc-900);
+    --dp-text-color: #fff;
+    --dp-border-color: color-mix(in srgb, #fff 10%, transparent);
+    --dp-border-color-hover: color-mix(in srgb, #fff 20%, transparent);
+    --dp-border-color-focus: var(--color-brand-400);
+    --dp-menu-border-color: color-mix(in srgb, #fff 10%, transparent);
+    --dp-hover-color: color-mix(in srgb, #fff 8%, transparent);
+    --dp-hover-text-color: #fff;
+    --dp-icon-color: var(--color-zinc-500);
+    --dp-hover-icon-color: var(--color-zinc-300);
+    --dp-primary-color: var(--color-accent-400);
+    --dp-primary-text-color: var(--color-brand-950);
+    --dp-primary-disabled-color: var(--color-accent-800);
+    --dp-secondary-color: var(--color-zinc-500);
+    --dp-disabled-color: color-mix(in srgb, #fff 4%, transparent);
+    --dp-disabled-color-text: var(--color-zinc-600);
+    --dp-highlight-color: color-mix(
+        in srgb,
+        var(--color-accent-400) 18%,
+        transparent
+    );
+    --dp-range-between-dates-background-color: color-mix(
+        in srgb,
+        var(--color-accent-400) 14%,
+        transparent
+    );
+    --dp-range-between-dates-text-color: #fff;
+}
+
+/* Match the trigger to the app's other inputs rather than the library default. */
+.vap-datepicker .dp--input {
+    background-color: #fff;
+    padding-block: 0.625rem;
+    padding-inline: 2.25rem 0.75rem;
+    outline: 1px solid var(--color-zinc-300);
+    outline-offset: -1px;
+    border: 0;
+    line-height: 1.25rem;
+}
+
+.dark .vap-datepicker .dp--input {
+    background-color: color-mix(in srgb, #fff 5%, transparent);
+    outline-color: color-mix(in srgb, #fff 10%, transparent);
+}
+
+.vap-datepicker .dp--input:focus,
+.vap-datepicker .dp--input-focus {
+    outline: 2px solid var(--color-brand-600);
+    outline-offset: -2px;
+}
+
+.dark .vap-datepicker .dp--input:focus,
+.dark .vap-datepicker .dp--input-focus {
+    outline-color: var(--color-brand-400);
+}
+
+.vap-datepicker .dp--input-icon {
+    inset-inline-start: 0.75rem;
+}
+
+.dp--menu {
+    box-shadow:
+        0 1px 2px rgb(0 0 0 / 5%),
+        0 20px 40px -24px rgb(0 0 0 / 45%);
 }
 
 .fiscal-grid {
@@ -53,6 +298,41 @@ body {
         linear-gradient(to right, var(--fiscal-grid) 1px, transparent 1px),
         linear-gradient(to bottom, var(--fiscal-grid) 1px, transparent 1px);
     background-size: 28px 28px;
+}
+
+/**
+ * Applied by the `v-reveal` directive as a section scrolls into view.
+ *
+ * The class is only ever added when motion is welcome, so there is no state in
+ * which content is hidden waiting for an observer that will not fire — an
+ * element that never gets the class is styled exactly as if this did not exist.
+ */
+.reveal {
+    opacity: 0;
+    transform: translateY(var(--reveal-travel, 18px));
+    transition:
+        opacity 620ms cubic-bezier(0.22, 1, 0.36, 1),
+        transform 620ms cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: var(--reveal-delay, 0ms);
+    will-change: opacity, transform;
+}
+
+.reveal.is-revealed {
+    opacity: 1;
+    transform: none;
+    will-change: auto;
+}
+
+/* A rule that draws itself left to right as its section arrives. */
+.reveal-rule {
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: var(--reveal-delay, 0ms);
+}
+
+.reveal-rule.is-revealed {
+    transform: scaleX(1);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -63,5 +343,199 @@ body {
         transition-duration: 0.01ms !important;
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
+    }
+
+    /* Belt and braces: the directive already skips these entirely. */
+    .reveal,
+    .reveal-rule {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+/**
+ * Typography for the long-form legal pages.
+ *
+ * Written by hand rather than pulled from a prose plugin so the rhythm matches
+ * the rest of the application, and so the markup a Markdown document can emit
+ * is styled exhaustively — nothing renders unstyled just because an author
+ * reached for a construct we had not anticipated.
+ */
+.legal-prose {
+    @apply text-base/7 text-zinc-700 dark:text-zinc-300;
+}
+
+.legal-prose > * + * {
+    @apply mt-4;
+}
+
+.legal-prose h2 {
+    @apply mt-10 text-xl font-semibold tracking-tight text-zinc-950 dark:text-white;
+}
+
+.legal-prose h3 {
+    @apply mt-8 text-base font-semibold text-zinc-950 dark:text-white;
+}
+
+.legal-prose h2 + *,
+.legal-prose h3 + * {
+    @apply mt-3;
+}
+
+.legal-prose strong {
+    @apply font-semibold text-zinc-950 dark:text-white;
+}
+
+.legal-prose a {
+    @apply font-medium text-brand-700 underline underline-offset-4 dark:text-accent-300;
+}
+
+.legal-prose ul,
+.legal-prose ol {
+    @apply space-y-2 ps-6;
+}
+
+.legal-prose ul {
+    @apply list-disc;
+}
+
+.legal-prose ol {
+    @apply list-decimal;
+}
+
+.legal-prose li::marker {
+    @apply text-zinc-400 dark:text-zinc-600;
+}
+
+.legal-prose blockquote {
+    @apply border-s-2 border-zinc-200 ps-4 text-zinc-600 italic dark:border-white/15 dark:text-zinc-400;
+}
+
+.legal-prose code {
+    @apply rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-sm text-zinc-800 dark:bg-white/10 dark:text-zinc-200;
+}
+
+.legal-prose hr {
+    @apply my-8 border-zinc-200 dark:border-white/10;
+}
+
+/* Wide tables scroll inside their own box rather than the page. */
+.legal-prose table {
+    @apply my-6 block w-full border-collapse overflow-x-auto text-sm;
+}
+
+.legal-prose thead {
+    @apply border-b border-zinc-200 dark:border-white/10;
+}
+
+.legal-prose th {
+    @apply px-3 py-2 text-start font-semibold text-zinc-950 dark:text-white;
+}
+
+.legal-prose td {
+    @apply border-b border-zinc-100 px-3 py-2 align-top dark:border-white/5;
+}
+
+/**
+ * Chart tokens.
+ *
+ * The categorical slots are the validated default order — run through
+ * validate_palette.js against this application's own surfaces (#ffffff light,
+ * #18181b dark), where all five clear the lightness band, chroma floor, CVD
+ * separation and the normal-vision floor. Three light-mode slots sit under 3:1
+ * on white, which is why every chart here also ships visible values and a table
+ * view: that is the relief the check requires, not an oversight.
+ *
+ * Both modes are chosen, not flipped: the dark column is the same hues stepped
+ * for the dark surface.
+ */
+.viz {
+    --viz-surface: #ffffff;
+    --viz-grid: #e1e0d9;
+    --viz-axis: #c3c2b7;
+    --viz-ink-muted: #898781;
+
+    --viz-series-1: #2a78d6;
+    --viz-series-2: #eb6834;
+    --viz-series-3: #1baf7a;
+    --viz-series-4: #eda100;
+    --viz-series-5: #e87ba4;
+
+    /* The previous period is the same measure earlier, not a second identity,
+       so it takes a neutral rather than spending a categorical hue. */
+    --viz-comparison: #bcbcb6;
+
+    --viz-good: #0ca30c;
+    --viz-warning: #fab219;
+    --viz-critical: #d03b3b;
+}
+
+.dark .viz {
+    --viz-surface: #18181b;
+    --viz-grid: #2c2c2a;
+    --viz-axis: #383835;
+    --viz-ink-muted: #898781;
+
+    --viz-series-1: #3987e5;
+    --viz-series-2: #d95926;
+    --viz-series-3: #199e70;
+    --viz-series-4: #c98500;
+    --viz-series-5: #d55181;
+
+    --viz-comparison: #575756;
+
+    --viz-good: #0ca30c;
+    --viz-warning: #fab219;
+    --viz-critical: #d03b3b;
+}
+
+/**
+ * Printing a fiscal document.
+ *
+ * The document page is the only screen meant to leave the browser as paper or
+ * a PDF, so the rules are scoped to it rather than applied app-wide. Colours
+ * are forced to print exactly: a tax authority reading a faxed copy should see
+ * the same rules and totals the screen showed.
+ */
+@media print {
+    @page {
+        size: A4;
+        margin: 14mm 12mm;
+    }
+
+    html,
+    body {
+        background: #fff !important;
+        color: #000 !important;
+    }
+
+    /* Chrome drops backgrounds by default, which erases the table headers
+       and the exemption notes that carry meaning. */
+    .doc-sheet,
+    .doc-sheet * {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .doc-no-print {
+        display: none !important;
+    }
+
+    .doc-sheet {
+        box-shadow: none !important;
+        border: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        max-width: none !important;
+    }
+
+    /* A line item split across a page break reads as two different lines. */
+    .doc-sheet tr,
+    .doc-sheet .doc-keep {
+        break-inside: avoid;
+    }
+
+    .doc-sheet thead {
+        display: table-header-group;
     }
 }

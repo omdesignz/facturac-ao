@@ -193,11 +193,11 @@ function formatDate(value: string | null): string {
                                 </span>
                             </div>
                             <h1
-                                class="mt-5 font-display text-4xl leading-none font-semibold tracking-tight sm:text-5xl"
+                                class="mt-5 text-4xl leading-[1.05] display sm:text-5xl"
                             >
-                                Ligação fiscal sob controlo.<br />
-                                <span class="text-amber-300"
-                                    >Homologar antes de emitir.</span
+                                A sua ligação à AGT.<br />
+                                <span class="text-accent-400"
+                                    >Testar antes de valer.</span
                                 >
                             </h1>
                             <p
@@ -217,7 +217,7 @@ function formatDate(value: string | null): string {
                                     Requisitos
                                 </p>
                                 <p
-                                    class="mt-1 font-display text-2xl font-semibold"
+                                    class="mt-1 numeric text-2xl font-semibold tracking-tight"
                                 >
                                     {{ completedRequirements }}/{{
                                         readiness.items.length
@@ -254,9 +254,7 @@ function formatDate(value: string | null): string {
                 </div>
 
                 <section class="grid gap-4 md:grid-cols-3">
-                    <article
-                        class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-white/10"
-                    >
+                    <article class="rounded-2xl surface p-5">
                         <div class="flex items-center justify-between gap-3">
                             <span
                                 class="grid size-10 place-items-center rounded-xl bg-sky-50 text-sky-700 dark:bg-sky-400/10 dark:text-sky-300"
@@ -277,9 +275,7 @@ function formatDate(value: string | null): string {
                             explícita.
                         </p>
                     </article>
-                    <article
-                        class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-white/10"
-                    >
+                    <article class="rounded-2xl surface p-5">
                         <div class="flex items-center justify-between gap-3">
                             <span
                                 class="grid size-10 place-items-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300"
@@ -305,9 +301,7 @@ function formatDate(value: string | null): string {
                             }}
                         </p>
                     </article>
-                    <article
-                        class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-white/10"
-                    >
+                    <article class="rounded-2xl surface p-5">
                         <div class="flex items-center justify-between gap-3">
                             <span
                                 class="grid size-10 place-items-center rounded-xl bg-amber-50 text-amber-800 dark:bg-amber-400/10 dark:text-amber-300"
@@ -345,9 +339,7 @@ function formatDate(value: string | null): string {
                         class="space-y-8"
                         #default="{ errors, processing, recentlySuccessful }"
                     >
-                        <section
-                            class="rounded-2xl bg-white shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-white/10"
-                        >
+                        <section class="rounded-2xl surface">
                             <div
                                 class="flex gap-4 border-b border-zinc-100 p-5 sm:p-7 dark:border-white/10"
                             >
@@ -431,9 +423,7 @@ function formatDate(value: string | null): string {
                             </fieldset>
                         </section>
 
-                        <section
-                            class="rounded-2xl bg-white shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-white/10"
-                        >
+                        <section class="rounded-2xl surface">
                             <div
                                 class="flex gap-4 border-b border-zinc-100 p-5 sm:p-7 dark:border-white/10"
                             >
@@ -545,9 +535,7 @@ function formatDate(value: string | null): string {
                             </fieldset>
                         </section>
 
-                        <section
-                            class="rounded-2xl bg-white shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-white/10"
-                        >
+                        <section class="rounded-2xl surface">
                             <div
                                 class="flex gap-4 border-b border-zinc-100 p-5 sm:p-7 dark:border-white/10"
                             >
@@ -658,7 +646,7 @@ function formatDate(value: string | null): string {
                             <button
                                 type="submit"
                                 :disabled="!permissions.manage || processing"
-                                class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-brand-500 dark:text-brand-950 dark:hover:bg-brand-400"
+                                class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-700 px-5 py-3 text-sm font-semibold text-white shadow-sm focus-ring transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-brand-500 dark:text-brand-950 dark:hover:bg-brand-400"
                             >
                                 <LoaderCircle
                                     v-if="processing"
@@ -676,15 +664,13 @@ function formatDate(value: string | null): string {
                     </Form>
 
                     <aside class="space-y-6 xl:sticky xl:top-24 xl:self-start">
-                        <section
-                            class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-white/10"
-                        >
+                        <section class="rounded-2xl surface p-5">
                             <div class="flex items-start justify-between gap-4">
                                 <div>
                                     <p
-                                        class="text-xs font-semibold tracking-[0.14em] text-brand-700 uppercase dark:text-brand-300"
+                                        class="eyebrow text-brand-700 dark:text-brand-300"
                                     >
-                                        Prontidão
+                                        Antes de ligar
                                     </p>
                                     <h2
                                         class="mt-1 font-semibold text-zinc-950 dark:text-white"
@@ -693,7 +679,7 @@ function formatDate(value: string | null): string {
                                     </h2>
                                 </div>
                                 <span
-                                    class="font-display text-2xl font-semibold text-brand-700 dark:text-brand-300"
+                                    class="numeric text-2xl font-semibold tracking-tight text-brand-700 dark:text-brand-300"
                                 >
                                     {{ completedRequirements }}/{{
                                         readiness.items.length
@@ -747,7 +733,7 @@ function formatDate(value: string | null): string {
                                     :disabled="
                                         !readiness.complete || processing
                                     "
-                                    class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-amber-300 px-4 py-3 text-sm font-semibold text-brand-950 shadow-sm transition hover:bg-amber-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
+                                    class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent-400 px-4 py-3 text-sm font-semibold text-brand-950 shadow-sm focus-ring-inverted transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                     <LoaderCircle
                                         v-if="processing"
@@ -765,7 +751,7 @@ function formatDate(value: string | null): string {
                             <Link
                                 v-else-if="permissions.test"
                                 :href="security.url()"
-                                class="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-amber-300 px-4 py-3 text-sm font-semibold text-brand-950 transition hover:bg-amber-200"
+                                class="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent-400 px-4 py-3 text-sm font-semibold text-brand-950 transition hover:bg-accent-300"
                             >
                                 <LockKeyhole
                                     class="size-4"
@@ -819,7 +805,8 @@ function formatDate(value: string | null): string {
                                         class="mt-0.5 size-4 shrink-0"
                                         aria-hidden="true"
                                     />
-                                    Produção indisponível nesta fase.
+                                    A produção abre depois de a AGT validar a
+                                    homologação.
                                 </li>
                             </ul>
                             <a
@@ -838,9 +825,7 @@ function formatDate(value: string | null): string {
                     </aside>
                 </div>
 
-                <section
-                    class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-white/10"
-                >
+                <section class="overflow-hidden rounded-2xl surface">
                     <div
                         class="flex flex-col gap-4 border-b border-zinc-100 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7 dark:border-white/10"
                     >
@@ -875,7 +860,7 @@ function formatDate(value: string | null): string {
                             <button
                                 type="submit"
                                 :disabled="processing"
-                                class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-700 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-brand-500 dark:hover:bg-brand-400"
+                                class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-700 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm focus-ring transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-brand-500 dark:hover:bg-brand-400"
                             >
                                 <LoaderCircle
                                     v-if="processing"
@@ -893,7 +878,7 @@ function formatDate(value: string | null): string {
                         <Link
                             v-else-if="permissions.sync_series"
                             :href="security.url()"
-                            class="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-300 px-3.5 py-2.5 text-sm font-semibold text-brand-950 transition hover:bg-amber-200"
+                            class="inline-flex items-center justify-center gap-2 rounded-xl bg-accent-400 px-3.5 py-2.5 text-sm font-semibold text-brand-950 transition hover:bg-accent-300"
                         >
                             <LockKeyhole class="size-4" aria-hidden="true" />
                             Activar MFA
@@ -1053,9 +1038,7 @@ function formatDate(value: string | null): string {
                     </div>
                 </section>
 
-                <section
-                    class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-white/10"
-                >
+                <section class="overflow-hidden rounded-2xl surface">
                     <div
                         class="flex flex-col gap-3 border-b border-zinc-100 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7 dark:border-white/10"
                     >

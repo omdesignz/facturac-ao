@@ -16,37 +16,44 @@ withDefaults(
 <template>
     <div
         class="flex items-center gap-2.5"
-        aria-label="facturac.ao — Fiscal, sem ruído"
+        aria-label="facturac.ao — Feito para humanos. Aceite pela AGT."
     >
         <BrandSymbol
-            :mark-only="compact"
             :class="[
-                compact ? 'size-9' : 'h-8 w-auto sm:h-9',
+                compact ? 'size-9' : 'size-10 sm:size-11',
+                'shrink-0',
                 inverted
                     ? 'text-stone-100'
-                    : 'text-[#575756] dark:text-stone-100',
+                    : 'text-brand-600 dark:text-stone-100',
             ]"
         />
         <div v-if="!compact" class="min-w-0">
             <p
                 :class="[
-                    'truncate text-base font-bold tracking-[-0.035em]',
+                    'brand-wordmark truncate text-base',
                     inverted
                         ? 'text-stone-50'
-                        : 'text-[#575756] dark:text-stone-50',
+                        : 'text-brand-600 dark:text-stone-50',
                 ]"
             >
-                facturac<span class="text-[#f9b233]">.ao</span>
+                facturac<span class="text-accent-400">.ao</span>
             </p>
+            <!--
+                Stacked rather than run on one line: at the lockup's tracking
+                the full slogan is wider than the 288px sidebar and would
+                truncate. aria-label above carries it as one sentence.
+            -->
             <p
                 :class="[
-                    'truncate text-[0.59rem] font-semibold tracking-[0.2em] uppercase',
+                    'eyebrow',
                     inverted
                         ? 'text-stone-300/75'
                         : 'text-zinc-500 dark:text-zinc-400',
                 ]"
+                aria-hidden="true"
             >
-                Fiscal, sem ruído
+                <span class="block truncate">Feito para humanos</span>
+                <span class="block truncate">Aceite pela AGT</span>
             </p>
         </div>
     </div>

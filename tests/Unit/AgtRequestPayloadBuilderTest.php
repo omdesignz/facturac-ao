@@ -2,6 +2,7 @@
 
 use App\Fiscal\Agt\Contracts\JwsSigner;
 use App\Fiscal\Agt\V1_2\AgtRequestPayloadBuilder;
+use App\Fiscal\Calculation\FiscalCalculator;
 use App\Fiscal\Documents\V1_2\FiscalDocumentPayloadBuilder;
 use App\Models\AgtConnection;
 use App\Models\LegalEntity;
@@ -45,7 +46,7 @@ function phaseFourPayloadConnection(): AgtConnection
 test('the list series request signs only the official taxpayer field set', function () {
     $builder = new AgtRequestPayloadBuilder(
         phaseFourPayloadSigner(),
-        new FiscalDocumentPayloadBuilder,
+        new FiscalDocumentPayloadBuilder(new FiscalCalculator),
     );
     $legalEntity = new LegalEntity([
         'tax_identification_number' => '5000000001',
@@ -78,7 +79,7 @@ test('the list series request signs only the official taxpayer field set', funct
 test('the status request signs the taxpayer and AGT request identifiers exactly', function () {
     $builder = new AgtRequestPayloadBuilder(
         phaseFourPayloadSigner(),
-        new FiscalDocumentPayloadBuilder,
+        new FiscalDocumentPayloadBuilder(new FiscalCalculator),
     );
     $legalEntity = new LegalEntity([
         'tax_identification_number' => '5000000001',

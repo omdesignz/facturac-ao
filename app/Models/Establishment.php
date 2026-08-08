@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
@@ -79,6 +80,59 @@ class Establishment extends Model
     public function fiscalDocuments(): HasMany
     {
         return $this->hasMany(FiscalDocument::class);
+    }
+
+    /** @return HasMany<Quote, $this> */
+    public function quotes(): HasMany
+    {
+        return $this->hasMany(Quote::class);
+    }
+
+    /** @return HasMany<RecurringInvoice, $this> */
+    public function recurringInvoices(): HasMany
+    {
+        return $this->hasMany(RecurringInvoice::class);
+    }
+
+    /** @return HasMany<StockLevel, $this> */
+    public function stockLevels(): HasMany
+    {
+        return $this->hasMany(StockLevel::class);
+    }
+
+    /**
+     * Makes this the head office, standing the previous one down.
+     *
+     * One transaction because it is one decision: a moment with two head
+     * offices, or none, is a moment where the AGT payload has no answer for
+     * which address the company trades from.
+     */
+    public function makeHeadOffice(): void
+    {
+        DB::transaction(function (): void {
+            static::query()
+                ->where('legal_entity_id', $this->legal_entity_id)
+                ->whereKeyNot($this->getKey())
+                ->where('is_head_office', true)
+                ->update(['is_head_office' => false]);
+
+            $this->forceFill(['is_head_office' => true, 'is_active' => true])->save();
+        });
+    }
+
+    /**
+     * Whether anything already points here.
+     *
+     * A place that has issued documents, holds stock or owns a series cannot be
+     * deleted — the documents must keep resolving where they were issued.
+     */
+    public function isReferenced(): bool
+    {
+        return $this->fiscalDocuments()->exists()
+            || $this->fiscalSeries()->exists()
+            || $this->quotes()->exists()
+            || $this->recurringInvoices()->exists()
+            || $this->stockLevels()->exists();
     }
 
     public function getActivitylogOptions(): LogOptions

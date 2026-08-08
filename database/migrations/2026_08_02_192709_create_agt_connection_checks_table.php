@@ -34,7 +34,12 @@ return new class extends Migration
             $table->timestamp('completed_at')->nullable();
             $table->timestamps();
 
-            $table->foreign(['agt_connection_id', 'workspace_id', 'legal_entity_id'])
+            // Named explicitly: the generated name would be 76 characters,
+            // past MySQL's 64-character limit for identifiers.
+            $table->foreign(
+                ['agt_connection_id', 'workspace_id', 'legal_entity_id'],
+                'agt_checks_connection_tenant_foreign',
+            )
                 ->references(['id', 'workspace_id', 'legal_entity_id'])
                 ->on('agt_connections')
                 ->cascadeOnDelete();

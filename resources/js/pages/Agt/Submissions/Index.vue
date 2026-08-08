@@ -17,9 +17,11 @@ import {
     ShieldCheck,
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { index, refresh } from '@/routes/agt/submissions';
+import type { SelectOption } from '@/types/select';
 
 type SubmissionStatus =
     | 'pending'
@@ -104,6 +106,13 @@ type Filter = 'all' | 'active' | 'valid' | 'attention';
 
 const page = usePage();
 const statusFilter = ref<Filter>('all');
+
+const statusFilterOptions: SelectOption<Filter>[] = [
+    { value: 'all', label: 'Todos' },
+    { value: 'active', label: 'Em curso' },
+    { value: 'valid', label: 'Validados' },
+    { value: 'attention', label: 'Requer atenção' },
+];
 const flashSuccess = computed(() => page.props.flash.success);
 const flashError = computed(() => page.props.flash.error);
 const activeStatuses: SubmissionStatus[] = [
@@ -217,9 +226,9 @@ function abbreviate(value: string | null): string {
                             Entrega fiscal assíncrona
                         </div>
                         <h1
-                            class="mt-2 font-display text-3xl font-semibold tracking-tight text-zinc-950 sm:text-4xl dark:text-white"
+                            class="mt-2 text-3xl display text-zinc-950 sm:text-4xl dark:text-white"
                         >
-                            Monitor de submissões AGT
+                            Onde está cada factura
                         </h1>
                         <p
                             class="mt-2 max-w-2xl text-sm/6 text-zinc-600 dark:text-zinc-400"
@@ -238,7 +247,7 @@ function abbreviate(value: string | null): string {
                         <button
                             type="submit"
                             :disabled="processing || activeTotal === 0"
-                            class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3.5 py-2.5 text-sm font-semibold whitespace-nowrap text-zinc-900 shadow-sm ring-1 ring-zinc-300 transition hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
+                            class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3.5 py-2.5 text-sm font-semibold whitespace-nowrap text-zinc-900 shadow-sm ring-1 ring-zinc-300 focus-ring transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
                         >
                             <LoaderCircle
                                 v-if="processing"
@@ -273,15 +282,13 @@ function abbreviate(value: string | null): string {
                 </div>
 
                 <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    <article
-                        class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-white/10"
-                    >
+                    <article class="rounded-2xl surface p-5">
                         <FileCheck2
                             class="size-5 text-emerald-600 dark:text-emerald-400"
                             aria-hidden="true"
                         />
                         <p
-                            class="mt-5 font-display text-3xl font-semibold text-zinc-950 dark:text-white"
+                            class="mt-5 numeric text-3xl font-semibold tracking-tight text-zinc-950 dark:text-white"
                         >
                             {{ summary.valid }}
                         </p>
@@ -291,15 +298,13 @@ function abbreviate(value: string | null): string {
                             Validadas pela AGT
                         </p>
                     </article>
-                    <article
-                        class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-white/10"
-                    >
+                    <article class="rounded-2xl surface p-5">
                         <FileClock
                             class="size-5 text-sky-600 dark:text-sky-400"
                             aria-hidden="true"
                         />
                         <p
-                            class="mt-5 font-display text-3xl font-semibold text-zinc-950 dark:text-white"
+                            class="mt-5 numeric text-3xl font-semibold tracking-tight text-zinc-950 dark:text-white"
                         >
                             {{ activeTotal }}
                         </p>
@@ -309,15 +314,13 @@ function abbreviate(value: string | null): string {
                             Na fila ou em validação
                         </p>
                     </article>
-                    <article
-                        class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-white/10"
-                    >
+                    <article class="rounded-2xl surface p-5">
                         <FileWarning
                             class="size-5 text-rose-600 dark:text-rose-400"
                             aria-hidden="true"
                         />
                         <p
-                            class="mt-5 font-display text-3xl font-semibold text-zinc-950 dark:text-white"
+                            class="mt-5 numeric text-3xl font-semibold tracking-tight text-zinc-950 dark:text-white"
                         >
                             {{ attentionTotal }}
                         </p>
@@ -331,10 +334,12 @@ function abbreviate(value: string | null): string {
                         class="rounded-2xl bg-brand-950 p-5 text-white shadow-sm ring-1 ring-white/10"
                     >
                         <ShieldCheck
-                            class="size-5 text-amber-300"
+                            class="size-5 text-accent-400"
                             aria-hidden="true"
                         />
-                        <p class="mt-5 font-display text-3xl font-semibold">
+                        <p
+                            class="mt-5 numeric text-3xl font-semibold tracking-tight"
+                        >
                             {{ total }}
                         </p>
                         <p class="mt-1 text-sm text-brand-100/65">
@@ -347,7 +352,7 @@ function abbreviate(value: string | null): string {
                     class="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(22rem,0.75fr)]"
                 >
                     <section
-                        class="min-w-0 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-white/10"
+                        class="min-w-0 overflow-hidden rounded-2xl surface"
                     >
                         <div class="px-5 py-5 sm:px-6">
                             <div class="sm:flex sm:items-center">
@@ -370,18 +375,11 @@ function abbreviate(value: string | null): string {
                                     <label for="status-filter" class="sr-only">
                                         Filtrar por estado
                                     </label>
-                                    <select
+                                    <SelectInput
                                         id="status-filter"
                                         v-model="statusFilter"
-                                        class="block w-full rounded-xl bg-white py-2 pr-8 pl-3 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10"
-                                    >
-                                        <option value="all">Todos</option>
-                                        <option value="active">Em curso</option>
-                                        <option value="valid">Validados</option>
-                                        <option value="attention">
-                                            Requer atenção
-                                        </option>
-                                    </select>
+                                        :options="statusFilterOptions"
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -567,13 +565,11 @@ function abbreviate(value: string | null): string {
                                     class="flex items-start justify-between gap-4"
                                 >
                                     <div>
-                                        <p
-                                            class="text-xs font-semibold tracking-[0.14em] text-brand-100/55 uppercase"
-                                        >
+                                        <p class="eyebrow text-brand-100/55">
                                             Entrega seleccionada
                                         </p>
                                         <h2
-                                            class="mt-1 font-display text-2xl font-semibold"
+                                            class="mt-1 numeric text-2xl font-semibold tracking-tight"
                                         >
                                             {{ selected.document_no }}
                                         </h2>
@@ -634,9 +630,7 @@ function abbreviate(value: string | null): string {
                             </dl>
                         </section>
 
-                        <section
-                            class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-white/10"
-                        >
+                        <section class="rounded-2xl surface p-5">
                             <div class="flex items-center gap-2">
                                 <Clock3
                                     class="size-4 text-brand-700 dark:text-brand-300"
@@ -697,9 +691,7 @@ function abbreviate(value: string | null): string {
                             </p>
                         </section>
 
-                        <section
-                            class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-white/10"
-                        >
+                        <section class="rounded-2xl surface p-5">
                             <div class="flex items-center gap-2">
                                 <Send
                                     class="size-4 text-brand-700 dark:text-brand-300"
@@ -768,7 +760,7 @@ function abbreviate(value: string | null): string {
                                     aria-hidden="true"
                                 />
                                 <h2
-                                    class="text-xs font-semibold tracking-[0.12em] text-zinc-600 uppercase dark:text-zinc-300"
+                                    class="eyebrow text-zinc-600 dark:text-zinc-300"
                                 >
                                     Prova de integridade
                                 </h2>

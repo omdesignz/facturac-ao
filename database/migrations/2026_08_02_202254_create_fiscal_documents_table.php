@@ -74,7 +74,10 @@ return new class extends Migration
                 'fiscal_documents_tenant_entity_id_unique',
             );
             $table->unique(['workspace_id', 'document_no']);
-            $table->index(['workspace_id', 'legal_entity_id', 'status', 'document_date']);
+            $table->index(
+                ['workspace_id', 'legal_entity_id', 'status', 'document_date'],
+                'fiscal_documents_tenant_status_date_index',
+            );
             $table->index(['workspace_id', 'customer_id', 'document_date']);
         });
     }

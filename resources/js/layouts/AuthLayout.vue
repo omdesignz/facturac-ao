@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { Moon, ShieldCheck, Sun } from '@lucide/vue';
-import { onMounted, ref } from 'vue';
+import { Link, usePage } from '@inertiajs/vue3';
+import { Check, Moon, ShieldCheck, Sun } from '@lucide/vue';
+import { computed, onMounted, ref } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
+import CookieConsent from '@/components/CookieConsent.vue';
 import {
     applyAppearance,
     getStoredAppearance,
@@ -13,6 +15,11 @@ defineProps<{
     title: string;
     description: string;
 }>();
+
+const page = usePage();
+
+/** Reachable before sign-up, so the terms can be read before agreeing to them. */
+const legalLinks = computed(() => page.props.legal.links);
 
 const isDark = ref(false);
 
@@ -38,12 +45,14 @@ onMounted(() => {
     <div
         class="flex min-h-screen bg-white text-zinc-950 dark:bg-zinc-950 dark:text-white"
     >
+        <CookieConsent />
+
         <main
             class="relative flex flex-1 flex-col justify-center px-5 py-10 sm:px-8 lg:flex-none lg:px-20 xl:px-24"
         >
             <button
                 type="button"
-                class="absolute top-5 right-5 rounded-xl p-2.5 text-zinc-500 ring-1 ring-zinc-200 transition hover:bg-zinc-50 hover:text-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 dark:text-zinc-400 dark:ring-white/10 dark:hover:bg-white/5 dark:hover:text-white"
+                class="absolute top-5 right-5 rounded-xl p-2.5 text-zinc-500 ring-1 ring-zinc-200 focus-ring transition hover:bg-zinc-50 hover:text-zinc-950 dark:text-zinc-400 dark:ring-white/10 dark:hover:bg-white/5 dark:hover:text-white"
                 :aria-label="isDark ? 'Usar tema claro' : 'Usar tema escuro'"
                 @click="toggleAppearance"
             >
@@ -57,12 +66,12 @@ onMounted(() => {
                 <div class="mt-10">
                     <p
                         v-if="eyebrow"
-                        class="text-xs font-semibold tracking-[0.18em] text-brand-700 uppercase dark:text-brand-300"
+                        class="eyebrow text-brand-700 dark:text-brand-300"
                     >
                         {{ eyebrow }}
                     </p>
                     <h1
-                        class="mt-2 font-display text-3xl font-semibold tracking-tight text-zinc-950 dark:text-white"
+                        class="mt-2 text-3xl display text-zinc-950 dark:text-white"
                     >
                         {{ title }}
                     </h1>
@@ -78,73 +87,122 @@ onMounted(() => {
                 <div class="mt-8 text-sm/6 text-zinc-500 dark:text-zinc-400">
                     <slot name="footer" />
                 </div>
+
+                <nav
+                    class="mt-10 flex flex-wrap gap-x-4 gap-y-2 border-t border-zinc-100 pt-6 text-xs text-zinc-500 dark:border-white/10 dark:text-zinc-500"
+                    aria-label="Documentos legais"
+                >
+                    <Link
+                        v-for="link in legalLinks"
+                        :key="link.slug"
+                        :href="`/${link.slug}`"
+                        class="rounded focus-ring transition hover:text-zinc-950 dark:hover:text-white"
+                    >
+                        {{ link.label }}
+                    </Link>
+                </nav>
             </div>
         </main>
 
+        <!--
+            The panel shows a specimen of the thing the product makes rather
+            than talking about it: an Angolan invoice's own footer, set in the
+            mono face, ending in the acceptance everyone here is actually
+            waiting for. That artifact is the one memorable element, so the
+            copy around it stays plain and the surface carries no decoration
+            beyond the fiscal grid the rest of the application already uses.
+        -->
         <aside
-            class="relative hidden min-h-screen flex-1 overflow-hidden bg-brand-950 lg:block"
-            aria-label="Protecção da plataforma"
+            class="sticky top-0 hidden h-screen flex-1 overflow-hidden bg-brand-950 lg:block"
+            aria-label="O que a aplicação faz a cada documento"
         >
-            <div class="fiscal-grid absolute inset-0 opacity-45" />
+            <div class="fiscal-grid absolute inset-0 opacity-40" />
             <div
-                class="absolute -top-40 -right-40 size-[34rem] rounded-full bg-brand-500/25 blur-3xl"
-            />
-            <div
-                class="absolute -bottom-48 -left-40 size-[36rem] rounded-full bg-amber-300/15 blur-3xl"
+                class="absolute inset-y-0 left-0 w-px bg-white/10"
+                aria-hidden="true"
             />
 
             <div
-                class="relative flex h-full min-h-screen flex-col justify-between p-12 xl:p-16"
+                class="relative flex h-full flex-col justify-between gap-10 overflow-y-auto p-10 xl:p-16"
             >
-                <div
-                    class="inline-flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-xs font-semibold text-brand-100"
+                <p
+                    class="inline-flex w-fit items-center gap-2 text-xs font-semibold tracking-[0.14em] text-brand-100/60 uppercase"
                 >
                     <ShieldCheck
-                        class="size-4 text-amber-300"
+                        class="size-4 text-accent-400"
                         aria-hidden="true"
                     />
-                    Fundação segura · Fase 1
-                </div>
+                    Facturação electrónica · Angola
+                </p>
 
                 <div class="max-w-xl">
-                    <p
-                        class="font-display text-4xl leading-tight font-semibold tracking-tight text-white xl:text-5xl"
+                    <h2
+                        class="text-4xl leading-[1.1] display text-white xl:text-[3.25rem]"
                     >
-                        A identidade fiscal começa com uma fronteira segura.
-                    </p>
-                    <p class="mt-6 max-w-lg text-base/7 text-brand-100/70">
-                        Cada empresa, utilizador e estabelecimento permanece no
-                        contexto certo, com verificação de email, MFA e um rasto
-                        de auditoria desde o primeiro acesso.
+                        Numerado, assinado, comunicado.
+                    </h2>
+                    <p class="mt-6 max-w-md text-base/7 text-brand-100/65">
+                        Um documento fiscal só vale se as três coisas
+                        acontecerem, e por esta ordem. Atribuímos a série e o
+                        número na emissão, assinamos o conteúdo tal como saiu, e
+                        entregamos à AGT — se a rede falhar a meio, retomamos do
+                        ponto onde parou.
                     </p>
                 </div>
 
-                <div class="grid max-w-xl grid-cols-3 gap-3 text-brand-100/75">
+                <figure class="max-w-md">
+                    <figcaption class="sr-only">
+                        Exemplo do rodapé de uma factura emitida pela aplicação
+                    </figcaption>
+
                     <div
-                        class="rounded-2xl border border-white/10 bg-white/[0.05] p-4"
+                        class="rounded-2xl border border-white/10 bg-white/[0.04] p-5 font-mono text-xs/6 text-brand-100/70"
                     >
-                        <p class="text-2xl font-semibold text-white">MFA</p>
-                        <p class="mt-1 text-xs/5">
-                            TOTP e códigos de recuperação
+                        <div class="flex items-baseline justify-between gap-4">
+                            <span class="text-sm text-white">FT 2026/1042</span>
+                            <span
+                                class="inline-flex items-center gap-1.5 rounded-md bg-accent-400/15 px-2 py-1 text-[0.7rem] font-semibold text-accent-300 not-italic"
+                            >
+                                <Check class="size-3" aria-hidden="true" />
+                                Aceite pela AGT
+                            </span>
+                        </div>
+
+                        <dl
+                            class="mt-4 space-y-1.5 border-t border-white/10 pt-4"
+                        >
+                            <div class="flex justify-between gap-4">
+                                <dt>NIF do cliente</dt>
+                                <dd class="text-brand-100 tabular-nums">
+                                    5417 654 321
+                                </dd>
+                            </div>
+                            <div class="flex justify-between gap-4">
+                                <dt>IVA 14%</dt>
+                                <dd class="text-brand-100 tabular-nums">
+                                    14 000,00 Kz
+                                </dd>
+                            </div>
+                            <div class="flex justify-between gap-4">
+                                <dt class="text-white">Total</dt>
+                                <dd
+                                    class="text-sm font-semibold text-white tabular-nums"
+                                >
+                                    114 000,00 Kz
+                                </dd>
+                            </div>
+                        </dl>
+
+                        <p
+                            class="mt-4 border-t border-white/10 pt-4 text-[0.7rem]/5 break-all text-brand-100/45"
+                        >
+                            Assinatura
+                            <span class="text-brand-100/70"
+                                >9f2c·a710·4be3·d885</span
+                            >
                         </p>
                     </div>
-                    <div
-                        class="rounded-2xl border border-white/10 bg-white/[0.05] p-4"
-                    >
-                        <p class="text-2xl font-semibold text-white">AOA</p>
-                        <p class="mt-1 text-xs/5">
-                            Contexto Angola por defeito
-                        </p>
-                    </div>
-                    <div
-                        class="rounded-2xl border border-white/10 bg-white/[0.05] p-4"
-                    >
-                        <p class="text-2xl font-semibold text-white">24/7</p>
-                        <p class="mt-1 text-xs/5">
-                            Registo atribuível de acções
-                        </p>
-                    </div>
-                </div>
+                </figure>
             </div>
         </aside>
     </div>

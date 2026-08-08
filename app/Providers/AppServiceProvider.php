@@ -2,10 +2,14 @@
 
 namespace App\Providers;
 
+use App\Models\ImpersonationSession;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Notifications\AccountAccessedBySupport;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\Date;
@@ -39,6 +43,29 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDefaults();
         $this->configureAuditContext();
         $this->configureSecurityAuditEvents();
+        $this->configureWorkSession();
+        $this->configureImpersonationNotices();
+    }
+
+    /**
+     * Record when the customer was actually told support entered their account.
+     *
+     * Stamped from the delivery event rather than at dispatch: if the queue
+     * never drains, the column stays null and the gap between "we sent it" and
+     * "they received it" stays visible instead of being papered over.
+     */
+    protected function configureImpersonationNotices(): void
+    {
+        Event::listen(NotificationSent::class, function (NotificationSent $event): void {
+            if (! $event->notification instanceof AccountAccessedBySupport || $event->channel !== 'mail') {
+                return;
+            }
+
+            ImpersonationSession::query()
+                ->where('public_id', $event->notification->sessionPublicId)
+                ->whereNull('subject_notified_at')
+                ->update(['subject_notified_at' => now()]);
+        });
     }
 
     /**
@@ -100,6 +127,19 @@ class AppServiceProvider extends ServiceProvider
                 ...$properties,
                 ...$auditContext,
             ]));
+        });
+    }
+
+    /**
+     * Start a fresh work block whenever a user signs in, by any route.
+     *
+     * Listening to the framework's Login event covers password, passkey,
+     * two-factor and social sign-in without each having to remember.
+     */
+    protected function configureWorkSession(): void
+    {
+        Event::listen(Login::class, function (): void {
+            session()->put((string) config('work_session.started_at_key'), now()->getTimestamp());
         });
     }
 

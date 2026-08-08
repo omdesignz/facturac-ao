@@ -13,9 +13,9 @@ defineProps<{
 
 <template>
     <AuthLayout
-        eyebrow="Nova credencial"
+        eyebrow="Nova palavra-passe"
         title="Escolha uma nova palavra-passe"
-        description="A ligação só pode ser usada por um período limitado. Depois da alteração, volte a entrar nos seus dispositivos."
+        description="Esta ligação expira em breve. Depois de a alterar, terá de entrar de novo nos seus dispositivos."
     >
         <Head title="Nova palavra-passe" />
 

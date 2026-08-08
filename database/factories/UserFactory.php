@@ -32,6 +32,8 @@ class UserFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
+            'work_session_minutes' => (int) config('work_session.default_minutes'),
+            'is_support_staff' => false,
             'remember_token' => Str::random(10),
         ];
     }
@@ -43,6 +45,14 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    /** One of the platform's own support people, able to impersonate a customer. */
+    public function supportStaff(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_support_staff' => true,
         ]);
     }
 

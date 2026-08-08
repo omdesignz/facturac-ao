@@ -1,4 +1,8 @@
 import type { Auth, CurrentWorkspace, FlashMessages } from '@/types/auth';
+import type { Impersonation } from '@/types/impersonation';
+import type { LegalState } from '@/types/legal';
+import type { NotificationState } from '@/types/notification';
+import type { WorkSessionSettings } from '@/types/work-session';
 
 // Extend ImportMeta interface for Vite...
 declare module 'vite/client' {
@@ -20,6 +24,10 @@ declare module '@inertiajs/core' {
             auth: Auth;
             currentWorkspace: CurrentWorkspace | null;
             flash: FlashMessages;
+            workSession: WorkSessionSettings | null;
+            impersonation: Impersonation | null;
+            legal: LegalState;
+            notifications: NotificationState | null;
             [key: string]: unknown;
         };
     }

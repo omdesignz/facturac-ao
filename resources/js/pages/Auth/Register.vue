@@ -16,8 +16,8 @@ defineProps<{
 <template>
     <AuthLayout
         eyebrow="Nova conta"
-        title="Crie o seu espaço fiscal"
-        description="Comece com o nome do negócio. O NIF, o regime e o estabelecimento serão validados no passo seguinte."
+        title="Crie a sua conta"
+        description="Comece pelo nome do negócio. O NIF, o regime de IVA e a morada ficam para o passo seguinte."
     >
         <Head title="Criar conta" />
 
@@ -118,7 +118,7 @@ defineProps<{
             <button
                 type="submit"
                 :disabled="processing"
-                class="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-700 px-3 py-2.5 text-sm/6 font-semibold text-white shadow-sm transition hover:bg-brand-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-brand-500 dark:hover:bg-brand-400"
+                class="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-700 px-3 py-2.5 text-sm/6 font-semibold text-white shadow-sm focus-ring transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-brand-500 dark:hover:bg-brand-400"
             >
                 <LoaderCircle
                     v-if="processing"
@@ -148,7 +148,7 @@ defineProps<{
             </div>
             <a
                 :href="googleRedirect.url()"
-                class="flex w-full items-center justify-center gap-3 rounded-xl bg-white px-3 py-2.5 text-sm font-semibold text-zinc-900 shadow-sm ring-1 ring-zinc-300 transition hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
+                class="flex w-full items-center justify-center gap-3 rounded-xl bg-white px-3 py-2.5 text-sm font-semibold text-zinc-900 shadow-sm ring-1 ring-zinc-300 focus-ring transition hover:bg-zinc-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
             >
                 <GoogleMark />
                 Continuar com Google

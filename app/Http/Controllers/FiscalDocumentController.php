@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\ResolveCustomerPrices;
 use App\Actions\SaveFiscalDocumentDraft;
 use App\Fiscal\Agt\Support\CanonicalNumber;
 use App\FiscalDocumentType;
@@ -10,6 +11,7 @@ use App\FiscalSeriesContingency;
 use App\FiscalSeriesStatus;
 use App\Http\Requests\StoreFiscalDocumentRequest;
 use App\Http\Requests\UpdateFiscalDocumentRequest;
+use App\Models\CatalogueItem;
 use App\Models\Customer;
 use App\Models\FiscalDocument;
 use App\Models\FiscalDocumentLine;
@@ -18,6 +20,8 @@ use App\Models\FiscalSeries;
 use App\Models\LegalEntity;
 use App\Models\User;
 use App\Models\Workspace;
+use App\PaymentMethod;
+use App\WithholdingType;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -26,6 +30,8 @@ use Inertia\Response;
 
 class FiscalDocumentController extends Controller
 {
+    public function __construct(private ResolveCustomerPrices $resolvePrices) {}
+
     public function create(Request $request): Response|RedirectResponse
     {
         $legalEntity = $this->legalEntity($request);
@@ -39,7 +45,16 @@ class FiscalDocumentController extends Controller
         Gate::authorize('create', FiscalDocument::class);
         Inertia::encryptHistory();
 
-        return Inertia::render('Invoices/Create', $this->pageProps($legalEntity));
+        $requestedType = FiscalDocumentType::tryFrom((string) $request->query('type'));
+
+        if ($requestedType === null || ! in_array($requestedType, FiscalDocumentType::issuable(), true)) {
+            $requestedType = FiscalDocumentType::Invoice;
+        }
+
+        return Inertia::render(
+            'Invoices/Create',
+            $this->pageProps($legalEntity, null, $requestedType),
+        );
     }
 
     public function store(
@@ -70,7 +85,7 @@ class FiscalDocumentController extends Controller
         Gate::authorize('update', $fiscalDocument);
         Inertia::encryptHistory();
 
-        $fiscalDocument->load(['customer', 'lines.taxes']);
+        $fiscalDocument->load(['customer', 'lines.taxes', 'settlements.settledDocument', 'withholdings']);
 
         return Inertia::render('Invoices/Create', $this->pageProps($legalEntity, $fiscalDocument));
     }
@@ -106,6 +121,7 @@ class FiscalDocumentController extends Controller
     private function pageProps(
         LegalEntity $legalEntity,
         ?FiscalDocument $document = null,
+        FiscalDocumentType $requestedType = FiscalDocumentType::Invoice,
     ): array {
         $establishments = $legalEntity->establishments()
             ->where('is_active', true)
@@ -116,6 +132,23 @@ class FiscalDocumentController extends Controller
             ->where('is_active', true)
             ->orderBy('name')
             ->limit(250)
+            ->get();
+        $agreedPrices = $this->resolvePrices->forCustomers($customers);
+        $catalogueItems = $legalEntity->catalogueItems()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->limit(500)
+            ->get();
+        $adjustable = $legalEntity->fiscalDocuments()
+            ->with('customer')
+            ->withSum('settledBy as settled_minor', 'amount_minor')
+            ->whereNotNull('document_no')
+            ->whereIn('document_type', [
+                FiscalDocumentType::Invoice,
+                FiscalDocumentType::InvoiceReceipt,
+            ])
+            ->latest('document_date')
+            ->limit(200)
             ->get();
         $series = $legalEntity->fiscalSeries()
             ->with('establishment')
@@ -142,12 +175,48 @@ class FiscalDocumentController extends Controller
                 'address_line' => $establishment->address_line,
                 'is_head_office' => $establishment->is_head_office,
             ])->values()->all(),
+            'catalogueItems' => $catalogueItems->map(fn (CatalogueItem $item): array => [
+                'public_id' => $item->public_id,
+                'code' => $item->code,
+                'name' => $item->name,
+                'description' => $item->description,
+                'unit_of_measure' => $item->unit_of_measure,
+                'unit_price' => number_format($item->unit_price_minor / 100, 2, '.', ''),
+                'tax_type' => $item->tax_type,
+                'tax_code' => $item->tax_code,
+                'tax_percentage' => $item->tax_percentage,
+                'tax_exemption_code' => $item->tax_exemption_code,
+            ])->values()->all(),
             'customers' => $customers->map(fn (Customer $customer): array => [
                 'public_id' => $customer->public_id,
                 'name' => $customer->name,
                 'tax_identification_number' => $customer->tax_identification_number,
                 'country_code' => $customer->country_code,
                 'address_line' => $customer->address_line,
+                'payment_terms_days' => $customer->payment_terms_days,
+                // What this customer pays, keyed by article, so choosing one
+                // fills the line at the agreed figure rather than the list
+                // price. Resolved centrally: an override beats their tabela,
+                // and the tabela beats the catalogue.
+                'agreed_prices' => array_map(
+                    fn (int $minor): string => number_format($minor / 100, 2, '.', ''),
+                    $agreedPrices[$customer->public_id] ?? [],
+                ),
+                // Whether this buyer keeps tax back. Offered on the document
+                // rather than applied to it: the person issuing still has to
+                // agree, because the rate turns on what is being supplied.
+                'withholding' => $customer->withholding_type === null
+                    ? null
+                    : [
+                        'type' => $customer->withholding_type->value,
+                        'rate_percentage' => number_format(
+                            ($customer->withholding_rate_basis_points
+                                ?? $customer->withholding_type->suggestedRateBasisPoints()) / 100,
+                            2,
+                            '.',
+                            '',
+                        ),
+                    ],
             ])->values()->all(),
             'operationTypes' => collect(FiscalOperationType::cases())
                 ->map(fn (FiscalOperationType $type): array => [
@@ -201,7 +270,38 @@ class FiscalDocumentController extends Controller
                 ])
                 ->values()
                 ->all(),
-            'document' => $this->documentProps($document, $establishments->first()?->public_id),
+            'document' => $this->documentProps(
+                $document,
+                $establishments->first()?->public_id,
+                $requestedType,
+            ),
+            'documentTypes' => array_map(
+                fn (FiscalDocumentType $type): array => [
+                    'value' => $type->value,
+                    'label' => $type->label(),
+                    'is_adjustment' => $type->isAdjustment(),
+                    'is_feminine' => $type->isFeminine(),
+                    'is_receipt' => $type->isReceipt(),
+                    'settles_other_documents' => $type->settlesOtherDocuments(),
+                    'requires_lines' => $type->requiresLines(),
+                ],
+                FiscalDocumentType::issuable(),
+            ),
+            'adjustableDocuments' => $adjustable->map(fn (FiscalDocument $issued): array => [
+                'public_id' => $issued->public_id,
+                'document_no' => $issued->document_no,
+                'document_date' => $issued->document_date->toDateString(),
+                'customer_name' => $issued->customer_name,
+                'customer_public_id' => $issued->customer?->public_id,
+                'gross_total_minor' => $issued->gross_total_minor,
+                'outstanding_minor' => max(
+                    0,
+                    $issued->gross_total_minor - (int) ($issued->settled_minor ?? 0),
+                ),
+            ])->values()->all(),
+            'paymentMethods' => PaymentMethod::options(),
+            'currencies' => (array) config('fiscal.currencies', ['AOA']),
+            'withholdingTypes' => WithholdingType::options(),
             'permissions' => [
                 'issue' => $document instanceof FiscalDocument
                     && Gate::allows('issue', $document),
@@ -219,6 +319,7 @@ class FiscalDocumentController extends Controller
     private function documentProps(
         ?FiscalDocument $document,
         ?string $defaultEstablishmentPublicId,
+        FiscalDocumentType $requestedType = FiscalDocumentType::Invoice,
     ): array {
         if (! $document instanceof FiscalDocument) {
             return [
@@ -226,10 +327,12 @@ class FiscalDocumentController extends Controller
                 'revision' => 0,
                 'status' => 'draft',
                 'document_no' => null,
-                'document_type' => FiscalDocumentType::Invoice->value,
+                'document_type' => $requestedType->value,
                 'document_date' => now('Africa/Luanda')->toDateString(),
                 'due_date' => now('Africa/Luanda')->addDays(30)->toDateString(),
                 'currency_code' => 'AOA',
+                'exchange_rate' => '1',
+                'withholdings' => [],
                 'establishment_public_id' => $defaultEstablishmentPublicId,
                 'customer_public_id' => null,
                 'customer' => [
@@ -239,6 +342,12 @@ class FiscalDocumentController extends Controller
                     'address_line' => '',
                 ],
                 'notes' => '',
+                'references_document_public_id' => null,
+                'references_document_no' => null,
+                'adjustment_reason' => '',
+                'payment_method' => PaymentMethod::Cash->value,
+                'payment_date' => now('Africa/Luanda')->toDateString(),
+                'settlements' => [],
                 'lines' => [$this->emptyLine()],
                 'totals' => $this->totalsProps(0, 0, 0, 0),
             ];
@@ -253,8 +362,24 @@ class FiscalDocumentController extends Controller
             'document_date' => $document->document_date->toDateString(),
             'due_date' => $document->due_date?->toDateString(),
             'currency_code' => $document->currency_code,
+            'exchange_rate' => number_format($document->exchange_rate_micro / 1_000_000, 6, '.', ''),
+            'withholdings' => $this->withholdingProps($document),
             'establishment_public_id' => $document->establishment->public_id,
             'customer_public_id' => $document->customer?->public_id,
+            'references_document_public_id' => $document->referencesDocument?->public_id,
+            'references_document_no' => $document->references_document_no,
+            'adjustment_reason' => $document->adjustment_reason ?? '',
+            'payment_method' => ($document->payment_method ?? PaymentMethod::Cash)->value,
+            'payment_date' => $document->payment_date?->toDateString()
+                ?? now('Africa/Luanda')->toDateString(),
+            'settlements' => $document->settlements
+                ->map(fn ($settlement): array => [
+                    'document_public_id' => $settlement->settledDocument->public_id,
+                    'document_no' => $settlement->settled_document_no,
+                    'amount' => number_format($settlement->amount_minor / 100, 2, '.', ''),
+                ])
+                ->values()
+                ->all(),
             'customer' => [
                 'name' => $document->customer_name,
                 'tax_identification_number' => $document->customer_tax_identification_number,
@@ -323,6 +448,35 @@ class FiscalDocumentController extends Controller
             $tax->tax_type->value === 'IVA' && $tax->tax_exemption_code === 'M04' => 'IVA_ISE_M04',
             default => 'NS_M02',
         };
+    }
+
+    /** @return array<string, string> */
+    /**
+     * What the buyer keeps back, in the shape the form edits it.
+     *
+     * Only the type and the rate come back: the base and the amount are worked
+     * out from the document when it is saved, so there is nothing here for the
+     * form to get out of step with.
+     *
+     * @return list<array{type: string, rate_percentage: string}>
+     */
+    private function withholdingProps(FiscalDocument $document): array
+    {
+        $rows = [];
+
+        foreach ($document->withholdings as $withholding) {
+            $rows[] = [
+                'type' => $withholding->withholding_type->value,
+                'rate_percentage' => number_format(
+                    $withholding->rate_basis_points / 100,
+                    2,
+                    '.',
+                    '',
+                ),
+            ];
+        }
+
+        return $rows;
     }
 
     /** @return array<string, string> */

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Form, Head, Link, usePage } from '@inertiajs/vue3';
+import { Form, Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import {
     Building2,
     Check,
@@ -7,18 +7,30 @@ import {
     CircleDashed,
     KeyRound,
     Landmark,
+    Download,
+    FileCode2,
+    Image as ImageIcon,
     LoaderCircle,
     LockKeyhole,
     MapPin,
     ShieldCheck,
 } from '@lucide/vue';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
+import DateInput from '@/components/DateInput.vue';
 import FormError from '@/components/FormError.vue';
+import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { confirmAction } from '@/lib/confirm';
 import { dashboard } from '@/routes';
 import { show as agtConnectionShow } from '@/routes/agt/connection';
+import {
+    destroy as destroyCompanyLogo,
+    show as showCompanyLogo,
+    store as storeCompanyLogo,
+} from '@/routes/company/logo';
 import { update as onboardingUpdate } from '@/routes/onboarding';
+import { exportMethod as saftExport } from '@/routes/saft';
 import { security } from '@/routes/settings';
 
 interface CompanyProfile {
@@ -34,6 +46,9 @@ interface CompanyProfile {
     address_line: string;
     municipality: string;
     province_code: string;
+    province_label: string;
+    has_logo: boolean;
+    logo_updated_at: string | null;
 }
 
 interface TaxRegimeOption {
@@ -50,6 +65,7 @@ interface AgtConnectionSummary {
 const props = defineProps<{
     company: CompanyProfile;
     taxRegimes: TaxRegimeOption[];
+    provinces: { value: string; label: string }[];
     canUpdate: boolean;
     agtConnection: AgtConnectionSummary;
 }>();
@@ -63,6 +79,91 @@ const profileIsConfigured = computed(
         props.company.status === 'configured' ||
         props.company.status === 'homologation' ||
         props.company.status === 'active',
+);
+
+const taxRegime = ref(props.company.tax_regime);
+
+const provinceCode = ref(props.company.province_code);
+
+const logoInput = ref<HTMLInputElement | null>(null);
+const logoForm = useForm<{ logo: File | null }>({ logo: null });
+
+const logoUrl = computed(
+    () => `${showCompanyLogo.url()}?v=${props.company.logo_updated_at ?? ''}`,
+);
+
+function uploadLogo(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+
+    if (!file) {
+        return;
+    }
+
+    logoForm.logo = file;
+    logoForm.post(storeCompanyLogo.url(), {
+        preserveScroll: true,
+        onFinish: () => {
+            if (logoInput.value) {
+                logoInput.value.value = '';
+            }
+        },
+    });
+}
+
+async function removeLogo(): Promise<void> {
+    const confirmed = await confirmAction({
+        title: 'Remover o logótipo?',
+        message:
+            'Os documentos passam a sair só com o nome da empresa no cabeçalho.',
+        confirmLabel: 'Remover logótipo',
+    });
+
+    if (confirmed) {
+        router.delete(destroyCompanyLogo.url(), { preserveScroll: true });
+    }
+}
+
+const startOfYear = new Date(new Date().getFullYear(), 0, 1)
+    .toISOString()
+    .slice(0, 10);
+const saftFrom = ref(startOfYear);
+const saftTo = ref(new Date().toISOString().slice(0, 10));
+
+const saftUrl = computed(
+    () => `${saftExport.url()}?from=${saftFrom.value}&to=${saftTo.value}`,
+);
+
+/**
+ * A province saved before the list existed, or before the 2024 reform, keeps
+ * its own entry.
+ *
+ * This field used to take a typed code, so some companies hold things like
+ * "LU"; and Cuando Cubango existed until it was split. Dropping either on the
+ * next save would quietly rewrite an address that is already on documents.
+ */
+const provinceOptions = computed(() => {
+    const current = props.company.province_code;
+    const known = props.provinces.map((province) => ({
+        value: province.value,
+        label: province.label,
+    }));
+
+    return current && !known.some((option) => option.value === current)
+        ? [
+              ...known,
+              {
+                  value: current,
+                  label: `${props.company.province_label} · manter`,
+              },
+          ]
+        : known;
+});
+
+const taxRegimeOptions = computed(() =>
+    props.taxRegimes.map((regime) => ({
+        value: regime.value,
+        label: regime.label,
+    })),
 );
 
 const steps = computed(() => [
@@ -115,22 +216,21 @@ const steps = computed(() => [
                                     profileIsConfigured ? 'success' : 'warning'
                                 "
                             />
-                            <StatusBadge label="Dados reais" tone="info" />
                         </div>
                         <h1
-                            class="mt-4 font-display text-4xl font-semibold tracking-tight text-zinc-950 sm:text-5xl dark:text-white"
+                            class="mt-4 text-4xl display text-zinc-950 sm:text-5xl dark:text-white"
                         >
-                            Prepare a empresa<br /><span
+                            Fale-nos da sua empresa<br /><span
                                 class="text-brand-700 dark:text-brand-300"
-                                >com uma base verificável.</span
+                                >uma vez só.</span
                             >
                         </h1>
                         <p
                             class="mt-3 max-w-2xl text-sm/6 text-zinc-600 sm:text-base/7 dark:text-zinc-400"
                         >
-                            Estes dados definem o contribuinte e o local
-                            emissor. Depois de os confirmar, prepare a ligação
-                            AGT no ambiente isolado de homologação.
+                            É este NIF e esta morada que vão sair impressos em
+                            cada factura. Depois de confirmar, ligamos a sua
+                            conta à AGT.
                         </p>
                     </div>
                     <Link
@@ -143,7 +243,7 @@ const steps = computed(() => [
 
                 <nav
                     aria-label="Progresso de configuração"
-                    class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-white/10"
+                    class="overflow-hidden rounded-2xl surface"
                 >
                     <ol
                         role="list"
@@ -160,7 +260,7 @@ const steps = computed(() => [
                                         step.status === 'complete'
                                             ? 'bg-emerald-600 text-white'
                                             : step.status === 'current'
-                                              ? 'bg-amber-300 text-brand-950 ring-4 ring-amber-100 dark:ring-amber-400/10'
+                                              ? 'bg-accent-400 text-brand-950 ring-4 ring-amber-100 dark:ring-amber-400/10'
                                               : 'bg-zinc-100 text-zinc-400 dark:bg-white/5 dark:text-zinc-500',
                                         'grid size-8 shrink-0 place-items-center rounded-full text-xs font-bold',
                                     ]"
@@ -211,9 +311,7 @@ const steps = computed(() => [
                         class="space-y-8"
                         #default="{ errors, processing, isDirty }"
                     >
-                        <section
-                            class="rounded-2xl bg-white shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-white/10"
-                        >
+                        <section class="rounded-2xl surface">
                             <div
                                 class="flex gap-4 border-b border-zinc-100 p-5 sm:p-7 dark:border-white/10"
                             >
@@ -309,21 +407,13 @@ const steps = computed(() => [
                                         class="block text-sm font-medium text-zinc-900 dark:text-white"
                                         >Regime de IVA</label
                                     >
-                                    <select
+                                    <SelectInput
                                         id="tax-regime"
+                                        v-model="taxRegime"
                                         name="tax_regime"
-                                        required
-                                        :value="company.tax_regime"
-                                        class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-zinc-900 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
-                                    >
-                                        <option
-                                            v-for="regime in taxRegimes"
-                                            :key="regime.value"
-                                            :value="regime.value"
-                                        >
-                                            {{ regime.label }}
-                                        </option>
-                                    </select>
+                                        class="mt-2"
+                                        :options="taxRegimeOptions"
+                                    />
                                     <FormError :message="errors.tax_regime" />
                                 </div>
                                 <div class="sm:col-span-3">
@@ -348,9 +438,7 @@ const steps = computed(() => [
                             </fieldset>
                         </section>
 
-                        <section
-                            class="rounded-2xl bg-white shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-white/10"
-                        >
+                        <section class="rounded-2xl surface">
                             <div
                                 class="flex gap-4 border-b border-zinc-100 p-5 sm:p-7 dark:border-white/10"
                             >
@@ -368,9 +456,9 @@ const steps = computed(() => [
                                     <p
                                         class="mt-1 text-sm/6 text-zinc-500 dark:text-zinc-400"
                                     >
-                                        Será o local emissor por defeito. Outros
-                                        estabelecimentos entram numa fase
-                                        posterior.
+                                        É daqui que saem as suas facturas. Pode
+                                        acrescentar mais estabelecimentos quando
+                                        precisar.
                                     </p>
                                 </div>
                             </div>
@@ -452,16 +540,15 @@ const steps = computed(() => [
                                     <label
                                         for="province-code"
                                         class="block text-sm font-medium text-zinc-900 dark:text-white"
-                                        >Código da província</label
+                                        >Província</label
                                     >
-                                    <input
+                                    <SelectInput
                                         id="province-code"
+                                        v-model="provinceCode"
                                         name="province_code"
-                                        type="text"
-                                        required
-                                        :value="company.province_code"
-                                        class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 font-mono text-sm text-zinc-900 uppercase outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
-                                        placeholder="LU"
+                                        class="mt-2"
+                                        :options="provinceOptions"
+                                        placeholder="Escolha a província"
                                     />
                                     <FormError
                                         :message="errors.province_code"
@@ -514,6 +601,123 @@ const steps = computed(() => [
                         </section>
                     </Form>
 
+                    <section class="rounded-2xl surface p-5 sm:p-7">
+                        <div class="flex gap-4">
+                            <span
+                                class="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-100 text-brand-700 dark:bg-brand-400/10 dark:text-brand-300"
+                            >
+                                <ImageIcon class="size-5" aria-hidden="true" />
+                            </span>
+                            <div class="min-w-0 flex-1">
+                                <h2
+                                    class="font-semibold text-zinc-950 dark:text-white"
+                                >
+                                    Logótipo
+                                </h2>
+                                <p
+                                    class="mt-1 max-w-xl text-sm/6 text-zinc-500 dark:text-zinc-400"
+                                >
+                                    Aparece no cabeçalho das facturas e recibos.
+                                    PNG ou JPEG até 2 MB — cabe numa caixa de 45
+                                    × 18 mm, por isso uma marca larga sai melhor
+                                    que uma alta.
+                                </p>
+
+                                <div
+                                    class="mt-4 flex flex-wrap items-center gap-4"
+                                >
+                                    <img
+                                        v-if="company.has_logo"
+                                        :src="logoUrl"
+                                        alt="Logótipo actual"
+                                        class="h-12 w-auto rounded-lg bg-white object-contain p-1 ring-1 ring-zinc-200 dark:ring-white/10"
+                                    />
+
+                                    <input
+                                        ref="logoInput"
+                                        type="file"
+                                        accept="image/png,image/jpeg"
+                                        class="block text-sm text-zinc-600 file:mr-3 file:rounded-xl file:border-0 file:bg-zinc-900 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white dark:text-zinc-400 dark:file:bg-white dark:file:text-zinc-950"
+                                        @change="uploadLogo"
+                                    />
+
+                                    <button
+                                        v-if="company.has_logo"
+                                        type="button"
+                                        class="rounded-xl px-3 py-2 text-sm font-semibold text-zinc-500 focus-ring transition hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-400/10 dark:hover:text-rose-300"
+                                        @click="removeLogo"
+                                    >
+                                        Remover
+                                    </button>
+                                </div>
+                                <FormError :message="logoForm.errors.logo" />
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="rounded-2xl surface p-5 sm:p-7">
+                        <div class="flex gap-4">
+                            <span
+                                class="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-100 text-brand-700 dark:bg-brand-400/10 dark:text-brand-300"
+                            >
+                                <FileCode2 class="size-5" aria-hidden="true" />
+                            </span>
+                            <div class="min-w-0 flex-1">
+                                <h2
+                                    class="font-semibold text-zinc-950 dark:text-white"
+                                >
+                                    Ficheiro SAF-T (AO)
+                                </h2>
+                                <p
+                                    class="mt-1 max-w-xl text-sm/6 text-zinc-500 dark:text-zinc-400"
+                                >
+                                    O ficheiro de auditoria que a AGT pede.
+                                    Escolha o período e guarde o XML.
+                                </p>
+
+                                <div
+                                    class="mt-4 flex flex-wrap items-end gap-3"
+                                >
+                                    <div class="w-40">
+                                        <label
+                                            class="block text-xs font-medium text-zinc-700 dark:text-zinc-300"
+                                            >De</label
+                                        >
+                                        <DateInput
+                                            v-model="saftFrom"
+                                            class="mt-1.5"
+                                            :clearable="false"
+                                            aria-label="Início do período SAF-T"
+                                        />
+                                    </div>
+                                    <div class="w-40">
+                                        <label
+                                            class="block text-xs font-medium text-zinc-700 dark:text-zinc-300"
+                                            >Até</label
+                                        >
+                                        <DateInput
+                                            v-model="saftTo"
+                                            class="mt-1.5"
+                                            :clearable="false"
+                                            :min-date="saftFrom"
+                                            aria-label="Fim do período SAF-T"
+                                        />
+                                    </div>
+                                    <a
+                                        :href="saftUrl"
+                                        class="inline-flex items-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm focus-ring transition hover:bg-brand-600 dark:bg-accent-400 dark:text-brand-950 dark:hover:bg-accent-300"
+                                    >
+                                        <Download
+                                            class="size-4"
+                                            aria-hidden="true"
+                                        />
+                                        Gerar SAF-T
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
                     <aside class="space-y-5">
                         <section
                             class="rounded-2xl bg-brand-950 p-5 text-white shadow-sm dark:bg-brand-950 dark:ring-1 dark:ring-white/10"
@@ -523,16 +727,16 @@ const steps = computed(() => [
                                     class="grid size-10 place-items-center rounded-xl bg-white/10"
                                 >
                                     <ShieldCheck
-                                        class="size-5 text-amber-300"
+                                        class="size-5 text-accent-400"
                                         aria-hidden="true"
                                     />
                                 </span>
                                 <div>
                                     <p class="font-semibold">
-                                        Prontidão da conta
+                                        O que já está feito
                                     </p>
                                     <p class="text-xs text-brand-100/65">
-                                        Controlos da Fase 1
+                                        Antes de emitir a primeira factura
                                     </p>
                                 </div>
                             </div>
@@ -556,7 +760,7 @@ const steps = computed(() => [
                                         :class="
                                             profileIsConfigured
                                                 ? 'text-emerald-300'
-                                                : 'text-amber-300'
+                                                : 'text-accent-400'
                                         "
                                         aria-hidden="true"
                                     />
@@ -575,7 +779,7 @@ const steps = computed(() => [
                                             page.props.auth.user
                                                 ?.two_factor_enabled
                                                 ? 'text-emerald-300'
-                                                : 'text-amber-300'
+                                                : 'text-accent-400'
                                         "
                                         aria-hidden="true"
                                     />
@@ -596,9 +800,7 @@ const steps = computed(() => [
                             </Link>
                         </section>
 
-                        <section
-                            class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-white/10"
-                        >
+                        <section class="rounded-2xl surface p-5">
                             <div class="flex items-center gap-3">
                                 <Landmark
                                     class="size-5 text-zinc-400"
@@ -613,9 +815,10 @@ const steps = computed(() => [
                             <p
                                 class="mt-3 text-sm/6 text-zinc-500 dark:text-zinc-400"
                             >
-                                As credenciais são cifradas e as chaves privadas
-                                permanecem no cofre local. A ligação só consulta
-                                séries em homologação nesta fase.
+                                As credenciais ficam cifradas e as chaves
+                                privadas nunca saem do cofre. Enquanto estiver
+                                em homologação, só consultamos as séries desse
+                                ambiente.
                             </p>
                             <div
                                 class="mt-4 rounded-xl bg-zinc-50 p-3 text-xs font-medium text-zinc-500 dark:bg-white/5 dark:text-zinc-400"

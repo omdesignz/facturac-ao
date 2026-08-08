@@ -17,9 +17,9 @@ const linkWasSent = computed(
 
 <template>
     <AuthLayout
-        eyebrow="Verificação de identidade"
+        eyebrow="Falta um passo"
         title="Confirme o seu email"
-        :description="`Enviámos uma ligação para ${user?.email ?? 'o seu email'}. Este passo protege o espaço antes de qualquer configuração fiscal.`"
+        :description="`Enviámos uma ligação para ${user?.email ?? 'o seu email'}. Abra-a para confirmar que o endereço é seu.`"
     >
         <Head title="Confirmar email" />
 

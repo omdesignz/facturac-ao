@@ -1,6 +1,7 @@
 <?php
 
 use App\Fiscal\Agt\Support\CanonicalJson;
+use App\Fiscal\Calculation\FiscalCalculator;
 use App\Fiscal\Documents\V1_2\FiscalDocumentPayloadBuilder;
 use App\FiscalDocumentStatus;
 use App\Models\Establishment;
@@ -77,7 +78,7 @@ function issuedPayloadFixture(): FiscalDocument
 
 test('the v1.2 signable object contains only the required fiscal identity and totals', function () {
     $document = issuedPayloadFixture();
-    $payload = (new FiscalDocumentPayloadBuilder)->signableObject($document);
+    $payload = (new FiscalDocumentPayloadBuilder(new FiscalCalculator))->signableObject($document);
     $json = (new CanonicalJson)->encode($payload);
 
     expect(array_keys($payload))->toBe([
@@ -93,7 +94,7 @@ test('the v1.2 signable object contains only the required fiscal identity and to
 });
 
 test('the current contract maps base price before discount and unit price after discount', function () {
-    $payload = (new FiscalDocumentPayloadBuilder)->document(issuedPayloadFixture());
+    $payload = (new FiscalDocumentPayloadBuilder(new FiscalCalculator))->document(issuedPayloadFixture());
     $json = json_decode((new CanonicalJson)->encode($payload), true, flags: JSON_THROW_ON_ERROR);
 
     expect($json['lines'][0]['operationType'])->toBe('TB')
@@ -110,7 +111,7 @@ test('a mutable draft cannot be projected into a signable payload', function () 
         'status' => FiscalDocumentStatus::Draft,
     ])->save());
 
-    (new FiscalDocumentPayloadBuilder)->signableObject($document->fresh());
+    (new FiscalDocumentPayloadBuilder(new FiscalCalculator))->signableObject($document->fresh());
 })->throws(DomainException::class);
 
 test('issued documents reject business mutations', function () {

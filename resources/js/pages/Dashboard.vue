@@ -58,40 +58,35 @@ const user = computed(() => page.props.auth.user);
 
 const readiness = computed(() => [
     {
-        label: 'Espaço de trabalho isolado',
-        description: 'Membros e dados pertencem ao espaço activo.',
+        label: 'Espaço de trabalho criado',
+        description:
+            'Os seus dados ficam separados dos de qualquer outra empresa.',
         done: workspace.value !== null,
-        phase: 'Fase 1',
     },
     {
-        label: 'Email do utilizador verificado',
-        description: 'O acesso à aplicação exige um endereço confirmado.',
+        label: 'Email confirmado',
+        description: 'Confirmámos que o endereço da sua conta é mesmo seu.',
         done: user.value?.email_verified_at !== null,
-        phase: 'Fase 1',
     },
     {
-        label: 'Empresa e estabelecimento principal',
-        description: 'Identidade legal e localização fiscal persistidas.',
+        label: 'Empresa e estabelecimento',
+        description: 'NIF, denominação e o local onde emite as facturas.',
         done: props.companyReadiness.configured,
-        phase: 'Fase 1',
     },
     {
-        label: 'Autenticação multifactor',
-        description: 'Protecção adicional para operações privilegiadas.',
+        label: 'Autenticação em dois passos',
+        description: 'Uma segunda prova antes de qualquer operação sensível.',
         done: user.value?.two_factor_enabled ?? false,
-        phase: 'Fase 1',
     },
     {
-        label: 'Credenciais de homologação AGT',
-        description: 'Ligação cifrada e chaves resolvidas pelo cofre local.',
+        label: 'Credenciais da AGT',
+        description: 'As chaves que assinam e entregam as suas facturas.',
         done: props.agtReadiness.configured,
-        phase: 'Fase 2',
     },
     {
-        label: 'Motor de rascunhos fiscais',
-        description: 'Cálculo exacto e persistência segura antes da emissão.',
+        label: 'Pronto para facturar',
+        description: 'Os valores são calculados e guardados antes de emitir.',
         done: props.companyReadiness.configured,
-        phase: 'Fase 3',
     },
 ]);
 
@@ -111,19 +106,19 @@ const foundationStats = computed<FoundationStat[]>(() => [
         icon: Building2,
     },
     {
-        name: 'Papel no espaço',
+        name: 'O seu acesso',
         value: workspace.value?.role_label ?? '—',
-        detail: workspace.value?.name ?? 'Sem espaço activo',
+        detail: workspace.value?.name ?? 'Nenhuma empresa seleccionada',
         tone: 'neutral',
         icon: Fingerprint,
     },
     {
-        name: 'MFA',
-        value: user.value?.two_factor_enabled ? 'Activo' : 'Inactivo',
+        name: 'Dois passos',
+        value: user.value?.two_factor_enabled ? 'Activa' : 'Desligada',
         detail:
             workspace.value?.requires_mfa && !user.value?.two_factor_enabled
-                ? 'Recomendado para este papel'
-                : 'Estado da conta',
+                ? 'Obrigatória para o seu tipo de acesso'
+                : 'Segunda prova ao iniciar sessão',
         tone: user.value?.two_factor_enabled ? 'success' : 'warning',
         icon: LockKeyhole,
     },
@@ -142,41 +137,41 @@ const foundationStats = computed<FoundationStat[]>(() => [
 
 const previews = [
     {
-        title: 'Fluxo de facturação',
+        title: 'Emitir uma factura',
         description:
-            'Crie rascunhos, confira os valores e faça uma emissão fiscal atómica com confirmação explícita.',
+            'Comece por um rascunho, confira os totais e só depois emita. Nada é enviado sem a sua confirmação.',
         href: invoiceCreate.url(),
         action: 'Criar factura',
         icon: ReceiptText,
     },
     {
-        title: 'Comunicação AGT',
+        title: 'Ligar à AGT',
         description:
-            'Configure o acesso, verifique as chaves e sincronize as séries autorizadas em homologação.',
+            'Guarde as credenciais, teste a ligação e traga as séries que a AGT lhe autorizou.',
         href: agtConnection.url(),
-        action: 'Preparar ligação',
+        action: 'Configurar ligação',
         icon: Landmark,
     },
     {
-        title: 'Monitor AGT',
+        title: 'Seguir as entregas',
         description:
-            'Acompanhe a fila, o recibo do pedido e a validação final com uma linha temporal auditável.',
+            'Veja onde está cada factura: na fila, entregue ou devolvida — e porquê, quando corre mal.',
         href: agtSubmissions.url(),
-        action: 'Acompanhar entregas',
+        action: 'Ver entregas',
         icon: CloudCog,
     },
     {
-        title: 'Importação assistida',
+        title: 'Trazer os seus dados',
         description:
-            'Carregue Excel ou CSV, confirme as colunas e valide cada linha antes de gravar clientes ou artigos.',
+            'Carregue o Excel ou CSV que já usa. Mostramos o que vai entrar antes de gravar seja o que for.',
         href: importIndex.url(),
         action: 'Importar dados',
         icon: FileUp,
     },
     {
-        title: 'Plano e cobrança',
+        title: 'Plano e pagamentos',
         description:
-            'Gere uma Referência EMIS Pay4All, acompanhe a confirmação e consulte o histórico de cobranças.',
+            'Gere uma Referência EMIS, pague no banco ou no Multicaixa e veja o histórico de cobranças.',
         href: billingShow.url(),
         action: 'Gerir assinatura',
         icon: CreditCard,
@@ -206,7 +201,7 @@ function statToneClasses(tone: FoundationStat['tone']): string {
                     class="fiscal-grid relative overflow-hidden rounded-3xl bg-brand-950 px-6 py-7 text-white shadow-[0_28px_80px_-45px_rgba(8,40,32,0.9)] sm:px-8 sm:py-9"
                 >
                     <div
-                        class="absolute -top-24 -right-16 size-72 rounded-full bg-amber-300/15 blur-3xl"
+                        class="absolute -top-24 -right-16 size-72 rounded-full bg-accent-400/15 blur-3xl"
                         aria-hidden="true"
                     />
                     <div
@@ -215,8 +210,16 @@ function statToneClasses(tone: FoundationStat['tone']): string {
                         <div class="max-w-3xl">
                             <div class="flex flex-wrap items-center gap-2">
                                 <StatusBadge
-                                    label="Fase 5 · Subscrições por Referência EMIS"
-                                    tone="info"
+                                    :label="
+                                        agtReadiness.verified
+                                            ? 'Ligação AGT verificada'
+                                            : 'Ligação AGT por verificar'
+                                    "
+                                    :tone="
+                                        agtReadiness.verified
+                                            ? 'success'
+                                            : 'warning'
+                                    "
                                 />
                                 <span
                                     class="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-semibold text-brand-100/75"
@@ -224,31 +227,32 @@ function statToneClasses(tone: FoundationStat['tone']): string {
                                 >
                             </div>
                             <h1
-                                class="mt-5 max-w-4xl font-display text-4xl leading-none font-semibold tracking-tight sm:text-5xl"
+                                class="mt-5 max-w-4xl text-4xl leading-[1.05] display sm:text-5xl"
                             >
                                 {{
                                     companyReadiness.configured
-                                        ? 'A base da empresa está preparada.'
-                                        : 'Comece pela identidade da empresa.'
+                                        ? 'A sua empresa está pronta.'
+                                        : 'Vamos começar pela sua empresa.'
                                 }}
                                 <br />
-                                <span class="text-amber-300"
-                                    >Calcule antes de emitir.</span
+                                <span class="text-accent-400"
+                                    >Confira antes de emitir.</span
                                 >
                             </h1>
                             <p
                                 class="mt-4 max-w-2xl text-sm/6 text-brand-100/70 sm:text-base/7"
                             >
-                                A fundação SaaS protege cada empresa e
-                                utilizador. Emissão fiscal e cobrança da
-                                assinatura seguem fluxos separados, auditáveis e
-                                resistentes a duplicações.
+                                Cada factura passa primeiro por rascunho, com o
+                                IVA e as retenções já calculados. Só segue para
+                                a AGT depois de confirmar — e o que paga pelo
+                                serviço nunca se mistura com o que factura aos
+                                seus clientes.
                             </p>
                         </div>
                         <div class="flex flex-wrap gap-3">
                             <Link
                                 :href="security.url()"
-                                class="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300"
+                                class="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white focus-ring-inverted transition hover:bg-white/10"
                             >
                                 <LockKeyhole
                                     class="size-4"
@@ -258,7 +262,7 @@ function statToneClasses(tone: FoundationStat['tone']): string {
                             </Link>
                             <Link
                                 :href="onboarding.url()"
-                                class="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-300 px-4 py-2.5 text-sm font-semibold text-brand-950 shadow-sm transition hover:bg-amber-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300"
+                                class="inline-flex items-center justify-center gap-2 rounded-xl bg-accent-400 px-4 py-2.5 text-sm font-semibold text-brand-950 shadow-sm focus-ring-inverted transition hover:bg-accent-300"
                             >
                                 <Building2 class="size-4" aria-hidden="true" />
                                 Preparar empresa
@@ -295,7 +299,7 @@ function statToneClasses(tone: FoundationStat['tone']): string {
                             </span>
                         </div>
                         <dd
-                            class="mt-4 font-display text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white"
+                            class="mt-4 numeric text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white"
                         >
                             {{ stat.value }}
                         </dd>
@@ -310,27 +314,25 @@ function statToneClasses(tone: FoundationStat['tone']): string {
                 <div
                     class="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(22rem,0.65fr)]"
                 >
-                    <section
-                        class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-white/10"
-                    >
+                    <section class="overflow-hidden rounded-2xl surface">
                         <div
                             class="flex items-start justify-between gap-4 border-b border-zinc-100 px-5 py-5 sm:px-6 dark:border-white/10"
                         >
                             <div>
                                 <p
-                                    class="text-xs font-semibold tracking-[0.16em] text-brand-700 uppercase dark:text-brand-300"
+                                    class="eyebrow text-brand-700 dark:text-brand-300"
                                 >
-                                    Prontidão do produto
+                                    Configuração da conta
                                 </p>
                                 <h2
                                     class="mt-1 text-lg font-semibold text-zinc-950 dark:text-white"
                                 >
                                     {{ completedReadiness }} de
-                                    {{ readiness.length }} controlos
+                                    {{ readiness.length }} passos concluídos
                                 </h2>
                             </div>
                             <span
-                                class="font-display text-3xl font-semibold text-brand-700 dark:text-brand-300"
+                                class="numeric text-3xl font-semibold tracking-tight text-brand-700 dark:text-brand-300"
                                 >{{ readinessPercentage }}%</span
                             >
                         </div>
@@ -371,8 +373,9 @@ function statToneClasses(tone: FoundationStat['tone']): string {
                                             {{ item.label }}
                                         </p>
                                         <span
-                                            class="text-[0.65rem] font-semibold tracking-wide text-zinc-400 uppercase"
-                                            >{{ item.phase }}</span
+                                            v-if="!item.done"
+                                            class="eyebrow text-amber-600 dark:text-amber-400"
+                                            >Por fazer</span
                                         >
                                     </div>
                                     <p
@@ -396,19 +399,19 @@ function statToneClasses(tone: FoundationStat['tone']): string {
                         <h2
                             class="mt-5 text-lg font-semibold text-brand-950 dark:text-white"
                         >
-                            Fronteira activa
+                            A facturar como
                         </h2>
                         <p
                             class="mt-2 text-sm/6 text-brand-900/70 dark:text-brand-100/65"
                         >
-                            O contexto seleccionado determina todas as consultas
-                            e alterações. Uma empresa não pode anexar um
-                            estabelecimento pertencente a outro espaço.
+                            Tudo o que vir e alterar pertence a esta empresa. Se
+                            gere mais do que uma, troque de espaço no canto
+                            superior da navegação.
                         </p>
                         <dl class="mt-6 space-y-4 text-sm">
                             <div>
                                 <dt
-                                    class="text-xs font-semibold tracking-wide text-brand-700 uppercase dark:text-brand-300"
+                                    class="eyebrow text-brand-700 dark:text-brand-300"
                                 >
                                     Espaço
                                 </dt>
@@ -420,7 +423,7 @@ function statToneClasses(tone: FoundationStat['tone']): string {
                             </div>
                             <div>
                                 <dt
-                                    class="text-xs font-semibold tracking-wide text-brand-700 uppercase dark:text-brand-300"
+                                    class="eyebrow text-brand-700 dark:text-brand-300"
                                 >
                                     Empresa
                                 </dt>
@@ -436,7 +439,7 @@ function statToneClasses(tone: FoundationStat['tone']): string {
                             </div>
                             <div>
                                 <dt
-                                    class="text-xs font-semibold tracking-wide text-brand-700 uppercase dark:text-brand-300"
+                                    class="eyebrow text-brand-700 dark:text-brand-300"
                                 >
                                     NIF protegido
                                 </dt>
@@ -459,26 +462,22 @@ function statToneClasses(tone: FoundationStat['tone']): string {
                     >
                         <div>
                             <p
-                                class="text-xs font-semibold tracking-[0.16em] text-brand-700 uppercase dark:text-brand-300"
+                                class="eyebrow text-brand-700 dark:text-brand-300"
                             >
-                                Módulos do produto
+                                Atalhos
                             </p>
                             <h2
                                 class="mt-1 text-xl font-semibold text-zinc-950 dark:text-white"
                             >
-                                Módulos operacionais e fronteiras fiscais
+                                O que pode fazer a seguir
                             </h2>
                         </div>
-                        <StatusBadge
-                            label="5 módulos operacionais"
-                            tone="neutral"
-                        />
                     </div>
                     <div class="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
                         <article
                             v-for="preview in previews"
                             :key="preview.title"
-                            class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-white/10"
+                            class="rounded-2xl surface p-5"
                         >
                             <component
                                 :is="preview.icon"

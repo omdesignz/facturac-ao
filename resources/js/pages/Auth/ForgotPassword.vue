@@ -15,7 +15,7 @@ const status = computed(() => (page.props.flash as { status?: string }).status);
     <AuthLayout
         eyebrow="Recuperar acesso"
         title="Redefina a palavra-passe"
-        description="Indique o email da conta. Enviaremos uma ligação temporária se o endereço estiver registado."
+        description="Indique o email da conta. Se estiver registado, enviamos-lhe uma ligação que expira daqui a pouco."
     >
         <Head title="Recuperar palavra-passe" />
 

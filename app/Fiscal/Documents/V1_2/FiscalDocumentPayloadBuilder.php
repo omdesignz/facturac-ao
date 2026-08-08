@@ -3,13 +3,18 @@
 namespace App\Fiscal\Documents\V1_2;
 
 use App\Fiscal\Agt\Support\CanonicalNumber;
+use App\Fiscal\Calculation\FiscalCalculator;
 use App\Models\FiscalDocument;
 use App\Models\FiscalDocumentLine;
 use App\Models\FiscalDocumentLineTax;
+use App\Models\FiscalDocumentSettlement;
+use App\Models\FiscalDocumentWithholding;
 use DomainException;
 
 final class FiscalDocumentPayloadBuilder
 {
+    public function __construct(private FiscalCalculator $calculator) {}
+
     /** @return array<string, mixed> */
     public function signableObject(FiscalDocument $document): array
     {
@@ -31,7 +36,7 @@ final class FiscalDocumentPayloadBuilder
     public function document(FiscalDocument $document): array
     {
         $this->ensureReadyForPayload($document);
-        $document->loadMissing(['legalEntity', 'lines.taxes']);
+        $document->loadMissing(['legalEntity', 'lines.taxes', 'settlements', 'withholdings']);
 
         return array_filter([
             'documentNo' => $document->document_no,
@@ -48,7 +53,63 @@ final class FiscalDocumentPayloadBuilder
                 ->values()
                 ->all(),
             'documentTotals' => $this->documentTotals($document),
+            ...$this->currency($document),
+            ...$this->withholdings($document),
+            ...$this->adjustmentReference($document),
+            ...$this->paymentDetails($document),
         ], fn (mixed $value): bool => $value !== null);
+    }
+
+    /**
+     * Receipts state how they were paid, and a standalone receipt lists the
+     * invoices it settles.
+     *
+     * @return array<string, mixed>
+     */
+    private function paymentDetails(FiscalDocument $document): array
+    {
+        if (! $document->document_type->isReceipt()) {
+            return [];
+        }
+
+        $details = [
+            'paymentMethod' => $document->payment_method?->value,
+            'paymentDate' => $document->payment_date?->toDateString(),
+            'paymentAmount' => $document->payment_amount_minor === null
+                ? null
+                : CanonicalNumber::fromMinorUnits($document->payment_amount_minor),
+        ];
+
+        if (! $document->document_type->settlesOtherDocuments()) {
+            return $details;
+        }
+
+        $details['settledDocuments'] = $document->settlements
+            ->map(fn (FiscalDocumentSettlement $settlement): array => [
+                'documentNo' => $settlement->settled_document_no,
+                'settledAmount' => CanonicalNumber::fromMinorUnits($settlement->amount_minor),
+            ])
+            ->values()
+            ->all();
+
+        return $details;
+    }
+
+    /**
+     * Credit and debit notes must state which document they correct and why.
+     *
+     * @return array<string, string|null>
+     */
+    private function adjustmentReference(FiscalDocument $document): array
+    {
+        if (! $document->document_type->isAdjustment()) {
+            return [];
+        }
+
+        return [
+            'referencingDocumentNo' => $document->references_document_no,
+            'adjustmentReason' => $document->adjustment_reason,
+        ];
     }
 
     /** @return array<string, mixed> */
@@ -88,13 +149,81 @@ final class FiscalDocumentPayloadBuilder
         ], fn (mixed $value): bool => $value !== null);
     }
 
-    /** @return array<string, CanonicalNumber> */
+    /**
+     * The totals as the AGT is given them, in kwanzas.
+     *
+     * Converted rather than sent in the document's own currency, on the same
+     * rule the audit file follows: the tax authority reckons in the national
+     * currency and the original is declared separately. Every document issued
+     * in kwanzas converts through a rate of exactly one, so this changes nothing
+     * for them and no signature already filed moves.
+     *
+     * @return array<string, CanonicalNumber>
+     */
     private function documentTotals(FiscalDocument $document): array
     {
         return [
-            'taxPayable' => CanonicalNumber::fromMinorUnits($document->tax_payable_minor),
-            'netTotal' => CanonicalNumber::fromMinorUnits($document->net_total_minor),
-            'grossTotal' => CanonicalNumber::fromMinorUnits($document->gross_total_minor),
+            'taxPayable' => CanonicalNumber::fromMinorUnits(
+                $this->calculator->convertedAmount($document->tax_payable_minor, $document->exchange_rate_micro),
+            ),
+            'netTotal' => CanonicalNumber::fromMinorUnits(
+                $this->calculator->convertedAmount($document->net_total_minor, $document->exchange_rate_micro),
+            ),
+            'grossTotal' => CanonicalNumber::fromMinorUnits(
+                $this->calculator->convertedAmount($document->gross_total_minor, $document->exchange_rate_micro),
+            ),
+        ];
+    }
+
+    /**
+     * What the document was actually written in, when that was not kwanzas.
+     *
+     * Left off entirely for a kwanza document so the payload of every document
+     * issued so far is byte-for-byte what it was.
+     *
+     * @return array<string, mixed>
+     */
+    private function currency(FiscalDocument $document): array
+    {
+        if (! $document->isForeignCurrency()) {
+            return [];
+        }
+
+        return [
+            'currency' => [
+                'currencyCode' => $document->currency_code,
+                'currencyAmount' => CanonicalNumber::fromMinorUnits($document->gross_total_minor),
+                'exchangeRate' => CanonicalNumber::fromMinorUnits(
+                    intdiv($document->exchange_rate_micro, 10_000),
+                ),
+            ],
+        ];
+    }
+
+    /**
+     * What the buyer keeps back and pays to the AGT themselves.
+     *
+     * @return array<string, mixed>
+     */
+    private function withholdings(FiscalDocument $document): array
+    {
+        if ($document->withholdings->isEmpty()) {
+            return [];
+        }
+
+        return [
+            'withholdingTax' => $document->withholdings
+                ->map(fn (FiscalDocumentWithholding $withholding): array => [
+                    'withholdingTaxType' => $withholding->withholding_type->value,
+                    'withholdingTaxAmount' => CanonicalNumber::fromMinorUnits(
+                        $this->calculator->convertedAmount(
+                            $withholding->amount_minor,
+                            $document->exchange_rate_micro,
+                        ),
+                    ),
+                ])
+                ->values()
+                ->all(),
         ];
     }
 
@@ -112,6 +241,26 @@ final class FiscalDocumentPayloadBuilder
 
         if (blank($document->legalEntity->tax_identification_number)) {
             throw new DomainException('The issuing legal entity has no tax registration number.');
+        }
+
+        if ($document->document_type->isReceipt()
+            && ($document->payment_method === null || $document->payment_date === null)
+        ) {
+            throw new DomainException('A receipt must state how and when it was paid.');
+        }
+
+        if ($document->document_type->settlesOtherDocuments()
+            && $document->settlements()->doesntExist()
+        ) {
+            throw new DomainException('A receipt must settle at least one issued document.');
+        }
+
+        if ($document->document_type->isAdjustment()
+            && (blank($document->references_document_no) || blank($document->adjustment_reason))
+        ) {
+            throw new DomainException(
+                'An adjustment document must reference the corrected document and state a reason.',
+            );
         }
     }
 }

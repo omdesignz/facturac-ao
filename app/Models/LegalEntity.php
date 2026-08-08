@@ -27,6 +27,7 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property LegalEntityStatus $status
  * @property string $country_code
  * @property string $currency_code
+ * @property string|null $logo_path
  * @property string $timezone
  * @property CarbonImmutable|null $onboarding_completed_at
  */
@@ -40,6 +41,7 @@ use Spatie\Activitylog\Support\LogOptions;
     'status',
     'country_code',
     'currency_code',
+    'logo_path',
     'timezone',
     'onboarding_completed_at',
 ])]

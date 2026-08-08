@@ -9,6 +9,7 @@ use App\Models\LegalEntity;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMembership;
+use App\Province;
 use App\TaxRegime;
 use App\WorkspaceRole;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -81,7 +82,7 @@ class PhaseOneDemoSeeder extends Seeder
                 'name' => 'Sede',
                 'address_line' => 'Rua Rei Katyavala, Luanda',
                 'municipality' => 'Luanda',
-                'province_code' => 'LU',
+                'province_code' => Province::Luanda->value,
                 'timezone' => 'Africa/Luanda',
                 'is_head_office' => true,
                 'is_active' => true,

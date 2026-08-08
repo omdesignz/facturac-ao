@@ -9,32 +9,52 @@ import {
     TransitionChild,
     TransitionRoot,
 } from '@headlessui/vue';
-import { Link, usePage } from '@inertiajs/vue3';
+import { Link, router, usePage } from '@inertiajs/vue3';
 import {
     Bell,
     Check,
     ChevronDown,
+    CircleAlert,
     CircleCheck,
+    Info,
     Menu as MenuIcon,
     Monitor,
     Moon,
+    PanelLeftClose,
+    PanelLeftOpen,
     Search,
     TriangleAlert,
     Sun,
     X,
 } from '@lucide/vue';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import type { Component } from 'vue';
+import ConfirmDialog from '@/components/ConfirmDialog.vue';
+import CookieConsent from '@/components/CookieConsent.vue';
+import ImpersonationBanner from '@/components/ImpersonationBanner.vue';
 import SidebarNavigation from '@/components/SidebarNavigation.vue';
+import TermsReacceptanceNotice from '@/components/TermsReacceptanceNotice.vue';
+import WorkSessionTimer from '@/components/WorkSessionTimer.vue';
 import {
     applyAppearance,
     getStoredAppearance,
     storeAppearance,
 } from '@/lib/appearance';
 import type { Appearance } from '@/lib/appearance';
+import {
+    getStoredSidebarCollapsed,
+    storeSidebarCollapsed,
+} from '@/lib/sidebar';
 import { logout, onboarding } from '@/routes';
+import {
+    index as notificationsIndex,
+    read as markNotificationRead,
+    readAll as markAllNotificationsRead,
+} from '@/routes/notifications';
 import { security } from '@/routes/settings';
 
 const sidebarOpen = ref(false);
+const sidebarCollapsed = ref(getStoredSidebarCollapsed());
 const appearance = ref<Appearance>('system');
 const page = usePage();
 
@@ -65,8 +85,15 @@ const currentAppearance = computed(
         appearanceOptions[2],
 );
 
-const notifications = computed(() => {
-    const attentionItems: Array<{
+/**
+ * Standing state that needs a decision — not events.
+ *
+ * Kept apart from notifications on purpose: an unfinished company profile is
+ * true until someone fixes it, so it has no moment to have happened at and
+ * nothing to mark as read.
+ */
+const attentionItems = computed(() => {
+    const items: Array<{
         title: string;
         detail: string;
         tone: 'success' | 'warning';
@@ -77,7 +104,7 @@ const notifications = computed(() => {
         currentWorkspace.value?.legal_entity === null ||
         currentWorkspace.value?.legal_entity.status === 'draft'
     ) {
-        attentionItems.push({
+        items.push({
             title: 'Complete o perfil da empresa',
             detail: 'Faltam dados legais e do estabelecimento principal.',
             tone: 'warning',
@@ -89,7 +116,7 @@ const notifications = computed(() => {
         currentWorkspace.value?.requires_mfa &&
         !currentUser.value?.two_factor_enabled
     ) {
-        attentionItems.push({
+        items.push({
             title: 'Active a autenticação multifactor',
             detail: 'O seu papel tem permissões elevadas neste espaço.',
             tone: 'warning',
@@ -97,33 +124,174 @@ const notifications = computed(() => {
         });
     }
 
-    if (attentionItems.length === 0) {
-        attentionItems.push({
-            title: 'Controlos essenciais activos',
-            detail: 'Perfil e segurança da conta não exigem atenção imediata.',
-            tone: 'success',
-            href: security.url(),
-        });
-    }
-
-    return attentionItems;
+    return items;
 });
 
+const notifications = computed(() => page.props.notifications);
+
+/**
+ * What the dot on the bell counts.
+ *
+ * Unread notifications and outstanding setup both mean "there is something
+ * here for you"; splitting them into two indicators would make neither worth
+ * looking at.
+ */
 const attentionCount = computed(
     () =>
-        notifications.value.filter(
-            (notification) => notification.tone === 'warning',
-        ).length,
+        (notifications.value?.unread ?? 0) +
+        attentionItems.value.filter((item) => item.tone === 'warning').length,
 );
+
+const relativeFormatter = new Intl.RelativeTimeFormat('pt-PT', {
+    numeric: 'auto',
+});
+
+/** "há 5 minutos" reads better than a timestamp in a list you scan. */
+function relativeTime(value: string | null): string {
+    if (value === null) {
+        return '';
+    }
+
+    const seconds = Math.round((Date.parse(value) - Date.now()) / 1000);
+    const steps: Array<[Intl.RelativeTimeFormatUnit, number]> = [
+        ['second', 60],
+        ['minute', 60],
+        ['hour', 24],
+        ['day', 7],
+        ['week', 4.35],
+        ['month', 12],
+    ];
+
+    let amount = seconds;
+
+    for (const [unit, size] of steps) {
+        if (Math.abs(amount) < size) {
+            return relativeFormatter.format(Math.round(amount), unit);
+        }
+
+        amount /= size;
+    }
+
+    return relativeFormatter.format(Math.round(amount), 'year');
+}
+
+/** Tone drives the chip, so the list is scannable before it is read. */
+const toneChip: Record<string, string> = {
+    critical:
+        'bg-rose-100 text-rose-700 dark:bg-rose-400/10 dark:text-rose-300',
+    warning:
+        'bg-amber-100 text-amber-700 dark:bg-amber-400/10 dark:text-amber-300',
+    success:
+        'bg-emerald-100 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300',
+    neutral: 'bg-zinc-100 text-zinc-600 dark:bg-white/10 dark:text-zinc-300',
+};
+
+const toneIcon: Record<string, Component> = {
+    critical: CircleAlert,
+    warning: TriangleAlert,
+    success: CircleCheck,
+    neutral: Info,
+};
+
+function openNotification(id: string): void {
+    router.post(markNotificationRead.url({ notification: id }));
+}
+
+function markEverythingRead(): void {
+    router.post(markAllNotificationsRead.url(), {}, { preserveScroll: true });
+}
 
 function changeAppearance(value: Appearance): void {
     appearance.value = value;
     storeAppearance(value);
 }
 
+function toggleSidebar(): void {
+    sidebarCollapsed.value = !sidebarCollapsed.value;
+    storeSidebarCollapsed(sidebarCollapsed.value);
+}
+
+const searchInput = ref<HTMLInputElement | null>(null);
+const isApplePlatform = ref(false);
+
+/** ['⌘', 'K'] on Apple hardware, ['Ctrl', 'K'] everywhere else. */
+const shortcutKeys = computed(() =>
+    isApplePlatform.value ? ['⌘', 'K'] : ['Ctrl', 'K'],
+);
+
+const shortcutHint = computed(
+    () =>
+        `Pesquisar (${shortcutKeys.value.join(isApplePlatform.value ? '' : '+')})`,
+);
+
+function detectApplePlatform(): boolean {
+    if (typeof navigator === 'undefined') {
+        return false;
+    }
+
+    const platform =
+        (navigator as { userAgentData?: { platform?: string } }).userAgentData
+            ?.platform ??
+        navigator.platform ??
+        '';
+
+    return /mac|iphone|ipad|ipod/i.test(platform);
+}
+
+function isTypingInFormField(target: EventTarget | null): boolean {
+    if (!(target instanceof HTMLElement)) {
+        return false;
+    }
+
+    return (
+        target.isContentEditable ||
+        ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)
+    );
+}
+
+function handleShortcut(event: KeyboardEvent): void {
+    if (event.key !== 'k' && event.key !== 'K') {
+        return;
+    }
+
+    // Match the modifier we actually advertise on this platform.
+    const modifier = isApplePlatform.value ? event.metaKey : event.ctrlKey;
+
+    if (!modifier || event.altKey) {
+        return;
+    }
+
+    event.preventDefault();
+    searchInput.value?.focus();
+    searchInput.value?.select();
+}
+
+function handleSearchEscape(event: KeyboardEvent): void {
+    if (event.key === 'Escape') {
+        searchInput.value?.blur();
+    }
+}
+
+function handleGlobalKeydown(event: KeyboardEvent): void {
+    if (
+        isTypingInFormField(event.target) &&
+        event.target !== searchInput.value
+    ) {
+        return;
+    }
+
+    handleShortcut(event);
+}
+
 onMounted(() => {
     appearance.value = getStoredAppearance();
     applyAppearance(appearance.value);
+    isApplePlatform.value = detectApplePlatform();
+    window.addEventListener('keydown', handleGlobalKeydown);
+});
+
+onBeforeUnmount(() => {
+    window.removeEventListener('keydown', handleGlobalKeydown);
 });
 </script>
 
@@ -131,6 +299,14 @@ onMounted(() => {
     <div
         class="min-h-screen bg-stone-50 text-zinc-950 dark:bg-zinc-950 dark:text-white"
     >
+        <!-- Above the sidebar and header on purpose: whose account is on screen
+             is the one thing that must never be scrolled or clicked away. -->
+        <ImpersonationBanner />
+        <CookieConsent />
+        <!-- Mounted once so no page has to carry its own copy; every question
+             the app asks is asked in the same voice. -->
+        <ConfirmDialog />
+
         <TransitionRoot as="template" :show="sidebarOpen">
             <Dialog
                 class="relative z-50 lg:hidden"
@@ -197,12 +373,20 @@ onMounted(() => {
         </TransitionRoot>
 
         <div
-            class="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col"
+            :class="[
+                sidebarCollapsed ? 'lg:w-20' : 'lg:w-72',
+                'hidden transition-[width] duration-300 ease-in-out lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:flex-col',
+            ]"
         >
-            <SidebarNavigation />
+            <SidebarNavigation :collapsed="sidebarCollapsed" />
         </div>
 
-        <div class="lg:pl-72">
+        <div
+            :class="[
+                sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-72',
+                'transition-[padding] duration-300 ease-in-out',
+            ]"
+        >
             <header
                 class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-4 border-b border-zinc-200/80 bg-white/90 px-4 backdrop-blur-xl sm:px-6 lg:px-8 dark:border-white/10 dark:bg-zinc-950/85"
             >
@@ -215,6 +399,30 @@ onMounted(() => {
                     <MenuIcon class="size-6" aria-hidden="true" />
                 </button>
 
+                <button
+                    type="button"
+                    class="-ml-1 hidden rounded-lg p-2 text-zinc-500 focus-ring transition hover:bg-zinc-100 hover:text-zinc-950 lg:block dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white"
+                    :aria-expanded="!sidebarCollapsed"
+                    :title="
+                        sidebarCollapsed
+                            ? 'Expandir navegação'
+                            : 'Recolher navegação'
+                    "
+                    @click="toggleSidebar"
+                >
+                    <span class="sr-only">{{
+                        sidebarCollapsed
+                            ? 'Expandir navegação'
+                            : 'Recolher navegação'
+                    }}</span>
+                    <PanelLeftOpen
+                        v-if="sidebarCollapsed"
+                        class="size-5"
+                        aria-hidden="true"
+                    />
+                    <PanelLeftClose v-else class="size-5" aria-hidden="true" />
+                </button>
+
                 <div
                     class="h-6 w-px bg-zinc-900/10 lg:hidden dark:bg-white/10"
                     aria-hidden="true"
@@ -222,26 +430,44 @@ onMounted(() => {
 
                 <div class="flex flex-1 gap-4 self-stretch lg:gap-6">
                     <label class="relative flex min-w-0 flex-1 items-center">
-                        <span class="sr-only">Pesquisar</span>
+                        <span class="sr-only">{{ shortcutHint }}</span>
                         <Search
                             class="pointer-events-none absolute left-0 size-5 text-zinc-400"
                             aria-hidden="true"
                         />
                         <input
+                            ref="searchInput"
                             type="search"
-                            class="h-full w-full bg-transparent pr-4 pl-8 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 dark:text-white dark:placeholder:text-zinc-500"
+                            class="h-full w-full min-w-0 bg-transparent pr-3 pl-8 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 dark:text-white dark:placeholder:text-zinc-500"
                             placeholder="Pesquisar factura, cliente ou NIF…"
+                            :aria-keyshortcuts="
+                                isApplePlatform ? 'Meta+K' : 'Control+K'
+                            "
+                            @keydown="handleSearchEscape"
                         />
+                        <!--
+                            shrink-0 keeps the flex row from squeezing the keys
+                            until the label wraps onto two lines.
+                        -->
                         <span
-                            class="hidden rounded-md border border-zinc-200 bg-zinc-50 px-1.5 py-0.5 text-[0.65rem] font-semibold text-zinc-400 sm:block dark:border-white/10 dark:bg-white/5 dark:text-zinc-500"
-                            >⌘ K</span
+                            class="hidden shrink-0 items-center gap-1 sm:flex"
+                            aria-hidden="true"
                         >
+                            <kbd
+                                v-for="key in shortcutKeys"
+                                :key="key"
+                                class="grid h-5 min-w-5 place-items-center rounded border border-zinc-200 bg-zinc-50 px-1.5 font-mono text-[0.6875rem] leading-none font-medium text-zinc-500 shadow-[inset_0_-1px_0_rgba(0,0,0,0.06)] dark:border-white/10 dark:bg-white/5 dark:text-zinc-400 dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.06)]"
+                                >{{ key }}</kbd
+                            >
+                        </span>
                     </label>
 
                     <div class="flex items-center gap-2 sm:gap-3">
+                        <WorkSessionTimer />
+
                         <Menu as="div" class="relative">
                             <MenuButton
-                                class="relative rounded-lg p-2 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white"
+                                class="relative rounded-lg p-2 text-zinc-500 focus-ring transition hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white"
                             >
                                 <span class="sr-only">Ver notificações</span>
                                 <Bell class="size-5" aria-hidden="true" />
@@ -259,73 +485,175 @@ onMounted(() => {
                                 leave-to-class="scale-95 opacity-0"
                             >
                                 <MenuItems
-                                    class="absolute right-0 z-20 mt-3 w-[min(24rem,calc(100vw-2rem))] origin-top-right overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-zinc-900/10 focus:outline-none dark:bg-zinc-900 dark:ring-white/10"
+                                    class="absolute right-0 z-20 mt-3 flex max-h-[min(32rem,calc(100vh-6rem))] w-[min(24rem,calc(100vw-2rem))] origin-top-right flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-zinc-900/10 focus:outline-none dark:bg-zinc-900 dark:ring-white/10"
                                 >
                                     <div
-                                        class="flex items-center justify-between border-b border-zinc-100 px-4 py-3 dark:border-white/10"
+                                        class="flex shrink-0 items-center justify-between gap-3 border-b border-zinc-100 px-4 py-3 dark:border-white/10"
                                     >
                                         <p
                                             class="text-sm font-semibold text-zinc-950 dark:text-white"
                                         >
-                                            Centro de atenção
+                                            Notificações
                                         </p>
+                                        <button
+                                            v-if="
+                                                (notifications?.unread ?? 0) > 0
+                                            "
+                                            type="button"
+                                            class="rounded-lg px-2 py-1 text-xs font-medium text-zinc-500 focus-ring transition hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white"
+                                            @click="markEverythingRead"
+                                        >
+                                            Marcar todas como lidas
+                                        </button>
                                         <span
+                                            v-else
                                             class="text-xs text-zinc-500 dark:text-zinc-400"
-                                            >{{
-                                                attentionCount > 0
-                                                    ? `${attentionCount} ${attentionCount === 1 ? 'acção' : 'acções'}`
-                                                    : 'Em dia'
-                                            }}</span
+                                            >Nada por ler</span
                                         >
                                     </div>
-                                    <MenuItem
-                                        v-for="notification in notifications"
-                                        :key="notification.title"
-                                        v-slot="{ active }"
-                                    >
+
+                                    <div class="min-h-0 flex-1 overflow-y-auto">
+                                        <MenuItem
+                                            v-for="entry in notifications?.recent ??
+                                            []"
+                                            :key="entry.id"
+                                            v-slot="{ active }"
+                                        >
+                                            <button
+                                                type="button"
+                                                :class="[
+                                                    active
+                                                        ? 'bg-zinc-50 dark:bg-white/5'
+                                                        : '',
+                                                    'flex w-full gap-3 px-4 py-3 text-left',
+                                                ]"
+                                                @click="
+                                                    openNotification(entry.id)
+                                                "
+                                            >
+                                                <span
+                                                    :class="[
+                                                        toneChip[entry.tone] ??
+                                                            toneChip.neutral,
+                                                        'mt-0.5 grid size-8 shrink-0 place-items-center rounded-full',
+                                                    ]"
+                                                >
+                                                    <component
+                                                        :is="
+                                                            toneIcon[
+                                                                entry.tone
+                                                            ] ?? Bell
+                                                        "
+                                                        class="size-4"
+                                                        aria-hidden="true"
+                                                    />
+                                                </span>
+                                                <span class="min-w-0 flex-1">
+                                                    <span
+                                                        class="flex items-baseline gap-2"
+                                                    >
+                                                        <span
+                                                            class="min-w-0 flex-1 truncate text-sm font-semibold text-zinc-900 dark:text-white"
+                                                            >{{
+                                                                entry.title
+                                                            }}</span
+                                                        >
+                                                        <span
+                                                            v-if="!entry.read"
+                                                            class="mt-1 size-1.5 shrink-0 rounded-full bg-brand-600 dark:bg-accent-400"
+                                                            aria-label="Por ler"
+                                                        />
+                                                    </span>
+                                                    <span
+                                                        class="mt-0.5 block text-xs/5 text-zinc-500 dark:text-zinc-400"
+                                                        >{{ entry.body }}</span
+                                                    >
+                                                    <span
+                                                        class="mt-1 block text-xs text-zinc-400 dark:text-zinc-500"
+                                                        >{{
+                                                            relativeTime(
+                                                                entry.created_at,
+                                                            )
+                                                        }}</span
+                                                    >
+                                                </span>
+                                            </button>
+                                        </MenuItem>
+
+                                        <p
+                                            v-if="
+                                                (notifications?.recent
+                                                    ?.length ?? 0) === 0
+                                            "
+                                            class="px-4 py-8 text-center text-xs/5 text-zinc-500 dark:text-zinc-400"
+                                        >
+                                            Ainda não há nada aqui. Avisamos
+                                            quando a AGT responder, quando uma
+                                            factura vencer e quando uma avença
+                                            gerar.
+                                        </p>
+
+                                        <div
+                                            v-if="attentionItems.length > 0"
+                                            class="border-t border-zinc-100 dark:border-white/10"
+                                        >
+                                            <p
+                                                class="px-4 pt-3 pb-1 eyebrow text-zinc-400 dark:text-zinc-500"
+                                            >
+                                                A precisar de decisão
+                                            </p>
+                                            <MenuItem
+                                                v-for="item in attentionItems"
+                                                :key="item.title"
+                                                v-slot="{ active }"
+                                            >
+                                                <Link
+                                                    :href="item.href"
+                                                    :class="[
+                                                        active
+                                                            ? 'bg-zinc-50 dark:bg-white/5'
+                                                            : '',
+                                                        'flex w-full gap-3 px-4 py-3 text-left',
+                                                    ]"
+                                                >
+                                                    <span
+                                                        class="mt-0.5 grid size-8 shrink-0 place-items-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-400/10 dark:text-amber-300"
+                                                    >
+                                                        <TriangleAlert
+                                                            class="size-4"
+                                                            aria-hidden="true"
+                                                        />
+                                                    </span>
+                                                    <span>
+                                                        <span
+                                                            class="block text-sm font-semibold text-zinc-900 dark:text-white"
+                                                            >{{
+                                                                item.title
+                                                            }}</span
+                                                        >
+                                                        <span
+                                                            class="mt-0.5 block text-xs/5 text-zinc-500 dark:text-zinc-400"
+                                                            >{{
+                                                                item.detail
+                                                            }}</span
+                                                        >
+                                                    </span>
+                                                </Link>
+                                            </MenuItem>
+                                        </div>
+                                    </div>
+
+                                    <MenuItem v-slot="{ active }">
                                         <Link
-                                            :href="notification.href"
+                                            :href="notificationsIndex.url()"
                                             :class="[
                                                 active
                                                     ? 'bg-zinc-50 dark:bg-white/5'
                                                     : '',
-                                                'flex w-full gap-3 px-4 py-3 text-left',
+                                                'block shrink-0 border-t border-zinc-100 px-4 py-3 text-center text-sm font-semibold text-brand-700 dark:border-white/10 dark:text-brand-300',
                                             ]"
                                         >
-                                            <span
-                                                :class="[
-                                                    notification.tone ===
-                                                    'success'
-                                                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300'
-                                                        : 'bg-amber-100 text-amber-700 dark:bg-amber-400/10 dark:text-amber-300',
-                                                    'mt-0.5 grid size-8 shrink-0 place-items-center rounded-full',
-                                                ]"
-                                            >
-                                                <component
-                                                    :is="
-                                                        notification.tone ===
-                                                        'success'
-                                                            ? CircleCheck
-                                                            : TriangleAlert
-                                                    "
-                                                    class="size-4"
-                                                    aria-hidden="true"
-                                                />
-                                            </span>
-                                            <span>
-                                                <span
-                                                    class="block text-sm font-semibold text-zinc-900 dark:text-white"
-                                                    >{{
-                                                        notification.title
-                                                    }}</span
-                                                >
-                                                <span
-                                                    class="mt-0.5 block text-xs/5 text-zinc-500 dark:text-zinc-400"
-                                                    >{{
-                                                        notification.detail
-                                                    }}</span
-                                                >
-                                            </span>
+                                            Ver todas
                                         </Link>
                                     </MenuItem>
                                 </MenuItems>
@@ -334,7 +662,7 @@ onMounted(() => {
 
                         <Menu as="div" class="relative">
                             <MenuButton
-                                class="rounded-lg p-2 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white"
+                                class="rounded-lg p-2 text-zinc-500 focus-ring transition hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white"
                             >
                                 <span class="sr-only">Alterar aparência</span>
                                 <component
@@ -399,7 +727,7 @@ onMounted(() => {
 
                         <Menu as="div" class="relative">
                             <MenuButton
-                                class="flex items-center gap-2 rounded-xl p-1.5 text-left transition hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 dark:hover:bg-white/5"
+                                class="flex items-center gap-2 rounded-xl p-1.5 text-left focus-ring transition hover:bg-zinc-100 dark:hover:bg-white/5"
                             >
                                 <span
                                     class="grid size-8 place-items-center rounded-lg bg-brand-100 text-xs font-bold text-brand-800 dark:bg-brand-400/15 dark:text-brand-200"
@@ -468,6 +796,8 @@ onMounted(() => {
                     </div>
                 </div>
             </header>
+
+            <TermsReacceptanceNotice />
 
             <main class="min-h-[calc(100vh-4rem)]">
                 <slot />

@@ -80,6 +80,10 @@ export default defineConfigWithVueTs(
             'vendor',
             'node_modules',
             'public',
+            // Agent scratch space, including checked-out worktrees. Linting a
+            // copy of the repo reports every problem twice and fails on files
+            // that are not ours to fix.
+            '.claude',
             'bootstrap/ssr',
             'tailwind.config.js',
             'vite.config.ts',

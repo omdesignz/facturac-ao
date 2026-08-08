@@ -1,0 +1,100 @@
+<?php
+
+namespace App\Http\Requests;
+
+use App\FiscalDocumentType;
+use App\RecurrenceFrequency;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+
+class StoreRecurringInvoiceRequest extends FormRequest
+{
+    /**
+     * @return array<string, array<int, mixed>>
+     */
+    public function rules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:120'],
+            'customer_public_id' => ['required', 'string'],
+            'establishment_public_id' => ['required', 'string'],
+            'document_type' => [
+                'required',
+                Rule::in([
+                    FiscalDocumentType::Invoice->value,
+                    FiscalDocumentType::InvoiceReceipt->value,
+                ]),
+            ],
+            'frequency' => ['required', Rule::enum(RecurrenceFrequency::class)],
+            'starts_on' => ['required', 'date'],
+            'ends_on' => ['nullable', 'date', 'after:starts_on'],
+            'is_active' => ['required', 'boolean'],
+            'auto_issue' => ['required', 'boolean'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+
+            'lines' => ['required', 'array', 'min:1', 'max:50'],
+            'lines.*.product_code' => ['nullable', 'string', 'max:60'],
+            'lines.*.product_description' => ['required', 'string', 'max:255'],
+            'lines.*.unit_of_measure' => ['required', 'string', 'max:20'],
+            'lines.*.quantity' => ['required', 'numeric', 'gt:0', 'max:1000000'],
+            'lines.*.unit_price' => ['required', 'numeric', 'min:0', 'max:1000000000'],
+            'lines.*.tax_percentage' => ['required', 'numeric', 'min:0', 'max:100'],
+            'lines.*.tax_type' => ['required', 'string', 'max:10'],
+            'lines.*.tax_code' => ['nullable', 'string', 'max:10'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'lines.required' => 'Uma avença precisa de pelo menos uma linha.',
+            'ends_on.after' => 'O fim tem de ser posterior ao início.',
+        ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'is_active' => $this->boolean('is_active'),
+            'auto_issue' => $this->boolean('auto_issue'),
+        ]);
+    }
+
+    /**
+     * The stored line shape, with amounts already scaled to integers.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function lines(): array
+    {
+        /** @var list<array<string, mixed>> $lines */
+        $lines = $this->validated('lines');
+
+        return array_map(
+            fn (array $line): array => [
+                'product_code' => $line['product_code'] ?? null,
+                'operation_type' => 'SG',
+                'product_description' => (string) $line['product_description'],
+                'unit_of_measure' => (string) $line['unit_of_measure'],
+                'quantity_units' => $this->scaled((string) $line['quantity'], 3),
+                'unit_price_minor' => $this->scaled((string) $line['unit_price'], 2),
+                'discount_rate_basis_points' => 0,
+                'tax_type' => (string) $line['tax_type'],
+                'tax_code' => $line['tax_code'] ?? null,
+                'tax_percentage' => (string) $line['tax_percentage'],
+                'tax_exemption_code' => null,
+            ],
+            $lines,
+        );
+    }
+
+    private function scaled(string $value, int $scale): int
+    {
+        [$whole, $fraction] = array_pad(explode('.', trim($value), 2), 2, '');
+
+        return (int) ($whole.substr(str_pad($fraction, $scale, '0'), 0, $scale));
+    }
+}

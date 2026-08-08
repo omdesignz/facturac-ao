@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
+use App\PaymentMethod;
 use Carbon\CarbonImmutable;
 use Database\Factories\FiscalDocumentFactory;
 use DomainException;
@@ -22,6 +23,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $legal_entity_id
  * @property int $establishment_id
  * @property int|null $customer_id
+ * @property int|null $references_document_id
+ * @property string|null $references_document_no
+ * @property string|null $adjustment_reason
+ * @property PaymentMethod|null $payment_method
+ * @property int|null $payment_amount_minor
+ * @property CarbonImmutable|null $payment_date
  * @property int|null $fiscal_series_id
  * @property int|null $agt_connection_id
  * @property int $created_by_user_id
@@ -35,6 +42,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property CarbonImmutable $document_date
  * @property CarbonImmutable|null $due_date
  * @property string $currency_code
+ * @property int $exchange_rate_micro
  * @property string $customer_name
  * @property string $customer_tax_identification_number
  * @property string $customer_country_code
@@ -58,6 +66,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property CarbonImmutable|null $system_entry_at
  * @property CarbonImmutable|null $frozen_at
  * @property CarbonImmutable|null $issued_at
+ * @property CarbonImmutable|null $sent_to_customer_at
+ * @property string|null $sent_to_email
+ * @property int $send_count
  * @property-read LegalEntity $legalEntity
  * @property-read Establishment $establishment
  */
@@ -66,6 +77,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'legal_entity_id',
     'establishment_id',
     'customer_id',
+    'references_document_id',
+    'references_document_no',
+    'adjustment_reason',
+    'payment_method',
+    'payment_amount_minor',
+    'payment_date',
     'fiscal_series_id',
     'agt_connection_id',
     'created_by_user_id',
@@ -79,6 +96,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'document_date',
     'due_date',
     'currency_code',
+    'exchange_rate_micro',
     'customer_name',
     'customer_tax_identification_number',
     'customer_country_code',
@@ -162,6 +180,53 @@ class FiscalDocument extends Model
     }
 
     /** @return BelongsTo<Customer, $this> */
+    /**
+     * The document this one corrects. Only set for adjustment documents.
+     *
+     * @return BelongsTo<FiscalDocument, $this>
+     */
+    public function referencesDocument(): BelongsTo
+    {
+        return $this->belongsTo(FiscalDocument::class, 'references_document_id');
+    }
+
+    /**
+     * Invoices this receipt pays off.
+     *
+     * @return HasMany<FiscalDocumentSettlement, $this>
+     */
+    public function settlements(): HasMany
+    {
+        return $this->hasMany(FiscalDocumentSettlement::class, 'fiscal_document_id');
+    }
+
+    /**
+     * Receipts that have paid against this invoice.
+     *
+     * @return HasMany<FiscalDocumentSettlement, $this>
+     */
+    public function settledBy(): HasMany
+    {
+        return $this->hasMany(FiscalDocumentSettlement::class, 'settled_document_id');
+    }
+
+    /**
+     * Tax the buyer keeps back on this document and pays to the AGT themselves.
+     *
+     * @return HasMany<FiscalDocumentWithholding, $this>
+     */
+    public function withholdings(): HasMany
+    {
+        return $this->hasMany(FiscalDocumentWithholding::class, 'fiscal_document_id');
+    }
+
+    /** @return HasMany<FiscalDocument, $this> */
+    public function adjustments(): HasMany
+    {
+        return $this->hasMany(FiscalDocument::class, 'references_document_id');
+    }
+
+    /** @return BelongsTo<Customer, $this> */
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
@@ -220,6 +285,8 @@ class FiscalDocument extends Model
     {
         return [
             'document_type' => FiscalDocumentType::class,
+            'payment_method' => PaymentMethod::class,
+            'payment_date' => 'immutable_date',
             'status' => FiscalDocumentStatus::class,
             'document_jws' => 'encrypted',
             'document_date' => 'immutable_date',
@@ -227,7 +294,22 @@ class FiscalDocument extends Model
             'system_entry_at' => 'immutable_datetime',
             'frozen_at' => 'immutable_datetime',
             'issued_at' => 'immutable_datetime',
+            'sent_to_customer_at' => 'immutable_datetime',
+            'exchange_rate_micro' => 'integer',
         ];
+    }
+
+    /**
+     * Whether this document was written in a currency other than the kwanza.
+     *
+     * The stored totals are in the document's own currency. Only the audit file
+     * and the printed currency block need them restated, so the conversion is
+     * done where it is asked for rather than kept as a second set of columns
+     * that could drift out of step with the first.
+     */
+    public function isForeignCurrency(): bool
+    {
+        return $this->exchange_rate_micro !== 1_000_000;
     }
 
     private function ensureOriginalVersionIsMutable(): void

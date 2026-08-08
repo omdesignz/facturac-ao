@@ -7,6 +7,7 @@ use App\AgtConnectionStatus;
 use App\AgtEnvironment;
 use App\Http\Requests\UpdateOnboardingRequest;
 use App\Models\Workspace;
+use App\Province;
 use App\TaxRegime;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -41,7 +42,10 @@ class OnboardingController extends Controller
             'establishment_name' => 'Sede',
             'address_line' => '',
             'municipality' => '',
-            'province_code' => 'LU',
+            'province_code' => Province::Luanda->value,
+            'province_label' => Province::Luanda->label(),
+            'has_logo' => false,
+            'logo_updated_at' => null,
         ];
 
         if ($legalEntity !== null) {
@@ -65,6 +69,12 @@ class OnboardingController extends Controller
                 'address_line' => $establishment->address_line,
                 'municipality' => $establishment->municipality ?? '',
                 'province_code' => $establishment->province_code,
+                'province_label' => Province::tryFrom($establishment->province_code)?->label()
+                    ?? $establishment->province_code,
+                'has_logo' => $legalEntity->logo_path !== null,
+                // Part of the URL so the browser fetches the new mark rather
+                // than the one it cached a moment ago.
+                'logo_updated_at' => $legalEntity->updated_at?->timestamp,
             ];
         }
         $agtConnection = $legalEntity?->agtConnections()
@@ -80,6 +90,7 @@ class OnboardingController extends Controller
                 ],
                 TaxRegime::cases(),
             ),
+            'provinces' => Province::options(),
             'canUpdate' => $legalEntity === null
                 ? Gate::allows('update', $workspace)
                 : Gate::allows('update', $legalEntity),

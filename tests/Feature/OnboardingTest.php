@@ -4,6 +4,7 @@ use App\LegalEntityStatus;
 use App\Models\LegalEntity;
 use App\Models\User;
 use App\Models\WorkspaceMembership;
+use App\Province;
 use App\TaxRegime;
 use App\WorkspaceRole;
 use Spatie\Activitylog\Models\Activity;
@@ -20,7 +21,7 @@ function validCompanyProfile(array $overrides = []): array
         'establishment_name' => 'Sede',
         'address_line' => 'Rua Rei Katyavala, número 20',
         'municipality' => 'Luanda',
-        'province_code' => 'lu',
+        'province_code' => 'lua',
         ...$overrides,
     ];
 }
@@ -43,7 +44,7 @@ test('an owner persists a normalized company and head office atomically', functi
         ->and($legalEntity->onboarding_completed_at)->not->toBeNull()
         ->and($establishment->workspace_id)->toBe($workspace->id)
         ->and($establishment->code)->toBe('SEDE-01')
-        ->and($establishment->province_code)->toBe('LU')
+        ->and($establishment->province_code)->toBe(Province::Luanda->value)
         ->and($establishment->is_head_office)->toBeTrue();
 
     expect(Activity::query()

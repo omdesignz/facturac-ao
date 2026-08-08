@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\Establishment;
 use App\Models\LegalEntity;
+use App\Province;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -33,7 +34,7 @@ class EstablishmentFactory extends Factory
             'name' => fake()->randomElement(['Sede', 'Loja central', 'Armazém']),
             'address_line' => fake()->streetAddress(),
             'municipality' => fake()->city(),
-            'province_code' => 'LU',
+            'province_code' => Province::Luanda->value,
             'timezone' => 'Africa/Luanda',
             'is_head_office' => false,
             'is_active' => true,

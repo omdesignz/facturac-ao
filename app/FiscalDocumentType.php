@@ -47,6 +47,96 @@ enum FiscalDocumentType: string
         };
     }
 
+    /**
+     * Grammatical gender of the label, so the UI can agree its article:
+     * «uma factura» and «uma nota» but «um recibo».
+     */
+    public function isFeminine(): bool
+    {
+        return match ($this) {
+            self::AdvanceInvoice, self::Invoice, self::InvoiceReceipt,
+            self::GlobalInvoice, self::GenericInvoice, self::DebitNote,
+            self::CreditNote, self::SelfBillingInvoiceReceipt,
+            self::CoInsuranceAllocation, self::LeadCoInsurerAllocation => true,
+            default => false,
+        };
+    }
+
+    /**
+     * Adjustment documents correct an earlier one. The AGT requires both the
+     * corrected document and a reason to accompany them.
+     */
+    public function isAdjustment(): bool
+    {
+        return in_array($this, [self::CreditNote, self::DebitNote], true);
+    }
+
+    /**
+     * A credit note gives value back to the customer; a debit note charges more.
+     */
+    public function reducesReceivable(): bool
+    {
+        return $this === self::CreditNote;
+    }
+
+    /**
+     * Records a payment, so it must state the method and the amount.
+     */
+    public function isReceipt(): bool
+    {
+        return in_array($this, [
+            self::InvoiceReceipt,
+            self::IssuedReceipt,
+            self::Receipt,
+            self::CollectionNoticeReceipt,
+        ], true);
+    }
+
+    /**
+     * A standalone receipt settles earlier invoices rather than carrying goods
+     * of its own. FR is the exception: it invoices and is paid in one document.
+     */
+    public function settlesOtherDocuments(): bool
+    {
+        return $this->isReceipt() && ! $this->requiresLines();
+    }
+
+    /**
+     * The types this application can currently issue end to end.
+     *
+     * @return list<self>
+     */
+    public static function issuable(): array
+    {
+        return [
+            self::Invoice,
+            self::InvoiceReceipt,
+            self::IssuedReceipt,
+            self::CreditNote,
+            self::DebitNote,
+        ];
+    }
+
+    /**
+     * How issuing this document moves stock, if at all.
+     *
+     * A debit note charges more for goods already delivered, so it moves no
+     * stock; a credit note is how a return is documented, so it puts stock back.
+     * Receipts settle money, never goods.
+     */
+    public function stockEffect(): ?StockMovementType
+    {
+        return match ($this) {
+            self::Invoice,
+            self::InvoiceReceipt,
+            self::GlobalInvoice,
+            self::GenericInvoice,
+            self::SalesTicket => StockMovementType::Sale,
+            self::CreditNote => StockMovementType::SaleReturn,
+            default => null,
+        };
+    }
+
     public function requiresLines(): bool
     {
         return ! in_array($this, [

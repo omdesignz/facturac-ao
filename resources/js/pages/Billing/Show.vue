@@ -271,7 +271,7 @@ function copyPaymentInstruction(): void {
                     class="relative isolate overflow-hidden rounded-3xl bg-brand-950 px-6 py-8 text-white shadow-[0_28px_80px_-45px_rgba(8,40,32,0.9)] sm:px-8 lg:px-10"
                 >
                     <div
-                        class="absolute -top-28 -right-24 size-80 rounded-full bg-amber-300/15 blur-3xl"
+                        class="absolute -top-28 -right-24 size-80 rounded-full bg-accent-400/15 blur-3xl"
                         aria-hidden="true"
                     />
                     <div
@@ -284,7 +284,7 @@ function copyPaymentInstruction(): void {
                         <div class="max-w-3xl">
                             <div class="flex flex-wrap items-center gap-2">
                                 <StatusBadge
-                                    label="Fase 5 · Subscrições"
+                                    label="Pagamento por Referência EMIS"
                                     tone="info"
                                 />
                                 <span
@@ -298,11 +298,11 @@ function copyPaymentInstruction(): void {
                                 </span>
                             </div>
                             <h1
-                                class="mt-5 max-w-4xl font-display text-4xl leading-none font-semibold tracking-tight sm:text-5xl"
+                                class="mt-5 max-w-4xl text-4xl leading-[1.05] display sm:text-5xl"
                             >
                                 Um plano claro.
-                                <span class="text-amber-300"
-                                    >Pagamento familiar.</span
+                                <span class="text-accent-400"
+                                    >Pague como já paga.</span
                                 >
                             </h1>
                             <p
@@ -371,8 +371,7 @@ function copyPaymentInstruction(): void {
                                 id="simulation-heading"
                                 class="text-sm font-semibold text-amber-900 dark:text-amber-100"
                             >
-                                Ambiente de demonstração — não efectue um
-                                pagamento real
+                                Ambiente de testes — não pague esta referência
                             </h2>
                             <p
                                 class="mt-1 text-sm/6 text-amber-800/80 dark:text-amber-100/75"
@@ -424,7 +423,7 @@ function copyPaymentInstruction(): void {
                 >
                     <section
                         v-if="activeReference"
-                        class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-white/10"
+                        class="overflow-hidden rounded-2xl surface"
                         aria-labelledby="reference-heading"
                     >
                         <div
@@ -455,7 +454,7 @@ function copyPaymentInstruction(): void {
                             </div>
                             <button
                                 type="button"
-                                class="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-zinc-950 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
+                                class="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-zinc-950 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm focus-ring transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
                                 @click="copyPaymentInstruction"
                             >
                                 <Check
@@ -566,7 +565,7 @@ function copyPaymentInstruction(): void {
                                     Valor exacto
                                 </dt>
                                 <dd
-                                    class="mt-1 font-display text-xl font-semibold text-zinc-950 sm:col-span-2 sm:mt-0 dark:text-white"
+                                    class="mt-1 numeric text-xl font-semibold tracking-tight text-zinc-950 sm:col-span-2 sm:mt-0 dark:text-white"
                                 >
                                     {{
                                         formatMoney(
@@ -639,7 +638,7 @@ function copyPaymentInstruction(): void {
                                 <button
                                     v-if="gateway.simulated"
                                     type="button"
-                                    class="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-300 px-3.5 py-2.5 text-sm font-semibold text-brand-950 shadow-sm transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-50"
+                                    class="inline-flex items-center justify-center gap-2 rounded-xl bg-accent-400 px-3.5 py-2.5 text-sm font-semibold text-brand-950 shadow-sm transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
                                     :disabled="simulationForm.processing"
                                     @click="confirmSimulation"
                                 >
@@ -661,7 +660,7 @@ function copyPaymentInstruction(): void {
 
                     <section
                         v-else
-                        class="rounded-2xl bg-white p-7 text-center shadow-sm ring-1 ring-zinc-900/5 sm:p-10 dark:bg-zinc-900 dark:ring-white/10"
+                        class="rounded-2xl surface p-7 text-center sm:p-10"
                         aria-labelledby="no-reference-heading"
                     >
                         <span
@@ -685,7 +684,7 @@ function copyPaymentInstruction(): void {
                     </section>
 
                     <aside
-                        class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-white/10"
+                        class="overflow-hidden rounded-2xl surface"
                         aria-labelledby="subscription-heading"
                     >
                         <div
@@ -720,7 +719,7 @@ function copyPaymentInstruction(): void {
                                 </span>
                                 <div class="min-w-0">
                                     <p
-                                        class="font-display text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white"
+                                        class="text-2xl display text-zinc-950 dark:text-white"
                                     >
                                         {{ subscription.plan.name }}
                                     </p>
@@ -825,7 +824,7 @@ function copyPaymentInstruction(): void {
                         </p>
                         <h2
                             id="plans-heading"
-                            class="mt-2 font-display text-3xl font-semibold tracking-tight text-zinc-950 dark:text-white"
+                            class="mt-2 text-3xl display text-zinc-950 dark:text-white"
                         >
                             Escolha o ritmo da sua empresa
                         </h2>
@@ -860,7 +859,7 @@ function copyPaymentInstruction(): void {
                                         :id="`plan-${plan.code}`"
                                         :class="[
                                             isCurrentPlan(plan)
-                                                ? 'text-amber-300'
+                                                ? 'text-accent-400'
                                                 : 'text-brand-700 dark:text-brand-300',
                                             'text-base font-semibold',
                                         ]"
@@ -875,7 +874,7 @@ function copyPaymentInstruction(): void {
                                 </div>
                                 <p class="mt-5 flex items-baseline gap-x-2">
                                     <span
-                                        class="font-display text-4xl font-semibold tracking-tight"
+                                        class="numeric text-4xl font-semibold tracking-tight"
                                     >
                                         {{
                                             formatMoney(
@@ -926,7 +925,7 @@ function copyPaymentInstruction(): void {
                                         <CheckCircle2
                                             :class="[
                                                 isCurrentPlan(plan)
-                                                    ? 'text-amber-300'
+                                                    ? 'text-accent-400'
                                                     : 'text-emerald-600 dark:text-emerald-400',
                                                 'mt-0.5 size-5 shrink-0',
                                             ]"
@@ -941,7 +940,7 @@ function copyPaymentInstruction(): void {
                                     :disabled="!canStartCheckout"
                                     :class="[
                                         isCurrentPlan(plan)
-                                            ? 'bg-amber-300 text-brand-950 hover:bg-amber-200 focus-visible:outline-amber-300'
+                                            ? 'bg-accent-400 text-brand-950 hover:bg-accent-300 focus-visible:outline-amber-300'
                                             : 'bg-brand-700 text-white hover:bg-brand-600 focus-visible:outline-brand-600 dark:bg-brand-500 dark:hover:bg-brand-400',
                                         'mt-8 inline-flex w-full items-center justify-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-semibold shadow-sm transition focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-45',
                                     ]"
@@ -979,15 +978,15 @@ function copyPaymentInstruction(): void {
                         <p
                             class="mx-auto mt-1 max-w-lg text-sm/6 text-zinc-500 dark:text-zinc-400"
                         >
-                            A estrutura está pronta, mas a tabela comercial da
-                            aplicação deve ser aprovada antes de aceitar
-                            cobranças.
+                            Estamos a fechar os preços. Assim que houver planos
+                            disponíveis, aparecem aqui e pode subscrever sem
+                            sair desta página.
                         </p>
                     </div>
                 </section>
 
                 <section
-                    class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-white/10"
+                    class="overflow-hidden rounded-2xl surface"
                     aria-labelledby="history-heading"
                 >
                     <div
@@ -1325,7 +1324,7 @@ function copyPaymentInstruction(): void {
                                             Total a pagar
                                         </dt>
                                         <dd
-                                            class="font-display text-lg font-semibold text-zinc-950 dark:text-white"
+                                            class="numeric text-lg font-semibold text-zinc-950 dark:text-white"
                                         >
                                             {{
                                                 formatMoney(
@@ -1373,7 +1372,7 @@ function copyPaymentInstruction(): void {
                                     </button>
                                     <button
                                         type="button"
-                                        class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto dark:bg-brand-500 dark:hover:bg-brand-400"
+                                        class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm focus-ring transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto dark:bg-brand-500 dark:hover:bg-brand-400"
                                         :disabled="checkoutForm.processing"
                                         @click="submitCheckout"
                                     >

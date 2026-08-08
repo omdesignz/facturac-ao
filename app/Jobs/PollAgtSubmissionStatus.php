@@ -9,7 +9,11 @@ use App\Fiscal\Agt\Data\AgtDocumentStatusResult;
 use App\Fiscal\Agt\Data\AgtInvoiceStatusResult;
 use App\FiscalDocumentEventType;
 use App\Models\AgtSubmission;
+use App\Models\FiscalDocument;
 use App\Models\FiscalDocumentEvent;
+use App\Models\Workspace;
+use App\Notifications\DocumentAcceptedByAgt;
+use App\Notifications\DocumentRejectedByAgt;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use Illuminate\Contracts\Queue\ShouldQueueAfterCommit;
@@ -285,6 +289,35 @@ class PollAgtSubmissionStatus implements ShouldBeUniqueUntilProcessing, ShouldQu
             'error_codes' => $errorCodes,
             'response_body_sha256' => $result->responseBodySha256,
         ]);
+
+        $this->announce($submission, $status, $errorCodes);
+    }
+
+    /**
+     * Tells the company how the AGT answered.
+     *
+     * Only the two terminal outcomes are worth a notification: the polling in
+     * between is the app's business, not the user's.
+     *
+     * @param  list<string>  $errorCodes
+     */
+    private function announce(
+        AgtSubmission $submission,
+        AgtSubmissionStatus $status,
+        array $errorCodes,
+    ): void {
+        $workspace = $submission->workspace;
+        $document = $submission->fiscalDocument;
+
+        if (! $workspace instanceof Workspace || ! $document instanceof FiscalDocument) {
+            return;
+        }
+
+        $notification = $status === AgtSubmissionStatus::Valid
+            ? DocumentAcceptedByAgt::fromDocument($document)
+            : DocumentRejectedByAgt::fromDocument($document, $errorCodes);
+
+        $notification->sendToWorkspace($workspace);
     }
 
     /** @param list<string> $errorCodes */

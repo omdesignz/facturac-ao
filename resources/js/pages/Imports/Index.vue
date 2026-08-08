@@ -19,11 +19,14 @@ import {
     Users,
 } from '@lucide/vue';
 import { computed, watch } from 'vue';
+import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { confirmAction } from '@/lib/confirm';
 import { commit, destroy, index, store } from '@/routes/imports';
 import { update as updateMapping } from '@/routes/imports/mapping';
 import { security } from '@/routes/settings';
+import type { SelectOption } from '@/types/select';
 
 type BadgeTone = 'success' | 'warning' | 'danger' | 'info' | 'neutral';
 type StepState = 'complete' | 'current' | 'upcoming';
@@ -117,6 +120,32 @@ const props = defineProps<{
         saft_available: boolean;
     };
 }>();
+
+const typeOptions = computed<SelectOption[]>(() =>
+    props.types.map((type) => ({ value: type.value, label: type.label })),
+);
+
+const sourceOptions = computed<SelectOption[]>(() =>
+    props.sources.map((source) => ({
+        value: source.value,
+        label: source.label,
+    })),
+);
+
+function headerOptions(required: boolean): SelectOption[] {
+    return [
+        {
+            value: '',
+            label: required
+                ? 'Seleccione uma coluna'
+                : 'Não importar este campo',
+        },
+        ...(props.selected?.headers ?? []).map((header) => ({
+            value: header,
+            label: header,
+        })),
+    ];
+}
 
 const uploadForm = useForm<{
     type: string;
@@ -239,13 +268,20 @@ function submitCommit(): void {
     });
 }
 
-function submitCancellation(): void {
-    if (
-        props.selected === null ||
-        !window.confirm(
-            'Cancelar esta importação e eliminar o ficheiro original?',
-        )
-    ) {
+async function submitCancellation(): Promise<void> {
+    if (props.selected === null) {
+        return;
+    }
+
+    const confirmed = await confirmAction({
+        title: 'Cancelar esta importação?',
+        message:
+            'O ficheiro original é eliminado. O histórico de validação fica auditável.',
+        confirmLabel: 'Cancelar importação',
+        cancelLabel: 'Continuar a importar',
+    });
+
+    if (!confirmed) {
         return;
     }
 
@@ -301,7 +337,7 @@ function historyUrl(publicId: string): string {
                     class="relative isolate overflow-hidden rounded-3xl bg-brand-950 px-6 py-8 text-white shadow-[0_28px_80px_-45px_rgba(8,40,32,0.9)] sm:px-8 lg:px-10"
                 >
                     <div
-                        class="absolute -top-32 -right-24 size-80 rounded-full bg-amber-300/15 blur-3xl"
+                        class="absolute -top-32 -right-24 size-80 rounded-full bg-accent-400/15 blur-3xl"
                         aria-hidden="true"
                     />
                     <div
@@ -314,7 +350,7 @@ function historyUrl(publicId: string): string {
                         <div class="max-w-3xl">
                             <div class="flex flex-wrap items-center gap-2">
                                 <StatusBadge
-                                    label="Fase 6 · Migração assistida"
+                                    label="Nada é gravado sem confirmar"
                                     tone="info"
                                 />
                                 <span
@@ -328,10 +364,10 @@ function historyUrl(publicId: string): string {
                                 </span>
                             </div>
                             <h1
-                                class="mt-5 max-w-4xl font-display text-4xl leading-none font-semibold tracking-tight sm:text-5xl"
+                                class="mt-5 max-w-4xl text-4xl leading-[1.05] display sm:text-5xl"
                             >
                                 Traga os seus dados.
-                                <span class="text-amber-300"
+                                <span class="text-accent-400"
                                     >Sem trazer os erros.</span
                                 >
                             </h1>
@@ -340,8 +376,8 @@ function historyUrl(publicId: string): string {
                             >
                                 Importe clientes, produtos e serviços a partir
                                 do Excel, CSV ou da exportação de outra
-                                aplicação. Nada entra no cadastro antes da sua
-                                validação e confirmação.
+                                aplicação. Mostramos-lhe tudo o que vai entrar
+                                antes de gravar seja o que for.
                             </p>
                         </div>
 
@@ -395,7 +431,7 @@ function historyUrl(publicId: string): string {
 
                 <section
                     v-if="selected"
-                    class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-zinc-900/5 sm:p-7 dark:bg-zinc-900 dark:ring-white/10"
+                    class="rounded-2xl surface p-5 sm:p-7"
                     aria-label="Progresso da importação"
                 >
                     <nav aria-label="Progresso">
@@ -428,7 +464,7 @@ function historyUrl(publicId: string): string {
                                 </div>
                                 <div
                                     v-else-if="step.state === 'current'"
-                                    class="flex flex-col border-l-4 border-brand-600 py-2 pl-4 md:border-t-4 md:border-l-0 md:pt-4 md:pb-0 md:pl-0 dark:border-amber-300"
+                                    class="flex flex-col border-l-4 border-brand-600 py-2 pl-4 md:border-t-4 md:border-l-0 md:pt-4 md:pb-0 md:pl-0 dark:border-accent-400"
                                     aria-current="step"
                                 >
                                     <span
@@ -464,7 +500,7 @@ function historyUrl(publicId: string): string {
                 >
                     <div class="min-w-0 space-y-6">
                         <section
-                            class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-white/10"
+                            class="overflow-hidden rounded-2xl surface"
                             aria-labelledby="selected-import-heading"
                         >
                             <div
@@ -678,7 +714,7 @@ function historyUrl(publicId: string): string {
                                     'has_errors',
                                 ].includes(selected.status)
                             "
-                            class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-zinc-900/5 sm:p-7 dark:bg-zinc-900 dark:ring-white/10"
+                            class="rounded-2xl surface p-5 sm:p-7"
                             aria-labelledby="mapping-heading"
                         >
                             <div
@@ -686,7 +722,7 @@ function historyUrl(publicId: string): string {
                             >
                                 <div>
                                     <p
-                                        class="text-xs font-semibold tracking-[0.14em] text-brand-700 uppercase dark:text-amber-300"
+                                        class="eyebrow text-brand-700 dark:text-amber-300"
                                     >
                                         Correspondência
                                     </p>
@@ -738,28 +774,15 @@ function historyUrl(publicId: string): string {
                                         </p>
                                     </div>
                                     <div>
-                                        <select
+                                        <SelectInput
                                             :id="`mapping-${field.key}`"
                                             v-model="
                                                 mappingForm.mapping[field.key]
                                             "
-                                            class="block w-full rounded-lg bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:*:bg-zinc-900 dark:focus:outline-amber-300"
-                                        >
-                                            <option value="">
-                                                {{
-                                                    field.required
-                                                        ? 'Seleccione uma coluna'
-                                                        : 'Não importar este campo'
-                                                }}
-                                            </option>
-                                            <option
-                                                v-for="header in selected.headers"
-                                                :key="header"
-                                                :value="header"
-                                            >
-                                                {{ header }}
-                                            </option>
-                                        </select>
+                                            :options="
+                                                headerOptions(field.required)
+                                            "
+                                        />
                                         <p
                                             v-if="
                                                 mappingForm.errors[
@@ -795,7 +818,7 @@ function historyUrl(publicId: string): string {
                                     </p>
                                     <button
                                         type="submit"
-                                        class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-amber-300 dark:text-brand-950 dark:hover:bg-amber-200"
+                                        class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm focus-ring transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-accent-400 dark:text-brand-950 dark:hover:bg-accent-300"
                                         :disabled="
                                             !canValidate ||
                                             mappingForm.processing
@@ -819,7 +842,7 @@ function historyUrl(publicId: string): string {
 
                         <section
                             v-if="selected.rows.length > 0"
-                            class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-white/10"
+                            class="overflow-hidden rounded-2xl surface"
                             aria-labelledby="preview-heading"
                         >
                             <div
@@ -988,7 +1011,7 @@ function historyUrl(publicId: string): string {
                         >
                             <div class="p-6">
                                 <div
-                                    class="flex size-11 items-center justify-center rounded-xl bg-amber-300 text-brand-950"
+                                    class="flex size-11 items-center justify-center rounded-xl bg-accent-400 text-brand-950"
                                 >
                                     <Database
                                         class="size-5"
@@ -1012,7 +1035,7 @@ function historyUrl(publicId: string): string {
                                 >
                                     <div class="flex gap-3">
                                         <LockKeyhole
-                                            class="mt-0.5 size-4 shrink-0 text-amber-300"
+                                            class="mt-0.5 size-4 shrink-0 text-accent-400"
                                             aria-hidden="true"
                                         />
                                         <p class="text-xs/5 text-brand-100/70">
@@ -1025,13 +1048,13 @@ function historyUrl(publicId: string): string {
                                 <Link
                                     v-if="!guardrails.mfa_enabled"
                                     :href="security.url()"
-                                    class="mt-4 inline-flex text-sm font-semibold text-amber-300 underline underline-offset-4 hover:no-underline"
+                                    class="mt-4 inline-flex text-sm font-semibold text-accent-400 underline underline-offset-4 hover:no-underline"
                                 >
                                     Activar MFA primeiro
                                 </Link>
                                 <button
                                     type="button"
-                                    class="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-amber-300 px-4 py-3 text-sm font-semibold text-brand-950 shadow-sm transition hover:bg-amber-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
+                                    class="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent-400 px-4 py-3 text-sm font-semibold text-brand-950 shadow-sm focus-ring-inverted transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
                                     :disabled="
                                         !selected.permissions.commit ||
                                         !guardrails.mfa_enabled ||
@@ -1107,7 +1130,7 @@ function historyUrl(publicId: string): string {
                         </section>
 
                         <section
-                            class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-white/10"
+                            class="rounded-2xl surface p-6"
                             aria-labelledby="privacy-heading"
                         >
                             <div class="flex items-center gap-3">
@@ -1167,7 +1190,7 @@ function historyUrl(publicId: string): string {
                     class="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(22rem,0.8fr)]"
                 >
                     <section
-                        class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-zinc-900/5 sm:p-7 dark:bg-zinc-900 dark:ring-white/10"
+                        class="rounded-2xl surface p-5 sm:p-7"
                         aria-labelledby="new-import-heading"
                     >
                         <div
@@ -1175,7 +1198,7 @@ function historyUrl(publicId: string): string {
                         >
                             <div>
                                 <p
-                                    class="text-xs font-semibold tracking-[0.14em] text-brand-700 uppercase dark:text-amber-300"
+                                    class="eyebrow text-brand-700 dark:text-amber-300"
                                 >
                                     Nova importação
                                 </p>
@@ -1211,36 +1234,24 @@ function historyUrl(publicId: string): string {
                                         class="text-sm font-semibold text-zinc-900 dark:text-white"
                                         >O que vai importar?</span
                                     >
-                                    <select
+                                    <SelectInput
                                         v-model="uploadForm.type"
-                                        class="mt-2 block w-full rounded-lg bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:*:bg-zinc-900 dark:focus:outline-amber-300"
-                                    >
-                                        <option
-                                            v-for="type in types"
-                                            :key="type.value"
-                                            :value="type.value"
-                                        >
-                                            {{ type.label }}
-                                        </option>
-                                    </select>
+                                        class="mt-2"
+                                        aria-label="O que vai importar?"
+                                        :options="typeOptions"
+                                    />
                                 </label>
                                 <label class="block">
                                     <span
                                         class="text-sm font-semibold text-zinc-900 dark:text-white"
                                         >De onde vem?</span
                                     >
-                                    <select
+                                    <SelectInput
                                         v-model="uploadForm.source"
-                                        class="mt-2 block w-full rounded-lg bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:*:bg-zinc-900 dark:focus:outline-amber-300"
-                                    >
-                                        <option
-                                            v-for="source in sources"
-                                            :key="source.value"
-                                            :value="source.value"
-                                        >
-                                            {{ source.label }}
-                                        </option>
-                                    </select>
+                                        class="mt-2"
+                                        aria-label="De onde vem?"
+                                        :options="sourceOptions"
+                                    />
                                 </label>
                             </div>
 
@@ -1290,7 +1301,7 @@ function historyUrl(publicId: string): string {
                                 </p>
                                 <button
                                     type="submit"
-                                    class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-amber-300 dark:text-brand-950 dark:hover:bg-amber-200"
+                                    class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm focus-ring transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-accent-400 dark:text-brand-950 dark:hover:bg-accent-300"
                                     :disabled="
                                         !permissions.create ||
                                         uploadForm.file === null ||
@@ -1314,18 +1325,14 @@ function historyUrl(publicId: string): string {
                     </section>
 
                     <section
-                        class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-white/10"
+                        class="overflow-hidden rounded-2xl surface"
                         aria-labelledby="history-heading"
                     >
                         <div
                             class="flex items-center justify-between border-b border-zinc-200 px-5 py-5 sm:px-6 dark:border-white/10"
                         >
                             <div>
-                                <p
-                                    class="text-xs font-semibold tracking-[0.14em] text-zinc-400 uppercase"
-                                >
-                                    Histórico
-                                </p>
+                                <p class="eyebrow text-zinc-400">Histórico</p>
                                 <h2
                                     id="history-heading"
                                     class="mt-1 text-base font-semibold text-zinc-950 dark:text-white"
@@ -1379,7 +1386,7 @@ function historyUrl(publicId: string): string {
                                                 {{ dataImport.original_name }}
                                             </p>
                                             <ArrowRight
-                                                class="mt-0.5 size-4 shrink-0 text-zinc-300 transition group-hover:translate-x-0.5 group-hover:text-brand-600 dark:text-zinc-600 dark:group-hover:text-amber-300"
+                                                class="mt-0.5 size-4 shrink-0 text-zinc-300 transition group-hover:translate-x-0.5 group-hover:text-brand-600 dark:text-zinc-600 dark:group-hover:text-accent-400"
                                                 aria-hidden="true"
                                             />
                                         </div>
@@ -1431,7 +1438,7 @@ function historyUrl(publicId: string): string {
                     >
                         <div class="flex items-start gap-3">
                             <div
-                                class="grid size-10 shrink-0 place-items-center rounded-xl bg-white text-zinc-500 shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:text-zinc-300 dark:ring-white/10"
+                                class="grid size-10 shrink-0 place-items-center rounded-xl surface text-zinc-500 dark:text-zinc-300"
                             >
                                 <Database class="size-4.5" aria-hidden="true" />
                             </div>
@@ -1445,14 +1452,14 @@ function historyUrl(publicId: string): string {
                                 <p
                                     class="mt-1 max-w-3xl text-sm/6 text-zinc-500 dark:text-zinc-400"
                                 >
-                                    O ficheiro fiscal não é tratado como uma
-                                    folha comum. A próxima fase fará validação
-                                    de esquema, consistência contabilística e
-                                    submissão controlada à AGT.
+                                    Um SAF-T não é uma folha de cálculo
+                                    qualquer. Estamos a preparar a validação do
+                                    esquema, das contas e a entrega controlada à
+                                    AGT.
                                 </p>
                             </div>
                         </div>
-                        <StatusBadge label="Próxima fase" tone="neutral" />
+                        <StatusBadge label="Em preparação" tone="neutral" />
                     </div>
                 </section>
             </div>

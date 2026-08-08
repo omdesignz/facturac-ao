@@ -36,7 +36,20 @@ class CatalogueItemFactory extends Factory
             'tax_percentage' => '14.00',
             'tax_exemption_code' => null,
             'is_active' => true,
+            'tracks_stock' => false,
+            'stock_scale' => 3,
+            'reorder_level_units' => null,
         ];
+    }
+
+    /** A physical product whose balance is followed. */
+    public function tracked(?int $reorderLevelUnits = null): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'type' => CatalogueItemType::Product,
+            'tracks_stock' => true,
+            'reorder_level_units' => $reorderLevelUnits,
+        ]);
     }
 
     /** @param array<string, mixed> $attributes */

@@ -30,7 +30,10 @@ return new class extends Migration
                 ->on('emis_payment_references')
                 ->cascadeOnDelete();
             $table->index(['workspace_id', 'occurred_at']);
-            $table->index(['emis_payment_reference_id', 'occurred_at']);
+            $table->index(
+                ['emis_payment_reference_id', 'occurred_at'],
+                'billing_events_reference_occurred_index',
+            );
         });
     }
 

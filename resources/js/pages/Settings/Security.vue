@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { Form, Head, useHttp } from '@inertiajs/vue3';
+import { Form, Head, router, useForm, useHttp } from '@inertiajs/vue3';
 import {
+    Bell,
     Check,
     Copy,
+    LogOut,
+    MonitorSmartphone,
     KeyRound,
     LoaderCircle,
     LockKeyhole,
@@ -10,12 +13,23 @@ import {
     ShieldCheck,
     ShieldOff,
     Smartphone,
+    Timer,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import FormError from '@/components/FormError.vue';
 import GoogleMark from '@/components/GoogleMark.vue';
+import PasskeyManager from '@/components/PasskeyManager.vue';
+import type { Passkey } from '@/components/PasskeyManager.vue';
+import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { confirmAction } from '@/lib/confirm';
+import { update as updateNotifications } from '@/routes/settings/notifications';
+import {
+    destroy as destroySession,
+    destroyOthers as destroyOtherSessions,
+} from '@/routes/settings/sessions';
+import { update as updateWorkSession } from '@/routes/settings/work-session';
 import {
     confirm as confirmTwoFactor,
     disable as disableTwoFactor,
@@ -24,6 +38,7 @@ import {
     recoveryCodes,
     regenerateRecoveryCodes,
 } from '@/routes/two-factor';
+import type { SelectOption } from '@/types/select';
 
 interface TwoFactorState {
     enabled: boolean;
@@ -36,12 +51,126 @@ interface QrCodeResponse {
     url: string;
 }
 
+interface WorkSessionState {
+    minutes: number;
+    min_minutes: number;
+    max_minutes: number;
+    enabled: boolean;
+}
+
+interface ActiveSession {
+    id: string;
+    is_current: boolean;
+    ip_address: string | null;
+    browser: string;
+    platform: string;
+    last_active_at: string | null;
+}
+
+interface NotificationTopicState {
+    value: string;
+    label: string;
+    description: string;
+    database: boolean;
+    mail: boolean;
+}
+
 const props = defineProps<{
     twoFactor: TwoFactorState;
+    workSessionPreference: WorkSessionState;
+    passkeys: Passkey[];
     socialConnections: {
         google: boolean;
     };
+    notificationTopics: NotificationTopicState[];
+    sessions: ActiveSession[];
 }>();
+
+const workSessionForm = useForm({
+    work_session_minutes: props.workSessionPreference.minutes,
+});
+
+/** Common focus-block lengths, with the current value kept selectable. */
+const workSessionOptions = computed<SelectOption<number>[]>(() => {
+    const presets = [15, 25, 45, 60, 90, 120, 240];
+    const values = presets.includes(props.workSessionPreference.minutes)
+        ? presets
+        : [...presets, props.workSessionPreference.minutes].sort(
+              (a, b) => a - b,
+          );
+
+    return values
+        .filter(
+            (minutes) =>
+                minutes >= props.workSessionPreference.min_minutes &&
+                minutes <= props.workSessionPreference.max_minutes,
+        )
+        .map((minutes) => ({
+            value: minutes,
+            label:
+                minutes >= 60
+                    ? `${minutes / 60} ${minutes === 60 ? 'hora' : 'horas'}`
+                    : `${minutes} minutos`,
+        }));
+});
+
+const dateTimeFormatter = new Intl.DateTimeFormat('pt-PT', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+});
+
+function formatDateTime(value: string | null): string {
+    return value ? dateTimeFormatter.format(new Date(value)) : 'Sem registo';
+}
+
+async function endSession(session: ActiveSession): Promise<void> {
+    const confirmed = await confirmAction({
+        title: `Terminar a sessão em ${session.browser} no ${session.platform}?`,
+        message:
+            'Esse dispositivo passa a precisar de entrar outra vez. Se não o reconhece, mude também a palavra-passe.',
+        confirmLabel: 'Terminar sessão',
+    });
+
+    if (!confirmed) {
+        return;
+    }
+
+    router.delete(destroySession.url({ session: session.id }), {
+        preserveScroll: true,
+    });
+}
+
+async function endOtherSessions(): Promise<void> {
+    const confirmed = await confirmAction({
+        title: 'Terminar todas as outras sessões?',
+        message:
+            'Continua com sessão iniciada neste dispositivo; todos os outros terão de entrar outra vez.',
+        confirmLabel: 'Terminar as outras',
+    });
+
+    if (!confirmed) {
+        return;
+    }
+
+    router.delete(destroyOtherSessions.url(), { preserveScroll: true });
+}
+
+const notificationForm = useForm({
+    topics: Object.fromEntries(
+        props.notificationTopics.map((topic) => [
+            topic.value,
+            { database: topic.database, mail: topic.mail },
+        ]),
+    ) as Record<string, { database: boolean; mail: boolean }>,
+});
+
+function saveNotificationPreferences(): void {
+    notificationForm.put(updateNotifications.url(), { preserveScroll: true });
+}
+
+function saveWorkSession(): void {
+    workSessionForm.put(updateWorkSession.url(), { preserveScroll: true });
+}
 
 const qrRequest = useHttp<Record<string, never>, QrCodeResponse>(qrCode(), {});
 const recoveryRequest = useHttp<Record<string, never>, string[]>(
@@ -100,7 +229,14 @@ watch(
             <div class="mx-auto max-w-5xl space-y-8">
                 <header>
                     <div class="flex flex-wrap items-center gap-2">
-                        <StatusBadge label="Fortify" tone="info" />
+                        <StatusBadge
+                            :label="
+                                passkeys.length > 0
+                                    ? 'Passkeys activas'
+                                    : 'Sem passkeys'
+                            "
+                            :tone="passkeys.length > 0 ? 'success' : 'neutral'"
+                        />
                         <StatusBadge
                             :label="
                                 twoFactor.confirmed
@@ -111,7 +247,7 @@ watch(
                         />
                     </div>
                     <h1
-                        class="mt-4 font-display text-4xl font-semibold tracking-tight text-zinc-950 dark:text-white"
+                        class="mt-4 text-4xl display text-zinc-950 dark:text-white"
                     >
                         Segurança da conta
                     </h1>
@@ -125,8 +261,293 @@ watch(
                 </header>
 
                 <section
-                    class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-white/10"
+                    v-if="workSessionPreference.enabled"
+                    class="overflow-hidden rounded-2xl surface"
                 >
+                    <div
+                        class="flex flex-col gap-5 border-b border-zinc-100 p-6 sm:flex-row sm:items-start sm:justify-between dark:border-white/10"
+                    >
+                        <div class="flex gap-4">
+                            <span
+                                class="grid size-11 shrink-0 place-items-center rounded-xl bg-brand-100 text-brand-700 dark:bg-brand-400/10 dark:text-brand-300"
+                            >
+                                <Timer class="size-5" aria-hidden="true" />
+                            </span>
+                            <div>
+                                <h2
+                                    class="font-semibold text-zinc-950 dark:text-white"
+                                >
+                                    Sessão de trabalho
+                                </h2>
+                                <p
+                                    class="mt-1 max-w-xl text-sm/6 text-zinc-500 dark:text-zinc-400"
+                                >
+                                    Cada sessão dura um tempo fixo, contado pelo
+                                    servidor. Não é reiniciada por actualizar a
+                                    página nem por continuar a trabalhar — no
+                                    fim, avisamos antes de fechar.
+                                </p>
+                            </div>
+                        </div>
+                        <StatusBadge
+                            :label="`${workSessionPreference.minutes} min`"
+                            tone="info"
+                        />
+                    </div>
+
+                    <div
+                        class="flex flex-col gap-4 p-6 sm:flex-row sm:items-end"
+                    >
+                        <div class="w-full sm:max-w-xs">
+                            <label
+                                for="work-session-minutes"
+                                class="block text-sm font-medium text-zinc-900 dark:text-white"
+                            >
+                                Duração
+                            </label>
+                            <SelectInput
+                                id="work-session-minutes"
+                                v-model="workSessionForm.work_session_minutes"
+                                class="mt-2"
+                                :options="workSessionOptions"
+                            />
+                            <FormError
+                                :message="
+                                    workSessionForm.errors.work_session_minutes
+                                "
+                            />
+                        </div>
+                        <button
+                            type="button"
+                            :disabled="workSessionForm.processing"
+                            class="inline-flex w-fit items-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm focus-ring transition hover:bg-brand-600 disabled:opacity-60 dark:bg-accent-400 dark:text-brand-950 dark:hover:bg-accent-300"
+                            @click="saveWorkSession"
+                        >
+                            <LoaderCircle
+                                v-if="workSessionForm.processing"
+                                class="size-4 animate-spin"
+                                aria-hidden="true"
+                            />
+                            Guardar
+                        </button>
+                    </div>
+                    <p
+                        class="px-6 pb-6 text-xs text-zinc-500 dark:text-zinc-400"
+                    >
+                        Guardar começa já uma sessão nova com a duração
+                        escolhida.
+                    </p>
+                </section>
+
+                <section class="overflow-hidden rounded-2xl surface">
+                    <div
+                        class="flex flex-col gap-5 border-b border-zinc-100 p-6 sm:flex-row sm:items-start sm:justify-between dark:border-white/10"
+                    >
+                        <div class="flex gap-4">
+                            <span
+                                class="grid size-11 shrink-0 place-items-center rounded-xl bg-brand-100 text-brand-700 dark:bg-brand-400/10 dark:text-brand-300"
+                            >
+                                <Bell class="size-5" aria-hidden="true" />
+                            </span>
+                            <div>
+                                <h2
+                                    class="font-semibold text-zinc-950 dark:text-white"
+                                >
+                                    Notificações
+                                </h2>
+                                <p
+                                    class="mt-1 max-w-xl text-sm/6 text-zinc-500 dark:text-zinc-400"
+                                >
+                                    O que quer saber, e por onde. Os acessos do
+                                    suporte à sua conta chegam sempre — não é
+                                    uma preferência.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-left text-sm">
+                            <thead
+                                class="border-b border-zinc-100 dark:border-white/10"
+                            >
+                                <tr>
+                                    <th class="px-6 py-3 eyebrow text-zinc-500">
+                                        Tema
+                                    </th>
+                                    <th
+                                        class="px-3 py-3 text-center eyebrow text-zinc-500"
+                                    >
+                                        Na aplicação
+                                    </th>
+                                    <th
+                                        class="px-6 py-3 text-center eyebrow text-zinc-500"
+                                    >
+                                        Por email
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody
+                                class="divide-y divide-zinc-100 dark:divide-white/10"
+                            >
+                                <tr
+                                    v-for="topic in notificationTopics"
+                                    :key="topic.value"
+                                >
+                                    <td class="px-6 py-3">
+                                        <p
+                                            class="font-medium text-zinc-950 dark:text-white"
+                                        >
+                                            {{ topic.label }}
+                                        </p>
+                                        <p
+                                            class="mt-0.5 text-xs/5 text-zinc-500 dark:text-zinc-400"
+                                        >
+                                            {{ topic.description }}
+                                        </p>
+                                    </td>
+                                    <td class="px-3 py-3 text-center">
+                                        <input
+                                            v-model="
+                                                notificationForm.topics[
+                                                    topic.value
+                                                ].database
+                                            "
+                                            type="checkbox"
+                                            :aria-label="`${topic.label} na aplicação`"
+                                            class="size-4 rounded border-zinc-300 text-brand-700 focus-ring dark:border-white/15 dark:bg-white/5"
+                                        />
+                                    </td>
+                                    <td class="px-6 py-3 text-center">
+                                        <input
+                                            v-model="
+                                                notificationForm.topics[
+                                                    topic.value
+                                                ].mail
+                                            "
+                                            type="checkbox"
+                                            :aria-label="`${topic.label} por email`"
+                                            class="size-4 rounded border-zinc-300 text-brand-700 focus-ring dark:border-white/15 dark:bg-white/5"
+                                        />
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div
+                        class="flex items-center justify-end border-t border-zinc-100 p-6 dark:border-white/10"
+                    >
+                        <button
+                            type="button"
+                            :disabled="notificationForm.processing"
+                            class="inline-flex items-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm focus-ring transition hover:bg-brand-600 disabled:opacity-60 dark:bg-accent-400 dark:text-brand-950 dark:hover:bg-accent-300"
+                            @click="saveNotificationPreferences"
+                        >
+                            <LoaderCircle
+                                v-if="notificationForm.processing"
+                                class="size-4 animate-spin"
+                                aria-hidden="true"
+                            />
+                            Guardar preferências
+                        </button>
+                    </div>
+                </section>
+
+                <section class="overflow-hidden rounded-2xl surface">
+                    <div
+                        class="flex flex-col gap-5 border-b border-zinc-100 p-6 sm:flex-row sm:items-start sm:justify-between dark:border-white/10"
+                    >
+                        <div class="flex gap-4">
+                            <span
+                                class="grid size-11 shrink-0 place-items-center rounded-xl bg-brand-100 text-brand-700 dark:bg-brand-400/10 dark:text-brand-300"
+                            >
+                                <MonitorSmartphone
+                                    class="size-5"
+                                    aria-hidden="true"
+                                />
+                            </span>
+                            <div>
+                                <h2
+                                    class="font-semibold text-zinc-950 dark:text-white"
+                                >
+                                    Sessões abertas
+                                </h2>
+                                <p
+                                    class="mt-1 max-w-xl text-sm/6 text-zinc-500 dark:text-zinc-400"
+                                >
+                                    Onde a sua conta está aberta neste momento.
+                                    Se não reconhecer um dispositivo, termine-o
+                                    e mude a palavra-passe.
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            v-if="sessions.length > 1"
+                            type="button"
+                            class="w-fit shrink-0 rounded-xl px-3.5 py-2 text-sm font-semibold text-zinc-700 ring-1 ring-zinc-300 focus-ring transition hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
+                            @click="endOtherSessions"
+                        >
+                            Terminar as outras
+                        </button>
+                    </div>
+
+                    <ul class="divide-y divide-zinc-100 dark:divide-white/10">
+                        <li
+                            v-for="session in sessions"
+                            :key="session.id"
+                            class="flex items-center justify-between gap-4 p-6"
+                        >
+                            <div class="min-w-0">
+                                <p
+                                    class="flex flex-wrap items-center gap-2 text-sm font-medium text-zinc-950 dark:text-white"
+                                >
+                                    {{ session.browser }} no
+                                    {{ session.platform }}
+                                    <StatusBadge
+                                        v-if="session.is_current"
+                                        label="Este dispositivo"
+                                        tone="success"
+                                    />
+                                </p>
+                                <p
+                                    class="mt-1 numeric text-xs text-zinc-500 dark:text-zinc-400"
+                                >
+                                    {{
+                                        session.ip_address ??
+                                        'Endereço desconhecido'
+                                    }}
+                                    ·
+                                    {{ formatDateTime(session.last_active_at) }}
+                                </p>
+                            </div>
+
+                            <button
+                                v-if="!session.is_current"
+                                type="button"
+                                class="shrink-0 rounded-lg p-2 text-zinc-400 focus-ring transition hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-400/10 dark:hover:text-rose-300"
+                                @click="endSession(session)"
+                            >
+                                <span class="sr-only"
+                                    >Terminar a sessão em
+                                    {{ session.browser }}</span
+                                >
+                                <LogOut class="size-4" aria-hidden="true" />
+                            </button>
+                        </li>
+                    </ul>
+
+                    <p
+                        v-if="sessions.length === 0"
+                        class="px-6 pb-6 text-sm/6 text-zinc-500 dark:text-zinc-400"
+                    >
+                        Não há registo de sessões para mostrar.
+                    </p>
+                </section>
+
+                <PasskeyManager :passkeys="passkeys" />
+
+                <section class="overflow-hidden rounded-2xl surface">
                     <div
                         class="flex flex-col gap-5 border-b border-zinc-100 p-6 sm:flex-row sm:items-start sm:justify-between dark:border-white/10"
                     >
@@ -229,7 +650,7 @@ watch(
 
                         <div>
                             <p
-                                class="text-xs font-semibold tracking-[0.16em] text-brand-700 uppercase dark:text-brand-300"
+                                class="eyebrow text-brand-700 dark:text-brand-300"
                             >
                                 Passo final
                             </p>
@@ -417,7 +838,7 @@ watch(
                                 <button
                                     type="submit"
                                     :disabled="processing"
-                                    class="flex items-center gap-2 text-xs font-semibold text-amber-300 hover:text-amber-200 disabled:opacity-60"
+                                    class="flex items-center gap-2 text-xs font-semibold text-accent-400 hover:text-amber-200 disabled:opacity-60"
                                 >
                                     <RefreshCw
                                         class="size-4"
@@ -430,9 +851,7 @@ watch(
                     </div>
                 </section>
 
-                <section
-                    class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-white/10"
-                >
+                <section class="rounded-2xl surface p-6">
                     <div
                         class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between"
                     >
