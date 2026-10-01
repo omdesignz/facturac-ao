@@ -1,0 +1,151 @@
+<template>
+  <style>
+    @font-face {
+      font-family: "PlexSans";
+      font-weight: 400;
+      font-display: block;
+      src: url("assets/fonts/plex-sans-400.woff2") format("woff2");
+    }
+    @font-face {
+      font-family: "PlexSans";
+      font-weight: 600;
+      font-display: block;
+      src: url("assets/fonts/plex-sans-600.woff2") format("woff2");
+    }
+
+    /* Root styled by id — a class here stops matching once the CSS is scoped. */
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 1080px;
+      height: 1920px;
+      overflow: hidden;
+      font-family: "PlexSans", sans-serif;
+      color: #232322;
+    }
+
+    /* The ground is its own full-duration clip, never a background on #root:
+       the root is gated to the scene window and would not paint reliably. */
+    .f1-ground {
+      position: absolute;
+      inset: 0;
+      background: #faf9f6;
+    }
+
+    /* One camera for the whole frame — a very slight drift so the film breathes
+       as one piece instead of five cards. */
+    .f1-stage {
+      position: absolute;
+      inset: 0;
+    }
+
+    .f1-label {
+      position: absolute;
+      left: 96px;
+      top: 430px;
+      font-size: 26px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(35, 35, 34, 0.55);
+    }
+
+    .f1-lead {
+      position: absolute;
+      left: 96px;
+      right: 96px;
+      top: 545px;
+      font-size: 104px;
+      font-weight: 400;
+      line-height: 1.06;
+      letter-spacing: -0.018em;
+    }
+
+    /* The verdict: heavier and larger than the line above. Hierarchy comes from
+       size and weight — the preset never colours type for emphasis. */
+    .f1-verdict {
+      position: absolute;
+      left: 96px;
+      right: 96px;
+      top: 1135px;
+      font-size: 162px;
+      font-weight: 600;
+      line-height: 0.98;
+      letter-spacing: -0.028em;
+    }
+
+    .f1-w {
+      display: inline-block;
+      will-change: transform, opacity;
+    }
+  </style>
+
+  <div data-hf-id="hf-f9xi" id="root" data-composition-id="01-mete-medo" data-width="1080" data-height="1920">
+    <div data-hf-id="hf-fyg0" id="frame-01-mete-medo-ground" class="clip f1-ground" data-start="0" data-duration="5.5" data-track-index="0"></div>
+
+    <div data-hf-id="hf-gf7b" id="frame-01-mete-medo-stage" class="clip f1-stage" data-start="0" data-duration="5.5" data-track-index="1">
+      <div data-hf-id="hf-wvzq" class="f1-label">
+        <span data-hf-id="hf-kcsg" class="f1-w">Para</span> <span data-hf-id="hf-evhi" class="f1-w">quem</span>
+        <span data-hf-id="hf-8tin" class="f1-w">já</span> <span data-hf-id="hf-fcwe" class="f1-w">factura</span>
+      </div>
+
+      <div data-hf-id="hf-56cu" class="f1-lead">
+        <span data-hf-id="hf-o9tn" class="f1-w">Mudar</span> <span data-hf-id="hf-w7pl" class="f1-w">de</span>
+        <span data-hf-id="hf-g45h" class="f1-w">programa</span> <span data-hf-id="hf-5xq5" class="f1-w">de</span>
+        <span data-hf-id="hf-qfn9" class="f1-w">facturação</span>
+      </div>
+
+      <div data-hf-id="hf-yeqn" class="f1-verdict"><span data-hf-id="hf-2m6s" class="f1-w">mete medo.</span></div>
+    </div>
+  </div>
+
+  <script>
+    window.__timelines = window.__timelines || {};
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      const q = (sel) => document.querySelectorAll(sel);
+
+      /* Scene 1 (0.0–1.1s) — the micro-label lands word by word. */
+      tl.fromTo(
+        q("#root .f1-label .f1-w"),
+        { opacity: 0, y: 26 },
+        { opacity: 1, y: 0, duration: 0.5, stagger: 0.07, ease: "power3.out" },
+        0.15,
+      );
+
+      /* Scene 2 (1.1–3.0s) — the subject assembles, one word per beat. */
+      tl.fromTo(
+        q("#root .f1-lead .f1-w"),
+        { opacity: 0, y: 46 },
+        { opacity: 1, y: 0, duration: 0.62, stagger: 0.16, ease: "power3.out" },
+        1.1,
+      );
+
+      /* Scene 3 (3.0–4.4s) — the verdict slams: no drift up, a hard arrival
+         that settles. This is the beat the whole hook exists for. */
+      tl.fromTo(
+        q("#root .f1-verdict .f1-w"),
+        { opacity: 0, y: 64, scale: 1.06 },
+        {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.54,
+          ease: "power4.out",
+        },
+        3.05,
+      );
+
+      /* Scene 4 (4.4–6.0s) — nothing enters. Only the camera keeps moving, and
+         barely; the stillness is what makes the line read. */
+      tl.fromTo(
+        q("#root .f1-stage"),
+        { scale: 1.0, y: 0 },
+        { scale: 1.018, y: -10, duration: 5.5, ease: "none" },
+        0,
+      );
+
+      window.__timelines["01-mete-medo"] = tl;
+    })();
+  </script>
+</template>

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\FiscalOperationType;
+use Carbon\CarbonImmutable;
 use Database\Factories\FiscalDocumentLineFactory;
 use DomainException;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -20,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $fiscal_document_id
  * @property int $line_number
  * @property FiscalOperationType $operation_type
+ * @property CarbonImmutable|null $operation_date
  * @property string $product_code
  * @property string $product_description
  * @property int $quantity_units
@@ -41,6 +43,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'fiscal_document_id',
     'line_number',
     'operation_type',
+    'operation_date',
     'product_code',
     'product_description',
     'quantity_units',
@@ -92,6 +95,7 @@ class FiscalDocumentLine extends Model
     {
         return [
             'operation_type' => FiscalOperationType::class,
+            'operation_date' => 'immutable_date',
         ];
     }
 

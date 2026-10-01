@@ -525,7 +525,7 @@ watch(
                             <button
                                 v-if="!session.is_current"
                                 type="button"
-                                class="shrink-0 rounded-lg p-2 text-zinc-400 focus-ring transition hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-400/10 dark:hover:text-rose-300"
+                                class="shrink-0 icon-button text-zinc-400 focus-ring transition hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-400/10 dark:hover:text-rose-300"
                                 @click="endSession(session)"
                             >
                                 <span class="sr-only"

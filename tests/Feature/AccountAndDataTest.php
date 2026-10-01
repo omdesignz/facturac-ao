@@ -66,8 +66,14 @@ test('an issued document can be opened and printed', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->component('Documents/Print')
             ->where('document.document_no', $document->document_no)
-            // What makes the paper verifiable: the digest and a QR to reopen it.
+            // What makes the paper verifiable: the digest and the AGT lookup QR.
             ->where('document.authenticity.digest', strtoupper(substr((string) $document->document_payload_sha256, 0, 8)))
+            ->where(
+                'document.authenticity.verification_url',
+                'https://quiosqueagt.minfin.gov.ao/facturacao-eletronica/consultar-fe'
+                    .'?emissor='.rawurlencode($fixture['legalEntity']->tax_identification_number)
+                    .'&document='.rawurlencode((string) $document->document_no),
+            )
             ->where('document.authenticity.qr_svg', fn (?string $svg): bool => is_string($svg) && str_contains($svg, '<svg'))
             ->where('shareUrl', fn (?string $url): bool => is_string($url))
         );

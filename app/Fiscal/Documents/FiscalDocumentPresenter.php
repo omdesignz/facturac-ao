@@ -7,6 +7,7 @@ use App\FiscalTaxType;
 use App\Models\FiscalDocument;
 use App\Models\FiscalDocumentLine;
 use App\Models\PlatformSetting;
+use BaconQrCode\Common\ErrorCorrectionLevel;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
@@ -90,6 +91,7 @@ class FiscalDocumentPresenter
             'lines' => array_values($document->lines
                 ->map(fn (FiscalDocumentLine $line): array => [
                     'line_number' => $line->line_number,
+                    'operation_date' => $line->operation_date?->toDateString(),
                     'product_code' => $line->product_code,
                     'product_description' => $line->product_description,
                     'unit_of_measure' => $line->unit_of_measure,
@@ -147,6 +149,7 @@ class FiscalDocumentPresenter
                 'software_product_id' => $document->software_product_id,
                 'digest' => $this->shortDigest($document),
                 'full_digest' => $document->document_payload_sha256,
+                'verification_url' => $this->agtVerificationUrl($document),
                 'qr_svg' => $this->qrCode($document),
                 // mPDF cannot use the raw markup the web page inlines, but it
                 // parses SVG behind a data URI.
@@ -285,7 +288,7 @@ class FiscalDocumentPresenter
     }
 
     /**
-     * The QR a phone can read to open the same page.
+     * The QR a phone can read to verify the document with AGT.
      *
      * Rendered as SVG so it stays sharp at any print size, and inline so the
      * page needs nothing from the network to be printed.
@@ -297,11 +300,30 @@ class FiscalDocumentPresenter
         }
 
         $writer = new Writer(new ImageRenderer(
-            new RendererStyle(180, 0),
+            new RendererStyle(350, 0),
             new SvgImageBackEnd,
         ));
 
-        return $writer->writeString($this->signedUrl($document));
+        return $writer->writeString(
+            $this->agtVerificationUrl($document),
+            'UTF-8',
+            ErrorCorrectionLevel::M(),
+        );
+    }
+
+    private function agtVerificationUrl(FiscalDocument $document): ?string
+    {
+        if ($document->document_no === null) {
+            return null;
+        }
+
+        $baseUrl = rtrim((string) config('agt.qr.verification_url'), '?&');
+        $query = http_build_query([
+            'emissor' => $document->legalEntity->tax_identification_number,
+            'document' => $document->document_no,
+        ], '', '&', PHP_QUERY_RFC3986);
+
+        return $baseUrl.'?'.$query;
     }
 
     /** The same QR, wrapped so a PDF <img> can carry it. */

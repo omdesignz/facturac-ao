@@ -6,6 +6,7 @@ import AppLogo from '@/components/AppLogo.vue';
 
 interface PrintLine {
     line_number: number;
+    operation_date: string | null;
     product_code: string | null;
     product_description: string;
     unit_of_measure: string;
@@ -266,6 +267,9 @@ async function copyShareLink(): Promise<void> {
                                 class="numeric text-zinc-500"
                             >
                                 {{ line.product_code }}
+                            </p>
+                            <p v-if="line.operation_date" class="text-zinc-500">
+                                Operação · {{ formatDate(line.operation_date) }}
                             </p>
                             <p
                                 v-if="line.tax_exemption_code"

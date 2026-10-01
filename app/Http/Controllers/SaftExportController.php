@@ -3,63 +3,66 @@
 namespace App\Http\Controllers;
 
 use App\Fiscal\Saft\SaftExporter;
-use App\Models\Customer;
+use App\Fiscal\Saft\SaftValidator;
+use App\Http\Requests\ExportSaftRequest;
+use App\Models\Establishment;
 use App\Models\LegalEntity;
-use App\Models\Workspace;
 use Carbon\CarbonImmutable;
-use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Gate;
+use RuntimeException;
 
-/**
- * The SAF-T (AO) file for a period.
- *
- * Streamed straight back rather than queued: the AGT asks for this when it
- * asks, usually during an inspection, and a file that arrives by email later
- * is not an answer to the person standing at the counter.
- */
 class SaftExportController extends Controller
 {
-    public function __construct(private SaftExporter $exporter) {}
+    public function __construct(
+        private SaftExporter $exporter,
+        private SaftValidator $validator,
+    ) {}
 
-    public function __invoke(Request $request): Response
+    public function __invoke(ExportSaftRequest $request): Response|RedirectResponse
     {
-        $legalEntity = $this->legalEntity($request);
-        Gate::authorize('viewAny', Customer::class);
-
-        $validated = $request->validate([
-            'from' => ['required', 'date'],
-            'to' => ['required', 'date', 'after_or_equal:from'],
-        ], [
-            'to.after_or_equal' => 'A data final não pode ser anterior à inicial.',
-        ]);
-
+        $legalEntity = $request->currentLegalEntity();
+        abort_unless($legalEntity instanceof LegalEntity, 404);
+        $validated = $request->validated();
         $from = CarbonImmutable::parse((string) $validated['from'])->startOfDay();
         $to = CarbonImmutable::parse((string) $validated['to'])->endOfDay();
+        $establishment = isset($validated['establishment'])
+            ? $legalEntity->establishments()
+                ->where('public_id', $validated['establishment'])
+                ->first()
+            : null;
+        abort_if(isset($validated['establishment']) && ! $establishment instanceof Establishment, 404);
 
-        $xml = $this->exporter->export($legalEntity, $from, $to);
+        try {
+            $xml = $this->exporter->export($legalEntity, $from, $to, $establishment);
+            $this->validator->assertValid($xml);
+        } catch (RuntimeException $exception) {
+            report($exception);
+
+            return redirect()
+                ->route('saft.index', array_filter([
+                    'from' => $from->toDateString(),
+                    'to' => $to->toDateString(),
+                    'establishment' => $establishment?->public_id,
+                ]))
+                ->with('error', 'O SAF-T não foi descarregado porque há documentos incompatíveis com o esquema. Reveja as verificações do período.');
+        }
 
         activity('fiscal')
             ->causedBy($request->user())
             ->performedOn($legalEntity)
-            ->withProperties(['from' => $from->toDateString(), 'to' => $to->toDateString()])
+            ->withProperties([
+                'from' => $from->toDateString(),
+                'to' => $to->toDateString(),
+                'establishment_public_id' => $establishment?->public_id,
+                'sha256' => hash('sha256', $xml),
+            ])
             ->log('saft exported');
 
         return response($xml, 200, [
             'Content-Type' => 'application/xml; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="'
-                .$this->exporter->filename($legalEntity, $from, $to).'"',
+                .$this->exporter->filename($legalEntity, $from, $to, $establishment).'"',
         ]);
-    }
-
-    private function legalEntity(Request $request): LegalEntity
-    {
-        $workspace = $request->attributes->get('currentWorkspace');
-        abort_unless($workspace instanceof Workspace, 404);
-
-        $legalEntity = $workspace->legalEntities()->oldest('id')->first();
-        abort_unless($legalEntity instanceof LegalEntity, 404);
-
-        return $legalEntity;
     }
 }

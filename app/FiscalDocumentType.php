@@ -111,10 +111,19 @@ enum FiscalDocumentType: string
         return [
             self::Invoice,
             self::InvoiceReceipt,
+            self::GenericInvoice,
             self::IssuedReceipt,
             self::CreditNote,
             self::DebitNote,
         ];
+    }
+
+    /**
+     * AGT requires the date of the underlying operation on every FG/GF line.
+     */
+    public function requiresLineOperationDate(): bool
+    {
+        return in_array($this, [self::GlobalInvoice, self::GenericInvoice], true);
     }
 
     /**

@@ -60,6 +60,7 @@ interface DocumentTypeOption {
     is_receipt: boolean;
     settles_other_documents: boolean;
     requires_lines: boolean;
+    requires_line_operation_date: boolean;
 }
 
 interface SettlementRow {
@@ -128,6 +129,7 @@ interface TaxTreatment extends SelectOption {
 
 interface DocumentLine {
     operation_type: string;
+    operation_date: string;
     product_code: string;
     product_description: string;
     quantity: string;
@@ -258,6 +260,9 @@ const settlesOtherDocuments = computed(
     () => currentType.value?.settles_other_documents ?? false,
 );
 const requiresLines = computed(() => currentType.value?.requires_lines ?? true);
+const requiresLineOperationDate = computed(
+    () => currentType.value?.requires_line_operation_date ?? false,
+);
 
 const paymentMethodOptions = computed<ListboxOption[]>(() =>
     props.paymentMethods.map((method) => ({
@@ -452,13 +457,20 @@ const nextLineKey = ref(0);
 const flashSuccess = computed(() => page.props.flash.success);
 const flashError = computed(() => page.props.flash.error);
 
-function editableLine(line?: DocumentLine): EditableLine {
+function editableLine(
+    line?: DocumentLine,
+    defaultOperationDate: string = today,
+): EditableLine {
     nextLineKey.value += 1;
 
     return {
         key: `line-${nextLineKey.value}`,
-        catalogue_public_id: '',
+        catalogue_public_id:
+            props.catalogueItems.find(
+                (item) => item.code === line?.product_code,
+            )?.public_id ?? '',
         operation_type: line?.operation_type ?? 'TB',
+        operation_date: line?.operation_date ?? defaultOperationDate,
         product_code: line?.product_code ?? '',
         product_description: line?.product_description ?? '',
         quantity: line?.quantity ?? '1',
@@ -580,6 +592,22 @@ watch(
     (revision) => {
         issueForm.revision = revision;
     },
+);
+
+watch(
+    requiresLineOperationDate,
+    (isRequired) => {
+        if (!isRequired) {
+            return;
+        }
+
+        form.lines.forEach((line) => {
+            if (line.operation_date === '') {
+                line.operation_date = form.document_date;
+            }
+        });
+    },
+    { immediate: true },
 );
 
 interface LineCalculation {
@@ -825,7 +853,7 @@ function useManualCustomer(): void {
 }
 
 function addLine(): void {
-    form.lines.push(editableLine());
+    form.lines.push(editableLine(undefined, form.document_date));
 }
 
 function removeLine(index: number): void {
@@ -849,6 +877,9 @@ function submit(): void {
 
             return {
                 operation_type: line.operation_type,
+                operation_date: requiresLineOperationDate.value
+                    ? line.operation_date
+                    : null,
                 product_code: line.product_code,
                 product_description: line.product_description,
                 quantity: line.quantity,
@@ -1724,6 +1755,13 @@ function confirmIssue(): void {
                                 Quantidades, descontos e impostos são calculados
                                 por linha.
                             </p>
+                            <p
+                                v-if="requiresLineOperationDate"
+                                class="mt-1 text-xs font-medium text-amber-700 dark:text-amber-300"
+                            >
+                                A AGT exige a data da operação em cada linha de
+                                uma factura genérica.
+                            </p>
                         </div>
                         <button
                             type="button"
@@ -1757,7 +1795,7 @@ function confirmIssue(): void {
                                 <button
                                     type="button"
                                     :disabled="form.lines.length === 1"
-                                    class="rounded-lg p-2 text-zinc-400 transition hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-25 dark:hover:bg-rose-400/10 dark:hover:text-rose-300"
+                                    class="icon-button text-zinc-400 transition hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-25 dark:hover:bg-rose-400/10 dark:hover:text-rose-300"
                                     @click="removeLine(index)"
                                 >
                                     <span class="sr-only"
@@ -1844,6 +1882,30 @@ function confirmIssue(): void {
                                     :message="
                                         errorFor(
                                             `lines.${index}.operation_type`,
+                                        )
+                                    "
+                                />
+                            </div>
+
+                            <div v-if="requiresLineOperationDate">
+                                <label
+                                    :for="`mobile-operation-date-${line.key}`"
+                                    class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                >
+                                    Data da operação
+                                </label>
+                                <DateInput
+                                    :id="`mobile-operation-date-${line.key}`"
+                                    v-model="line.operation_date"
+                                    class="mt-2"
+                                    :clearable="false"
+                                    :max-date="form.document_date"
+                                    :aria-label="`Data da operação da linha ${index + 1}`"
+                                />
+                                <FormError
+                                    :message="
+                                        errorFor(
+                                            `lines.${index}.operation_date`,
                                         )
                                     "
                                 />
@@ -2132,6 +2194,24 @@ function confirmIssue(): void {
                                             :aria-label="`Tipo de operação da linha ${index + 1}`"
                                             :options="operationTypeOptions"
                                         />
+                                        <div
+                                            v-if="requiresLineOperationDate"
+                                            class="mt-2"
+                                        >
+                                            <label
+                                                :for="`operation-date-${line.key}`"
+                                                class="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400"
+                                            >
+                                                Data da operação
+                                            </label>
+                                            <DateInput
+                                                :id="`operation-date-${line.key}`"
+                                                v-model="line.operation_date"
+                                                :clearable="false"
+                                                :max-date="form.document_date"
+                                                :aria-label="`Data da operação da linha ${index + 1}`"
+                                            />
+                                        </div>
                                         <FormError
                                             :message="
                                                 errorFor(`lines.${index}`)
@@ -2155,6 +2235,13 @@ function confirmIssue(): void {
                                             :message="
                                                 errorFor(
                                                     `lines.${index}.operation_type`,
+                                                )
+                                            "
+                                        />
+                                        <FormError
+                                            :message="
+                                                errorFor(
+                                                    `lines.${index}.operation_date`,
                                                 )
                                             "
                                         />
@@ -2290,7 +2377,7 @@ function confirmIssue(): void {
                                         <button
                                             type="button"
                                             :disabled="form.lines.length === 1"
-                                            class="rounded-lg p-2 text-zinc-400 transition hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-25 dark:hover:bg-rose-400/10 dark:hover:text-rose-300"
+                                            class="icon-button text-zinc-400 transition hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-25 dark:hover:bg-rose-400/10 dark:hover:text-rose-300"
                                             @click="removeLine(index)"
                                         >
                                             <span class="sr-only"

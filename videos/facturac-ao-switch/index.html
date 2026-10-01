@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js" integrity="sha384-sG0Hv1tP1lZCk9KQmrIbY/XNwi+OY84GQqhMscbnsoBFqAz8KNCil1kvfL3Hbbk2" crossorigin="anonymous"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: #000;
+      }
+      #root {
+        position: relative;
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: #FAF9F6;
+      }
+      .scene {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="30"
+      data-width="1080"
+      data-height="1920"
+    >
+      <div
+        id="el-01-mete-medo"
+        class="scene"
+        data-composition-id="01-mete-medo"
+        data-composition-src="compositions/frames/01-mete-medo.html"
+        data-start="0"
+        data-duration="5.5"
+        data-track-index="1"
+      ></div>
+
+      <div
+        id="el-02-nao-devia"
+        class="scene"
+        data-composition-id="02-nao-devia"
+        data-composition-src="compositions/frames/02-nao-devia.html"
+        data-start="5.5"
+        data-duration="5"
+        data-track-index="1"
+      ></div>
+
+      <div
+        id="el-03-objeccoes"
+        class="scene"
+        data-composition-id="03-objeccoes"
+        data-composition-src="compositions/frames/03-objeccoes.html"
+        data-start="10.5"
+        data-duration="8"
+        data-track-index="1"
+      ></div>
+
+      <div
+        id="el-04-parte-chata"
+        class="scene"
+        data-composition-id="04-parte-chata"
+        data-composition-src="compositions/frames/04-parte-chata.html"
+        data-start="18.5"
+        data-duration="7"
+        data-track-index="1"
+      ></div>
+
+      <div
+        id="el-05-em-breve"
+        class="scene"
+        data-composition-id="05-em-breve"
+        data-composition-src="compositions/frames/05-em-breve.html"
+        data-start="25.5"
+        data-duration="4.5"
+        data-track-index="1"
+      ></div>
+
+      <!-- BGM -->
+      <audio
+        id="el-bgm"
+        src="assets/bgm/track.loop.mp3"
+        data-start="0"
+        data-duration="30"
+        data-track-index="11"
+        data-volume="0.9"
+      ></audio>
+
+      <!-- SFX -->
+      <audio
+        id="el-sfx-0"
+        src="assets/sfx/tick-soft-por-linha.mp3"
+        data-start="3.05"
+        data-duration="0.9"
+        data-track-index="20"
+        data-volume="0.3"
+      ></audio>
+      <audio
+        id="el-sfx-1"
+        src="assets/sfx/tick-soft.mp3"
+        data-start="5.6"
+        data-duration="0.9"
+        data-track-index="21"
+        data-volume="0.3"
+      ></audio>
+      <audio
+        id="el-sfx-2"
+        src="assets/sfx/swell-short.mp3"
+        data-start="6.6"
+        data-duration="1.2"
+        data-track-index="22"
+        data-volume="0.3"
+      ></audio>
+      <audio
+        id="el-sfx-3"
+        src="assets/sfx/tick-soft-por-linha.mp3"
+        data-start="11.25"
+        data-duration="0.9"
+        data-track-index="23"
+        data-volume="0.3"
+      ></audio>
+      <audio
+        id="el-sfx-4"
+        src="assets/sfx/stamp-thud-na-descida-do-selo.mp3"
+        data-start="22.5"
+        data-duration="1.4"
+        data-track-index="24"
+        data-volume="0.6"
+      ></audio>
+      <audio
+        id="el-sfx-5"
+        src="assets/sfx/chime-confirm-no-r-tulo-comunicada.mp3"
+        data-start="23.7"
+        data-duration="1.6"
+        data-track-index="25"
+        data-volume="0.42"
+      ></audio>
+      <audio
+        id="el-sfx-6"
+        src="assets/sfx/chime-resolve.mp3"
+        data-start="26.5"
+        data-duration="2"
+        data-track-index="26"
+        data-volume="0.42"
+      ></audio>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = gsap.timeline({ paused: true });
+    </script>
+  </body>
+</html>

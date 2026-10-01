@@ -3,6 +3,11 @@
 namespace App\Actions;
 
 use App\Exceptions\BillingActionRefused;
+use App\Fiscal\Agt\Support\CanonicalJson;
+use App\Fiscal\Agt\Support\CanonicalNumber;
+use App\Fiscal\Calculation\CalculatedFiscalLine;
+use App\Fiscal\Calculation\FiscalCalculator;
+use App\Fiscal\SupportedTaxTreatment;
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
 use App\Models\FiscalDocument;
@@ -23,37 +28,23 @@ use Illuminate\Support\Str;
  */
 class ConvertQuoteToInvoice
 {
+    public function __construct(
+        private FiscalCalculator $calculator,
+        private CanonicalJson $canonicalJson,
+    ) {}
+
     public function execute(Quote $quote, User $user): FiscalDocument
     {
-        if (! $quote->status->canConvert()) {
-            throw BillingActionRefused::because(
-                'Só um orçamento enviado ou aceite pode passar a factura.',
-            );
-        }
-
-        if ($quote->converted_document_id !== null) {
-            throw BillingActionRefused::because(
-                'Este orçamento já deu origem a um documento.',
-            );
-        }
-
-        if ($quote->lines()->count() === 0) {
-            throw BillingActionRefused::because('Um orçamento sem linhas não pode ser facturado.');
-        }
-
-        // A quote may go out before the prospect has given a NIF; a factura may
-        // not. Asking for it here — rather than inventing a consumidor-final
-        // number for a named company — keeps the tax identity on the document
-        // the one the customer actually gave.
-        if (! $this->hasUsableTaxNumber($quote)) {
-            throw BillingActionRefused::because(
-                'Indique o NIF do cliente no orçamento antes de o passar a factura.',
-            );
-        }
-
         return DB::transaction(function () use ($quote, $user): FiscalDocument {
+            $quote = Quote::query()
+                ->with(['customer', 'lines'])
+                ->lockForUpdate()
+                ->findOrFail($quote->id);
+            $this->assertConvertible($quote);
+
             $customer = $quote->customer;
             $issuedOn = now('Africa/Luanda')->startOfDay();
+            $calculation = $this->calculator->calculate($this->lineProfiles($quote));
 
             $document = FiscalDocument::query()->create([
                 'workspace_id' => $quote->workspace_id,
@@ -74,22 +65,25 @@ class ConvertQuoteToInvoice
                     : $customer->dueDateFor($issuedOn)->toDateString(),
                 'currency_code' => $quote->currency_code,
                 'customer_name' => $quote->customer_name,
-                'customer_tax_identification_number' => $customer->tax_identification_number
+                'customer_tax_identification_number' => $customer?->tax_identification_number
                     ?? $quote->customer_tax_identification_number,
                 'customer_country_code' => $quote->customer_country_code,
                 'customer_address' => $quote->customer_address,
                 'notes' => $quote->notes,
-                'settlement_total_minor' => 0,
-                'net_total_minor' => $quote->net_total_minor,
-                'tax_payable_minor' => $quote->tax_total_minor,
-                'gross_total_minor' => $quote->gross_total_minor,
+                'settlement_total_minor' => $calculation->settlementTotalMinor,
+                'net_total_minor' => $calculation->netTotalMinor,
+                'tax_payable_minor' => $calculation->taxPayableMinor,
+                'gross_total_minor' => $calculation->grossTotalMinor,
                 'revision' => 1,
                 'payload_schema_version' => (string) config('agt.schema_version', '1.2'),
-                'calculation_sha256' => hash('sha256', "quote:{$quote->public_id}"),
+                'calculation_sha256' => hash(
+                    'sha256',
+                    $this->canonicalJson->encode($calculation->fingerprintData()),
+                ),
             ]);
 
-            foreach ($quote->lines as $line) {
-                $this->copyLine($document, $line);
+            foreach ($calculation->lines as $line) {
+                $this->saveLine($document, $line);
             }
 
             $quote->forceFill([
@@ -105,11 +99,42 @@ class ConvertQuoteToInvoice
                 ->withProperties([
                     'reference' => $quote->reference,
                     'document_public_id' => $document->public_id,
+                    'quoted_gross_total_minor' => $quote->gross_total_minor,
+                    'document_gross_total_minor' => $document->gross_total_minor,
                 ])
                 ->log('quote converted to invoice draft');
 
             return $document;
         });
+    }
+
+    private function assertConvertible(Quote $quote): void
+    {
+        if (! $quote->status->canConvert()) {
+            throw BillingActionRefused::because(
+                'Só um orçamento enviado ou aceite pode passar a factura.',
+            );
+        }
+
+        if ($quote->converted_document_id !== null) {
+            throw BillingActionRefused::because(
+                'Este orçamento já deu origem a um documento.',
+            );
+        }
+
+        if ($quote->lines->isEmpty()) {
+            throw BillingActionRefused::because('Um orçamento sem linhas não pode ser facturado.');
+        }
+
+        // A quote may go out before the prospect has given a NIF; a factura may
+        // not. Asking for it here — rather than inventing a consumidor-final
+        // number for a named company — keeps the tax identity on the document
+        // the one the customer actually gave.
+        if (! $this->hasUsableTaxNumber($quote)) {
+            throw BillingActionRefused::because(
+                'Indique o NIF do cliente no orçamento antes de o passar a factura.',
+            );
+        }
     }
 
     /**
@@ -148,48 +173,75 @@ class ConvertQuoteToInvoice
             : Str::limit($derived, 60, '');
     }
 
-    /**
-     * Copies one quote line onto the document, with its tax row.
-     *
-     * The amounts are carried across rather than recomputed: the customer
-     * agreed to these numbers, and re-deriving them risks the invoice differing
-     * from the quote by a kwanza of rounding.
-     */
-    private function copyLine(FiscalDocument $document, QuoteLine $line): void
+    /** @return list<array<string, string|null>> */
+    private function lineProfiles(Quote $quote): array
     {
+        return $quote->lines->map(function (QuoteLine $line): array {
+            $treatment = SupportedTaxTreatment::fromLegacyComponents(
+                $line->tax_type,
+                $line->tax_code,
+                $line->tax_percentage,
+                $line->tax_exemption_code,
+            );
+
+            if (! $treatment instanceof SupportedTaxTreatment) {
+                throw BillingActionRefused::because(
+                    "Revise o tratamento fiscal da linha {$line->line_number} antes de facturar.",
+                );
+            }
+
+            $tax = $treatment->profile();
+
+            return [
+                'operation_type' => $line->operation_type,
+                'product_code' => $this->productCodeFor($line),
+                'product_description' => $line->product_description,
+                'quantity' => (string) CanonicalNumber::fromScaledInteger(
+                    $line->quantity_units,
+                    $line->quantity_scale,
+                ),
+                'unit_of_measure' => $line->unit_of_measure,
+                'unit_price' => (string) CanonicalNumber::fromMinorUnits($line->unit_price_minor),
+                'discount_percentage' => (string) CanonicalNumber::fromBasisPoints(
+                    $line->discount_rate_basis_points,
+                ),
+                'tax_type' => $tax['type'],
+                'tax_code' => $tax['code'],
+                'tax_percentage' => $tax['percentage'],
+                'tax_exemption_code' => $tax['exemption_code'],
+            ];
+        })->values()->all();
+    }
+
+    private function saveLine(
+        FiscalDocument $document,
+        CalculatedFiscalLine $line,
+    ): void {
         $created = $document->lines()->create([
             'workspace_id' => $document->workspace_id,
             'legal_entity_id' => $document->legal_entity_id,
-            'line_number' => $line->line_number,
-            'operation_type' => $line->operation_type,
-            'product_code' => $this->productCodeFor($line),
-            'product_description' => $line->product_description,
-            'quantity_units' => $line->quantity_units,
-            'quantity_scale' => $line->quantity_scale,
-            'unit_of_measure' => $line->unit_of_measure,
-            'unit_price_base_minor' => $line->unit_price_minor,
-            'unit_price_micros' => $line->unit_price_minor * 1_000_000,
-            'discount_rate_basis_points' => $line->discount_rate_basis_points,
-            'base_amount_minor' => $line->net_amount_minor,
-            'settlement_amount_minor' => 0,
-            'net_amount_minor' => $line->net_amount_minor,
-            'tax_amount_minor' => $line->tax_amount_minor,
-            'gross_amount_minor' => $line->gross_amount_minor,
+            'line_number' => $line->lineNumber,
+            'operation_type' => $line->operationType,
+            'product_code' => $line->productCode,
+            'product_description' => $line->productDescription,
+            'quantity_units' => $line->quantityUnits,
+            'quantity_scale' => $line->quantityScale,
+            'unit_of_measure' => $line->unitOfMeasure,
+            'unit_price_base_minor' => $line->unitPriceBaseMinor,
+            'unit_price_micros' => $line->unitPriceMicros,
+            'discount_rate_basis_points' => $line->discountRateBasisPoints,
+            'base_amount_minor' => $line->baseAmountMinor,
+            'settlement_amount_minor' => $line->settlementAmountMinor,
+            'net_amount_minor' => $line->netAmountMinor,
+            'tax_amount_minor' => $line->taxAmountMinor,
+            'gross_amount_minor' => $line->grossAmountMinor,
         ]);
 
         $created->taxes()->create([
             'workspace_id' => $document->workspace_id,
             'legal_entity_id' => $document->legal_entity_id,
             'fiscal_document_id' => $document->id,
-            'tax_type' => $line->tax_type,
-            'tax_country_region' => 'AO',
-            'tax_code' => $line->tax_code,
-            // The percentage is stored as a decimal string on the quote and as
-            // basis points on the document, which is the same number in the
-            // representation each side already uses.
-            'tax_rate_basis_points' => (int) round(((float) $line->tax_percentage) * 100),
-            'tax_contribution_minor' => $line->tax_amount_minor,
-            'tax_exemption_code' => $line->tax_exemption_code,
+            ...$line->tax,
         ]);
     }
 }

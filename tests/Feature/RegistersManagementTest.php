@@ -169,7 +169,31 @@ test('a catalogue item stores its price in minor units', function () {
     $item = CatalogueItem::query()->where('code', 'CONS-001')->firstOrFail();
 
     // 850000.50 must land as 85_000_050 cents, never as a float.
-    expect($item->unit_price_minor)->toBe(85000050);
+    expect($item->unit_price_minor)->toBe(85000050)
+        ->and($item->tax_type)->toBe('IVA')
+        ->and($item->tax_code)->toBe('NOR')
+        ->and($item->tax_percentage)->toBe('14.00');
+});
+
+test('a catalogue item rejects a tax combination that cannot reach AGT', function () {
+    ['user' => $user] = registersCompany();
+
+    $this->actingAs($user)
+        ->post(route('catalogue.store'), [
+            'code' => 'INVALID-TAX',
+            'type' => 'service',
+            'name' => 'Tratamento inválido',
+            'unit_of_measure' => 'UN',
+            'unit_price' => '100.00',
+            'tax_type' => 'IVA',
+            'tax_code' => 'ISE',
+            'tax_percentage' => '14.00',
+            'tax_exemption_code' => 'M02',
+            'is_active' => true,
+        ])
+        ->assertSessionHasErrors('tax_percentage');
+
+    expect(CatalogueItem::query()->where('code', 'INVALID-TAX')->doesntExist())->toBeTrue();
 });
 
 test('catalogue codes cannot repeat within a company', function () {

@@ -184,7 +184,7 @@
                 @yield('actions')
             </div>
 
-            <p class="ref">facturac.ao — Feito para humanos. Aceite pela AGT.</p>
+            <p class="ref">facturac.ao — Feito para humanos, para negócios angolanos.</p>
         </main>
     </body>
 </html>

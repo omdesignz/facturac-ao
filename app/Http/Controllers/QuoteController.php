@@ -6,6 +6,7 @@ use App\Actions\ConvertQuoteToInvoice;
 use App\Actions\ResolveCustomerPrices;
 use App\Actions\SaveQuote;
 use App\Exceptions\BillingActionRefused;
+use App\Fiscal\SupportedTaxTreatment;
 use App\Http\Requests\StoreQuoteRequest;
 use App\Models\CatalogueItem;
 use App\Models\Customer;
@@ -22,7 +23,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Orçamentos: proposals that stay editable until the customer decides.
+ * Orçamentos: editable proposals that freeze when sent to the customer.
  */
 class QuoteController extends Controller
 {
@@ -133,8 +134,18 @@ class QuoteController extends Controller
 
         $status = QuoteStatus::from((string) $validated['status']);
 
-        if ($quote->status->isClosed()) {
-            return back()->with('error', 'Este orçamento já está fechado.');
+        $allowedStatuses = match ($quote->status) {
+            QuoteStatus::Draft => [QuoteStatus::Sent],
+            QuoteStatus::Sent => [QuoteStatus::Accepted, QuoteStatus::Rejected],
+            default => [],
+        };
+
+        if ($quote->hasLapsed() || ! in_array($status, $allowedStatuses, true)) {
+            return back()->with('error', 'Esta mudança de estado não é permitida para o orçamento.');
+        }
+
+        if ($status === QuoteStatus::Sent && $quote->lines()->doesntExist()) {
+            return back()->with('error', 'Adicione pelo menos uma linha antes de enviar o orçamento.');
         }
 
         $quote->forceFill([
@@ -265,6 +276,7 @@ class QuoteController extends Controller
                     'tax_percentage' => $item->tax_percentage,
                     'tax_exemption_code' => $item->tax_exemption_code,
                 ])->all()),
+            'taxTreatments' => SupportedTaxTreatment::options(),
             'currencyCode' => $legalEntity->currency_code,
         ]);
     }

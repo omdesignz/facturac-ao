@@ -36,7 +36,12 @@ final class FiscalDocumentPayloadBuilder
     public function document(FiscalDocument $document): array
     {
         $this->ensureReadyForPayload($document);
-        $document->loadMissing(['legalEntity', 'lines.taxes', 'settlements', 'withholdings']);
+        $document->loadMissing([
+            'legalEntity',
+            'lines.taxes',
+            'settlements.settledDocument',
+            'withholdings',
+        ]);
 
         return array_filter([
             'documentNo' => $document->document_no,
@@ -48,57 +53,50 @@ final class FiscalDocumentPayloadBuilder
             'customerTaxID' => $document->customer_tax_identification_number,
             'customerCountry' => $document->customer_country_code,
             'companyName' => $document->customer_name,
-            'lines' => $document->lines
-                ->map(fn (FiscalDocumentLine $line): array => $this->line($line))
-                ->values()
-                ->all(),
+            'lines' => $document->document_type->requiresLines()
+                ? $document->lines
+                    ->map(fn (FiscalDocumentLine $line): array => $this->line($document, $line))
+                    ->values()
+                    ->all()
+                : null,
+            'paymentReceipt' => $this->paymentReceipt($document),
             'documentTotals' => $this->documentTotals($document),
-            ...$this->currency($document),
             ...$this->withholdings($document),
-            ...$this->adjustmentReference($document),
-            ...$this->paymentDetails($document),
         ], fn (mixed $value): bool => $value !== null);
     }
 
     /**
-     * Receipts state how they were paid, and a standalone receipt lists the
-     * invoices it settles.
-     *
-     * @return array<string, mixed>
+     * @return array{sourceDocuments: list<array<string, mixed>>}|null
      */
-    private function paymentDetails(FiscalDocument $document): array
+    private function paymentReceipt(FiscalDocument $document): ?array
     {
-        if (! $document->document_type->isReceipt()) {
-            return [];
-        }
-
-        $details = [
-            'paymentMethod' => $document->payment_method?->value,
-            'paymentDate' => $document->payment_date?->toDateString(),
-            'paymentAmount' => $document->payment_amount_minor === null
-                ? null
-                : CanonicalNumber::fromMinorUnits($document->payment_amount_minor),
-        ];
-
         if (! $document->document_type->settlesOtherDocuments()) {
-            return $details;
+            return null;
         }
 
-        $details['settledDocuments'] = $document->settlements
-            ->map(fn (FiscalDocumentSettlement $settlement): array => [
-                'documentNo' => $settlement->settled_document_no,
-                'settledAmount' => CanonicalNumber::fromMinorUnits($settlement->amount_minor),
-            ])
-            ->values()
-            ->all();
+        return [
+            'sourceDocuments' => $document->settlements
+                ->values()
+                ->map(function (FiscalDocumentSettlement $settlement, int $index): array {
+                    $amountField = $settlement->settledDocument->document_type->reducesReceivable()
+                        ? 'debitAmount'
+                        : 'creditAmount';
 
-        return $details;
+                    return [
+                        'lineNo' => (string) ($index + 1),
+                        'sourceDocumentID' => [
+                            'originatingON' => $settlement->settled_document_no,
+                            'documentDate' => $settlement->settledDocument->document_date->toDateString(),
+                        ],
+                        $amountField => CanonicalNumber::fromMinorUnits($settlement->amount_minor),
+                    ];
+                })
+                ->all(),
+        ];
     }
 
     /**
-     * Credit and debit notes must state which document they correct and why.
-     *
-     * @return array<string, string|null>
+     * @return array{referenceInfo: array{reference: string|null, reason: string|null}}|array{}
      */
     private function adjustmentReference(FiscalDocument $document): array
     {
@@ -107,17 +105,26 @@ final class FiscalDocumentPayloadBuilder
         }
 
         return [
-            'referencingDocumentNo' => $document->references_document_no,
-            'adjustmentReason' => $document->adjustment_reason,
+            'referenceInfo' => [
+                'reference' => $document->references_document_no,
+                'reason' => $document->adjustment_reason,
+            ],
         ];
     }
 
     /** @return array<string, mixed> */
-    private function line(FiscalDocumentLine $line): array
+    private function line(FiscalDocument $document, FiscalDocumentLine $line): array
     {
+        $amountField = $document->document_type->reducesReceivable()
+            ? 'creditAmount'
+            : 'debitAmount';
+
         return [
             'lineNumber' => (string) $line->line_number,
             'operationType' => $line->operation_type->value,
+            ...($line->operation_date === null
+                ? []
+                : ['operationDate' => $line->operation_date->toDateString()]),
             'productCode' => $line->product_code,
             'productDescription' => $line->product_description,
             'quantity' => CanonicalNumber::fromScaledInteger(
@@ -125,9 +132,10 @@ final class FiscalDocumentPayloadBuilder
                 $line->quantity_scale,
             ),
             'unitOfMeasure' => $line->unit_of_measure,
-            'unitPriceBase' => CanonicalNumber::fromMinorUnits($line->unit_price_base_minor),
-            'unitPrice' => CanonicalNumber::fromScaledInteger($line->unit_price_micros, 6),
-            'debitAmount' => CanonicalNumber::fromMinorUnits($line->net_amount_minor),
+            'unitPrice' => CanonicalNumber::fromMinorUnits($line->unit_price_base_minor),
+            'unitPriceBase' => CanonicalNumber::fromScaledInteger($line->unit_price_micros, 6),
+            ...$this->adjustmentReference($document),
+            $amountField => CanonicalNumber::fromMinorUnits($line->net_amount_minor),
             'taxes' => $line->taxes
                 ->map(fn (FiscalDocumentLineTax $tax): array => $this->tax($tax))
                 ->values()
@@ -158,11 +166,11 @@ final class FiscalDocumentPayloadBuilder
      * in kwanzas converts through a rate of exactly one, so this changes nothing
      * for them and no signature already filed moves.
      *
-     * @return array<string, CanonicalNumber>
+     * @return array<string, mixed>
      */
     private function documentTotals(FiscalDocument $document): array
     {
-        return [
+        return array_filter([
             'taxPayable' => CanonicalNumber::fromMinorUnits(
                 $this->calculator->convertedAmount($document->tax_payable_minor, $document->exchange_rate_micro),
             ),
@@ -172,7 +180,8 @@ final class FiscalDocumentPayloadBuilder
             'grossTotal' => CanonicalNumber::fromMinorUnits(
                 $this->calculator->convertedAmount($document->gross_total_minor, $document->exchange_rate_micro),
             ),
-        ];
+            'currency' => $this->currency($document),
+        ], fn (mixed $value): bool => $value !== null);
     }
 
     /**
@@ -181,22 +190,18 @@ final class FiscalDocumentPayloadBuilder
      * Left off entirely for a kwanza document so the payload of every document
      * issued so far is byte-for-byte what it was.
      *
-     * @return array<string, mixed>
+     * @return array{currencyCode: string, currencyAmount: CanonicalNumber, exchangeRate: CanonicalNumber}|null
      */
-    private function currency(FiscalDocument $document): array
+    private function currency(FiscalDocument $document): ?array
     {
         if (! $document->isForeignCurrency()) {
-            return [];
+            return null;
         }
 
         return [
-            'currency' => [
-                'currencyCode' => $document->currency_code,
-                'currencyAmount' => CanonicalNumber::fromMinorUnits($document->gross_total_minor),
-                'exchangeRate' => CanonicalNumber::fromMinorUnits(
-                    intdiv($document->exchange_rate_micro, 10_000),
-                ),
-            ],
+            'currencyCode' => $document->currency_code,
+            'currencyAmount' => CanonicalNumber::fromMinorUnits($document->gross_total_minor),
+            'exchangeRate' => CanonicalNumber::fromScaledInteger($document->exchange_rate_micro, 6),
         ];
     }
 
@@ -212,9 +217,14 @@ final class FiscalDocumentPayloadBuilder
         }
 
         return [
-            'withholdingTax' => $document->withholdings
+            'withholdingTaxList' => $document->withholdings
                 ->map(fn (FiscalDocumentWithholding $withholding): array => [
-                    'withholdingTaxType' => $withholding->withholding_type->value,
+                    'withholdingTaxType' => $withholding->withholding_type->agtCode(),
+                    'withholdingTaxDescription' => sprintf(
+                        '%s (%s%%)',
+                        $withholding->withholding_type->taxLabel(),
+                        CanonicalNumber::fromBasisPoints($withholding->rate_basis_points),
+                    ),
                     'withholdingTaxAmount' => CanonicalNumber::fromMinorUnits(
                         $this->calculator->convertedAmount(
                             $withholding->amount_minor,
@@ -229,7 +239,7 @@ final class FiscalDocumentPayloadBuilder
 
     private function ensureReadyForPayload(FiscalDocument $document): void
     {
-        $document->loadMissing('legalEntity');
+        $document->loadMissing(['legalEntity', 'lines']);
 
         if ($document->isMutable()) {
             throw new DomainException('A draft cannot be converted into an AGT payload.');
@@ -261,6 +271,13 @@ final class FiscalDocumentPayloadBuilder
             throw new DomainException(
                 'An adjustment document must reference the corrected document and state a reason.',
             );
+        }
+
+        if ($document->document_type->requiresLineOperationDate()
+            && ($document->lines->isEmpty()
+                || $document->lines->contains(fn (FiscalDocumentLine $line): bool => $line->operation_date === null))
+        ) {
+            throw new DomainException('Every generic or global invoice line must state its operation date.');
         }
     }
 }

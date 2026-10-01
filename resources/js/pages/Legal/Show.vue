@@ -83,7 +83,7 @@ function effectiveDate(): string {
 
                 <button
                     type="button"
-                    class="rounded-lg p-2 text-zinc-500 focus-ring transition hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white"
+                    class="icon-button text-zinc-500 focus-ring transition hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white"
                     @click="toggleAppearance"
                 >
                     <span class="sr-only">Alternar tema</span>

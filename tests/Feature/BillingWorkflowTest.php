@@ -179,6 +179,69 @@ test('a quote is created with a quotable reference and computed totals', functio
         ->and($quote->lines)->toHaveCount(1);
 });
 
+test('a quote applies line discounts before tax', function () {
+    $fixture = billingFixture();
+    $payload = quotePayload($fixture, '1000.00');
+    $payload['lines'][0]['discount_rate'] = '10';
+
+    $this->actingAs($fixture['owner'])
+        ->post(route('quotes.store'), $payload)
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    $quote = Quote::query()->with('lines')->sole();
+
+    expect($quote->lines->first()->discount_rate_basis_points)->toBe(1000)
+        ->and($quote->net_total_minor)->toBe(90_000)
+        ->and($quote->tax_total_minor)->toBe(12_600)
+        ->and($quote->gross_total_minor)->toBe(102_600);
+});
+
+test('each legal entity can use its own quote reference sequence', function () {
+    $firstFixture = billingFixture();
+    $secondFixture = billingFixture();
+
+    $this->actingAs($firstFixture['owner'])
+        ->post(route('quotes.store'), quotePayload($firstFixture))
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    $this->actingAs($secondFixture['owner'])
+        ->post(route('quotes.store'), quotePayload($secondFixture))
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    $quotes = Quote::query()->oldest('id')->get();
+
+    expect($quotes)->toHaveCount(2)
+        ->and($quotes->pluck('reference')->all())->toBe([
+            'ORC '.now()->year.'/0001',
+            'ORC '.now()->year.'/0001',
+        ])
+        ->and($quotes->pluck('legal_entity_id')->unique())->toHaveCount(2);
+});
+
+test('deleting an older draft does not reuse an existing quote reference', function () {
+    $fixture = billingFixture();
+
+    $this->actingAs($fixture['owner'])
+        ->post(route('quotes.store'), quotePayload($fixture))
+        ->assertRedirect();
+
+    $this->post(route('quotes.store'), quotePayload($fixture))->assertRedirect();
+
+    Quote::query()->oldest('id')->firstOrFail()->delete();
+
+    $this->post(route('quotes.store'), quotePayload($fixture))
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    expect(Quote::query()->oldest('id')->pluck('reference')->all())->toBe([
+        'ORC '.now()->year.'/0002',
+        'ORC '.now()->year.'/0003',
+    ]);
+});
+
 test('a quote is not a fiscal document and never reaches the AGT', function () {
     $fixture = billingFixture();
 
@@ -190,15 +253,10 @@ test('a quote is not a fiscal document and never reaches the AGT', function () {
 
 test('a quote can be marked sent, then accepted', function () {
     $fixture = billingFixture();
-    $quote = Quote::factory()->create([
-        'workspace_id' => $fixture['legalEntity']->workspace_id,
-        'legal_entity_id' => $fixture['legalEntity']->id,
-        'establishment_id' => $fixture['establishment']->id,
-        'customer_id' => $fixture['customer']->id,
-    ]);
+    $this->actingAs($fixture['owner'])->post(route('quotes.store'), quotePayload($fixture));
+    $quote = Quote::query()->sole();
 
-    $this->actingAs($fixture['owner'])
-        ->put(route('quotes.transition', $quote), ['status' => 'sent'])
+    $this->put(route('quotes.transition', $quote), ['status' => 'sent'])
         ->assertRedirect();
 
     expect($quote->fresh()->status)->toBe(QuoteStatus::Sent);
@@ -206,6 +264,19 @@ test('a quote can be marked sent, then accepted', function () {
     $this->put(route('quotes.transition', $quote), ['status' => 'accepted']);
 
     expect($quote->fresh()->status)->toBe(QuoteStatus::Accepted);
+});
+
+test('a quote cannot skip the sent working-document state', function () {
+    $fixture = billingFixture();
+    $this->actingAs($fixture['owner'])->post(route('quotes.store'), quotePayload($fixture));
+    $quote = Quote::query()->sole();
+
+    $this->put(route('quotes.transition', $quote), ['status' => 'accepted'])
+        ->assertRedirect()
+        ->assertSessionHas('error');
+
+    expect($quote->fresh()->status)->toBe(QuoteStatus::Draft)
+        ->and($quote->fresh()->sent_at)->toBeNull();
 });
 
 test('a quote past its validity reads as expired without a job having run', function () {
@@ -230,11 +301,58 @@ test('an accepted quote becomes an invoice draft, not an issued invoice', functi
 
     $document = app(ConvertQuoteToInvoice::class)->execute($quote, $fixture['owner']);
 
+    $line = $document->lines()->with('taxes')->sole();
+
     expect($document->status)->toBe(FiscalDocumentStatus::Draft)
         ->and($document->document_no)->toBeNull()
         ->and($document->gross_total_minor)->toBe(11_400_000)
         ->and($document->lines()->count())->toBe(1)
+        ->and($line->unit_price_micros)->toBe(100_000_000_000)
+        ->and($line->taxes->sole()->tax_code)->toBe('NOR')
         ->and($quote->fresh()->status)->toBe(QuoteStatus::Converted);
+});
+
+test('quote discounts and fiscal rounding survive invoice conversion exactly', function () {
+    $fixture = billingFixture();
+    $payload = quotePayload($fixture, '100000.00');
+    $payload['lines'][0]['quantity'] = '2';
+    $payload['lines'][0]['discount_rate'] = '10';
+
+    $this->actingAs($fixture['owner'])->post(route('quotes.store'), $payload);
+    $quote = Quote::query()->sole();
+    $quote->forceFill(['status' => QuoteStatus::Accepted])->save();
+
+    $document = app(ConvertQuoteToInvoice::class)->execute($quote, $fixture['owner']);
+    $line = $document->lines()->with('taxes')->sole();
+
+    expect($quote->net_total_minor)->toBe(18_000_000)
+        ->and($quote->tax_total_minor)->toBe(2_520_000)
+        ->and($quote->gross_total_minor)->toBe(20_520_000)
+        ->and($document->settlement_total_minor)->toBe(2_000_000)
+        ->and($document->net_total_minor)->toBe(18_000_000)
+        ->and($document->tax_payable_minor)->toBe(2_520_000)
+        ->and($document->gross_total_minor)->toBe(20_520_000)
+        ->and($line->unit_price_micros)->toBe(90_000_000_000)
+        ->and($line->settlement_amount_minor)->toBe(2_000_000)
+        ->and($line->taxes->sole()->tax_code)->toBe('NOR');
+});
+
+test('quote tax uses the same upward-cent rounding as a fiscal document', function () {
+    $fixture = billingFixture();
+
+    $this->actingAs($fixture['owner'])
+        ->post(route('quotes.store'), quotePayload($fixture, '0.01'))
+        ->assertSessionHasNoErrors();
+
+    $quote = Quote::query()->sole();
+    $quote->forceFill(['status' => QuoteStatus::Accepted])->save();
+    $document = app(ConvertQuoteToInvoice::class)->execute($quote, $fixture['owner']);
+
+    expect($quote->net_total_minor)->toBe(1)
+        ->and($quote->tax_total_minor)->toBe(1)
+        ->and($quote->gross_total_minor)->toBe(2)
+        ->and($document->tax_payable_minor)->toBe(1)
+        ->and($document->gross_total_minor)->toBe(2);
 });
 
 test('the converted invoice falls due on the customer terms', function () {
@@ -282,7 +400,7 @@ test('a quote to a prospect with no NIF is refused before it reaches the invoice
         'establishment_id' => $fixture['establishment']->id,
         'customer_id' => null,
         'created_by_user_id' => $fixture['owner']->id,
-        'status' => QuoteStatus::Accepted,
+        'status' => QuoteStatus::Draft,
         'customer_name' => 'Cooperativa sem NIF',
         'customer_tax_identification_number' => null,
     ]);
@@ -305,13 +423,14 @@ test('a quote to a prospect with no NIF is refused before it reaches the invoice
         'tax_amount_minor' => 14_000,
         'gross_amount_minor' => 114_000,
     ]);
+    $quote->forceFill(['status' => QuoteStatus::Accepted])->save();
 
     expect(fn () => app(ConvertQuoteToInvoice::class)->execute($quote, $fixture['owner']))
         ->toThrow(BillingActionRefused::class, 'Indique o NIF do cliente no orçamento antes de o passar a factura.')
         ->and(FiscalDocument::query()->count())->toBe(0);
 });
 
-test('a hand-written quote line reaches the draft with a product code', function () {
+test('a legacy quote line reaches the draft with a product code and canonical tax code', function () {
     $fixture = billingFixture();
     $quote = Quote::factory()->create([
         'workspace_id' => $fixture['legalEntity']->workspace_id,
@@ -319,7 +438,7 @@ test('a hand-written quote line reaches the draft with a product code', function
         'establishment_id' => $fixture['establishment']->id,
         'customer_id' => $fixture['customer']->id,
         'created_by_user_id' => $fixture['owner']->id,
-        'status' => QuoteStatus::Accepted,
+        'status' => QuoteStatus::Draft,
         'customer_name' => $fixture['customer']->name,
         'customer_tax_identification_number' => $fixture['customer']->tax_identification_number,
         'net_total_minor' => 100_000,
@@ -340,16 +459,35 @@ test('a hand-written quote line reaches the draft with a product code', function
         'unit_price_minor' => 100_000,
         'discount_rate_basis_points' => 0,
         'tax_type' => 'IVA',
-        'tax_code' => 'NOR',
+        'tax_code' => null,
         'tax_percentage' => '14.00',
         'net_amount_minor' => 100_000,
         'tax_amount_minor' => 14_000,
         'gross_amount_minor' => 114_000,
     ]);
+    $quote->forceFill(['status' => QuoteStatus::Accepted])->save();
 
     $document = app(ConvertQuoteToInvoice::class)->execute($quote, $fixture['owner']);
 
-    expect($document->lines()->sole()->product_code)->toBe('CONSULTORIA-DE-IMPLEMENTACAO');
+    $line = $document->lines()->with('taxes')->sole();
+
+    expect($line->product_code)->toBe('CONSULTORIA-DE-IMPLEMENTACAO')
+        ->and($line->taxes->sole()->tax_code)->toBe('NOR')
+        ->and($line->taxes->sole()->tax_rate_basis_points)->toBe(1_400);
+});
+
+test('a quote rejects a tax combination that cannot be issued', function () {
+    $fixture = billingFixture();
+    $payload = quotePayload($fixture);
+    $payload['lines'][0]['tax_code'] = 'ISE';
+    $payload['lines'][0]['tax_percentage'] = '14';
+    $payload['lines'][0]['tax_exemption_code'] = 'M02';
+
+    $this->actingAs($fixture['owner'])
+        ->post(route('quotes.store'), $payload)
+        ->assertSessionHasErrors('lines.0.tax_percentage');
+
+    expect(Quote::query()->doesntExist())->toBeTrue();
 });
 
 test('a converted quote can no longer be edited', function () {
@@ -573,9 +711,51 @@ test('a due profile raises a draft dated to the period', function () {
 
     $document = FiscalDocument::query()->sole();
 
+    $line = $document->lines()->with('taxes')->sole();
+
     expect($document->status)->toBe(FiscalDocumentStatus::Draft)
         ->and($document->gross_total_minor)->toBe(5_700_000)
-        ->and($document->lines()->count())->toBe(1);
+        ->and($document->lines()->count())->toBe(1)
+        ->and($line->unit_price_micros)->toBe(50_000_000_000)
+        ->and($line->taxes->sole()->tax_code)->toBe('NOR');
+});
+
+test('a recurring profile normalises legacy tax data and rounds tax upward', function () {
+    $fixture = billingFixture();
+
+    RecurringInvoice::factory()->create([
+        'workspace_id' => $fixture['legalEntity']->workspace_id,
+        'legal_entity_id' => $fixture['legalEntity']->id,
+        'establishment_id' => $fixture['establishment']->id,
+        'customer_id' => $fixture['customer']->id,
+        'created_by_user_id' => $fixture['owner']->id,
+        'starts_on' => now()->toDateString(),
+        'next_run_on' => now()->toDateString(),
+        'lines' => [[
+            'product_code' => 'MICRO-01',
+            'operation_type' => 'SG',
+            'product_description' => 'Linha mínima',
+            'unit_of_measure' => 'UN',
+            'quantity_units' => 1_000,
+            'quantity_scale' => 3,
+            'unit_price_minor' => 1,
+            'discount_rate_basis_points' => 0,
+            'tax_type' => 'IVA',
+            'tax_code' => null,
+            'tax_percentage' => '14.00',
+            'tax_exemption_code' => null,
+        ]],
+    ]);
+
+    app(GenerateRecurringInvoices::class)->execute();
+
+    $document = FiscalDocument::query()->sole();
+    $tax = $document->lines()->with('taxes')->sole()->taxes->sole();
+
+    expect($document->net_total_minor)->toBe(1)
+        ->and($document->tax_payable_minor)->toBe(1)
+        ->and($document->gross_total_minor)->toBe(2)
+        ->and($tax->tax_code)->toBe('NOR');
 });
 
 test('the schedule advances by the chosen frequency', function () {

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use DomainException;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -48,6 +49,21 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 ])]
 class QuoteLine extends Model
 {
+    protected static function booted(): void
+    {
+        foreach (['creating', 'updating', 'deleting'] as $event) {
+            static::{$event}(function (self $line): void {
+                $quote = $line->relationLoaded('quote')
+                    ? $line->quote
+                    : Quote::query()->find($line->quote_id);
+
+                if (! $quote instanceof Quote || ! $quote->status->isEditable()) {
+                    throw new DomainException('Lines of a sent quote are immutable.');
+                }
+            });
+        }
+    }
+
     /** @return BelongsTo<Quote, $this> */
     public function quote(): BelongsTo
     {

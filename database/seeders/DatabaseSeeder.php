@@ -13,5 +13,10 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(LegalDocumentSeeder::class);
         $this->call(PhaseOneDemoSeeder::class);
+
+        if (filled(config('agt.homologation_fixture.tax_identification_number'))
+            && filled(config('agt.homologation_fixture.user_password'))) {
+            $this->call(AgtHomologationSeeder::class);
+        }
     }
 }

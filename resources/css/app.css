@@ -160,6 +160,30 @@ input[type='search']::-webkit-search-decoration {
     @apply bg-white shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-white/10;
 }
 
+/**
+ * A control whose whole label is an icon.
+ *
+ * Padding alone had these at 32 square, which is comfortable with a mouse and
+ * mean with a thumb — and these are the row actions, including the destructive
+ * ones. The floor is 40, and 44 wherever the pointer is coarse, which is the
+ * question actually being asked: not "is the screen small" but "is this being
+ * touched". A tablet with a large screen still needs the bigger target.
+ */
+@utility icon-button {
+    display: inline-grid;
+    place-items: center;
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+    border-radius: 0.5rem;
+}
+
+@media (pointer: coarse) {
+    .icon-button {
+        min-width: 2.75rem;
+        min-height: 2.75rem;
+    }
+}
+
 /** Keyboard focus treatment shared by every interactive element. */
 @utility focus-ring {
     @apply focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 dark:focus-visible:outline-brand-300;
@@ -168,6 +192,15 @@ input[type='search']::-webkit-search-decoration {
 /** Focus treatment for controls sitting on the dark brand surfaces. */
 @utility focus-ring-inverted {
     @apply focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-400;
+}
+
+/** Text fields used in dense fiscal forms. */
+@utility form-input {
+    @apply w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 placeholder:text-zinc-400 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-zinc-500 dark:focus:outline-brand-400;
+}
+
+@utility form-input-sm {
+    @apply rounded-lg px-2.5 py-2 text-xs;
 }
 
 /**

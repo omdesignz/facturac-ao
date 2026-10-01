@@ -90,6 +90,11 @@
                 <td>{{ $line['product_code'] }}</td>
                 <td>
                     {{ $line['product_description'] }}
+                    @if ($line['operation_date'])
+                        <div class="muted" style="font-size: 7pt;">
+                            Operação: {{ \Illuminate\Support\Carbon::parse($line['operation_date'])->format('d/m/Y') }}
+                        </div>
+                    @endif
                     @if ($line['tax_exemption_code'])
                         <div class="muted" style="font-size: 7pt;">
                             Isento · {{ $line['tax_exemption_code'] }}

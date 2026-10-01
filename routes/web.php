@@ -3,6 +3,7 @@
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AgtConnectionCheckController;
 use App\Http\Controllers\AgtConnectionController;
+use App\Http\Controllers\AgtSeriesRequestController;
 use App\Http\Controllers\AgtSeriesSyncController;
 use App\Http\Controllers\AgtSubmissionController;
 use App\Http\Controllers\AgtSubmissionRefreshController;
@@ -27,6 +28,7 @@ use App\Http\Controllers\DebtController;
 use App\Http\Controllers\EstablishmentController;
 use App\Http\Controllers\FiscalDocumentController;
 use App\Http\Controllers\FiscalDocumentDeliveryController;
+use App\Http\Controllers\FiscalDocumentIndexController;
 use App\Http\Controllers\FiscalDocumentIssueController;
 use App\Http\Controllers\FiscalDocumentPrintController;
 use App\Http\Controllers\HelpController;
@@ -42,6 +44,7 @@ use App\Http\Controllers\QuoteController;
 use App\Http\Controllers\RecurringInvoiceController;
 use App\Http\Controllers\RenewWorkSessionController;
 use App\Http\Controllers\SaftExportController;
+use App\Http\Controllers\SaftIndexController;
 use App\Http\Controllers\SecurityController;
 use App\Http\Controllers\SessionController;
 use App\Http\Controllers\SimulateEmisPaymentController;
@@ -50,6 +53,10 @@ use App\Http\Controllers\StockController;
 use App\Http\Controllers\SupportComplaintController;
 use App\Http\Controllers\SupportController;
 use App\Http\Controllers\TermsAcceptanceController;
+use App\Http\Controllers\TransportDocumentCancellationController;
+use App\Http\Controllers\TransportDocumentController;
+use App\Http\Controllers\TransportDocumentIssueController;
+use App\Http\Controllers\TransportDocumentPrintController;
 use App\Http\Controllers\WorkSessionPreferenceController;
 use App\Http\Controllers\WorkspaceSetupController;
 use Illuminate\Support\Facades\Route;
@@ -205,7 +212,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::post('/notificacoes/{notification}', [NotificationController::class, 'read'])
             ->name('notifications.read');
 
-        Route::get('/saft', SaftExportController::class)
+        Route::get('/saft', SaftIndexController::class)
+            ->middleware('cache.headers:private;no_store')
+            ->name('saft.index');
+        Route::get('/saft/exportar', SaftExportController::class)
             ->middleware('throttle:10,5')
             ->name('saft.export');
 
@@ -279,6 +289,31 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::post('/orcamentos/{quote}/facturar', [QuoteController::class, 'convert'])
             ->name('quotes.convert');
 
+        Route::get('/guias', [TransportDocumentController::class, 'index'])
+            ->middleware('cache.headers:private;no_store')
+            ->name('transport-documents.index');
+        Route::get('/guias/nova', [TransportDocumentController::class, 'create'])
+            ->name('transport-documents.create');
+        Route::post('/guias', [TransportDocumentController::class, 'store'])
+            ->name('transport-documents.store');
+        Route::get('/guias/{transportDocument}/editar', [TransportDocumentController::class, 'edit'])
+            ->name('transport-documents.edit');
+        Route::put('/guias/{transportDocument}', [TransportDocumentController::class, 'update'])
+            ->name('transport-documents.update');
+        Route::post('/guias/{transportDocument}/emitir', TransportDocumentIssueController::class)
+            ->middleware(['mfa', 'password.confirm', 'throttle:10,1'])
+            ->name('transport-documents.issue');
+        Route::post('/guias/{transportDocument}/anular', TransportDocumentCancellationController::class)
+            ->middleware(['mfa', 'password.confirm', 'throttle:10,1'])
+            ->name('transport-documents.cancel');
+        Route::get('/guias/{transportDocument}/imprimir', [TransportDocumentPrintController::class, 'show'])
+            ->name('transport-documents.print');
+        Route::get('/guias/{transportDocument}/pdf', [TransportDocumentPrintController::class, 'pdf'])
+            ->name('transport-documents.pdf');
+
+        Route::get('/documentos', FiscalDocumentIndexController::class)
+            ->middleware('cache.headers:private;no_store')
+            ->name('documents.index');
         Route::get('/documents/invoices/create', [FiscalDocumentController::class, 'create'])
             ->name('invoices.create');
         Route::post('/documents/invoices', [FiscalDocumentController::class, 'store'])
@@ -306,6 +341,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::post('/agt/series/sync', AgtSeriesSyncController::class)
             ->middleware(['mfa', 'password.confirm', 'throttle:3,1'])
             ->name('agt.series.sync');
+        Route::post('/agt/series', AgtSeriesRequestController::class)
+            ->middleware(['mfa', 'password.confirm', 'throttle:1,1'])
+            ->name('agt.series.store');
         Route::get('/agt/submissions', [AgtSubmissionController::class, 'index'])
             ->middleware('cache.headers:private;no_store')
             ->name('agt.submissions.index');

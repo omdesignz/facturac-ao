@@ -401,7 +401,7 @@ onBeforeUnmount(() => {
 
                 <button
                     type="button"
-                    class="-ml-1 hidden rounded-lg p-2 text-zinc-500 focus-ring transition hover:bg-zinc-100 hover:text-zinc-950 lg:block dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white"
+                    class="-ml-1 hidden icon-button text-zinc-500 focus-ring transition hover:bg-zinc-100 hover:text-zinc-950 lg:block dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white"
                     :aria-expanded="!sidebarCollapsed"
                     :title="
                         sidebarCollapsed
@@ -467,7 +467,7 @@ onBeforeUnmount(() => {
 
                         <Menu as="div" class="relative">
                             <MenuButton
-                                class="relative rounded-lg p-2 text-zinc-500 focus-ring transition hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white"
+                                class="relative icon-button text-zinc-500 focus-ring transition hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white"
                             >
                                 <span class="sr-only">Ver notificações</span>
                                 <Bell class="size-5" aria-hidden="true" />
@@ -662,7 +662,7 @@ onBeforeUnmount(() => {
 
                         <Menu as="div" class="relative">
                             <MenuButton
-                                class="rounded-lg p-2 text-zinc-500 focus-ring transition hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white"
+                                class="icon-button text-zinc-500 focus-ring transition hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white"
                             >
                                 <span class="sr-only">Alterar aparência</span>
                                 <component

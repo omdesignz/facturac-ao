@@ -2,10 +2,12 @@
 
 namespace App\Http\Requests;
 
+use App\Fiscal\SupportedTaxTreatment;
 use App\FiscalDocumentType;
 use App\RecurrenceFrequency;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StoreRecurringInvoiceRequest extends FormRequest
 {
@@ -36,11 +38,30 @@ class StoreRecurringInvoiceRequest extends FormRequest
             'lines.*.product_code' => ['nullable', 'string', 'max:60'],
             'lines.*.product_description' => ['required', 'string', 'max:255'],
             'lines.*.unit_of_measure' => ['required', 'string', 'max:20'],
-            'lines.*.quantity' => ['required', 'numeric', 'gt:0', 'max:1000000'],
-            'lines.*.unit_price' => ['required', 'numeric', 'min:0', 'max:1000000000'],
-            'lines.*.tax_percentage' => ['required', 'numeric', 'min:0', 'max:100'],
-            'lines.*.tax_type' => ['required', 'string', 'max:10'],
-            'lines.*.tax_code' => ['nullable', 'string', 'max:10'],
+            'lines.*.quantity' => [
+                'required',
+                'numeric',
+                'gt:0',
+                'max:1000000',
+                'regex:/\A(?:0|[1-9]\d*)(?:\.\d{1,4})?\z/',
+            ],
+            'lines.*.unit_price' => [
+                'required',
+                'numeric',
+                'min:0',
+                'max:1000000000',
+                'regex:/\A(?:0|[1-9]\d*)(?:\.\d{1,2})?\z/',
+            ],
+            'lines.*.tax_percentage' => [
+                'required',
+                'numeric',
+                'min:0',
+                'max:100',
+                'regex:/\A(?:0|[1-9]\d*)(?:\.\d{1,2})?\z/',
+            ],
+            'lines.*.tax_type' => ['required', Rule::in(['IVA', 'NS'])],
+            'lines.*.tax_code' => ['nullable', Rule::in(['NOR', 'ISE'])],
+            'lines.*.tax_exemption_code' => ['nullable', Rule::in(['M00', 'M02', 'M04'])],
         ];
     }
 
@@ -57,10 +78,77 @@ class StoreRecurringInvoiceRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $lines = $this->input('lines');
+
+        if (is_array($lines)) {
+            $lines = array_map(function (mixed $line): mixed {
+                if (! is_array($line)) {
+                    return $line;
+                }
+
+                foreach (['quantity', 'unit_price', 'tax_percentage'] as $field) {
+                    $line[$field] = $this->normaliseDecimal($line[$field] ?? null);
+                }
+
+                $taxType = $this->normaliseCode($line['tax_type'] ?? 'IVA') ?? 'IVA';
+                $taxCode = $this->normaliseCode($line['tax_code'] ?? null);
+                $taxExemptionCode = $this->normaliseCode($line['tax_exemption_code'] ?? null);
+                $taxTreatment = SupportedTaxTreatment::fromLegacyComponents(
+                    $taxType,
+                    $taxCode,
+                    $line['tax_percentage'] ?? null,
+                    $taxExemptionCode,
+                );
+                $taxProfile = $taxTreatment?->profile();
+
+                $line['tax_type'] = $taxProfile['type'] ?? $taxType;
+                $line['tax_code'] = $taxProfile !== null ? $taxProfile['code'] : $taxCode;
+                $line['tax_percentage'] = $taxProfile['percentage'] ?? ($line['tax_percentage'] ?? null);
+                $line['tax_exemption_code'] = $taxProfile !== null
+                    ? $taxProfile['exemption_code']
+                    : $taxExemptionCode;
+
+                return $line;
+            }, $lines);
+        }
+
         $this->merge([
             'is_active' => $this->boolean('is_active'),
             'auto_issue' => $this->boolean('auto_issue'),
+            'lines' => $lines,
         ]);
+    }
+
+    /** @return array<int, callable> */
+    public function after(): array
+    {
+        return [
+            function (Validator $validator): void {
+                $lines = $this->input('lines', []);
+
+                if (! is_array($lines)) {
+                    return;
+                }
+
+                foreach ($lines as $index => $line) {
+                    if (! is_array($line)) {
+                        continue;
+                    }
+
+                    if (SupportedTaxTreatment::fromComponents(
+                        $line['tax_type'] ?? null,
+                        $line['tax_code'] ?? null,
+                        $line['tax_percentage'] ?? null,
+                        $line['tax_exemption_code'] ?? null,
+                    ) === null) {
+                        $validator->errors()->add(
+                            "lines.{$index}.tax_percentage",
+                            'Seleccione um tratamento fiscal suportado.',
+                        );
+                    }
+                }
+            },
+        ];
     }
 
     /**
@@ -79,13 +167,14 @@ class StoreRecurringInvoiceRequest extends FormRequest
                 'operation_type' => 'SG',
                 'product_description' => (string) $line['product_description'],
                 'unit_of_measure' => (string) $line['unit_of_measure'],
-                'quantity_units' => $this->scaled((string) $line['quantity'], 3),
+                'quantity_units' => $this->scaled((string) $line['quantity'], 4),
+                'quantity_scale' => 4,
                 'unit_price_minor' => $this->scaled((string) $line['unit_price'], 2),
                 'discount_rate_basis_points' => 0,
                 'tax_type' => (string) $line['tax_type'],
                 'tax_code' => $line['tax_code'] ?? null,
                 'tax_percentage' => (string) $line['tax_percentage'],
-                'tax_exemption_code' => null,
+                'tax_exemption_code' => $line['tax_exemption_code'] ?? null,
             ],
             $lines,
         );
@@ -96,5 +185,21 @@ class StoreRecurringInvoiceRequest extends FormRequest
         [$whole, $fraction] = array_pad(explode('.', trim($value), 2), 2, '');
 
         return (int) ($whole.substr(str_pad($fraction, $scale, '0'), 0, $scale));
+    }
+
+    private function normaliseCode(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $value = mb_strtoupper(trim($value));
+
+        return $value === '' ? null : $value;
+    }
+
+    private function normaliseDecimal(mixed $value): mixed
+    {
+        return is_string($value) ? str_replace(',', '.', trim($value)) : $value;
     }
 }

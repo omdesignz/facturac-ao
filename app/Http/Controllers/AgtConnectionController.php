@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Actions\SaveAgtConnection;
 use App\AgtEnvironment;
 use App\Fiscal\Agt\AgtConnectionReadiness;
+use App\Fiscal\Documents\FiscalSeriesYearWindow;
+use App\FiscalDocumentType;
 use App\Http\Requests\UpdateAgtConnectionRequest;
 use App\Models\AgtConnection;
 use App\Models\AgtConnectionCheck;
@@ -22,8 +24,11 @@ use Inertia\Response;
 
 class AgtConnectionController extends Controller
 {
-    public function show(Request $request, AgtConnectionReadiness $readiness): Response|RedirectResponse
-    {
+    public function show(
+        Request $request,
+        AgtConnectionReadiness $readiness,
+        FiscalSeriesYearWindow $seriesYearWindow,
+    ): Response|RedirectResponse {
         /** @var Workspace $workspace */
         $workspace = $request->attributes->get('currentWorkspace');
         $legalEntity = $workspace->legalEntities()
@@ -94,9 +99,22 @@ class AgtConnectionController extends Controller
                 ])
                 ->values()
                 ->all(),
+            'seriesRequest' => [
+                'document_types' => collect(FiscalDocumentType::issuable())
+                    ->map(fn (FiscalDocumentType $documentType): array => [
+                        'value' => $documentType->value,
+                        'label' => $documentType->label(),
+                    ])
+                    ->values()
+                    ->all(),
+                'years' => $seriesYearWindow->allowedYears(now('UTC')),
+                'default_document_type' => FiscalDocumentType::Invoice->value,
+            ],
             'permissions' => [
                 'manage' => Gate::allows('manageAgtConnection', $legalEntity),
                 'test' => Gate::allows('testAgtConnection', $legalEntity),
+                'request_series' => Gate::allows('testAgtConnection', $legalEntity)
+                    && $connection?->status->value === 'verified',
                 'sync_series' => Gate::allows('testAgtConnection', $legalEntity)
                     && $connection?->status->value === 'verified',
             ],

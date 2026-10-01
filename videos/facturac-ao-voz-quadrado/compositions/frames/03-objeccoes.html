@@ -1,0 +1,179 @@
+<template>
+  <style>
+    @font-face { font-family:"PlexSans"; font-weight:400; font-display:block; src:url("assets/fonts/plex-sans-400.woff2") format("woff2"); }
+    @font-face { font-family:"PlexSans"; font-weight:600; font-display:block; src:url("assets/fonts/plex-sans-600.woff2") format("woff2"); }
+    @font-face { font-family:"PlexSans"; font-weight:700; font-display:block; src:url("assets/fonts/plex-sans-700.woff2") format("woff2"); }
+    @font-face { font-family:"PlexMono"; font-weight:400; font-display:block; src:url("assets/fonts/plex-mono-400.woff2") format("woff2"); }
+    @font-face { font-family:"PlexMono"; font-weight:600; font-display:block; src:url("assets/fonts/plex-mono-600.woff2") format("woff2"); }
+
+    #root { position:absolute; inset:0; width:1080px; height:1080px; overflow:hidden;
+            font-family:"PlexSans",sans-serif; color:#232322; }
+    .f3-ground { position:absolute; inset:0; background:#faf9f6; }
+    .f3-stage  { position:absolute; inset:0; }
+
+    /* Three claims, three scenes, one stage. Each objection is answered by
+       showing the thing happening rather than by naming it, and the word slot
+       at the foot keeps the noun worth remembering afterwards. */
+    .f3-scene { position:absolute; left:80px; top:170px; width:920px; height:520px; }
+
+    /* — Scene A: the same rows, in two homes ------------------------------- */
+    .f3a-sheet { position:absolute; inset:0 0 auto 0; }
+    .f3a-head  { display:flex; border:2px solid rgba(35,35,34,0.3);
+                 background:rgba(35,35,34,0.07); }
+    .f3a-hc    { flex:1; padding:9px 0; text-align:center;
+                 font-family:"PlexMono",monospace; font-size:18px; font-weight:600;
+                 color:rgba(35,35,34,0.62); border-right:2px solid rgba(35,35,34,0.3); }
+    .f3a-hc:last-child { border-right:0; }
+    .f3a-r     { display:flex; border:2px solid rgba(35,35,34,0.3); border-top:0; }
+    .f3a-c     { flex:1; padding:9px 12px; font-family:"PlexMono",monospace;
+                 font-size:20px; border-right:2px solid rgba(35,35,34,0.3);
+                 white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .f3a-c:last-child { border-right:0; text-align:right; }
+
+    .f3a-list  { position:absolute; inset:0 0 auto 0; }
+    .f3a-lr    { display:flex; align-items:center; justify-content:space-between;
+                 padding:12px 6px; border-bottom:2px solid rgba(35,35,34,0.16); }
+    .f3a-ln    { font-size:30px; }
+    .f3a-lp    { font-family:"PlexMono",monospace; font-size:23px; }
+
+    /* — Scene B: the series, unbroken -------------------------------------- */
+    .f3b-row   { display:flex; align-items:center; gap:22px; padding:13px 6px;
+                 border-bottom:2px solid rgba(35,35,34,0.14); }
+    .f3b-no    { font-family:"PlexMono",monospace; font-size:33px; font-weight:600; }
+    .f3b-tick  { width:19px; height:10px; border-left:4px solid #f9b233;
+                 border-bottom:4px solid #f9b233; transform:rotate(-45deg);
+                 margin-left:auto; margin-bottom:6px; }
+    /* Drawn down the whole run at "sem saltos": one line, no breaks in it. */
+    .f3b-bind  { position:absolute; left:-26px; top:0; width:6px; height:340px;
+                 background:#f9b233; transform-origin:center top; }
+
+    /* — Scene C: all of it, in one piece ----------------------------------- */
+    .f3c-box   { position:absolute; left:0; top:70px; width:920px;
+                 background:#ffffff; border:2px solid rgba(35,35,34,0.16);
+                 padding:30px 34px; box-shadow:0 14px 34px rgba(35,35,34,0.08); }
+    .f3c-kind  { font-family:"PlexMono",monospace; font-size:18px; font-weight:600;
+                 letter-spacing:0.12em; color:rgba(35,35,34,0.62); }
+    .f3c-name  { font-size:44px; font-weight:600; margin-top:8px; letter-spacing:-0.02em; }
+    .f3c-tags  { display:flex; gap:12px; margin-top:24px; }
+    .f3c-tag   { font-family:"PlexMono",monospace; font-size:19px;
+                 padding:8px 15px; border:2px solid rgba(35,35,34,0.28); }
+
+    /* The word that stays — one per scene, always in the same place. */
+    .f3-word { position:absolute; left:80px; right:80px; top:780px; font-size:108px;
+               font-weight:700; line-height:0.94; letter-spacing:-0.04em; }
+  </style>
+
+  <div id="root" data-composition-id="03-objeccoes" data-width="1080" data-height="1080">
+    <div id="frame-03-ground" class="clip f3-ground" data-start="0" data-duration="8.242" data-track-index="0"></div>
+    <div id="frame-03-stage" class="clip f3-stage" data-start="0" data-duration="8.242" data-track-index="1">
+
+      <div class="f3-scene f3-a">
+        <div class="f3a-sheet">
+          <div class="f3a-head"><div class="f3a-hc">A</div><div class="f3a-hc">B</div><div class="f3a-hc">C</div></div>
+          <div class="f3a-r"><div class="f3a-c">Mercearia Kilamba</div><div class="f3a-c">5417026183</div><div class="f3a-c">84 500,00</div></div>
+          <div class="f3a-r"><div class="f3a-c">Auto Peças Benguela</div><div class="f3a-c">5401938274</div><div class="f3a-c">57 250,00</div></div>
+          <div class="f3a-r"><div class="f3a-c">Farmácia Talatona</div><div class="f3a-c">5410772095</div><div class="f3a-c">128 400,00</div></div>
+          <div class="f3a-r"><div class="f3a-c">Arroz 25 kg</div><div class="f3a-c">un</div><div class="f3a-c">15 500,00</div></div>
+          <div class="f3a-r"><div class="f3a-c">Óleo alimentar 5 L</div><div class="f3a-c">un</div><div class="f3a-c">3 200,00</div></div>
+        </div>
+
+        <div class="f3a-list">
+          <div class="f3a-lr"><div class="f3a-ln">Mercearia Kilamba</div><div class="f3a-lp">84 500,00</div></div>
+          <div class="f3a-lr"><div class="f3a-ln">Auto Peças Benguela</div><div class="f3a-lp">57 250,00</div></div>
+          <div class="f3a-lr"><div class="f3a-ln">Farmácia Talatona</div><div class="f3a-lp">128 400,00</div></div>
+          <div class="f3a-lr"><div class="f3a-ln">Arroz 25 kg</div><div class="f3a-lp">15 500,00</div></div>
+          <div class="f3a-lr"><div class="f3a-ln">Óleo alimentar 5 L</div><div class="f3a-lp">3 200,00</div></div>
+        </div>
+      </div>
+
+      <div class="f3-scene f3-b">
+        <div class="f3b-bind"></div>
+        <div class="f3b-row"><div class="f3b-no">FR LOJA2026/0181</div><div class="f3b-tick"></div></div>
+        <div class="f3b-row"><div class="f3b-no">FR LOJA2026/0182</div><div class="f3b-tick"></div></div>
+        <div class="f3b-row"><div class="f3b-no">FR LOJA2026/0183</div><div class="f3b-tick"></div></div>
+        <div class="f3b-row"><div class="f3b-no">FR LOJA2026/0184</div><div class="f3b-tick"></div></div>
+        <div class="f3b-row"><div class="f3b-no">FR LOJA2026/0185</div><div class="f3b-tick"></div></div>
+      </div>
+
+      <div class="f3-scene f3-c">
+        <div class="f3c-box">
+          <div class="f3c-kind">ARQUIVO COMPLETO</div>
+          <div class="f3c-name">Tudo o que é seu</div>
+          <div class="f3c-tags">
+            <div class="f3c-tag">SAF-T (AO)</div>
+            <div class="f3c-tag">PDF</div>
+            <div class="f3c-tag">CSV</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="f3-word f3-w1">EXCEL</div>
+      <div class="f3-word f3-w2">SEM SALTOS</div>
+      <div class="f3-word f3-w3">SAI TUDO</div>
+    </div>
+  </div>
+
+  <script>
+    window.__timelines = window.__timelines || {};
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      const q = (s) => document.querySelectorAll(s);
+      const one = (s) => document.querySelector(s);
+
+      gsap.set([one("#root .f3-b"), one("#root .f3-c")], { opacity: 0 });
+      gsap.set(q("#root .f3-word"), { opacity: 0 });
+      gsap.set(one("#root .f3a-list"), { opacity: 0 });
+
+      /* — "Clientes e artigos entram do Excel." ---------------------------- */
+      /* The spreadsheet is real and cramped; then the same five rows are the
+         same five rows, just somewhere that can hold them properly. */
+      tl.fromTo(one("#root .f3a-sheet"), { opacity: 0, y: 26 },
+        { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.1);
+
+      tl.to(one("#root .f3a-sheet"),
+        { opacity: 0, scale: 0.97, duration: 0.5, ease: "power2.inOut" }, 1.39);
+      tl.fromTo(one("#root .f3a-list"), { opacity: 0, scale: 1.03, y: 18 },
+        { opacity: 1, scale: 1, y: 0, duration: 0.55, ease: "power3.out" }, 1.52);
+
+      tl.fromTo(one("#root .f3-w1"), { opacity: 0, y: 44 },
+        { opacity: 1, y: 0, duration: 0.44, ease: "power4.out" }, 1.77);
+
+      tl.to([one("#root .f3-a"), one("#root .f3-w1")],
+        { opacity: 0, duration: 0.3, ease: "power2.in" }, 2.5);
+
+      /* — "A numeração continua certa, sem saltos." ------------------------ */
+      tl.to(one("#root .f3-b"), { opacity: 1, duration: 0.01 }, 2.8);
+      q("#root .f3-b .f3b-row").forEach(function (row, i) {
+        tl.fromTo(row, { opacity: 0, x: -26 },
+          { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 2.85 + i * 0.34);
+      });
+      tl.fromTo(q("#root .f3b-tick"), { opacity: 0, scale: 0.4 },
+        { opacity: 1, scale: 1, duration: 0.24, stagger: 0.34, ease: "back.out(2.2)" }, 3.05);
+
+      /* One line down the whole run: the series has no break in it. */
+      tl.fromTo(one("#root .f3b-bind"), { scaleY: 0 },
+        { scaleY: 1, duration: 0.6, ease: "power3.out" }, 4.79);
+
+      tl.fromTo(one("#root .f3-w2"), { opacity: 0, y: 44 },
+        { opacity: 1, y: 0, duration: 0.44, ease: "power4.out" }, 5.07);
+
+      tl.to([one("#root .f3-b"), one("#root .f3-w2")],
+        { opacity: 0, duration: 0.3, ease: "power2.in" }, 5.7);
+
+      /* — "E leva tudo consigo quando quiser." ----------------------------- */
+      tl.to(one("#root .f3-c"), { opacity: 1, duration: 0.01 }, 5.98);
+      tl.fromTo(one("#root .f3c-box"), { opacity: 0, y: 40, scale: 0.97 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "power3.out" }, 6.0);
+      tl.fromTo(q("#root .f3c-tag"), { opacity: 0, y: 18 },
+        { opacity: 1, y: 0, duration: 0.34, stagger: 0.11, ease: "power3.out" }, 6.5);
+
+      tl.fromTo(one("#root .f3-w3"), { opacity: 0, y: 44 },
+        { opacity: 1, y: 0, duration: 0.44, ease: "power4.out" }, 6.57);
+
+      tl.fromTo(one("#root .f3-stage"), { scale: 1, y: 0 },
+        { scale: 1.014, y: -12, duration: 8.242, ease: "none" }, 0);
+
+      window.__timelines["03-objeccoes"] = tl;
+    })();
+  </script>
+</template>

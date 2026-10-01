@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\ResolveCustomerPrices;
 use App\Actions\SaveFiscalDocumentDraft;
 use App\Fiscal\Agt\Support\CanonicalNumber;
+use App\Fiscal\SupportedTaxTreatment;
 use App\FiscalDocumentType;
 use App\FiscalOperationType;
 use App\FiscalSeriesContingency;
@@ -223,40 +224,7 @@ class FiscalDocumentController extends Controller
                     'value' => $type->value,
                     'label' => $type->label(),
                 ])->all(),
-            'taxTreatments' => [
-                [
-                    'value' => 'IVA_NOR_14',
-                    'label' => 'IVA · taxa normal (14%)',
-                    'type' => 'IVA',
-                    'code' => 'NOR',
-                    'percentage' => '14',
-                    'exemption_code' => null,
-                ],
-                [
-                    'value' => 'IVA_ISE_M00',
-                    'label' => 'Isento · regime simplificado (M00)',
-                    'type' => 'IVA',
-                    'code' => 'ISE',
-                    'percentage' => '0',
-                    'exemption_code' => 'M00',
-                ],
-                [
-                    'value' => 'NS_M02',
-                    'label' => 'Não sujeito (M02)',
-                    'type' => 'NS',
-                    'code' => null,
-                    'percentage' => '0',
-                    'exemption_code' => 'M02',
-                ],
-                [
-                    'value' => 'IVA_ISE_M04',
-                    'label' => 'Isento · exclusão (M04)',
-                    'type' => 'IVA',
-                    'code' => 'ISE',
-                    'percentage' => '0',
-                    'exemption_code' => 'M04',
-                ],
-            ],
+            'taxTreatments' => SupportedTaxTreatment::options(),
             'eligibleSeries' => $series
                 ->map(fn (FiscalSeries $fiscalSeries): array => [
                     'public_id' => $fiscalSeries->public_id,
@@ -284,6 +252,7 @@ class FiscalDocumentController extends Controller
                     'is_receipt' => $type->isReceipt(),
                     'settles_other_documents' => $type->settlesOtherDocuments(),
                     'requires_lines' => $type->requiresLines(),
+                    'requires_line_operation_date' => $type->requiresLineOperationDate(),
                 ],
                 FiscalDocumentType::issuable(),
             ),
@@ -408,6 +377,7 @@ class FiscalDocumentController extends Controller
 
         return [
             'operation_type' => $line->operation_type->value,
+            'operation_date' => $line->operation_date?->toDateString() ?? '',
             'product_code' => $line->product_code,
             'product_description' => $line->product_description,
             'quantity' => (string) CanonicalNumber::fromScaledInteger(
@@ -426,6 +396,7 @@ class FiscalDocumentController extends Controller
     {
         return [
             'operation_type' => FiscalOperationType::GoodsTransfer->value,
+            'operation_date' => now('Africa/Luanda')->toDateString(),
             'product_code' => '',
             'product_description' => '',
             'quantity' => '1',
@@ -439,15 +410,15 @@ class FiscalDocumentController extends Controller
     private function taxTreatmentValue(?FiscalDocumentLineTax $tax): string
     {
         if ($tax === null) {
-            return 'IVA_NOR_14';
+            return SupportedTaxTreatment::VatNormal14->value;
         }
 
-        return match (true) {
-            $tax->tax_type->value === 'IVA' && $tax->tax_code === 'NOR' => 'IVA_NOR_14',
-            $tax->tax_type->value === 'IVA' && $tax->tax_exemption_code === 'M00' => 'IVA_ISE_M00',
-            $tax->tax_type->value === 'IVA' && $tax->tax_exemption_code === 'M04' => 'IVA_ISE_M04',
-            default => 'NS_M02',
-        };
+        return SupportedTaxTreatment::fromLegacyComponents(
+            $tax->tax_type,
+            $tax->tax_code,
+            (string) CanonicalNumber::fromBasisPoints($tax->tax_rate_basis_points),
+            $tax->tax_exemption_code,
+        )?->value ?? SupportedTaxTreatment::NotSubject->value;
     }
 
     /** @return array<string, string> */

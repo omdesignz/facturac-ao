@@ -1,0 +1,39 @@
+{
+  "lines": [
+    {
+      "id": "01",
+      "sfx": [
+        "tick-soft (por linha)"
+      ]
+    },
+    {
+      "id": "02",
+      "sfx": [
+        "tick-soft",
+        "swell-short"
+      ]
+    },
+    {
+      "id": "03",
+      "sfx": [
+        "tick-soft (por linha)"
+      ]
+    },
+    {
+      "id": "04",
+      "sfx": [
+        "stamp-thud (na descida do selo)",
+        "chime-confirm (no rótulo \"Comunicada\")"
+      ]
+    },
+    {
+      "id": "05",
+      "sfx": [
+        "chime-resolve"
+      ]
+    }
+  ],
+  "bgm": {
+    "mode": "none"
+  }
+}

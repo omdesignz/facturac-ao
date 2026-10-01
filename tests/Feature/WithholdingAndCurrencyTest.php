@@ -284,7 +284,9 @@ test('the AGT payload is given kwanzas and told the original currency', function
                 912_500_000,
             ),
         ))
-        ->and($payload['currency']['currencyCode'])->toBe('USD');
+        ->and($payload['documentTotals']['currency']['currencyCode'])->toBe('USD')
+        ->and((string) $payload['documentTotals']['currency']['exchangeRate'])->toBe('912.5')
+        ->and($payload)->not->toHaveKey('currency');
 });
 
 test('a kwanza document is sent exactly as it was before', function () {
@@ -300,8 +302,8 @@ test('a kwanza document is sent exactly as it was before', function () {
      */
     expect((string) $payload['documentTotals']['grossTotal'])
         ->toBe((string) CanonicalNumber::fromMinorUnits($document->gross_total_minor))
-        ->and($payload)->not->toHaveKey('currency')
-        ->and($payload)->not->toHaveKey('withholdingTax');
+        ->and($payload['documentTotals'])->not->toHaveKey('currency')
+        ->and($payload)->not->toHaveKey('withholdingTaxList');
 });
 
 test('the payload carries what the buyer withholds', function () {
@@ -310,8 +312,9 @@ test('the payload carries what the buyer withholds', function () {
 
     $payload = app(FiscalDocumentPayloadBuilder::class)->document($document);
 
-    expect($payload['withholdingTax'])->toHaveCount(1)
-        ->and($payload['withholdingTax'][0]['withholdingTaxType'])->toBe('IRT');
+    expect($payload['withholdingTaxList'])->toHaveCount(1)
+        ->and($payload['withholdingTaxList'][0]['withholdingTaxType'])->toBe('IRT')
+        ->and($payload['withholdingTaxList'][0]['withholdingTaxDescription'])->toBe('IRT (6.5%)');
 });
 
 // ---------------------------------------------------------------- the SAF-T

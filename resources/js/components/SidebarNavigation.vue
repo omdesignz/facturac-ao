@@ -11,6 +11,8 @@ import {
     ClipboardList,
     CreditCard,
     FileClock,
+    FileCode2,
+    Files,
     FileMinus2,
     FileSignature,
     FileUp,
@@ -26,6 +28,7 @@ import {
     SlidersHorizontal,
     ShieldCheck,
     Store,
+    Truck,
     UserCog,
     Users,
 } from '@lucide/vue';
@@ -41,18 +44,20 @@ import { show as billingShow } from '@/routes/billing';
 import { index as billingCatalogue } from '@/routes/catalogue';
 import { index as customersIndex } from '@/routes/customers';
 import { index as debtsIndex } from '@/routes/debts';
+import { index as documentsIndex } from '@/routes/documents';
 import { index as establishmentsIndex } from '@/routes/establishments';
 import { index as helpIndex } from '@/routes/help';
 import { index as importIndex } from '@/routes/imports';
-import { create as invoiceCreate } from '@/routes/invoices';
 import { index as priceListsIndex } from '@/routes/price-lists';
 import { index as quotesIndex } from '@/routes/quotes';
 import { index as recurringIndex } from '@/routes/recurring';
+import { index as saftIndex } from '@/routes/saft';
 import { account as accountSettings, security } from '@/routes/settings';
 import { index as stockIndex } from '@/routes/stock';
 import { index as supportIndex } from '@/routes/support';
 import { index as supportComplaints } from '@/routes/support/complaints';
 import { edit as supportSettings } from '@/routes/support/settings';
+import { index as transportDocumentsIndex } from '@/routes/transport-documents';
 import { update as switchWorkspace } from '@/routes/workspace/current';
 
 withDefaults(
@@ -73,8 +78,8 @@ interface NavigationItem {
     name: string;
     href: string;
     match: string;
-    /** Distinguishes entries that share a path but differ by document type. */
-    matchType?: 'invoice' | 'adjustment' | 'receipt';
+    /** Distinguishes filtered register entries that share `/documentos`. */
+    matchFamily?: 'invoice' | 'adjustment' | 'receipt';
     icon: Component;
 }
 
@@ -129,26 +134,30 @@ const baseSections: NavigationSection[] = [
         label: 'Facturação',
         items: [
             {
-                name: 'Nova factura',
-                href: invoiceCreate.url(),
-                match: '/documents/invoices',
-                matchType: 'invoice',
+                name: 'Documentos fiscais',
+                href: documentsIndex.url(),
+                match: '/documentos',
+                icon: Files,
+            },
+            {
+                name: 'Facturas',
+                href: documentsIndex.url({ query: { family: 'invoice' } }),
+                match: '/documentos',
+                matchFamily: 'invoice',
                 icon: ReceiptText,
             },
             {
                 name: 'Recibos',
-                href: `${invoiceCreate.url()}?type=RC`,
-                match: '/documents/invoices',
-                matchType: 'receipt',
+                href: documentsIndex.url({ query: { family: 'receipt' } }),
+                match: '/documentos',
+                matchFamily: 'receipt',
                 icon: ReceiptEuro,
             },
             {
                 name: 'Notas de correcção',
-                href: `${invoiceCreate.url()}?type=NC`,
-                match: '/documents/invoices',
-                // Shares a path with Nova factura, so the type decides which
-                // entry lights up.
-                matchType: 'adjustment',
+                href: documentsIndex.url({ query: { family: 'adjustment' } }),
+                match: '/documentos',
+                matchFamily: 'adjustment',
                 icon: FileMinus2,
             },
             {
@@ -156,6 +165,12 @@ const baseSections: NavigationSection[] = [
                 href: quotesIndex.url(),
                 match: '/orcamentos',
                 icon: FileSignature,
+            },
+            {
+                name: 'Guias e transporte',
+                href: transportDocumentsIndex.url(),
+                match: '/guias',
+                icon: Truck,
             },
             {
                 name: 'Avenças',
@@ -168,6 +183,12 @@ const baseSections: NavigationSection[] = [
                 href: agtSubmissions.url(),
                 match: '/agt/submissions',
                 icon: FileClock,
+            },
+            {
+                name: 'SAF-T (AO)',
+                href: saftIndex.url(),
+                match: '/saft',
+                icon: FileCode2,
             },
         ],
     },
@@ -307,25 +328,22 @@ function initials(name: string): string {
 }
 
 function isCurrent(item: NavigationItem): boolean {
-    if (!page.url.startsWith(item.match)) {
+    const isDocumentComposer =
+        item.match === '/documentos' &&
+        page.url.startsWith('/documents/invoices');
+
+    if (!page.url.startsWith(item.match) && !isDocumentComposer) {
         return false;
     }
 
-    if (item.matchType === undefined) {
-        return true;
+    if (item.matchFamily === undefined) {
+        return !/[?&]family=(invoice|receipt|adjustment)\b/.test(page.url);
     }
 
-    const typed = /[?&]type=(FR|RC|NC|ND)\b/.exec(page.url)?.[1];
-
-    if (item.matchType === 'adjustment') {
-        return typed === 'NC' || typed === 'ND';
-    }
-
-    if (item.matchType === 'receipt') {
-        return typed === 'FR' || typed === 'RC';
-    }
-
-    return typed === undefined;
+    return (
+        new URLSearchParams(page.url.split('?')[1] ?? '').get('family') ===
+        item.matchFamily
+    );
 }
 </script>
 

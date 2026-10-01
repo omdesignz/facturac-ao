@@ -1,0 +1,148 @@
+<template>
+  <style>
+    @font-face {
+      font-family: "PlexSans";
+      font-weight: 400;
+      font-display: block;
+      src: url("assets/fonts/plex-sans-400.woff2") format("woff2");
+    }
+    @font-face {
+      font-family: "PlexSans";
+      font-weight: 600;
+      font-display: block;
+      src: url("assets/fonts/plex-sans-600.woff2") format("woff2");
+    }
+
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 1080px;
+      height: 1080px;
+      overflow: hidden;
+      font-family: "PlexSans", sans-serif;
+      color: #232322;
+    }
+
+    .f2-ground {
+      position: absolute;
+      inset: 0;
+      background: #faf9f6;
+    }
+
+    .f2-stage {
+      position: absolute;
+      inset: 0;
+    }
+
+    /* The turn. Starts alone and large in the middle of an empty frame, then
+       gives the middle up to the promise. */
+    .f2-turn {
+      position: absolute;
+      left: 80px;
+      right: 80px;
+      top: 400px;
+      font-size: 104px;
+      font-weight: 600;
+      line-height: 0.98;
+      letter-spacing: -0.03em;
+      transform-origin: left top;
+    }
+
+    /* The message of the film. */
+    .f2-promise {
+      position: absolute;
+      left: 80px;
+      right: 80px;
+      top: 470px;
+      font-size: 78px;
+      font-weight: 400;
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+    }
+
+    .f2-w {
+      display: inline-block;
+      will-change: transform, opacity;
+    }
+
+    /* Gold enters the film here, and enters as a rule — never as type. */
+    .f2-rule {
+      position: absolute;
+      left: 80px;
+      top: 770px;
+      width: 920px;
+      height: 6px;
+      background: #f9b233;
+      transform-origin: left center;
+    }
+  </style>
+
+  <div data-hf-id="hf-ccjm" id="root" data-composition-id="02-nao-devia" data-width="1080" data-height="1080">
+    <div data-hf-id="hf-qzc6" id="frame-02-nao-devia-ground" class="clip f2-ground" data-start="0" data-duration="5" data-track-index="0"></div>
+
+    <div data-hf-id="hf-x3nv" id="frame-02-nao-devia-stage" class="clip f2-stage" data-start="0" data-duration="5" data-track-index="1">
+      <div data-hf-id="hf-cmxx" class="f2-turn">Não devia.</div>
+
+      <div data-hf-id="hf-msuk" class="f2-promise">
+        <span data-hf-id="hf-j8v3" class="f2-w">Os</span> <span data-hf-id="hf-4xip" class="f2-w">seus</span>
+        <span data-hf-id="hf-04kw" class="f2-w">dados</span> <span data-hf-id="hf-abms" class="f2-w">vêm</span>
+        <span data-hf-id="hf-7hl9" class="f2-w">consigo.</span>
+      </div>
+
+      <div data-hf-id="hf-aaq3" class="f2-rule"></div>
+    </div>
+  </div>
+
+  <script>
+    window.__timelines = window.__timelines || {};
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      const q = (sel) => document.querySelectorAll(sel);
+      const one = (sel) => document.querySelector(sel);
+
+      /* Scene 1 (0.0–1.0s) — the turn arrives on a hard cut and holds the
+         middle of a deliberately empty frame. */
+      tl.fromTo(
+        one("#root .f2-turn"),
+        { opacity: 0, y: 30 },
+        { opacity: 1, y: 0, duration: 0.42, ease: "power4.out" },
+        0.1,
+      );
+
+      /* Scene 2 (1.0–2.4s) — the scale-swap: the turn shrinks and rises out of
+         the way, handing the frame to the promise, which arrives word by word.
+         Hierarchy flips to roughly 3:1 in favour of the new line. */
+      tl.to(
+        one("#root .f2-turn"),
+        { scale: 0.42, y: -170, duration: 0.72, ease: "power3.inOut" },
+        1.0,
+      );
+
+      tl.fromTo(
+        q("#root .f2-promise .f2-w"),
+        { opacity: 0, y: 52 },
+        { opacity: 1, y: 0, duration: 0.6, stagger: 0.13, ease: "power3.out" },
+        1.28,
+      );
+
+      /* Scene 3 (2.4–3.4s) — the rule draws itself left to right beneath the
+         promise: an underline, not a colour on the type. */
+      tl.fromTo(
+        one("#root .f2-rule"),
+        { scaleX: 0 },
+        { scaleX: 1, duration: 0.86, ease: "power3.out" },
+        2.4,
+      );
+
+      /* Scene 4 (3.4–5.0s) — held. The camera drift is the only movement. */
+      tl.fromTo(
+        one("#root .f2-stage"),
+        { scale: 1.0 },
+        { scale: 1.016, duration: 5, ease: "none" },
+        0,
+      );
+
+      window.__timelines["02-nao-devia"] = tl;
+    })();
+  </script>
+</template>

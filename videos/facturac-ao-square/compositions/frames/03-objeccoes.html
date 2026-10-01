@@ -1,0 +1,216 @@
+<template>
+  <style>
+    @font-face {
+      font-family: "PlexSans";
+      font-weight: 400;
+      font-display: block;
+      src: url("assets/fonts/plex-sans-400.woff2") format("woff2");
+    }
+    @font-face {
+      font-family: "PlexSans";
+      font-weight: 600;
+      font-display: block;
+      src: url("assets/fonts/plex-sans-600.woff2") format("woff2");
+    }
+
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 1080px;
+      height: 1080px;
+      overflow: hidden;
+      font-family: "PlexSans", sans-serif;
+      color: #232322;
+    }
+
+    .f3-ground {
+      position: absolute;
+      inset: 0;
+      background: #faf9f6;
+    }
+
+    .f3-stage {
+      position: absolute;
+      inset: 0;
+    }
+
+    .f3-label {
+      position: absolute;
+      left: 80px;
+      top: 190px;
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(35, 35, 34, 0.76);
+    }
+
+    /* Rows, not cards: the preset's grammar is paper, ink and rule — it has no
+       cards and no shadows, so the cascade lands as ruled list lines. */
+    .f3-row {
+      position: absolute;
+      left: 80px;
+      right: 80px;
+    }
+    .f3-row-1 { top: 265px; }
+    .f3-row-2 { top: 470px; }
+    .f3-row-3 { top: 675px; }
+
+    .f3-rule {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      height: 2px;
+      background: rgba(35, 35, 34, 0.2);
+      transform-origin: left center;
+    }
+
+    /* The objection, quoted small — it is the viewer's own line. */
+    .f3-doubt {
+      margin-top: 22px;
+      font-size: 27px;
+      font-weight: 400;
+      color: rgba(35, 35, 34, 0.74);
+    }
+
+    /* The answer, full ink and large. */
+    .f3-answer {
+      margin-top: 9px;
+      font-size: 46px;
+      font-weight: 600;
+      line-height: 1.12;
+      letter-spacing: -0.02em;
+    }
+
+    .f3-w {
+      display: inline-block;
+      will-change: transform, opacity;
+    }
+
+    /* A soft gold bloom that settles behind the third answer and stays — the
+       one that answers the fear underneath all three. */
+    .f3-bloom {
+      position: absolute;
+      left: 30px;
+      top: 690px;
+      width: 1020px;
+      height: 175px;
+      border-radius: 999px;
+      background: radial-gradient(
+        ellipse at 30% 50%,
+        rgba(249, 178, 51, 0.34),
+        rgba(249, 178, 51, 0) 70%
+      );
+    }
+  </style>
+
+  <div data-hf-id="hf-o6w0" id="root" data-composition-id="03-objeccoes" data-width="1080" data-height="1080">
+    <div data-hf-id="hf-j2ht" id="frame-03-objeccoes-ground" class="clip f3-ground" data-start="0" data-duration="8" data-track-index="0"></div>
+
+    <div data-hf-id="hf-7lwc" id="frame-03-objeccoes-stage" class="clip f3-stage" data-start="0" data-duration="8" data-track-index="1">
+      <div data-hf-id="hf-63kv" class="f3-bloom"></div>
+
+      <div data-hf-id="hf-wky0" class="f3-label">
+        <span data-hf-id="hf-5q4t" class="f3-w">O</span> <span data-hf-id="hf-qi5x" class="f3-w">que</span>
+        <span data-hf-id="hf-0aos" class="f3-w">trava</span>
+      </div>
+
+      <div data-hf-id="hf-yv0i" class="f3-row f3-row-1">
+        <div data-hf-id="hf-17sc" class="f3-rule"></div>
+        <div data-hf-id="hf-6kmz" class="f3-doubt">“Perco a minha lista.”</div>
+        <div data-hf-id="hf-gy18" class="f3-answer">
+          <span data-hf-id="hf-saqv" class="f3-w">Clientes</span> <span data-hf-id="hf-wze7" class="f3-w">e</span>
+          <span data-hf-id="hf-xwsz" class="f3-w">artigos</span> <span data-hf-id="hf-rxwi" class="f3-w">importam-se</span>
+          <span data-hf-id="hf-qg7d" class="f3-w">do</span> <span data-hf-id="hf-obj3" class="f3-w">Excel.</span>
+        </div>
+      </div>
+
+      <div data-hf-id="hf-uwwh" class="f3-row f3-row-2">
+        <div data-hf-id="hf-lzk4" class="f3-rule"></div>
+        <div data-hf-id="hf-x1s5" class="f3-doubt">“Parto a numeração.”</div>
+        <div data-hf-id="hf-fv50" class="f3-answer">
+          <span data-hf-id="hf-0hvz" class="f3-w">Cada</span> <span data-hf-id="hf-pex4" class="f3-w">série</span>
+          <span data-hf-id="hf-jci5" class="f3-w">continua</span> <span data-hf-id="hf-634p" class="f3-w">certa</span>
+          <span data-hf-id="hf-b6mk" class="f3-w">—</span> <span data-hf-id="hf-h1i3" class="f3-w">sem</span>
+          <span data-hf-id="hf-v0ck" class="f3-w">saltos.</span>
+        </div>
+      </div>
+
+      <div data-hf-id="hf-u58o" class="f3-row f3-row-3">
+        <div data-hf-id="hf-ksn1" class="f3-rule"></div>
+        <div data-hf-id="hf-ff0h" class="f3-doubt">“Fico preso outra vez.”</div>
+        <div data-hf-id="hf-eo7x" class="f3-answer">
+          <span data-hf-id="hf-tmcz" class="f3-w">Sai</span> <span data-hf-id="hf-re1y" class="f3-w">tudo</span>
+          <span data-hf-id="hf-12nk" class="f3-w">num</span> <span data-hf-id="hf-71ev" class="f3-w">arquivo</span>
+          <span data-hf-id="hf-bvkf" class="f3-w">aberto,</span> <span data-hf-id="hf-5pn8" class="f3-w">quando</span>
+          <span data-hf-id="hf-0bwd" class="f3-w">quiser.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.__timelines = window.__timelines || {};
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      const q = (sel) => document.querySelectorAll(sel);
+      const one = (sel) => document.querySelector(sel);
+
+      /* Scene 1 (0.0–1.4s) — the label, then the first rule draws across. */
+      tl.fromTo(
+        q("#root .f3-label .f3-w"),
+        { opacity: 0, y: 22 },
+        { opacity: 1, y: 0, duration: 0.46, stagger: 0.07, ease: "power3.out" },
+        0.12,
+      );
+
+      /* Scenes 2–4 — each row is one beat: rule draws, the doubt fades up, the
+         answer assembles word by word. Nothing arrives before its turn. */
+      const rows = [
+        { sel: ".f3-row-1", at: 0.75 },
+        { sel: ".f3-row-2", at: 3.0 },
+        { sel: ".f3-row-3", at: 5.0 },
+      ];
+
+      rows.forEach(function (row) {
+        tl.fromTo(
+          one("#root " + row.sel + " .f3-rule"),
+          { scaleX: 0 },
+          { scaleX: 1, duration: 0.62, ease: "power3.out" },
+          row.at,
+        );
+        tl.fromTo(
+          one("#root " + row.sel + " .f3-doubt"),
+          { opacity: 0, y: 18 },
+          { opacity: 1, y: 0, duration: 0.44, ease: "power3.out" },
+          row.at + 0.22,
+        );
+        tl.fromTo(
+          q("#root " + row.sel + " .f3-answer .f3-w"),
+          { opacity: 0, y: 34 },
+          { opacity: 1, y: 0, duration: 0.5, stagger: 0.055, ease: "power3.out" },
+          row.at + 0.46,
+        );
+      });
+
+      /* Scene 5 (7.4–9.0s) — the three read together; the bloom fills in behind
+         the third and stays. */
+      tl.fromTo(
+        one("#root .f3-bloom"),
+        { opacity: 0 },
+        { opacity: 1, duration: 1.1, ease: "power2.out" },
+        6.3,
+      );
+
+      tl.fromTo(
+        one("#root .f3-stage"),
+        { scale: 1.0, y: 0 },
+        { scale: 1.014, y: -14, duration: 8, ease: "none" },
+        0,
+      );
+
+      window.__timelines["03-objeccoes"] = tl;
+    })();
+  </script>
+</template>

@@ -55,7 +55,7 @@ defineEmits<{ close: [] }>();
                         >
                             <button
                                 type="button"
-                                class="absolute top-4 right-4 rounded-lg p-2 text-zinc-400 focus-ring transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-white/5 dark:hover:text-white"
+                                class="absolute top-4 right-4 icon-button text-zinc-400 focus-ring transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-white/5 dark:hover:text-white"
                                 @click="$emit('close')"
                             >
                                 <span class="sr-only">Fechar</span>

@@ -35,6 +35,16 @@ enum WithholdingType: string
         };
     }
 
+    /** Code accepted by the AGT electronic-invoicing contract. */
+    public function agtCode(): string
+    {
+        return match ($this) {
+            self::IncomeTax => 'IRT',
+            self::IndustrialTax => 'II',
+            self::CaptiveVat => 'IVA',
+        };
+    }
+
     /**
      * Whether the rate is charged on the VAT rather than on the supply.
      *

@@ -99,6 +99,12 @@ class LegalEntity extends Model
         return $this->hasMany(FiscalDocument::class);
     }
 
+    /** @return HasMany<TransportDocument, $this> */
+    public function transportDocuments(): HasMany
+    {
+        return $this->hasMany(TransportDocument::class);
+    }
+
     /** @return HasMany<AgtConnection, $this> */
     public function agtConnections(): HasMany
     {
@@ -109,6 +115,12 @@ class LegalEntity extends Model
     public function fiscalSeries(): HasMany
     {
         return $this->hasMany(FiscalSeries::class);
+    }
+
+    /** @return HasMany<TransportDocumentSequence, $this> */
+    public function transportDocumentSequences(): HasMany
+    {
+        return $this->hasMany(TransportDocumentSequence::class);
     }
 
     /** @return HasMany<AgtSubmission, $this> */

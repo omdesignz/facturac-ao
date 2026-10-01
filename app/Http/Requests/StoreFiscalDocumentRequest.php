@@ -160,9 +160,15 @@ class StoreFiscalDocumentRequest extends FormRequest
             ],
             'lines.*' => [
                 'required',
-                'array:operation_type,product_code,product_description,quantity,unit_of_measure,unit_price,discount_percentage,tax',
+                'array:operation_type,operation_date,product_code,product_description,quantity,unit_of_measure,unit_price,discount_percentage,tax',
             ],
             'lines.*.operation_type' => ['required', Rule::enum(FiscalOperationType::class)],
+            'lines.*.operation_date' => [
+                Rule::requiredIf(fn (): bool => $this->documentType()?->requiresLineOperationDate() ?? false),
+                'nullable',
+                'date_format:Y-m-d',
+                'before_or_equal:document_date',
+            ],
             'lines.*.product_code' => ['required', 'string', 'max:60'],
             'lines.*.product_description' => ['required', 'string', 'min:2', 'max:255'],
             'lines.*.quantity' => ['required', 'string', 'max:20', 'regex:/\A(?:0|[1-9]\d*)(?:\.\d{1,4})?\z/', 'not_in:0,0.0,0.00,0.000,0.0000'],
@@ -227,6 +233,7 @@ class StoreFiscalDocumentRequest extends FormRequest
      *     settlements: list<array{document_public_id: string, amount_minor: int}>,
      *     lines: list<array{
      *         operation_type: string,
+     *         operation_date: string|null,
      *         product_code: string,
      *         product_description: string,
      *         quantity: string,
@@ -253,6 +260,7 @@ class StoreFiscalDocumentRequest extends FormRequest
 
             $lines[] = [
                 'operation_type' => (string) ($rawLine['operation_type'] ?? ''),
+                'operation_date' => $this->nullableString($rawLine['operation_date'] ?? null),
                 'product_code' => (string) ($rawLine['product_code'] ?? ''),
                 'product_description' => (string) ($rawLine['product_description'] ?? ''),
                 'quantity' => (string) ($rawLine['quantity'] ?? ''),

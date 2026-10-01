@@ -93,13 +93,13 @@ test('the v1.2 signable object contains only the required fiscal identity and to
     ])->and($json)->toBe('{"companyName":"Comércio Kilamba, Lda.","customerCountry":"AO","customerTaxID":"5411111111","documentDate":"2026-08-02","documentNo":"FT TESTE/1","documentTotals":{"grossTotal":102.6,"netTotal":90,"taxPayable":12.6},"documentType":"FT","taxRegistrationNumber":"5000000001"}');
 });
 
-test('the current contract maps base price before discount and unit price after discount', function () {
+test('the AGT contract maps unit price before discount and base price after discount', function () {
     $payload = (new FiscalDocumentPayloadBuilder(new FiscalCalculator))->document(issuedPayloadFixture());
     $json = json_decode((new CanonicalJson)->encode($payload), true, flags: JSON_THROW_ON_ERROR);
 
     expect($json['lines'][0]['operationType'])->toBe('TB')
-        ->and($json['lines'][0]['unitPriceBase'])->toBe(100)
-        ->and($json['lines'][0]['unitPrice'])->toBe(90)
+        ->and($json['lines'][0]['unitPrice'])->toBe(100)
+        ->and($json['lines'][0]['unitPriceBase'])->toBe(90)
         ->and($json['lines'][0]['debitAmount'])->toBe(90)
         ->and($json['lines'][0]['settlementAmount'])->toBe(10)
         ->and($json['lines'][0]['taxes'][0]['taxContribution'])->toBe(12.6);

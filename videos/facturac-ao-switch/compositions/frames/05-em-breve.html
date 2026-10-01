@@ -1,0 +1,217 @@
+<template>
+  <style>
+    @font-face {
+      font-family: "PlexSans";
+      font-weight: 400;
+      font-display: block;
+      src: url("assets/fonts/plex-sans-400.woff2") format("woff2");
+    }
+    @font-face {
+      font-family: "PlexSans";
+      font-weight: 600;
+      font-display: block;
+      src: url("assets/fonts/plex-sans-600.woff2") format("woff2");
+    }
+    @font-face {
+      font-family: "PlexSans";
+      font-weight: 700;
+      font-display: block;
+      src: url("assets/fonts/plex-sans-700.woff2") format("woff2");
+    }
+    @font-face {
+      font-family: "PlexMono";
+      font-weight: 600;
+      font-display: block;
+      src: url("assets/fonts/plex-mono-600.woff2") format("woff2");
+    }
+
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 1080px;
+      height: 1920px;
+      overflow: hidden;
+      font-family: "PlexSans", sans-serif;
+      color: #232322;
+    }
+
+    .f5-ground {
+      position: absolute;
+      inset: 0;
+      background: #faf9f6;
+    }
+
+    .f5-stage {
+      position: absolute;
+      inset: 0;
+    }
+
+    /* Resting place. The seal is authored HERE and animated in from where
+       frame 4 left it, so the landed composition is the truth and the handoff
+       is just the entrance. */
+    .f5-seal {
+      position: absolute;
+      left: 408px;
+      top: 521px;
+      width: 264px;
+      height: 264px;
+      color: #232322;
+    }
+    .f5-seal svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .f5-wordmark {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 930px;
+      text-align: center;
+      font-size: 124px;
+      font-weight: 700;
+      letter-spacing: -0.045em;
+    }
+    .f5-dot {
+      color: #b35309;
+    }
+
+    .f5-soon {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 1110px;
+      text-align: center;
+      font-family: "PlexMono", monospace;
+      font-weight: 600;
+      font-size: 40px;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: #b35309;
+    }
+
+    .f5-cta {
+      position: absolute;
+      left: 50%;
+      top: 1240px;
+      margin-left: -290px;
+      width: 580px;
+      text-align: center;
+      padding: 30px 0;
+      background: #232322;
+      color: #faf9f6;
+      font-size: 44px;
+      font-weight: 600;
+    }
+
+    .f5-rule {
+      position: absolute;
+      left: 96px;
+      top: 1500px;
+      width: 888px;
+      height: 6px;
+      background: #f9b233;
+      transform-origin: left center;
+    }
+
+    .f5-w {
+      display: inline-block;
+      will-change: transform, opacity;
+    }
+  </style>
+
+  <div data-hf-id="hf-uoya" id="root" data-composition-id="05-em-breve" data-width="1080" data-height="1920">
+    <div data-hf-id="hf-gcnp" id="frame-05-em-breve-ground" class="clip f5-ground" data-start="0" data-duration="4.5" data-track-index="0"></div>
+
+    <div data-hf-id="hf-tags" id="frame-05-em-breve-stage" class="clip f5-stage" data-start="0" data-duration="4.5" data-track-index="1">
+      <div data-hf-id="hf-eysj" class="f5-seal">
+        <svg data-hf-id="hf-ybg4" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+          <g data-hf-id="hf-t2vt" transform="rotate(-8 32 32)">
+            <circle data-hf-id="hf-wflw" cx="32" cy="32" r="29" stroke="#F9B233" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="0.4 5.2" />
+            <circle data-hf-id="hf-m8ze" cx="32" cy="32" r="19.5" stroke="#F9B233" stroke-width="2.6" />
+            <path data-hf-id="hf-stmw" class="f5-check" d="M22 33L29.2 40.2L43.8 22.4" stroke="currentColor" stroke-width="5.4" stroke-linecap="round" stroke-linejoin="round" />
+          </g>
+        </svg>
+      </div>
+
+      <div data-hf-id="hf-nkh7" class="f5-wordmark">
+        <span data-hf-id="hf-s3nn" class="f5-w">facturac<span data-hf-id="hf-k67u" class="f5-dot">.ao</span></span>
+      </div>
+
+      <div data-hf-id="hf-tzhl" class="f5-soon">Em breve</div>
+
+      <div data-hf-id="hf-eeep" class="f5-cta">Experimente sem cartão</div>
+
+      <div data-hf-id="hf-hz2a" class="f5-rule"></div>
+    </div>
+  </div>
+
+  <script>
+    window.__timelines = window.__timelines || {};
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      const one = (sel) => document.querySelector(sel);
+
+      /* Scene 1 (0.0–1.2s) — the handoff. The seal enters at exactly the
+         position, scale and opacity frame 4 left it at (centre 780,1241 —
+         offset +240,+588 from its resting centre) and travels up to sign the
+         film. One object crosses the cut, which is what stops the ending
+         reading as a different video. */
+      tl.fromTo(
+        one("#root .f5-seal"),
+        { x: 240, y: 588, scale: 1, opacity: 0.96 },
+        {
+          x: 0,
+          y: 0,
+          scale: 1.35,
+          opacity: 1,
+          duration: 1.05,
+          ease: "power3.inOut",
+        },
+        0,
+      );
+
+      /* Scene 2 (1.2–2.2s) — the wordmark settles beneath it. */
+      tl.fromTo(
+        one("#root .f5-wordmark .f5-w"),
+        { opacity: 0, y: 40 },
+        { opacity: 1, y: 0, duration: 0.56, ease: "power3.out" },
+        1.15,
+      );
+
+      /* Scene 3 (2.2–3.2s) — "Em breve", then the rule draws along the foot. */
+      tl.fromTo(
+        one("#root .f5-soon"),
+        { opacity: 0, y: 26 },
+        { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" },
+        2.05,
+      );
+
+      tl.fromTo(
+        one("#root .f5-rule"),
+        { scaleX: 0 },
+        { scaleX: 1, duration: 0.9, ease: "power3.out" },
+        2.2,
+      );
+
+      /* Scene 4 (3.2–4.5s) — the invitation lands and the frame goes
+         completely still. No price, no date: what is true today. */
+      tl.fromTo(
+        one("#root .f5-cta"),
+        { opacity: 0, y: 32, scale: 0.95 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.54, ease: "back.out(1.5)" },
+        2.95,
+      );
+
+      tl.fromTo(
+        one("#root .f5-stage"),
+        { scale: 1.0 },
+        { scale: 1.01, duration: 4.5, ease: "none" },
+        0,
+      );
+
+      window.__timelines["05-em-breve"] = tl;
+    })();
+  </script>
+</template>

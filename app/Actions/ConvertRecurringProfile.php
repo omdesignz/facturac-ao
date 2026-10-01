@@ -2,12 +2,19 @@
 
 namespace App\Actions;
 
+use App\Fiscal\Agt\Support\CanonicalJson;
+use App\Fiscal\Agt\Support\CanonicalNumber;
+use App\Fiscal\Calculation\CalculatedFiscalLine;
+use App\Fiscal\Calculation\FiscalCalculator;
+use App\Fiscal\SupportedTaxTreatment;
 use App\FiscalDocumentStatus;
 use App\Models\FiscalDocument;
 use App\Models\FiscalSeries;
 use App\Models\RecurringInvoice;
 use Carbon\CarbonImmutable;
+use DomainException;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Throwable;
 
 /**
@@ -20,11 +27,16 @@ use Throwable;
  */
 class ConvertRecurringProfile
 {
-    public function __construct(private IssueFiscalDocument $issue) {}
+    public function __construct(
+        private IssueFiscalDocument $issue,
+        private FiscalCalculator $calculator,
+        private CanonicalJson $canonicalJson,
+    ) {}
 
     public function execute(RecurringInvoice $profile, CarbonImmutable $runOn): FiscalDocument
     {
         $customer = $profile->customer;
+        $calculation = $this->calculator->calculate($this->lineProfiles($profile));
 
         $document = FiscalDocument::query()->create([
             'workspace_id' => $profile->workspace_id,
@@ -44,15 +56,21 @@ class ConvertRecurringProfile
             'customer_country_code' => $customer->country_code,
             'customer_address' => $customer->address_line,
             'notes' => $profile->notes,
-            'settlement_total_minor' => 0,
+            'settlement_total_minor' => $calculation->settlementTotalMinor,
+            'net_total_minor' => $calculation->netTotalMinor,
+            'tax_payable_minor' => $calculation->taxPayableMinor,
+            'gross_total_minor' => $calculation->grossTotalMinor,
             'revision' => 1,
             'payload_schema_version' => (string) config('agt.schema_version', '1.2'),
-            'calculation_sha256' => hash('sha256', "recurring:{$profile->public_id}:{$runOn->toDateString()}"),
+            'calculation_sha256' => hash(
+                'sha256',
+                $this->canonicalJson->encode($calculation->fingerprintData()),
+            ),
         ]);
 
-        $totals = $this->buildLines($document, $profile);
-
-        $document->forceFill($totals)->save();
+        foreach ($calculation->lines as $line) {
+            $this->saveLine($document, $line);
+        }
 
         if ($profile->auto_issue) {
             $this->issueOrLeaveDraft($document, $profile);
@@ -61,70 +79,88 @@ class ConvertRecurringProfile
         return $document->refresh();
     }
 
-    /**
-     * @return array{net_total_minor: int, tax_payable_minor: int, gross_total_minor: int}
-     */
-    private function buildLines(FiscalDocument $document, RecurringInvoice $profile): array
+    /** @return list<array<string, string|null>> */
+    private function lineProfiles(RecurringInvoice $profile): array
     {
-        $net = 0;
-        $tax = 0;
-        $gross = 0;
-        $number = 0;
+        return array_values(array_map(function (array $line, int $index): array {
+            $treatment = SupportedTaxTreatment::fromLegacyComponents(
+                $line['tax_type'] ?? 'IVA',
+                $line['tax_code'] ?? null,
+                $line['tax_percentage'] ?? '14',
+                $line['tax_exemption_code'] ?? null,
+            );
 
-        foreach ($profile->lines as $line) {
-            $number++;
+            if (! $treatment instanceof SupportedTaxTreatment) {
+                throw new DomainException(
+                    'A avença contém um tratamento fiscal que não pode ser emitido.',
+                );
+            }
 
-            $quantity = (int) ($line['quantity_units'] ?? 0);
-            $unitPrice = (int) ($line['unit_price_minor'] ?? 0);
-            $discount = (int) ($line['discount_rate_basis_points'] ?? 0);
+            $description = (string) ($line['product_description'] ?? '');
+            $productCode = (string) ($line['product_code'] ?? '');
 
-            $base = intdiv($quantity * $unitPrice, 1000);
-            $lineNet = $base - intdiv($base * $discount, 10_000);
-            $rateBasisPoints = (int) round(((float) ($line['tax_percentage'] ?? '0')) * 100);
-            $lineTax = intdiv($lineNet * $rateBasisPoints, 10_000);
+            if ($productCode === '') {
+                $productCode = Str::upper(Str::slug($description));
+                $productCode = $productCode === ''
+                    ? 'L'.($index + 1)
+                    : Str::limit($productCode, 60, '');
+            }
 
-            $created = $document->lines()->create([
-                'workspace_id' => $document->workspace_id,
-                'legal_entity_id' => $document->legal_entity_id,
-                'line_number' => $number,
+            $tax = $treatment->profile();
+
+            return [
                 'operation_type' => (string) ($line['operation_type'] ?? 'SG'),
-                'product_code' => $line['product_code'] ?? null,
-                'product_description' => (string) ($line['product_description'] ?? ''),
-                'quantity_units' => $quantity,
-                'quantity_scale' => 3,
+                'product_code' => $productCode,
+                'product_description' => $description,
+                'quantity' => (string) CanonicalNumber::fromScaledInteger(
+                    (int) ($line['quantity_units'] ?? 0),
+                    (int) ($line['quantity_scale'] ?? 3),
+                ),
                 'unit_of_measure' => (string) ($line['unit_of_measure'] ?? 'UN'),
-                'unit_price_base_minor' => $unitPrice,
-                'unit_price_micros' => $unitPrice * 1_000_000,
-                'discount_rate_basis_points' => $discount,
-                'base_amount_minor' => $lineNet,
-                'settlement_amount_minor' => 0,
-                'net_amount_minor' => $lineNet,
-                'tax_amount_minor' => $lineTax,
-                'gross_amount_minor' => $lineNet + $lineTax,
-            ]);
+                'unit_price' => (string) CanonicalNumber::fromMinorUnits(
+                    (int) ($line['unit_price_minor'] ?? 0),
+                ),
+                'discount_percentage' => (string) CanonicalNumber::fromBasisPoints(
+                    (int) ($line['discount_rate_basis_points'] ?? 0),
+                ),
+                'tax_type' => $tax['type'],
+                'tax_code' => $tax['code'],
+                'tax_percentage' => $tax['percentage'],
+                'tax_exemption_code' => $tax['exemption_code'],
+            ];
+        }, $profile->lines, array_keys($profile->lines)));
+    }
 
-            $created->taxes()->create([
-                'workspace_id' => $document->workspace_id,
-                'legal_entity_id' => $document->legal_entity_id,
-                'fiscal_document_id' => $document->id,
-                'tax_type' => (string) ($line['tax_type'] ?? 'IVA'),
-                'tax_country_region' => 'AO',
-                'tax_code' => $line['tax_code'] ?? null,
-                'tax_rate_basis_points' => $rateBasisPoints,
-                'tax_contribution_minor' => $lineTax,
-                'tax_exemption_code' => $line['tax_exemption_code'] ?? null,
-            ]);
+    private function saveLine(
+        FiscalDocument $document,
+        CalculatedFiscalLine $line,
+    ): void {
+        $created = $document->lines()->create([
+            'workspace_id' => $document->workspace_id,
+            'legal_entity_id' => $document->legal_entity_id,
+            'line_number' => $line->lineNumber,
+            'operation_type' => $line->operationType,
+            'product_code' => $line->productCode,
+            'product_description' => $line->productDescription,
+            'quantity_units' => $line->quantityUnits,
+            'quantity_scale' => $line->quantityScale,
+            'unit_of_measure' => $line->unitOfMeasure,
+            'unit_price_base_minor' => $line->unitPriceBaseMinor,
+            'unit_price_micros' => $line->unitPriceMicros,
+            'discount_rate_basis_points' => $line->discountRateBasisPoints,
+            'base_amount_minor' => $line->baseAmountMinor,
+            'settlement_amount_minor' => $line->settlementAmountMinor,
+            'net_amount_minor' => $line->netAmountMinor,
+            'tax_amount_minor' => $line->taxAmountMinor,
+            'gross_amount_minor' => $line->grossAmountMinor,
+        ]);
 
-            $net += $lineNet;
-            $tax += $lineTax;
-            $gross += $lineNet + $lineTax;
-        }
-
-        return [
-            'net_total_minor' => $net,
-            'tax_payable_minor' => $tax,
-            'gross_total_minor' => $gross,
-        ];
+        $created->taxes()->create([
+            'workspace_id' => $document->workspace_id,
+            'legal_entity_id' => $document->legal_entity_id,
+            'fiscal_document_id' => $document->id,
+            ...$line->tax,
+        ]);
     }
 
     /**

@@ -3,6 +3,8 @@
 namespace App\Actions;
 
 use App\Exceptions\BillingActionRefused;
+use App\Fiscal\Agt\Support\CanonicalNumber;
+use App\Fiscal\Calculation\FiscalCalculator;
 use App\Models\Customer;
 use App\Models\Establishment;
 use App\Models\LegalEntity;
@@ -20,6 +22,8 @@ use Illuminate\Support\Facades\DB;
  */
 class SaveQuote
 {
+    public function __construct(private FiscalCalculator $calculator) {}
+
     /**
      * @param  array{
      *     customer_public_id: string|null,
@@ -33,6 +37,7 @@ class SaveQuote
      *         product_description: string,
      *         unit_of_measure: string,
      *         quantity_units: int,
+     *         quantity_scale: int,
      *         unit_price_minor: int,
      *         discount_rate_basis_points: int,
      *         tax_type: string,
@@ -50,7 +55,7 @@ class SaveQuote
     ): Quote {
         if ($quote instanceof Quote && ! $quote->status->isEditable()) {
             throw BillingActionRefused::because(
-                'Este orçamento já foi decidido e não pode ser alterado.',
+                'Este orçamento já foi enviado e não pode ser alterado.',
             );
         }
 
@@ -124,63 +129,59 @@ class SaveQuote
     {
         $quote->lines()->delete();
 
-        $net = 0;
-        $tax = 0;
-        $gross = 0;
-        $number = 0;
+        $calculation = $this->calculator->calculate(array_map(
+            fn (array $line): array => [
+                'operation_type' => (string) ($line['operation_type'] ?? 'SG'),
+                'product_code' => (string) ($line['product_code'] ?? ''),
+                'product_description' => (string) $line['product_description'],
+                'quantity' => (string) CanonicalNumber::fromScaledInteger(
+                    (int) $line['quantity_units'],
+                    (int) ($line['quantity_scale'] ?? 4),
+                ),
+                'unit_of_measure' => (string) $line['unit_of_measure'],
+                'unit_price' => (string) CanonicalNumber::fromMinorUnits(
+                    (int) $line['unit_price_minor'],
+                ),
+                'discount_percentage' => (string) CanonicalNumber::fromBasisPoints(
+                    (int) $line['discount_rate_basis_points'],
+                ),
+                'tax_type' => (string) $line['tax_type'],
+                'tax_code' => $line['tax_code'] ?? null,
+                'tax_percentage' => (string) $line['tax_percentage'],
+                'tax_exemption_code' => $line['tax_exemption_code'] ?? null,
+            ],
+            $lines,
+        ));
 
-        foreach ($lines as $line) {
-            $number++;
-
-            $amounts = $this->lineAmounts($line);
+        foreach ($calculation->lines as $index => $calculatedLine) {
+            $line = $lines[$index];
 
             $quote->lines()->create([
-                ...$line,
-                'operation_type' => $line['operation_type'] ?? 'SG',
-                'line_number' => $number,
-                'quantity_scale' => 3,
-                ...$amounts,
+                'product_code' => $line['product_code'] ?? null,
+                'operation_type' => $calculatedLine->operationType,
+                'product_description' => $calculatedLine->productDescription,
+                'unit_of_measure' => $calculatedLine->unitOfMeasure,
+                'line_number' => $calculatedLine->lineNumber,
+                'quantity_units' => $calculatedLine->quantityUnits,
+                'quantity_scale' => $calculatedLine->quantityScale,
+                'unit_price_minor' => $calculatedLine->unitPriceBaseMinor,
+                'discount_rate_basis_points' => $calculatedLine->discountRateBasisPoints,
+                'tax_type' => (string) $calculatedLine->tax['tax_type'],
+                'tax_code' => $calculatedLine->tax['tax_code'],
+                'tax_percentage' => (string) CanonicalNumber::fromBasisPoints(
+                    (int) $calculatedLine->tax['tax_rate_basis_points'],
+                ),
+                'tax_exemption_code' => $calculatedLine->tax['tax_exemption_code'],
+                'net_amount_minor' => $calculatedLine->netAmountMinor,
+                'tax_amount_minor' => $calculatedLine->taxAmountMinor,
+                'gross_amount_minor' => $calculatedLine->grossAmountMinor,
             ]);
-
-            $net += $amounts['net_amount_minor'];
-            $tax += $amounts['tax_amount_minor'];
-            $gross += $amounts['gross_amount_minor'];
         }
 
         return [
-            'net_total_minor' => $net,
-            'tax_total_minor' => $tax,
-            'gross_total_minor' => $gross,
-        ];
-    }
-
-    /**
-     * Line arithmetic in integers throughout.
-     *
-     * Quantity is scaled by 1e3 and the price is in minor units, so the product
-     * is scaled by 1e3 and divided back down once, at the end, rather than
-     * rounding at each step.
-     *
-     * @param  array<string, mixed>  $line
-     * @return array{net_amount_minor: int, tax_amount_minor: int, gross_amount_minor: int}
-     */
-    private function lineAmounts(array $line): array
-    {
-        $quantity = (int) $line['quantity_units'];
-        $unitPrice = (int) $line['unit_price_minor'];
-        $discount = (int) $line['discount_rate_basis_points'];
-
-        $base = intdiv($quantity * $unitPrice, 1000);
-        $net = $base - intdiv($base * $discount, 10_000);
-
-        $percentage = (string) $line['tax_percentage'];
-        $taxBasisPoints = (int) round(((float) $percentage) * 100);
-        $tax = intdiv($net * $taxBasisPoints, 10_000);
-
-        return [
-            'net_amount_minor' => max(0, $net),
-            'tax_amount_minor' => max(0, $tax),
-            'gross_amount_minor' => max(0, $net + $tax),
+            'net_total_minor' => $calculation->netTotalMinor,
+            'tax_total_minor' => $calculation->taxPayableMinor,
+            'gross_total_minor' => $calculation->grossTotalMinor,
         ];
     }
 }

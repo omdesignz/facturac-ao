@@ -82,6 +82,12 @@ class Customer extends Model
         return $this->hasMany(FiscalDocument::class);
     }
 
+    /** @return HasMany<TransportDocument, $this> */
+    public function transportDocuments(): HasMany
+    {
+        return $this->hasMany(TransportDocument::class);
+    }
+
     /** @return HasMany<CustomerPrice, $this> */
     public function prices(): HasMany
     {

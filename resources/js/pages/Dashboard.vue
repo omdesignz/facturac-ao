@@ -189,6 +189,25 @@ function statToneClasses(tone: FoundationStat['tone']): string {
 
     return 'bg-zinc-100 text-zinc-600 dark:bg-white/5 dark:text-zinc-300';
 }
+
+/**
+ * The supporting line carries the tone as well as the icon.
+ *
+ * A tinted 32px chip was the only thing marking "two-factor is off and your
+ * role requires it" as different from an ordinary fact. Something mandatory and
+ * switched off has to read as a problem in the words, not just in a swatch most
+ * people will never register.
+ *
+ * Only the warning speaks up. Tinting the calm states too would leave nothing
+ * standing out from anything else.
+ */
+function statDetailClasses(tone: FoundationStat['tone']): string {
+    if (tone === 'warning') {
+        return 'font-medium text-amber-700 dark:text-amber-300';
+    }
+
+    return 'text-zinc-500 dark:text-zinc-400';
+}
 </script>
 
 <template>
@@ -303,8 +322,17 @@ function statToneClasses(tone: FoundationStat['tone']): string {
                         >
                             {{ stat.value }}
                         </dd>
+                        <!--
+                            Wraps rather than truncates: the detail is where the
+                            reason lives, and "Obrigatória para o seu tipo de
+                            acesso" cut off at the card edge tells nobody
+                            anything.
+                        -->
                         <dd
-                            class="mt-1 truncate text-xs text-zinc-500 dark:text-zinc-400"
+                            :class="[
+                                'mt-1 text-xs/5',
+                                statDetailClasses(stat.tone),
+                            ]"
                         >
                             {{ stat.detail }}
                         </dd>

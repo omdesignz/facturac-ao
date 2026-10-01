@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\QuoteStatus;
 use Database\Factories\QuoteFactory;
+use DomainException;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 
 /**
  * A proposal to a customer, before anything fiscal happens.
@@ -52,6 +54,29 @@ class Quote extends Model
 {
     /** @use HasFactory<QuoteFactory> */
     use HasFactory, HasUlids;
+
+    protected static function booted(): void
+    {
+        static::updating(function (self $quote): void {
+            $originalStatus = QuoteStatus::from((string) $quote->getRawOriginal('status'));
+
+            if ($originalStatus === QuoteStatus::Draft) {
+                return;
+            }
+
+            $allowedWorkflowFields = ['status', 'decided_at', 'converted_document_id'];
+
+            if (array_diff(array_keys($quote->getDirty()), $allowedWorkflowFields) !== []) {
+                throw new DomainException('Sent quotes are immutable working documents.');
+            }
+        });
+
+        static::deleting(function (self $quote): void {
+            if ($quote->status !== QuoteStatus::Draft) {
+                throw new DomainException('Sent quotes cannot be deleted.');
+            }
+        });
+    }
 
     /** @return array<int, string> */
     public function uniqueIds(): array
@@ -131,12 +156,22 @@ class Quote extends Model
      */
     public static function nextReference(LegalEntity $legalEntity, int $year): string
     {
-        $count = self::query()
+        $legalEntity->newQuery()
+            ->whereKey($legalEntity->getKey())
+            ->lockForUpdate()
+            ->firstOrFail();
+
+        $lastReference = self::query()
             ->where('legal_entity_id', $legalEntity->id)
             ->whereYear('issue_date', $year)
-            ->count();
+            ->latest('id')
+            ->value('reference');
 
-        return sprintf('ORC %d/%04d', $year, $count + 1);
+        $nextSequence = is_string($lastReference)
+            ? ((int) Str::afterLast($lastReference, '/')) + 1
+            : 1;
+
+        return sprintf('ORC %d/%04d', $year, $nextSequence);
     }
 
     /**

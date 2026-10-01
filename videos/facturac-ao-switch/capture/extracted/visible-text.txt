@@ -1,0 +1,144 @@
+[a] Saltar para o conteúdo
+[span] facturac.ao
+[a] Momentos
+[a] Como funciona
+[a] Para pequenos negócios
+[a] O que inclui
+[a] Criar conta
+[span] Abrir menu
+[p] Facturação electrónica · Angola
+[h1] Passe a factura.
+[span] Do resto tratamos nós.
+[p] O número, a assinatura, a comunicação à AGT e o comprovativo acontecem sozinhos, enquanto você atende o cliente seguinte. É essa a parte chata — e é essa que deixa de ser sua.
+[a] Abrir conta grátis
+[a] Ver o que resolve
+[p] Sem cartão. Sem contrato. Os seus dados saem consigo se um dia quiser sair.
+[p] Factura-recibo
+[p] FR LOJA2026/00184
+[dt] Cliente
+[dd] Mercearia Kilamba, Lda.
+[dt] NIF
+[dd] 5417238904
+[span] Arroz 25 kg · 4 sacos
+[span] 62 000,00
+[span] Óleo alimentar · 12 un
+[span] 38 400,00
+[span] Açúcar 1 kg · 30 un
+[span] 21 600,00
+[span] Incidência
+[span] 122 000,00
+[span] IVA 14%
+[span] 17 080,00
+[span] Total
+[span] 139 080,00 Kz
+[p] Nº de validação
+[p] 4192/AGT/2026
+[p] Assinatura
+[p] 9F2C·A104·7B3E
+[p] Comunicada à AGT · aceite
+[p] Momentos
+[h2] Isto não é uma lista de funcionalidades. São as coisas que já lhe aconteceram.
+[p] Escolha uma situação para ver como a resposta aparece no produto.
+[span] O cliente está à sua frente e pede a factura.
+[span] Vendeu fiado e já não sabe ao certo quem lhe deve.
+[span] Conta corrente
+[span] A internet foi-se abaixo a meio da manhã.
+[span] Contingência
+[span] Enganou-se no valor de uma factura já emitida.
+[span] O contabilista pediu o ficheiro do trimestre.
+[span] SAF-T
+[span] Vendeu ao Estado e retiveram-lhe parte do imposto.
+[span] Retenção
+[p] Exemplo no produto
+[p] Passa uma factura-recibo ali mesmo, do telemóvel, já com número, assinatura e QR. O cliente sai com o documento.
+[p] Documento emitido
+[h3] FR LOJA2026/00184
+[p] Aceite pela AGT
+[dt] Cliente
+[dd] Mercearia Kilamba
+[dt] Total
+[dd] 139 080,00 Kz
+[dt] Validação
+[dd] 4192/AGT/2026
+[p] PDF assinado, guardado e pronto para entregar ao cliente.
+[p] O percurso de um documento
+[h2] Quatro estados, e sabe sempre em qual está.
+[p] Não são passos de folheto. São os estados em que o registo está mesmo — e nenhum deles acontece nas suas costas.
+[span] Rascunho
+[h3] Escreve à vontade
+[p] Nenhum número é consumido. Corrige, apaga e volta atrás as vezes que quiser.
+[span] Emitida
+[h3] Recebe o número
+[p] A série dá o número seguinte, sem saltos nem repetições. Daqui em diante é imutável.
+[span] Comunicada
+[h3] Chega à AGT
+[p] Assinada e submetida. A resposta fica guardada com o documento, como prova.
+[span] Liquidada
+[h3] Fica paga
+[p] O recibo abate na dívida do cliente e o que falta receber fica à vista.
+[p] Estado seleccionado
+[h3] Rascunho
+[p] Pronto para continuar a escrever
+[p] Factura-recibo
+[p] Ainda sem número
+[span] Rascunho
+[dt] Pode alterar
+[dd] Todos os campos
+[dt] Total
+[dd] 139 080,00 Kz
+[p] Para pequenos negócios
+[h2] Se o seu negócio é você, uma banca e um caderno, isto também é para si.
+[p] A lei é a mesma para a multinacional e para quem vende à esquina — as ferramentas é que quase nunca são. Esta foi pensada primeiro para quem factura sozinho, e continua a servir no dia em que forem catorze pessoas.
+[a] Começar sem pagar nada
+[li] Não precisa de contabilista para começar.
+[li] Funciona no telemóvel que já tem no bolso.
+[li] Em português, em kwanzas, com as 21 províncias.
+[li] Uma loja hoje, várias amanhã — sem mudar de programa.
+[li] Quem factura ao estrangeiro escolhe a moeda e o câmbio.
+[p] O que inclui
+[h2] Tudo isto vem na mesma conta.
+[p] Sem módulos a comprar à parte quando o negócio crescer.
+[h3] Documentos
+[li] Facturas (FT) e facturas-recibo (FR)
+[li] Recibos (RC) que liquidam várias facturas
+[li] Notas de crédito e de débito (NC, ND)
+[li] Orçamentos que se convertem em factura
+[li] Facturação periódica automática
+[li] PDF com QR, assinatura e o seu logótipo
+[h3] A casa em ordem
+[li] Clientes com prazos e limite de crédito
+[li] Tabelas de preços e preços por cliente
+[li] Artigos, existências e movimentos de stock
+[li] Vários estabelecimentos, cada um com a sua série
+[li] Envio dos documentos por email ao cliente
+[li] Extractos, dívidas e análise de vendas
+[p] Conformidade
+[h2] A parte que não se negoceia.
+[dt] Comunicação à AGT
+[dd] Cada documento assinado e submetido, com a resposta arquivada junto ao registo.
+[dt] SAF-T (AO) 1.01_01
+[dd] O ficheiro de auditoria do período gerado a pedido, na ordem que o esquema exige.
+[dt] Conservação legal
+[dd] Documentos dentro do prazo não se apagam — nem a pedido de quem os emitiu.
+[dt] Os dados são seus
+[dd] Exporta tudo num arquivo aberto, quando quiser, sem ter de pedir a ninguém.
+[p] Começar
+[h2] Experimente primeiro. Decida depois.
+[p] Abra a conta, configure a empresa e emita à vontade em ambiente de testes. Só passa a produção quando estiver pronto.
+[dt] Sem cartão
+[dd] Abre a conta e configura a empresa sem dar dados de pagamento.
+[dt] Ambiente de testes
+[dd] Emite à vontade sem consumir numeração. Só passa a produção quando quiser.
+[dt] Sem ficar preso
+[dd] Os documentos e os clientes saem consigo, num arquivo aberto, quando pedir.
+[a] Abrir a minha conta
+[a] Já tenho conta
+[p] facturac.ao
+[p] VAP Soluções, Lda.
+[a] Privacidade
+[p] Cookies
+[p] Usamos cookies essenciais para manter a sua sessão iniciada. Os restantes só com a sua autorização — e não usamos cookies de publicidade.
+[a] Ler a política
+[button] Aceitar todos
+[button] Apenas essenciais
+[button] Escolher

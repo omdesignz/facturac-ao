@@ -354,7 +354,7 @@ const withoutSeries = computed(() =>
                             >
                                 <button
                                     type="button"
-                                    class="rounded-lg p-2 text-zinc-400 focus-ring transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-white/5 dark:hover:text-white"
+                                    class="icon-button text-zinc-400 focus-ring transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-white/5 dark:hover:text-white"
                                     @click="openEdit(establishment)"
                                 >
                                     <span class="sr-only"
@@ -365,7 +365,7 @@ const withoutSeries = computed(() =>
                                 <button
                                     v-if="!establishment.is_head_office"
                                     type="button"
-                                    class="rounded-lg p-2 text-zinc-400 focus-ring transition hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-400/10 dark:hover:text-rose-300"
+                                    class="icon-button text-zinc-400 focus-ring transition hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-400/10 dark:hover:text-rose-300"
                                     @click="remove(establishment)"
                                 >
                                     <span class="sr-only"

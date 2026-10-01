@@ -33,6 +33,8 @@ return [
         'tax_country_region' => 'AO',
         'currency_code' => 'AOA',
         'namespace' => 'urn:OECD:StandardAuditFile-Tax:AO_1.01_01',
+        'schema_path' => resource_path('saft/SAFTAO1.01_01.xsd.gz.b64'),
+        'schema_sha256' => 'e9a938e1f47ac3d84ffbb26d0d95b827fc769a065c9d20533d0262c12f8c2631',
     ],
 
     /*

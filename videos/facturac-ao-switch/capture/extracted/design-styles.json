@@ -1,0 +1,303 @@
+{
+  "typography": [
+    {
+      "role": "display",
+      "fontFamily": "IBM Plex Sans",
+      "fontSize": "68px",
+      "fontWeight": "600",
+      "lineHeight": "68px",
+      "letterSpacing": "-1.904px",
+      "color": "#FFFFFF",
+      "sampleText": "Passe a factura.Do resto tratamos nós."
+    },
+    {
+      "role": "heading",
+      "fontFamily": "IBM Plex Sans",
+      "fontSize": "44px",
+      "fontWeight": "600",
+      "lineHeight": "55px",
+      "letterSpacing": "-1.232px",
+      "color": "#171716",
+      "sampleText": "Isto não é uma lista de funcionalidades. São as coisas que j"
+    },
+    {
+      "role": "heading-2",
+      "fontFamily": "IBM Plex Sans",
+      "fontSize": "36px",
+      "fontWeight": "600",
+      "lineHeight": "40px",
+      "letterSpacing": "-1.008px",
+      "color": "#171716",
+      "sampleText": "Quatro estados, e sabe sempre em qual está."
+    },
+    {
+      "role": "body",
+      "fontFamily": "IBM Plex Sans",
+      "fontSize": "18px",
+      "fontWeight": "400",
+      "lineHeight": "32px",
+      "letterSpacing": "normal",
+      "color": "oklch(0.871 0.006 286.286)",
+      "sampleText": "O número, a assinatura, a comunicação à AGT e o comprovativo"
+    },
+    {
+      "role": "heading-3",
+      "fontFamily": "IBM Plex Mono",
+      "fontSize": "16px",
+      "fontWeight": "600",
+      "lineHeight": "24px",
+      "letterSpacing": "normal",
+      "color": "#171716",
+      "sampleText": "FR LOJA2026/00184"
+    },
+    {
+      "role": "heading-3",
+      "fontFamily": "IBM Plex Sans",
+      "fontSize": "16px",
+      "fontWeight": "600",
+      "lineHeight": "24px",
+      "letterSpacing": "normal",
+      "color": "#171716",
+      "sampleText": "Escreve à vontade"
+    },
+    {
+      "role": "label",
+      "fontFamily": "IBM Plex Sans",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "lineHeight": "24px",
+      "letterSpacing": "normal",
+      "color": "#FFFFFF",
+      "sampleText": "Factura-recibo FR LOJA2026/00184 ClienteMercearia Kilamba, L"
+    },
+    {
+      "role": "link",
+      "fontFamily": "IBM Plex Sans",
+      "fontSize": "14px",
+      "fontWeight": "600",
+      "lineHeight": "20px",
+      "letterSpacing": "normal",
+      "color": "#FFFFFF",
+      "sampleText": "Saltar para o conteúdo"
+    },
+    {
+      "role": "code",
+      "fontFamily": "IBM Plex Mono",
+      "fontSize": "11px",
+      "fontWeight": "600",
+      "lineHeight": "16.5px",
+      "letterSpacing": "normal",
+      "color": "#B35309",
+      "sampleText": "FR"
+    }
+  ],
+  "spacing": {
+    "observed": [
+      4,
+      6,
+      8,
+      10,
+      12,
+      14,
+      16,
+      20,
+      24,
+      28,
+      32,
+      40,
+      48,
+      64,
+      80
+    ],
+    "baseUnit": 8
+  },
+  "radius": [
+    "4px",
+    "12px",
+    "16px"
+  ],
+  "shadows": [
+    {
+      "value": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, oklab(0.20422 -0.000556096 0.00186889 / 0.05) 0px 10px 15px -3px, oklab(0.20422 -0.000556096 0.00186889 / 0.05) 0px 4px 6px -4px",
+      "count": 2
+    },
+    {
+      "value": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, oklab(0.20422 -0.000556096 0.00186889 / 0.15) 0px 25px 50px -12px",
+      "count": 2
+    },
+    {
+      "value": "rgba(0, 0, 0, 0.2) 0px 1px 2px 0px, rgba(0, 0, 0, 0.65) 0px 40px 80px -32px",
+      "count": 1
+    },
+    {
+      "value": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.1) 0px 1px 2px -1px",
+      "count": 1
+    },
+    {
+      "value": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, oklch(0.871 0.006 286.286) 0px 0px 0px 1px, rgba(0, 0, 0, 0) 0px 0px 0px 0px",
+      "count": 1
+    }
+  ],
+  "buttons": [
+    {
+      "label": "O cliente está à sua frente e pede a fac",
+      "background": "#FFFFFF",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#232322",
+      "padding": "20px 24px",
+      "borderRadius": "16px",
+      "border": "1px solid oklab(0.810976 0.0356236 0.151114 / 0.7)",
+      "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, oklab(0.20422 -0.000556096 0.00186889 / 0.05) 0px 10px 15px -3px, oklab(0.20422 -0.000556096 0.00186889 / 0.05) 0px 4px 6px -4px",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "height": "74px"
+    },
+    {
+      "label": "Vendeu fiado e já não sabe ao certo quem",
+      "background": "transparent",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#232322",
+      "padding": "20px 24px",
+      "borderRadius": "16px",
+      "border": "1px solid oklab(0.21 0.00164225 -0.00577088 / 0.08)",
+      "boxShadow": "none",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "height": "106px"
+    },
+    {
+      "label": "RascunhoEscreve à vontadeNenhum número é",
+      "background": "oklab(0.810976 0.0356236 0.151114 / 0.08)",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#232322",
+      "padding": "20px 24px",
+      "borderRadius": "16px",
+      "border": "1px solid oklab(0.810976 0.0356236 0.151114 / 0.7)",
+      "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, oklab(0.20422 -0.000556096 0.00186889 / 0.05) 0px 10px 15px -3px, oklab(0.20422 -0.000556096 0.00186889 / 0.05) 0px 4px 6px -4px",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "height": "123px"
+    },
+    {
+      "label": "EmitidaRecebe o númeroA série dá o númer",
+      "background": "#FFFFFF",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#232322",
+      "padding": "20px 24px",
+      "borderRadius": "16px",
+      "border": "1px solid oklab(0.21 0.00164225 -0.00577088 / 0.08)",
+      "boxShadow": "none",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "height": "123px"
+    },
+    {
+      "label": "Aceitar todos",
+      "background": "#454543",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#FFFFFF",
+      "padding": "8px 16px",
+      "borderRadius": "12px",
+      "border": "0px solid rgb(255, 255, 255)",
+      "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.1) 0px 1px 2px -1px",
+      "fontSize": "14px",
+      "fontWeight": "600",
+      "height": "36px"
+    },
+    {
+      "label": "Apenas essenciais",
+      "background": "transparent",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "oklch(0.37 0.013 285.805)",
+      "padding": "8px 16px",
+      "borderRadius": "12px",
+      "border": "0px solid oklch(0.37 0.013 285.805)",
+      "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, oklch(0.871 0.006 286.286) 0px 0px 0px 1px, rgba(0, 0, 0, 0) 0px 0px 0px 0px",
+      "fontSize": "14px",
+      "fontWeight": "600",
+      "height": "36px"
+    }
+  ],
+  "cards": [
+    {
+      "label": "card",
+      "background": "#FDFCFA",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#232322",
+      "padding": "24px",
+      "borderRadius": "16px",
+      "border": "0px solid rgb(35, 35, 34)",
+      "boxShadow": "rgba(0, 0, 0, 0.2) 0px 1px 2px 0px, rgba(0, 0, 0, 0.65) 0px 40px 80px -32px",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "height": "494px"
+    },
+    {
+      "label": "card",
+      "background": "#171716",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#FFFFFF",
+      "padding": "32px",
+      "borderRadius": "24px",
+      "border": "0px solid rgb(255, 255, 255)",
+      "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, oklab(0.20422 -0.000556096 0.00186889 / 0.15) 0px 25px 50px -12px",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "height": "530.5px"
+    }
+  ],
+  "nav": {
+    "label": "navigation",
+    "background": "oklab(0.982043 -0.0000588298 0.00412774 / 0.8)",
+    "backgroundImage": "",
+    "backdropFilter": "blur(24px)",
+    "color": "#232322",
+    "padding": "0px",
+    "borderRadius": "0px",
+    "border": "",
+    "boxShadow": "none",
+    "fontSize": "16px",
+    "fontWeight": "400",
+    "height": "65px"
+  },
+  "chips": [
+    {
+      "label": "Saltar para o conteúdo",
+      "background": "#171716",
+      "color": "#FFFFFF",
+      "padding": "8px 16px",
+      "borderRadius": "12px",
+      "border": "0px solid rgb(255, 255, 255)",
+      "boxShadow": "none",
+      "fontSize": "14px",
+      "fontWeight": "600",
+      "height": "16px"
+    }
+  ],
+  "statCells": [],
+  "tabs": [],
+  "backgrounds": [
+    {
+      "value": "linear-gradient(to right, color(srgb 0.976471 0.698039 0.2 / 0.1) 1px, rgba(0, 0, 0, 0) 1px), linear-gradient(color(srgb 0.976471 0.698039 0.2 / 0.1) 1px, rgba(0, 0, 0, 0) 1px)",
+      "area": 2559737
+    }
+  ],
+  "glass": [
+    {
+      "backdropFilter": "blur(24px)",
+      "background": "oklab(0.982043 -0.0000588298 0.00412774 / 0.8)",
+      "border": "",
+      "borderRadius": "0px",
+      "boxShadow": "",
+      "area": 124800
+    }
+  ]
+}

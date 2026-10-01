@@ -46,6 +46,7 @@ final readonly class SaveFiscalDocumentDraft
      *     settlements?: list<array{document_public_id: string, amount_minor: int}>,
      *     lines: list<array{
      *         operation_type: string,
+     *         operation_date: string|null,
      *         product_code: string,
      *         product_description: string,
      *         quantity: string,
@@ -151,8 +152,14 @@ final readonly class SaveFiscalDocumentDraft
                 ->delete();
 
             if ($calculation !== null) {
-                foreach ($calculation->lines as $calculatedLine) {
-                    $this->saveLine($document, $calculatedLine);
+                foreach ($calculation->lines as $index => $calculatedLine) {
+                    $operationDate = $profile['lines'][$index]['operation_date'] ?? null;
+
+                    $this->saveLine(
+                        $document,
+                        $calculatedLine,
+                        is_string($operationDate) ? $operationDate : null,
+                    );
                 }
             }
 
@@ -357,13 +364,17 @@ final readonly class SaveFiscalDocumentDraft
         ];
     }
 
-    private function saveLine(FiscalDocument $document, CalculatedFiscalLine $calculatedLine): void
-    {
+    private function saveLine(
+        FiscalDocument $document,
+        CalculatedFiscalLine $calculatedLine,
+        ?string $operationDate,
+    ): void {
         $line = $document->lines()->create([
             'workspace_id' => $document->workspace_id,
             'legal_entity_id' => $document->legal_entity_id,
             'line_number' => $calculatedLine->lineNumber,
             'operation_type' => $calculatedLine->operationType,
+            'operation_date' => $operationDate,
             'product_code' => $calculatedLine->productCode,
             'product_description' => $calculatedLine->productDescription,
             'quantity_units' => $calculatedLine->quantityUnits,

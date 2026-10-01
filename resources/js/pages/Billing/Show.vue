@@ -495,7 +495,7 @@ function copyPaymentInstruction(): void {
                                     >
                                     <button
                                         type="button"
-                                        class="rounded-lg p-2 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 focus-visible:outline-2 focus-visible:outline-brand-600 dark:hover:bg-white/5 dark:hover:text-white"
+                                        class="icon-button text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 focus-visible:outline-2 focus-visible:outline-brand-600 dark:hover:bg-white/5 dark:hover:text-white"
                                         :aria-label="`Copiar entidade ${activeReference.entity}`"
                                         @click="
                                             copyValue(
@@ -534,7 +534,7 @@ function copyPaymentInstruction(): void {
                                     >
                                     <button
                                         type="button"
-                                        class="rounded-lg p-2 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 focus-visible:outline-2 focus-visible:outline-brand-600 dark:hover:bg-white/5 dark:hover:text-white"
+                                        class="icon-button text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 focus-visible:outline-2 focus-visible:outline-brand-600 dark:hover:bg-white/5 dark:hover:text-white"
                                         :aria-label="`Copiar referência ${activeReference.reference}`"
                                         @click="
                                             copyValue(
@@ -1251,7 +1251,7 @@ function copyPaymentInstruction(): void {
                             >
                                 <button
                                     type="button"
-                                    class="absolute top-4 right-4 rounded-lg p-2 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 focus-visible:outline-2 focus-visible:outline-brand-600 dark:hover:bg-white/5 dark:hover:text-white"
+                                    class="absolute top-4 right-4 icon-button text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 focus-visible:outline-2 focus-visible:outline-brand-600 dark:hover:bg-white/5 dark:hover:text-white"
                                     aria-label="Fechar confirmação"
                                     @click="closeCheckout"
                                 >

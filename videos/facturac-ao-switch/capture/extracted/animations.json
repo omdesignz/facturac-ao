@@ -1,0 +1,428 @@
+{
+  "summary": {
+    "webAnimations": 14,
+    "cssDeclarations": 84,
+    "scrollTargets": 25,
+    "cdpAnimations": 116,
+    "canvases": 0
+  },
+  "namedAnimations": [
+    "rise-d96e68ec",
+    "sheet-settle-d96e68ec",
+    "qr-in-d96e68ec",
+    "seal-press-d96e68ec"
+  ],
+  "scrollTriggeredElements": 25,
+  "representativeAnimations": [
+    {
+      "type": "CSSAnimation",
+      "playState": "finished",
+      "animationName": "rise-d96e68ec",
+      "targetSelector": "p.inline-flex.items-center.gap-2",
+      "targetRect": {
+        "x": 416,
+        "y": 192.15625,
+        "width": 278.828125,
+        "height": 25.1875,
+        "top": 192.15625,
+        "right": 694.828125,
+        "bottom": 217.34375,
+        "left": 416
+      },
+      "keyframes": [
+        {
+          "offset": 0,
+          "easing": "cubic-bezier(0.22, 1, 0.36, 1)",
+          "composite": "replace",
+          "opacity": "0",
+          "transform": "translateY(14px)",
+          "computedOffset": 0
+        },
+        {
+          "offset": 1,
+          "easing": "cubic-bezier(0.22, 1, 0.36, 1)",
+          "composite": "auto",
+          "opacity": "1",
+          "transform": "none",
+          "computedOffset": 1
+        }
+      ],
+      "timing": {
+        "duration": 660,
+        "delay": 0,
+        "iterations": 1,
+        "easing": "linear",
+        "direction": "normal"
+      }
+    },
+    {
+      "type": "CSSAnimation",
+      "playState": "finished",
+      "animationName": "rise-d96e68ec",
+      "targetSelector": "h1.mt-6.text-[2.6rem]/[1.05].display",
+      "targetRect": {
+        "x": 416,
+        "y": 241.34375,
+        "width": 624,
+        "height": 204,
+        "top": 241.34375,
+        "right": 1040,
+        "bottom": 445.34375,
+        "left": 416
+      },
+      "keyframes": [
+        {
+          "offset": 0,
+          "easing": "cubic-bezier(0.22, 1, 0.36, 1)",
+          "composite": "replace",
+          "opacity": "0",
+          "transform": "translateY(14px)",
+          "computedOffset": 0
+        },
+        {
+          "offset": 1,
+          "easing": "cubic-bezier(0.22, 1, 0.36, 1)",
+          "composite": "auto",
+          "opacity": "1",
+          "transform": "none",
+          "computedOffset": 1
+        }
+      ],
+      "timing": {
+        "duration": 660,
+        "delay": 95,
+        "iterations": 1,
+        "easing": "linear",
+        "direction": "normal"
+      }
+    },
+    {
+      "type": "CSSAnimation",
+      "playState": "finished",
+      "animationName": "rise-d96e68ec",
+      "targetSelector": "p.mt-7.max-w-xl.text-lg/8",
+      "targetRect": {
+        "x": 416,
+        "y": 473.34375,
+        "width": 576,
+        "height": 96,
+        "top": 473.34375,
+        "right": 992,
+        "bottom": 569.34375,
+        "left": 416
+      },
+      "keyframes": [
+        {
+          "offset": 0,
+          "easing": "cubic-bezier(0.22, 1, 0.36, 1)",
+          "composite": "replace",
+          "opacity": "0",
+          "transform": "translateY(14px)",
+          "computedOffset": 0
+        },
+        {
+          "offset": 1,
+          "easing": "cubic-bezier(0.22, 1, 0.36, 1)",
+          "composite": "auto",
+          "opacity": "1",
+          "transform": "none",
+          "computedOffset": 1
+        }
+      ],
+      "timing": {
+        "duration": 660,
+        "delay": 190,
+        "iterations": 1,
+        "easing": "linear",
+        "direction": "normal"
+      }
+    },
+    {
+      "type": "CSSAnimation",
+      "playState": "finished",
+      "animationName": "rise-d96e68ec",
+      "targetSelector": "div.mt-9.flex.flex-col",
+      "targetRect": {
+        "x": 416,
+        "y": 605.34375,
+        "width": 624,
+        "height": 52,
+        "top": 605.34375,
+        "right": 1040,
+        "bottom": 657.34375,
+        "left": 416
+      },
+      "keyframes": [
+        {
+          "offset": 0,
+          "easing": "cubic-bezier(0.22, 1, 0.36, 1)",
+          "composite": "replace",
+          "opacity": "0",
+          "transform": "translateY(14px)",
+          "computedOffset": 0
+        },
+        {
+          "offset": 1,
+          "easing": "cubic-bezier(0.22, 1, 0.36, 1)",
+          "composite": "auto",
+          "opacity": "1",
+          "transform": "none",
+          "computedOffset": 1
+        }
+      ],
+      "timing": {
+        "duration": 660,
+        "delay": 285.00000000000006,
+        "iterations": 1,
+        "easing": "linear",
+        "direction": "normal"
+      }
+    },
+    {
+      "type": "CSSAnimation",
+      "playState": "finished",
+      "animationName": "rise-d96e68ec",
+      "targetSelector": "p.mt-5.text-sm.text-zinc-400",
+      "targetRect": {
+        "x": 416,
+        "y": 677.34375,
+        "width": 624,
+        "height": 20,
+        "top": 677.34375,
+        "right": 1040,
+        "bottom": 697.34375,
+        "left": 416
+      },
+      "keyframes": [
+        {
+          "offset": 0,
+          "easing": "cubic-bezier(0.22, 1, 0.36, 1)",
+          "composite": "replace",
+          "opacity": "0",
+          "transform": "translateY(14px)",
+          "computedOffset": 0
+        },
+        {
+          "offset": 1,
+          "easing": "cubic-bezier(0.22, 1, 0.36, 1)",
+          "composite": "auto",
+          "opacity": "1",
+          "transform": "none",
+          "computedOffset": 1
+        }
+      ],
+      "timing": {
+        "duration": 660,
+        "delay": 380,
+        "iterations": 1,
+        "easing": "linear",
+        "direction": "normal"
+      }
+    },
+    {
+      "type": "CSSAnimation",
+      "playState": "finished",
+      "animationName": "sheet-settle-d96e68ec",
+      "targetSelector": "article.doc",
+      "targetRect": {
+        "x": 1104,
+        "y": 177,
+        "width": 400,
+        "height": 494,
+        "top": 177,
+        "right": 1504,
+        "bottom": 671,
+        "left": 1104
+      },
+      "keyframes": [
+        {
+          "offset": 0,
+          "easing": "cubic-bezier(0.22, 1, 0.36, 1)",
+          "composite": "replace",
+          "opacity": "0",
+          "transform": "translateY(26px) rotateX(9deg)",
+          "computedOffset": 0
+        },
+        {
+          "offset": 1,
+          "easing": "cubic-bezier(0.22, 1, 0.36, 1)",
+          "composite": "auto",
+          "opacity": "1",
+          "transform": "none",
+          "computedOffset": 1
+        }
+      ],
+      "timing": {
+        "duration": 900,
+        "delay": 0,
+        "iterations": 1,
+        "easing": "linear",
+        "direction": "normal"
+      }
+    },
+    {
+      "type": "CSSAnimation",
+      "playState": "finished",
+      "animationName": "rise-d96e68ec",
+      "targetSelector": "li.doc__line",
+      "targetRect": {
+        "x": 1128,
+        "y": 342,
+        "width": 352,
+        "height": 19.5,
+        "top": 342,
+        "right": 1480,
+        "bottom": 361.5,
+        "left": 1128
+      },
+      "keyframes": [
+        {
+          "offset": 0,
+          "easing": "cubic-bezier(0.22, 1, 0.36, 1)",
+          "composite": "replace",
+          "opacity": "0",
+          "transform": "translateY(6px)",
+          "computedOffset": 0
+        },
+        {
+          "offset": 1,
+          "easing": "cubic-bezier(0.22, 1, 0.36, 1)",
+          "composite": "auto",
+          "opacity": "1",
+          "transform": "none",
+          "computedOffset": 1
+        }
+      ],
+      "timing": {
+        "duration": 420,
+        "delay": 420,
+        "iterations": 1,
+        "easing": "linear",
+        "direction": "normal"
+      }
+    },
+    {
+      "type": "CSSAnimation",
+      "playState": "finished",
+      "animationName": "rise-d96e68ec",
+      "targetSelector": "li.doc__line",
+      "targetRect": {
+        "x": 1128,
+        "y": 369.5,
+        "width": 352,
+        "height": 19.5,
+        "top": 369.5,
+        "right": 1480,
+        "bottom": 389,
+        "left": 1128
+      },
+      "keyframes": [
+        {
+          "offset": 0,
+          "easing": "cubic-bezier(0.22, 1, 0.36, 1)",
+          "composite": "replace",
+          "opacity": "0",
+          "transform": "translateY(6px)",
+          "computedOffset": 0
+        },
+        {
+          "offset": 1,
+          "easing": "cubic-bezier(0.22, 1, 0.36, 1)",
+          "composite": "auto",
+          "opacity": "1",
+          "transform": "none",
+          "computedOffset": 1
+        }
+      ],
+      "timing": {
+        "duration": 420,
+        "delay": 540,
+        "iterations": 1,
+        "easing": "linear",
+        "direction": "normal"
+      }
+    },
+    {
+      "type": "CSSAnimation",
+      "playState": "finished",
+      "animationName": "rise-d96e68ec",
+      "targetSelector": "li.doc__line",
+      "targetRect": {
+        "x": 1128,
+        "y": 397,
+        "width": 352,
+        "height": 19.5,
+        "top": 397,
+        "right": 1480,
+        "bottom": 416.5,
+        "left": 1128
+      },
+      "keyframes": [
+        {
+          "offset": 0,
+          "easing": "cubic-bezier(0.22, 1, 0.36, 1)",
+          "composite": "replace",
+          "opacity": "0",
+          "transform": "translateY(6px)",
+          "computedOffset": 0
+        },
+        {
+          "offset": 1,
+          "easing": "cubic-bezier(0.22, 1, 0.36, 1)",
+          "composite": "auto",
+          "opacity": "1",
+          "transform": "none",
+          "computedOffset": 1
+        }
+      ],
+      "timing": {
+        "duration": 420,
+        "delay": 659.9999999999999,
+        "iterations": 1,
+        "easing": "linear",
+        "direction": "normal"
+      }
+    },
+    {
+      "type": "CSSAnimation",
+      "playState": "finished",
+      "animationName": "rise-d96e68ec",
+      "targetSelector": "div.doc__totals",
+      "targetRect": {
+        "x": 1128,
+        "y": 445.5,
+        "width": 352,
+        "height": 82.5,
+        "top": 445.5,
+        "right": 1480,
+        "bottom": 528,
+        "left": 1128
+      },
+      "keyframes": [
+        {
+          "offset": 0,
+          "easing": "cubic-bezier(0.22, 1, 0.36, 1)",
+          "composite": "replace",
+          "opacity": "0",
+          "transform": "none",
+          "computedOffset": 0
+        },
+        {
+          "offset": 1,
+          "easing": "cubic-bezier(0.22, 1, 0.36, 1)",
+          "composite": "auto",
+          "opacity": "1",
+          "transform": "none",
+          "computedOffset": 1
+        }
+      ],
+      "timing": {
+        "duration": 460,
+        "delay": 880,
+        "iterations": 1,
+        "easing": "linear",
+        "direction": "normal"
+      }
+    }
+  ]
+}

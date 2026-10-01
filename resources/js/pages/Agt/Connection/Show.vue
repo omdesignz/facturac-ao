@@ -10,6 +10,7 @@ import {
     Clock3,
     DatabaseZap,
     Fingerprint,
+    FilePlus2,
     KeyRound,
     Landmark,
     LoaderCircle,
@@ -27,7 +28,10 @@ import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { update } from '@/routes/agt/connection';
 import { store as runConnectionCheck } from '@/routes/agt/connection-checks';
-import { sync as syncSeries } from '@/routes/agt/series';
+import {
+    store as requestSeries,
+    sync as syncSeries,
+} from '@/routes/agt/series';
 import { security } from '@/routes/settings';
 
 interface LegalEntity {
@@ -96,15 +100,23 @@ interface FiscalSeries {
     synchronized_at: string;
 }
 
+interface SeriesRequestOptions {
+    document_types: Array<{ value: string; label: string }>;
+    years: number[];
+    default_document_type: string;
+}
+
 const props = defineProps<{
     legalEntity: LegalEntity;
     connection: AgtConnection;
     readiness: { complete: boolean; items: ReadinessItem[] };
     checks: ConnectionCheck[];
     series: FiscalSeries[];
+    seriesRequest: SeriesRequestOptions;
     permissions: {
         manage: boolean;
         test: boolean;
+        request_series: boolean;
         sync_series: boolean;
     };
     guardrails: {
@@ -884,6 +896,114 @@ function formatDate(value: string | null): string {
                             Activar MFA
                         </Link>
                     </div>
+
+                    <Form
+                        v-if="
+                            permissions.request_series && guardrails.mfa_enabled
+                        "
+                        v-bind="requestSeries.form()"
+                        :options="{ preserveScroll: true }"
+                        class="border-b border-zinc-100 bg-zinc-50/70 px-5 py-5 sm:px-7 dark:border-white/10 dark:bg-white/[0.025]"
+                        #default="{ errors, processing }"
+                    >
+                        <div
+                            class="grid gap-5 lg:grid-cols-[minmax(14rem,1fr)_minmax(11rem,16rem)_minmax(8rem,11rem)_auto] lg:items-end"
+                        >
+                            <div class="flex gap-3">
+                                <span
+                                    class="grid size-10 shrink-0 place-items-center rounded-xl bg-accent-100 text-brand-800 dark:bg-accent-300/10 dark:text-accent-300"
+                                >
+                                    <FilePlus2
+                                        class="size-5"
+                                        aria-hidden="true"
+                                    />
+                                </span>
+                                <div>
+                                    <p
+                                        class="text-sm font-semibold text-zinc-950 dark:text-white"
+                                    >
+                                        Pedir uma nova série
+                                    </p>
+                                    <p
+                                        class="mt-1 text-xs/5 text-zinc-500 dark:text-zinc-400"
+                                    >
+                                        Cria numeração fiscal na AGT de
+                                        homologação e importa-a de seguida.
+                                    </p>
+                                </div>
+                            </div>
+                            <div>
+                                <label
+                                    for="series-document-type"
+                                    class="block text-xs font-semibold text-zinc-600 dark:text-zinc-300"
+                                >
+                                    Tipo de documento
+                                </label>
+                                <select
+                                    id="series-document-type"
+                                    name="document_type"
+                                    required
+                                    :disabled="processing"
+                                    class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 disabled:opacity-60 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                >
+                                    <option
+                                        v-for="documentType in seriesRequest.document_types"
+                                        :key="documentType.value"
+                                        :value="documentType.value"
+                                        :selected="
+                                            documentType.value ===
+                                            seriesRequest.default_document_type
+                                        "
+                                    >
+                                        {{ documentType.value }} ·
+                                        {{ documentType.label }}
+                                    </option>
+                                </select>
+                                <FormError :message="errors.document_type" />
+                            </div>
+                            <div>
+                                <label
+                                    for="series-year"
+                                    class="block text-xs font-semibold text-zinc-600 dark:text-zinc-300"
+                                >
+                                    Ano
+                                </label>
+                                <select
+                                    id="series-year"
+                                    name="series_year"
+                                    required
+                                    :disabled="processing"
+                                    class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 disabled:opacity-60 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                >
+                                    <option
+                                        v-for="seriesYear in seriesRequest.years"
+                                        :key="seriesYear"
+                                        :value="seriesYear"
+                                    >
+                                        {{ seriesYear }}
+                                    </option>
+                                </select>
+                                <FormError :message="errors.series_year" />
+                            </div>
+                            <button
+                                type="submit"
+                                :disabled="processing"
+                                class="inline-flex items-center justify-center gap-2 rounded-xl bg-accent-400 px-4 py-2.5 text-sm font-semibold text-brand-950 shadow-sm focus-ring transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-accent-300 dark:hover:bg-accent-200"
+                            >
+                                <LoaderCircle
+                                    v-if="processing"
+                                    class="size-4 animate-spin"
+                                    aria-hidden="true"
+                                />
+                                <FilePlus2
+                                    v-else
+                                    class="size-4"
+                                    aria-hidden="true"
+                                />
+                                Solicitar série
+                            </button>
+                        </div>
+                    </Form>
 
                     <div v-if="series.length > 0" class="flow-root">
                         <div

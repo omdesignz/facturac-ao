@@ -7,8 +7,9 @@ import {
     TransitionRoot,
 } from '@headlessui/vue';
 import { TriangleAlert } from '@lucide/vue';
-import { computed, ref } from 'vue';
+import { computed, ref, shallowRef, watch } from 'vue';
 import { usePendingConfirm } from '@/lib/confirm';
+import type { ConfirmRequest } from '@/lib/confirm';
 
 /**
  * The app's answer to `window.confirm`.
@@ -22,8 +23,19 @@ import { usePendingConfirm } from '@/lib/confirm';
 const { pending, answer } = usePendingConfirm();
 
 const cancelButton = ref<HTMLButtonElement | null>(null);
+const activePrompt = shallowRef<ConfirmRequest | null>(pending.value);
 
-const isDanger = computed(() => pending.value?.tone !== 'neutral');
+watch(
+    pending,
+    (prompt) => {
+        if (prompt !== null) {
+            activePrompt.value = prompt;
+        }
+    },
+    { immediate: true },
+);
+
+const isDanger = computed(() => activePrompt.value?.tone !== 'neutral');
 </script>
 
 <template>
@@ -61,7 +73,7 @@ const isDanger = computed(() => pending.value?.tone !== 'neutral');
                         <DialogPanel
                             class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-zinc-900/10 dark:bg-zinc-900 dark:ring-white/10"
                         >
-                            <div v-if="pending" class="flex gap-4">
+                            <div v-if="activePrompt" class="flex gap-4">
                                 <span
                                     :class="[
                                         isDanger
@@ -80,18 +92,18 @@ const isDanger = computed(() => pending.value?.tone !== 'neutral');
                                     <DialogTitle
                                         class="text-base font-semibold text-zinc-950 dark:text-white"
                                     >
-                                        {{ pending.title }}
+                                        {{ activePrompt.title }}
                                     </DialogTitle>
                                     <p
                                         class="mt-1.5 text-sm/6 text-zinc-600 dark:text-zinc-400"
                                     >
-                                        {{ pending.message }}
+                                        {{ activePrompt.message }}
                                     </p>
                                 </div>
                             </div>
 
                             <div
-                                v-if="pending"
+                                v-if="activePrompt"
                                 class="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"
                             >
                                 <button
@@ -100,7 +112,7 @@ const isDanger = computed(() => pending.value?.tone !== 'neutral');
                                     class="rounded-xl px-4 py-2.5 text-sm font-semibold text-zinc-700 ring-1 ring-zinc-300 focus-ring transition hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
                                     @click="answer(false)"
                                 >
-                                    {{ pending.cancelLabel ?? 'Cancelar' }}
+                                    {{ activePrompt.cancelLabel ?? 'Cancelar' }}
                                 </button>
                                 <button
                                     type="button"
@@ -112,7 +124,7 @@ const isDanger = computed(() => pending.value?.tone !== 'neutral');
                                     ]"
                                     @click="answer(true)"
                                 >
-                                    {{ pending.confirmLabel }}
+                                    {{ activePrompt.confirmLabel }}
                                 </button>
                             </div>
                         </DialogPanel>

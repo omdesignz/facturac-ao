@@ -1,0 +1,32 @@
+{
+  "provider": "auto",
+  "speed": 1,
+  "lines": [
+    {
+      "id": "01",
+      "text": "Já paga por um programa de facturação. E mudar? Mudar mete medo."
+    },
+    {
+      "id": "02",
+      "text": "Não devia. Os seus dados vêm consigo."
+    },
+    {
+      "id": "03",
+      "text": "Clientes e artigos entram do Excel. A numeração continua certa, sem saltos. E leva tudo consigo quando quiser."
+    },
+    {
+      "id": "04",
+      "text": "A parte chata faz-se sozinha: o número, a assinatura, a comunicação à AGT."
+    },
+    {
+      "id": "05",
+      "text": "facturac ponto A O. Em breve."
+    }
+  ],
+  "bgm": {
+    "mode": "retrieve",
+    "query": "warm, confident, understated — light modern acoustic-electronic, steady pulse, no vocals",
+    "blob": "Mudar de programa de facturação não custa nada — os seus dados vêm consigo",
+    "arc": "Medo → A promessa → As três objecções respondidas → A prova → Convite"
+  }
+}

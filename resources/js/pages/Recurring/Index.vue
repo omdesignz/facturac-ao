@@ -35,6 +35,7 @@ interface ProfileLine {
     tax_type: string;
     tax_code: string | null;
     tax_percentage: string;
+    tax_exemption_code: string | null;
 }
 
 interface Profile {
@@ -73,6 +74,7 @@ const props = defineProps<{
         tax_type: string;
         tax_code: string | null;
         tax_percentage: string;
+        tax_exemption_code: string | null;
     }[];
     frequencies: SelectOption[];
     documentTypes: SelectOption[];
@@ -92,6 +94,7 @@ function emptyLine(): ProfileLine {
         tax_type: 'IVA',
         tax_code: 'NOR',
         tax_percentage: '14.00',
+        tax_exemption_code: null,
     };
 }
 
@@ -160,6 +163,14 @@ function applyCatalogueItem(line: ProfileLine, publicId: string): void {
     line.tax_type = item.tax_type;
     line.tax_code = item.tax_code;
     line.tax_percentage = item.tax_percentage;
+    line.tax_exemption_code = item.tax_exemption_code;
+}
+
+function catalogueItemValue(line: ProfileLine): string {
+    return (
+        props.catalogueItems.find((item) => item.code === line.product_code)
+            ?.public_id ?? ''
+    );
 }
 
 function submit(): void {
@@ -545,7 +556,7 @@ const dueCount = computed(
                     >
                         <div class="sm:col-span-6">
                             <SelectInput
-                                :model-value="''"
+                                :model-value="catalogueItemValue(line)"
                                 :options="catalogueOptions"
                                 @update:model-value="
                                     (value) =>
@@ -588,7 +599,7 @@ const dueCount = computed(
                             <button
                                 v-if="form.lines.length > 1"
                                 type="button"
-                                class="rounded-lg p-2 text-zinc-400 focus-ring transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-400/10"
+                                class="icon-button text-zinc-400 focus-ring transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-400/10"
                                 @click="form.lines.splice(index, 1)"
                             >
                                 <span class="sr-only">Remover linha</span>

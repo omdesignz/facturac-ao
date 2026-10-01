@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Actions\GenerateRecurringInvoices;
+use App\Fiscal\Agt\Support\CanonicalNumber;
+use App\Fiscal\Calculation\FiscalCalculator;
+use App\Fiscal\SupportedTaxTreatment;
 use App\FiscalDocumentType;
 use App\Http\Requests\StoreRecurringInvoiceRequest;
 use App\Models\CatalogueItem;
@@ -24,6 +27,8 @@ use Inertia\Response;
  */
 class RecurringInvoiceController extends Controller
 {
+    public function __construct(private FiscalCalculator $calculator) {}
+
     public function index(Request $request): Response|RedirectResponse
     {
         $legalEntity = $this->legalEntity($request);
@@ -172,15 +177,29 @@ class RecurringInvoiceController extends Controller
      */
     private function present(RecurringInvoice $profile): array
     {
-        $total = 0;
-
-        foreach ($profile->lines as $line) {
-            $quantity = (int) ($line['quantity_units'] ?? 0);
-            $unitPrice = (int) ($line['unit_price_minor'] ?? 0);
-            $net = intdiv($quantity * $unitPrice, 1000);
-            $rate = (int) round(((float) ($line['tax_percentage'] ?? '0')) * 100);
-            $total += $net + intdiv($net * $rate, 10_000);
-        }
+        $calculation = $this->calculator->calculate(array_map(
+            fn (array $line): array => [
+                'operation_type' => (string) ($line['operation_type'] ?? 'SG'),
+                'product_code' => (string) ($line['product_code'] ?? ''),
+                'product_description' => (string) ($line['product_description'] ?? ''),
+                'quantity' => (string) CanonicalNumber::fromScaledInteger(
+                    (int) ($line['quantity_units'] ?? 0),
+                    (int) ($line['quantity_scale'] ?? 3),
+                ),
+                'unit_of_measure' => (string) ($line['unit_of_measure'] ?? 'UN'),
+                'unit_price' => (string) CanonicalNumber::fromMinorUnits(
+                    (int) ($line['unit_price_minor'] ?? 0),
+                ),
+                'discount_percentage' => (string) CanonicalNumber::fromBasisPoints(
+                    (int) ($line['discount_rate_basis_points'] ?? 0),
+                ),
+                'tax_type' => (string) ($line['tax_type'] ?? 'IVA'),
+                'tax_code' => $line['tax_code'] ?? null,
+                'tax_percentage' => (string) ($line['tax_percentage'] ?? '14'),
+                'tax_exemption_code' => $line['tax_exemption_code'] ?? null,
+            ],
+            $profile->lines,
+        ));
 
         return [
             'public_id' => $profile->public_id,
@@ -199,29 +218,37 @@ class RecurringInvoiceController extends Controller
             'next_run_on' => $profile->next_run_on->toIso8601String(),
             'last_run_at' => $profile->last_run_at?->toIso8601String(),
             'generated_count' => $profile->generated_count,
-            'estimated_total_minor' => $total,
+            'estimated_total_minor' => $calculation->grossTotalMinor,
             'notes' => $profile->notes,
             'lines' => array_map(
-                fn (array $line): array => [
-                    'product_code' => $line['product_code'] ?? null,
-                    'product_description' => $line['product_description'] ?? '',
-                    'unit_of_measure' => $line['unit_of_measure'] ?? 'UN',
-                    'quantity' => number_format(
-                        ((int) ($line['quantity_units'] ?? 0)) / 1000,
-                        3,
-                        '.',
-                        '',
-                    ),
-                    'unit_price' => number_format(
-                        ((int) ($line['unit_price_minor'] ?? 0)) / 100,
-                        2,
-                        '.',
-                        '',
-                    ),
-                    'tax_type' => $line['tax_type'] ?? 'IVA',
-                    'tax_code' => $line['tax_code'] ?? 'NOR',
-                    'tax_percentage' => $line['tax_percentage'] ?? '14.00',
-                ],
+                function (array $line): array {
+                    $treatment = SupportedTaxTreatment::fromLegacyComponents(
+                        $line['tax_type'] ?? 'IVA',
+                        $line['tax_code'] ?? null,
+                        $line['tax_percentage'] ?? '14',
+                        $line['tax_exemption_code'] ?? null,
+                    );
+                    $tax = $treatment?->profile();
+
+                    return [
+                        'product_code' => $line['product_code'] ?? null,
+                        'product_description' => $line['product_description'] ?? '',
+                        'unit_of_measure' => $line['unit_of_measure'] ?? 'UN',
+                        'quantity' => (string) CanonicalNumber::fromScaledInteger(
+                            (int) ($line['quantity_units'] ?? 0),
+                            (int) ($line['quantity_scale'] ?? 3),
+                        ),
+                        'unit_price' => (string) CanonicalNumber::fromMinorUnits(
+                            (int) ($line['unit_price_minor'] ?? 0),
+                        ),
+                        'tax_type' => $tax['type'] ?? ($line['tax_type'] ?? 'IVA'),
+                        'tax_code' => $tax !== null ? $tax['code'] : ($line['tax_code'] ?? null),
+                        'tax_percentage' => $tax['percentage'] ?? ($line['tax_percentage'] ?? '14'),
+                        'tax_exemption_code' => $tax !== null
+                            ? $tax['exemption_code']
+                            : ($line['tax_exemption_code'] ?? null),
+                    ];
+                },
                 $profile->lines,
             ),
         ];
@@ -276,6 +303,7 @@ class RecurringInvoiceController extends Controller
                 'tax_type' => $item->tax_type,
                 'tax_code' => $item->tax_code,
                 'tax_percentage' => $item->tax_percentage,
+                'tax_exemption_code' => $item->tax_exemption_code,
             ])->all());
     }
 

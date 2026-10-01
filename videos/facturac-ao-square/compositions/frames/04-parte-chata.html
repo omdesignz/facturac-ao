@@ -1,0 +1,361 @@
+<template>
+  <style>
+    @font-face {
+      font-family: "PlexSans";
+      font-weight: 400;
+      font-display: block;
+      src: url("assets/fonts/plex-sans-400.woff2") format("woff2");
+    }
+    @font-face {
+      font-family: "PlexSans";
+      font-weight: 600;
+      font-display: block;
+      src: url("assets/fonts/plex-sans-600.woff2") format("woff2");
+    }
+    @font-face {
+      font-family: "PlexMono";
+      font-weight: 400;
+      font-display: block;
+      src: url("assets/fonts/plex-mono-400.woff2") format("woff2");
+    }
+    @font-face {
+      font-family: "PlexMono";
+      font-weight: 600;
+      font-display: block;
+      src: url("assets/fonts/plex-mono-600.woff2") format("woff2");
+    }
+
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 1080px;
+      height: 1080px;
+      overflow: hidden;
+      font-family: "PlexSans", sans-serif;
+      color: #232322;
+    }
+
+    .f4-ground {
+      position: absolute;
+      inset: 0;
+      background: #faf9f6;
+    }
+
+    .f4-stage {
+      position: absolute;
+      inset: 0;
+    }
+
+    .f4-line {
+      position: absolute;
+      left: 80px;
+      right: 80px;
+      top: 150px;
+      font-size: 52px;
+      font-weight: 600;
+      line-height: 1.1;
+      letter-spacing: -0.022em;
+    }
+
+    .f4-w {
+      display: inline-block;
+      will-change: transform, opacity;
+    }
+
+    /* The hero is the invoice itself, not a device mockup — the object the
+       customer already knows, and the preset forbids the chrome anyway. */
+    .f4-sheet {
+      position: absolute;
+      left: 80px;
+      top: 300px;
+      width: 920px;
+      background: #ffffff;
+      padding: 32px 34px 36px;
+      border: 2px solid rgba(35, 35, 34, 0.14);
+    }
+
+    .f4-kind {
+      font-family: "PlexMono", monospace;
+      font-size: 17px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: rgba(35, 35, 34, 0.76);
+    }
+
+    .f4-no {
+      font-family: "PlexMono", monospace;
+      font-weight: 600;
+      font-size: 31px;
+      margin-top: 5px;
+      padding-bottom: 18px;
+      border-bottom: 2px solid rgba(35, 35, 34, 0.14);
+    }
+
+    .f4-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      font-size: 22px;
+      padding: 10px 0;
+      color: #454543;
+    }
+
+    /* Mono means "this is a fiscal fact" everywhere in the product. */
+    .f4-item span:last-child,
+    .f4-total span:last-child {
+      font-family: "PlexMono", monospace;
+      color: #232322;
+    }
+
+    .f4-total {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 11px;
+      padding-top: 16px;
+      border-top: 2px solid rgba(35, 35, 34, 0.14);
+      font-weight: 600;
+      font-size: 29px;
+    }
+
+    .f4-fiscal {
+      display: flex;
+      align-items: center;
+      gap: 19px;
+      margin-top: 22px;
+      padding: 19px;
+      background: rgba(249, 178, 51, 0.16);
+    }
+
+    .f4-qr {
+      width: 92px;
+      height: 92px;
+      flex: none;
+      background: #fff;
+      padding: 7px;
+    }
+    .f4-qr rect {
+      fill: #232322;
+    }
+
+    /* Darker than the sheet's other muted text: these sit on the gold panel,
+       where 55% ink measured 3.56:1 — under the 4.5:1 floor. */
+    .f4-plabel {
+      font-family: "PlexMono", monospace;
+      font-size: 13px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(35, 35, 34, 0.82);
+    }
+    .f4-pvalue {
+      font-family: "PlexMono", monospace;
+      font-weight: 600;
+      font-size: 21px;
+      margin-bottom: 8px;
+    }
+
+    /* The seal. Sits over the sheet's lower-right corner and, at the cut, is
+       exactly where frame 5 picks it up: x 66% / y 64% of the canvas. */
+    .f4-seal {
+      position: absolute;
+      left: 706px;
+      top: 606px;
+      width: 186px;
+      height: 186px;
+      color: #232322;
+    }
+    .f4-seal svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .f4-stamped {
+      position: absolute;
+      left: 80px;
+      top: 830px;
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      padding: 15px 28px;
+      background: #232322;
+      color: #faf9f6;
+      font-size: 27px;
+      font-weight: 600;
+    }
+    .f4-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      background: #f9b233;
+    }
+  </style>
+
+  <div data-hf-id="hf-c8ae" id="root" data-composition-id="04-parte-chata" data-width="1080" data-height="1080">
+    <div data-hf-id="hf-qk56" id="frame-04-parte-chata-ground" class="clip f4-ground" data-start="0" data-duration="7" data-track-index="0"></div>
+
+    <div data-hf-id="hf-y5ib" id="frame-04-parte-chata-stage" class="clip f4-stage" data-start="0" data-duration="7" data-track-index="1">
+      <div data-hf-id="hf-5ut9" class="f4-line">
+        <span data-hf-id="hf-q2l2" class="f4-w">E</span> <span data-hf-id="hf-brk2" class="f4-w">a</span>
+        <span data-hf-id="hf-swt9" class="f4-w">parte</span> <span data-hf-id="hf-9794" class="f4-w">chata</span>
+        <span data-hf-id="hf-3wzr" class="f4-w">faz-se</span> <span data-hf-id="hf-nwf5" class="f4-w">sozinha.</span>
+      </div>
+
+      <div data-hf-id="hf-f8q8" class="f4-sheet">
+        <div data-hf-id="hf-f8ds" class="f4-kind">Factura-recibo</div>
+        <div data-hf-id="hf-nvyo" class="f4-no">FR LOJA2026/00184</div>
+
+        <div data-hf-id="hf-ydi2" class="f4-item">
+          <span data-hf-id="hf-ock2">Arroz 25 kg · 4 sacos</span><span data-hf-id="hf-g2oz">62 000,00</span>
+        </div>
+        <div data-hf-id="hf-kq9q" class="f4-item">
+          <span data-hf-id="hf-08ke">Óleo alimentar · 12 un</span><span data-hf-id="hf-17na">38 400,00</span>
+        </div>
+        <div data-hf-id="hf-l4kr" class="f4-item">
+          <span data-hf-id="hf-q95n">Açúcar 1 kg · 30 un</span><span data-hf-id="hf-pm5u">21 600,00</span>
+        </div>
+
+        <div data-hf-id="hf-1t7z" class="f4-total"><span data-hf-id="hf-7qep">Total</span><span data-hf-id="hf-adg5">139 080,00 Kz</span></div>
+
+        <div data-hf-id="hf-n3o1" class="f4-fiscal">
+          <svg data-hf-id="hf-nb3f" class="f4-qr" viewBox="0 0 21 21" aria-hidden="true">
+            <rect data-hf-id="hf-lu4o" x="0" y="0" width="7" height="7" />
+            <rect data-hf-id="hf-bmyf" x="2" y="2" width="3" height="3" fill="#fff" />
+            <rect data-hf-id="hf-mzxb" x="14" y="0" width="7" height="7" />
+            <rect data-hf-id="hf-0mhq" x="16" y="2" width="3" height="3" fill="#fff" />
+            <rect data-hf-id="hf-ijbz" x="0" y="14" width="7" height="7" />
+            <rect data-hf-id="hf-t22q" x="2" y="16" width="3" height="3" fill="#fff" />
+            <rect data-hf-id="hf-sied" x="9" y="0" width="2" height="2" />
+            <rect data-hf-id="hf-d6m4" x="11" y="2" width="2" height="2" />
+            <rect data-hf-id="hf-54e9" x="9" y="4" width="2" height="2" />
+            <rect data-hf-id="hf-y3j8" x="9" y="9" width="2" height="2" />
+            <rect data-hf-id="hf-7l61" x="13" y="9" width="2" height="2" />
+            <rect data-hf-id="hf-0edh" x="17" y="9" width="2" height="2" />
+            <rect data-hf-id="hf-65nh" x="4" y="9" width="2" height="2" />
+            <rect data-hf-id="hf-jvdz" x="9" y="13" width="2" height="2" />
+            <rect data-hf-id="hf-eqqo" x="13" y="13" width="2" height="2" />
+            <rect data-hf-id="hf-19us" x="17" y="13" width="2" height="2" />
+            <rect data-hf-id="hf-yozn" x="9" y="17" width="2" height="2" />
+            <rect data-hf-id="hf-24qs" x="13" y="17" width="2" height="2" />
+            <rect data-hf-id="hf-dvuo" x="17" y="17" width="2" height="2" />
+          </svg>
+          <div data-hf-id="hf-yeow">
+            <div data-hf-id="hf-lrec" class="f4-plabel">Nº de validação</div>
+            <div data-hf-id="hf-idly" class="f4-pvalue">4192/AGT/2026</div>
+            <div data-hf-id="hf-usua" class="f4-plabel">Assinatura</div>
+            <div data-hf-id="hf-ef81" class="f4-pvalue" style="margin-bottom: 0">9F2C·A104·7B3E</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- The captured brand seal: currentColor resolves from .f4-seal, exactly
+           as the application renders it. -->
+      <div data-hf-id="hf-6rzs" class="f4-seal">
+        <svg data-hf-id="hf-ybg4" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+          <g data-hf-id="hf-t2vt" transform="rotate(-8 32 32)">
+            <circle data-hf-id="hf-wflw" cx="32" cy="32" r="29" stroke="#F9B233" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="0.4 5.2" />
+            <circle data-hf-id="hf-m8ze" cx="32" cy="32" r="19.5" stroke="#F9B233" stroke-width="2.6" />
+            <path data-hf-id="hf-pb8t" class="f4-check" d="M22 33L29.2 40.2L43.8 22.4" stroke="currentColor" stroke-width="5.4" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="34" stroke-dashoffset="34" />
+          </g>
+        </svg>
+      </div>
+
+      <div data-hf-id="hf-8ew1" class="f4-stamped"><span data-hf-id="hf-u8z1" class="f4-dot"></span>Comunicada à AGT</div>
+    </div>
+  </div>
+
+  <script>
+    window.__timelines = window.__timelines || {};
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      const q = (sel) => document.querySelectorAll(sel);
+      const one = (sel) => document.querySelector(sel);
+
+      /* Scene 1 (0.0–1.0s) — the line, then the sheet rises and settles. */
+      tl.fromTo(
+        q("#root .f4-line .f4-w"),
+        { opacity: 0, y: 38 },
+        { opacity: 1, y: 0, duration: 0.5, stagger: 0.085, ease: "power3.out" },
+        0.1,
+      );
+
+      tl.fromTo(
+        one("#root .f4-sheet"),
+        { opacity: 0, y: 74, scale: 0.975 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.82, ease: "power3.out" },
+        0.28,
+      );
+
+      /* Scene 2 (1.0–2.6s) — line items arrive staggered, then the total. */
+      tl.fromTo(
+        q("#root .f4-item"),
+        { opacity: 0, y: 22 },
+        { opacity: 1, y: 0, duration: 0.44, stagger: 0.17, ease: "power3.out" },
+        1.05,
+      );
+
+      tl.fromTo(
+        one("#root .f4-total"),
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.46, ease: "power3.out" },
+        1.95,
+      );
+
+      /* Scene 3 (2.6–4.0s) — the fiscal identity: the block the AGT hands back.
+         The QR builds in steps rather than fading, so it reads as data. */
+      tl.fromTo(
+        one("#root .f4-fiscal"),
+        { opacity: 0, y: 26 },
+        { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" },
+        2.6,
+      );
+
+      tl.fromTo(
+        q("#root .f4-qr rect"),
+        { opacity: 0 },
+        { opacity: 1, duration: 0.06, stagger: 0.028, ease: "none" },
+        2.95,
+      );
+
+      /* Scene 4 (4.0–5.2s) — the press. It arrives big and rotated, straightens
+         as it lands, and only THEN does the check draw. A stamp hits first and
+         is read second. */
+      tl.fromTo(
+        one("#root .f4-seal"),
+        { opacity: 0, scale: 1.55, rotation: -24 },
+        {
+          opacity: 0.96,
+          scale: 1,
+          rotation: 0,
+          duration: 0.46,
+          ease: "back.out(1.7)",
+        },
+        4.0,
+      );
+
+      tl.fromTo(
+        one("#root .f4-check"),
+        { strokeDashoffset: 34 },
+        { strokeDashoffset: 0, duration: 0.42, ease: "power3.out" },
+        4.34,
+      );
+
+      /* Scene 5 (5.2–7.0s) — the confirmation settles and everything stops. The
+         seal does not move again: it has a cut to cross. */
+      tl.fromTo(
+        one("#root .f4-stamped"),
+        { opacity: 0, y: 24, scale: 0.94 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.5)" },
+        5.2,
+      );
+
+      tl.fromTo(
+        one("#root .f4-stage"),
+        { scale: 1.0, y: 0 },
+        { scale: 1.012, y: -8, duration: 7, ease: "none" },
+        0,
+      );
+
+      window.__timelines["04-parte-chata"] = tl;
+    })();
+  </script>
+</template>

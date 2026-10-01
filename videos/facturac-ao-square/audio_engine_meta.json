@@ -1,0 +1,86 @@
+{
+  "tts_provider": null,
+  "voice_id": null,
+  "bgm": {
+    "path": "assets/bgm/track.mp3",
+    "volume": 0.9,
+    "query": "warm, confident, understated — light modern acoustic-electronic, steady pulse, no vocals",
+    "mode": "retrieve",
+    "duration_s": 26
+  },
+  "bgm_pending": false,
+  "bgm_provider": "heygen",
+  "bgm_pid": null,
+  "bgm_log": null,
+  "bgm_mode": "retrieve",
+  "bgm_target_duration_s": null,
+  "bgm_seed_duration_s": null,
+  "bgm_loop_count": null,
+  "voices": [],
+  "sfx": [
+    {
+      "id": "01",
+      "name": "tick-soft (por linha)",
+      "file": "assets/sfx/tick-soft-por-linha.mp3",
+      "source": "heygen",
+      "offset_s": 0,
+      "duration_s": 7.778,
+      "volume": 0.35
+    },
+    {
+      "id": "02",
+      "name": "tick-soft",
+      "file": "assets/sfx/tick-soft.mp3",
+      "source": "heygen",
+      "offset_s": 0,
+      "duration_s": 7.778,
+      "volume": 0.35
+    },
+    {
+      "id": "02",
+      "name": "swell-short",
+      "file": "assets/sfx/swell-short.mp3",
+      "source": "heygen",
+      "offset_s": 0,
+      "duration_s": 1.285,
+      "volume": 0.35
+    },
+    {
+      "id": "03",
+      "name": "tick-soft (por linha)",
+      "file": "assets/sfx/tick-soft-por-linha.mp3",
+      "source": "heygen",
+      "offset_s": 0,
+      "duration_s": 7.778,
+      "volume": 0.35
+    },
+    {
+      "id": "04",
+      "name": "stamp-thud (na descida do selo)",
+      "file": "assets/sfx/stamp-thud-na-descida-do-selo.mp3",
+      "source": "heygen",
+      "offset_s": 0,
+      "duration_s": 0.792,
+      "volume": 0.35
+    },
+    {
+      "id": "04",
+      "name": "chime-confirm (no rótulo \"Comunicada\")",
+      "file": "assets/sfx/chime-confirm-no-r-tulo-comunicada.mp3",
+      "source": "heygen",
+      "offset_s": 0,
+      "duration_s": 0.72,
+      "volume": 0.35
+    },
+    {
+      "id": "05",
+      "name": "chime-resolve",
+      "file": "assets/sfx/chime-resolve.mp3",
+      "source": "heygen",
+      "offset_s": 0,
+      "duration_s": 1.441,
+      "volume": 0.35
+    }
+  ],
+  "total_duration_s": 0
+}

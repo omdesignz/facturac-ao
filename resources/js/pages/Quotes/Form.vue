@@ -52,6 +52,15 @@ interface CatalogueOption {
     tax_exemption_code: string | null;
 }
 
+interface TaxTreatment {
+    value: string;
+    label: string;
+    type: string;
+    code: string | null;
+    percentage: string;
+    exemption_code: string | null;
+}
+
 const props = defineProps<{
     quote:
         | (Record<string, unknown> & {
@@ -83,6 +92,7 @@ const props = defineProps<{
     establishments: SelectOption[];
     customers: CustomerOption[];
     catalogueItems: CatalogueOption[];
+    taxTreatments: TaxTreatment[];
     currencyCode: string;
 }>();
 
@@ -101,7 +111,10 @@ function emptyLine(): QuoteLineInput {
     };
 }
 
-const today = new Date().toISOString().slice(0, 10);
+const todayDate = new Date();
+const today = todayDate.toLocaleDateString('sv-SE');
+const defaultValidUntil = new Date(todayDate);
+defaultValidUntil.setDate(defaultValidUntil.getDate() + 30);
 
 const form = useForm({
     establishment_public_id:
@@ -117,7 +130,7 @@ const form = useForm({
     issue_date: props.quote?.issue_date.slice(0, 10) ?? today,
     valid_until:
         props.quote?.valid_until.slice(0, 10) ??
-        new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10),
+        defaultValidUntil.toLocaleDateString('sv-SE'),
     notes: props.quote?.notes ?? '',
     lines: props.quote?.lines ?? [emptyLine()],
 });
@@ -141,6 +154,13 @@ const catalogueOptions = computed<SelectOption[]>(() => [
         label: `${item.code} — ${item.name}`,
     })),
 ]);
+
+const taxTreatmentOptions = computed<SelectOption[]>(() =>
+    props.taxTreatments.map((treatment) => ({
+        value: treatment.value,
+        label: treatment.label,
+    })),
+);
 
 const selectedCustomer = computed(() =>
     props.customers.find(
@@ -188,6 +208,50 @@ function applyCatalogueItem(line: QuoteLineInput, publicId: string): void {
     line.tax_exemption_code = item.tax_exemption_code;
 }
 
+function catalogueItemValue(line: QuoteLineInput): string {
+    return (
+        props.catalogueItems.find((item) => item.code === line.product_code)
+            ?.public_id ?? ''
+    );
+}
+
+function taxTreatmentValue(line: QuoteLineInput): string {
+    const percentage = parseScaled(line.tax_percentage || '0', 2);
+
+    return (
+        props.taxTreatments.find(
+            (treatment) =>
+                treatment.type === line.tax_type &&
+                treatment.code === line.tax_code &&
+                treatment.exemption_code === line.tax_exemption_code &&
+                parseScaled(treatment.percentage, 2) === percentage,
+        )?.value ??
+        props.taxTreatments.find(
+            (treatment) =>
+                line.tax_code === null &&
+                treatment.exemption_code === line.tax_exemption_code &&
+                parseScaled(treatment.percentage, 2) === percentage,
+        )?.value ??
+        props.taxTreatments[0]?.value ??
+        ''
+    );
+}
+
+function applyTaxTreatment(line: QuoteLineInput, value: string): void {
+    const treatment = props.taxTreatments.find(
+        (candidate) => candidate.value === value,
+    );
+
+    if (treatment === undefined) {
+        return;
+    }
+
+    line.tax_type = treatment.type;
+    line.tax_code = treatment.code;
+    line.tax_percentage = treatment.percentage;
+    line.tax_exemption_code = treatment.exemption_code;
+}
+
 function addLine(): void {
     form.lines.push(emptyLine());
 }
@@ -198,30 +262,97 @@ function removeLine(index: number): void {
     }
 }
 
-/** Mirrors the server's integer arithmetic so the shown total is the saved one. */
-function lineGross(line: QuoteLineInput): number {
-    const quantity = Math.round(Number(line.quantity || '0') * 1000);
-    const unitPrice = Math.round(Number(line.unit_price || '0') * 100);
-    const discount = Math.round(Number(line.discount_rate || '0') * 100);
-
-    const base = Math.trunc((quantity * unitPrice) / 1000);
-    const net = base - Math.trunc((base * discount) / 10_000);
-    const taxBasisPoints = Math.round(Number(line.tax_percentage || '0') * 100);
-
-    return Math.max(0, net + Math.trunc((net * taxBasisPoints) / 10_000));
+interface QuoteLineAmounts {
+    base: bigint;
+    discount: bigint;
+    net: bigint;
+    tax: bigint;
+    gross: bigint;
 }
 
-const grandTotal = computed(() =>
-    form.lines.reduce((total, line) => total + lineGross(line), 0),
+function parseScaled(value: string, scale: number): bigint | null {
+    const match = value
+        .trim()
+        .replace(',', '.')
+        .match(/^(0|[1-9]\d*)(?:\.(\d+))?$/);
+
+    if (match === null || (match[2]?.length ?? 0) > scale) {
+        return null;
+    }
+
+    const fraction = (match[2] ?? '').padEnd(scale, '0');
+
+    return BigInt(match[1]) * 10n ** BigInt(scale) + BigInt(fraction || '0');
+}
+
+function roundHalfUp(numerator: bigint, denominator: bigint): bigint {
+    return (numerator + denominator / 2n) / denominator;
+}
+
+function roundUp(numerator: bigint, denominator: bigint): bigint {
+    return numerator === 0n ? 0n : (numerator + denominator - 1n) / denominator;
+}
+
+/** Mirrors the server's integer arithmetic so every shown total is the saved one. */
+function lineAmounts(line: QuoteLineInput): QuoteLineAmounts {
+    const quantity = parseScaled(line.quantity || '0', 4) ?? 0n;
+    const unitPrice = parseScaled(line.unit_price || '0', 2) ?? 0n;
+    const discountRate = parseScaled(line.discount_rate || '0', 2) ?? 0n;
+    const taxBasisPoints = parseScaled(line.tax_percentage || '0', 2) ?? 0n;
+    const boundedDiscount = discountRate > 10_000n ? 10_000n : discountRate;
+    const base = roundHalfUp(unitPrice * quantity, 10_000n);
+    const net = roundHalfUp(
+        unitPrice * (10_000n - boundedDiscount) * quantity,
+        100_000_000n,
+    );
+    const discount = base - net;
+    const tax = roundUp(net * taxBasisPoints, 10_000n);
+
+    return {
+        base,
+        discount,
+        net,
+        tax,
+        gross: net + tax,
+    };
+}
+
+const quoteTotals = computed(() =>
+    form.lines.reduce(
+        (total, line) => {
+            const amounts = lineAmounts(line);
+
+            return {
+                base: total.base + amounts.base,
+                discount: total.discount + amounts.discount,
+                net: total.net + amounts.net,
+                tax: total.tax + amounts.tax,
+                gross: total.gross + amounts.gross,
+            };
+        },
+        { base: 0n, discount: 0n, net: 0n, tax: 0n, gross: 0n },
+    ),
 );
 
-const moneyFormatter = new Intl.NumberFormat('pt-AO', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+const integerFormatter = new Intl.NumberFormat('pt-AO', {
+    maximumFractionDigits: 0,
 });
+const decimalSeparator =
+    new Intl.NumberFormat('pt-AO')
+        .formatToParts(1.1)
+        .find((part) => part.type === 'decimal')?.value ?? ',';
 
-function money(minor: number): string {
-    return `${moneyFormatter.format(minor / 100)} ${props.currencyCode}`;
+function money(minor: bigint): string {
+    const whole = minor / 100n;
+    const fraction = (minor % 100n).toString().padStart(2, '0');
+
+    return `${integerFormatter.format(whole)}${decimalSeparator}${fraction} ${props.currencyCode}`;
+}
+
+function lineError(index: number, field: string): string | undefined {
+    return (form.errors as Record<string, string>)[
+        'lines.' + index + '.' + field
+    ];
 }
 
 function submit(): void {
@@ -494,14 +625,16 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                     :key="index"
                                     class="grid gap-4 p-5 sm:grid-cols-12"
                                 >
-                                    <div class="sm:col-span-5">
+                                    <div class="sm:col-span-12 lg:col-span-4">
                                         <label
                                             class="block text-xs font-medium text-zinc-500 dark:text-zinc-400"
                                             >Artigo</label
                                         >
                                         <div class="mt-1.5">
                                             <SelectInput
-                                                :model-value="''"
+                                                :model-value="
+                                                    catalogueItemValue(line)
+                                                "
                                                 :options="catalogueOptions"
                                                 @update:model-value="
                                                     (value) =>
@@ -527,7 +660,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                         />
                                     </div>
 
-                                    <div class="sm:col-span-2">
+                                    <div class="sm:col-span-3 lg:col-span-1">
                                         <label
                                             class="block text-xs font-medium text-zinc-500 dark:text-zinc-400"
                                             >Quantidade</label
@@ -538,9 +671,14 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                             inputmode="decimal"
                                             class="mt-1.5 w-full rounded-xl border-0 bg-white px-3 py-2.5 numeric text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring ring-inset dark:bg-white/5 dark:text-white dark:ring-white/10"
                                         />
+                                        <FormError
+                                            :message="
+                                                lineError(index, 'quantity')
+                                            "
+                                        />
                                     </div>
 
-                                    <div class="sm:col-span-2">
+                                    <div class="sm:col-span-3 lg:col-span-2">
                                         <label
                                             class="block text-xs font-medium text-zinc-500 dark:text-zinc-400"
                                             >Preço</label
@@ -551,31 +689,98 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                             inputmode="decimal"
                                             class="mt-1.5 w-full rounded-xl border-0 bg-white px-3 py-2.5 numeric text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring ring-inset dark:bg-white/5 dark:text-white dark:ring-white/10"
                                         />
+                                        <FormError
+                                            :message="
+                                                lineError(index, 'unit_price')
+                                            "
+                                        />
                                     </div>
 
-                                    <div class="sm:col-span-2">
+                                    <div class="sm:col-span-3 lg:col-span-1">
                                         <label
                                             class="block text-xs font-medium text-zinc-500 dark:text-zinc-400"
-                                            >IVA %</label
+                                            >Desconto %</label
                                         >
                                         <input
-                                            v-model="line.tax_percentage"
+                                            v-model="line.discount_rate"
                                             type="text"
                                             inputmode="decimal"
                                             class="mt-1.5 w-full rounded-xl border-0 bg-white px-3 py-2.5 numeric text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring ring-inset dark:bg-white/5 dark:text-white dark:ring-white/10"
                                         />
+                                        <FormError
+                                            :message="
+                                                lineError(
+                                                    index,
+                                                    'discount_rate',
+                                                )
+                                            "
+                                        />
+                                    </div>
+
+                                    <div class="sm:col-span-6 lg:col-span-2">
+                                        <label
+                                            class="block text-xs font-medium text-zinc-500 dark:text-zinc-400"
+                                            >Tratamento fiscal</label
+                                        >
+                                        <div class="mt-1.5">
+                                            <SelectInput
+                                                :model-value="
+                                                    taxTreatmentValue(line)
+                                                "
+                                                :options="taxTreatmentOptions"
+                                                @update:model-value="
+                                                    (value) =>
+                                                        applyTaxTreatment(
+                                                            line,
+                                                            String(value),
+                                                        )
+                                                "
+                                            />
+                                        </div>
+                                        <FormError
+                                            :message="
+                                                lineError(
+                                                    index,
+                                                    'tax_percentage',
+                                                )
+                                            "
+                                        />
                                     </div>
 
                                     <div
-                                        class="flex items-end justify-between gap-2 sm:col-span-1"
+                                        class="flex items-end justify-between gap-3 sm:col-span-12 lg:col-span-2"
                                     >
-                                        <span
-                                            class="numeric text-sm font-medium text-zinc-950 dark:text-white"
-                                            >{{ money(lineGross(line)) }}</span
-                                        >
+                                        <div>
+                                            <span
+                                                class="block text-xs text-zinc-500 dark:text-zinc-400"
+                                                >Total</span
+                                            >
+                                            <span
+                                                class="numeric text-sm font-semibold text-zinc-950 dark:text-white"
+                                                >{{
+                                                    money(
+                                                        lineAmounts(line).gross,
+                                                    )
+                                                }}</span
+                                            >
+                                            <span
+                                                v-if="
+                                                    lineAmounts(line).discount >
+                                                    0n
+                                                "
+                                                class="mt-1 block numeric text-xs text-emerald-700 dark:text-emerald-300"
+                                            >
+                                                −{{
+                                                    money(
+                                                        lineAmounts(line)
+                                                            .discount,
+                                                    )
+                                                }}
+                                            </span>
+                                        </div>
                                         <button
                                             type="button"
-                                            class="rounded-lg p-2 text-zinc-400 focus-ring transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-400/10 dark:hover:text-rose-400"
+                                            class="icon-button text-zinc-400 focus-ring transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-400/10 dark:hover:text-rose-400"
                                             @click="removeLine(index)"
                                         >
                                             <span class="sr-only"
@@ -591,16 +796,72 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                             </ul>
 
                             <div
-                                class="flex items-center justify-between border-t border-zinc-100 p-5 dark:border-white/10"
+                                class="flex justify-end border-t border-zinc-100 bg-stone-50/70 p-5 dark:border-white/10 dark:bg-white/[0.02]"
                             >
-                                <span
-                                    class="text-sm text-zinc-500 dark:text-zinc-400"
-                                    >Total do orçamento</span
-                                >
-                                <span
-                                    class="numeric text-xl font-semibold text-zinc-950 dark:text-white"
-                                    >{{ money(grandTotal) }}</span
-                                >
+                                <dl class="w-full max-w-sm space-y-2 text-sm">
+                                    <div class="flex justify-between gap-6">
+                                        <dt
+                                            class="text-zinc-500 dark:text-zinc-400"
+                                        >
+                                            Subtotal
+                                        </dt>
+                                        <dd
+                                            class="numeric text-zinc-700 dark:text-zinc-200"
+                                        >
+                                            {{ money(quoteTotals.base) }}
+                                        </dd>
+                                    </div>
+                                    <div class="flex justify-between gap-6">
+                                        <dt
+                                            class="text-zinc-500 dark:text-zinc-400"
+                                        >
+                                            Descontos
+                                        </dt>
+                                        <dd
+                                            class="numeric text-emerald-700 dark:text-emerald-300"
+                                        >
+                                            −{{ money(quoteTotals.discount) }}
+                                        </dd>
+                                    </div>
+                                    <div class="flex justify-between gap-6">
+                                        <dt
+                                            class="text-zinc-500 dark:text-zinc-400"
+                                        >
+                                            Líquido
+                                        </dt>
+                                        <dd
+                                            class="numeric text-zinc-700 dark:text-zinc-200"
+                                        >
+                                            {{ money(quoteTotals.net) }}
+                                        </dd>
+                                    </div>
+                                    <div class="flex justify-between gap-6">
+                                        <dt
+                                            class="text-zinc-500 dark:text-zinc-400"
+                                        >
+                                            IVA
+                                        </dt>
+                                        <dd
+                                            class="numeric text-zinc-700 dark:text-zinc-200"
+                                        >
+                                            {{ money(quoteTotals.tax) }}
+                                        </dd>
+                                    </div>
+                                    <div
+                                        class="flex justify-between gap-6 border-t border-zinc-200 pt-3 dark:border-white/10"
+                                    >
+                                        <dt
+                                            class="font-semibold text-zinc-950 dark:text-white"
+                                        >
+                                            Total do orçamento
+                                        </dt>
+                                        <dd
+                                            class="numeric text-xl font-semibold text-zinc-950 dark:text-white"
+                                        >
+                                            {{ money(quoteTotals.gross) }}
+                                        </dd>
+                                    </div>
+                                </dl>
                             </div>
                         </section>
 

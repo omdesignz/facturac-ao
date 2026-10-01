@@ -388,6 +388,140 @@ test('series synchronization applies the AGT contract without ever rewinding the
     });
 });
 
+test('a protected series request uses the AGT contract and imports the authorization', function () {
+    $company = phaseFourState();
+    $year = (int) now('Africa/Luanda')->format('Y');
+    Http::preventStrayRequests();
+    Http::fake([
+        'https://sifphml.minfin.gov.ao/sigt/fe/v1/solicitarSerie' => Http::response([
+            'resultCode' => 1,
+            'errorList' => [],
+            'seriesFEResult' => [
+                'seriesCode' => 'FR26HML',
+                'authorizedQuantity' => '750',
+                'firstDocumentNo' => '1',
+                'lastDocumentNo' => '750',
+            ],
+        ]),
+        'https://sifphml.minfin.gov.ao/sigt/fe/v1/listarSeries' => Http::response([
+            'resultCode' => '0',
+            'errorList' => [],
+            'seriesResultCount' => 1,
+            'seriesInfo' => [[
+                'seriesCode' => 'FR26HML',
+                'seriesYear' => $year,
+                'documentType' => 'FR',
+                'seriesStatus' => 'A',
+                'seriesCreationDate' => now('Africa/Luanda')->toDateString(),
+                'firstDocumentApproved' => 'FR FR26HML/1',
+                'lastDocumentApproved' => 'FR FR26HML/750',
+                'firstDocumentCreated' => null,
+                'lastDocumentCreated' => null,
+                'invoicingMethod' => 'FESF',
+                'seriesContingencyIndicator' => 'N',
+            ]],
+        ]),
+    ]);
+
+    $this->actingAs($company['user'])
+        ->withSession(phaseFourPasswordSession())
+        ->from(route('agt.connection.show'))
+        ->post(route('agt.series.store'), [
+            'document_type' => FiscalDocumentType::InvoiceReceipt->value,
+            'series_year' => $year,
+        ])
+        ->assertRedirect(route('agt.connection.show'))
+        ->assertSessionHasNoErrors()
+        ->assertSessionHas('success');
+
+    $series = FiscalSeries::query()
+        ->where('legal_entity_id', $company['legal_entity']->id)
+        ->where('series_code', 'FR26HML')
+        ->firstOrFail();
+    $requestCheck = AgtConnectionCheck::query()
+        ->where('operation', AgtOperation::RequestSeries)
+        ->firstOrFail();
+
+    expect($series->document_type)->toBe(FiscalDocumentType::InvoiceReceipt)
+        ->and($series->series_year)->toBe($year)
+        ->and($series->next_number)->toBe(1)
+        ->and($series->last_authorized_number)->toBe(750)
+        ->and($requestCheck->status)->toBe(AgtConnectionCheckStatus::Passed)
+        ->and($requestCheck->request_body_sha256)->toHaveLength(64)
+        ->and($requestCheck->response_body_sha256)->toHaveLength(64)
+        ->and(AgtConnectionCheck::query()->where('operation', AgtOperation::SyncSeries)->exists())
+        ->toBeTrue();
+
+    Http::assertSent(function (Request $request) use ($year): bool {
+        if ($request->url() !== 'https://sifphml.minfin.gov.ao/sigt/fe/v1/solicitarSerie') {
+            return false;
+        }
+
+        $payload = json_decode($request->body(), true);
+
+        return is_array($payload)
+            && $payload['schemaVersion'] === '1.2'
+            && $payload['taxRegistrationNumber'] === '5000000001'
+            && $payload['seriesYear'] === (string) $year
+            && $payload['documentType'] === 'FR'
+            && $payload['establishmentNumber'] === 'AO-LAD-001'
+            && $payload['seriesContingencyIndicator'] === 'N'
+            && decodePhaseFourJwsPayload((string) $payload['jwsSignature']) == [
+                'taxRegistrationNumber' => '5000000001',
+                'seriesYear' => (string) $year,
+                'documentType' => 'FR',
+                'establishmentNumber' => 'AO-LAD-001',
+                'seriesContingencyIndicator' => 'N',
+            ];
+    });
+    Http::assertSentCount(2);
+});
+
+test('a series cannot be requested outside the current AGT year window', function () {
+    $company = phaseFourState();
+    Http::preventStrayRequests();
+
+    $this->actingAs($company['user'])
+        ->withSession(phaseFourPasswordSession())
+        ->post(route('agt.series.store'), [
+            'document_type' => FiscalDocumentType::Invoice->value,
+            'series_year' => (int) now('Africa/Luanda')->format('Y') + 2,
+        ])
+        ->assertSessionHasErrors('series_year');
+
+    Http::assertNothingSent();
+});
+
+test('the status response keeps document errors using the current errorCode field', function () {
+    $company = phaseFourState();
+    Http::preventStrayRequests();
+    Http::fake([
+        'https://sifphml.minfin.gov.ao/sigt/fe/v1/obterEstado' => Http::response([
+            'resultCode' => '2',
+            'requestErrorList' => [],
+            'documentStatusList' => [[
+                'documentNo' => 'FT FT26HML/100',
+                'documentStatus' => 'I',
+                'errorList' => [[
+                    'errorCode' => 'E21',
+                    'errorDescription' => 'Valor da linha incompatível.',
+                ]],
+            ]],
+        ]),
+    ]);
+
+    $result = app(AgtGateway::class)->queryInvoiceStatus(
+        $company['connection'],
+        $company['legal_entity'],
+        '123456789012345',
+    );
+
+    expect($result->successful)->toBeTrue()
+        ->and($result->documents)->toHaveCount(1)
+        ->and($result->documents[0]->status)->toBe('I')
+        ->and($result->documents[0]->errorCodes)->toBe(['E21']);
+});
+
 test('the durable outbox reuses frozen bytes and records receipt validation and append-only evidence', function () {
     $company = phaseFourState();
     Queue::fake();

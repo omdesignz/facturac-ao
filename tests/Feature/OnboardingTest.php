@@ -54,6 +54,23 @@ test('an owner persists a normalized company and head office atomically', functi
         ->exists())->toBeTrue();
 });
 
+test('the AGT homologation NIF is accepted without losing its alphanumeric suffix', function () {
+    $user = User::factory()->withWorkspace('Homologação AGT')->create();
+    $workspace = $user->currentWorkspace()->firstOrFail();
+
+    $this->actingAs($user)
+        ->put(route('onboarding.update'), validCompanyProfile([
+            'legal_name' => 'Pedro Fernandes Kiculo',
+            'trade_name' => null,
+            'tax_identification_number' => '003043408LA033',
+        ]))
+        ->assertSessionHasNoErrors()
+        ->assertRedirect(route('onboarding'));
+
+    expect($workspace->legalEntities()->firstOrFail()->tax_identification_number)
+        ->toBe('003043408LA033');
+});
+
 test('a viewer can inspect but cannot alter the company profile', function () {
     $owner = User::factory()->withWorkspace()->create();
     $workspace = $owner->currentWorkspace()->firstOrFail();

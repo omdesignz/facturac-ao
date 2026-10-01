@@ -116,9 +116,9 @@ function decodeEntities(label: string): string {
                         <p
                             class="mt-2 max-w-2xl text-sm/6 text-zinc-600 dark:text-zinc-400"
                         >
-                            Uma proposta não é um documento fiscal: fica
-                            editável, não leva série e só chega à AGT quando a
-                            transformar em factura.
+                            Uma proposta não é uma factura: o rascunho fica
+                            editável e congela quando o enviar. O SAF-T regista
+                            o orçamento como documento de trabalho.
                         </p>
                     </div>
 

@@ -82,6 +82,12 @@ class Establishment extends Model
         return $this->hasMany(FiscalDocument::class);
     }
 
+    /** @return HasMany<TransportDocument, $this> */
+    public function transportDocuments(): HasMany
+    {
+        return $this->hasMany(TransportDocument::class);
+    }
+
     /** @return HasMany<Quote, $this> */
     public function quotes(): HasMany
     {
@@ -129,6 +135,7 @@ class Establishment extends Model
     public function isReferenced(): bool
     {
         return $this->fiscalDocuments()->exists()
+            || $this->transportDocuments()->exists()
             || $this->fiscalSeries()->exists()
             || $this->quotes()->exists()
             || $this->recurringInvoices()->exists()

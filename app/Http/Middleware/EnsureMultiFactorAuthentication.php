@@ -20,7 +20,7 @@ class EnsureMultiFactorAuthentication
         if ($user === null || ! $user->hasEnabledTwoFactorAuthentication()) {
             return redirect()
                 ->route('settings.security')
-                ->with('error', 'Active a autenticação multifactor antes de gerir a ligação à AGT.');
+                ->with('error', 'Active a autenticação multifactor antes de confirmar esta operação sensível.');
         }
 
         return $next($request);

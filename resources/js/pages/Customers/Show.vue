@@ -683,7 +683,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
 
                             <button
                                 type="button"
-                                class="rounded-lg p-2 text-zinc-400 focus-ring transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-400/10 dark:hover:text-rose-400"
+                                class="icon-button text-zinc-400 focus-ring transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-400/10 dark:hover:text-rose-400"
                                 :title="`Remover o preço acordado de ${price.item}`"
                                 @click="removePrice(price.id, price.item)"
                             >

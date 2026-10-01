@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "preferences": {
+    "style_preset.product-launch-video": {
+      "value": "biennale-yellow",
+      "confirmed_in": [
+        "facturac-ao-switch"
+      ],
+      "updated_at": "2026-08-11T18:43:13.979Z"
+    },
+    "destination": {
+      "value": "whatsapp-status",
+      "confirmed_in": [
+        "facturac-ao-switch"
+      ],
+      "updated_at": "2026-08-11T18:43:14.032Z"
+    },
+    "aspect": {
+      "value": "1080x1920",
+      "confirmed_in": [
+        "facturac-ao-switch"
+      ],
+      "updated_at": "2026-08-11T18:43:14.081Z"
+    },
+    "language": {
+      "value": "pt-AO",
+      "confirmed_in": [
+        "facturac-ao-switch"
+      ],
+      "updated_at": "2026-08-11T18:43:14.139Z"
+    },
+    "flow": {
+      "value": "automation",
+      "confirmed_in": [
+        "facturac-ao-switch"
+      ],
+      "updated_at": "2026-08-11T18:43:14.182Z"
+    },
+    "storyboard": {
+      "value": "no",
+      "confirmed_in": [
+        "facturac-ao-switch"
+      ],
+      "updated_at": "2026-08-11T18:43:14.225Z"
+    }
+  },
+  "sightings": {}
+}

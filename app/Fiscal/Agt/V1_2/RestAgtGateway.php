@@ -10,6 +10,7 @@ use App\Fiscal\Agt\Data\AgtProbeResult;
 use App\Fiscal\Agt\Data\AgtRegistrationResult;
 use App\Fiscal\Agt\Data\AgtSeriesData;
 use App\Fiscal\Agt\Data\AgtSeriesListResult;
+use App\Fiscal\Agt\Data\AgtSeriesRequestResult;
 use App\Fiscal\Agt\Exceptions\SigningKeyUnavailable;
 use App\Fiscal\Agt\Support\CanonicalJson;
 use App\FiscalDocumentType;
@@ -86,6 +87,62 @@ final readonly class RestAgtGateway implements AgtGateway
                 $requestHash,
                 $startedAt,
                 'A consulta de séries não pôde ser concluída de forma segura.',
+                'GATEWAY_FAILURE',
+                0,
+            );
+        }
+    }
+
+    public function requestSeries(
+        AgtConnection $connection,
+        LegalEntity $legalEntity,
+        FiscalDocumentType $documentType,
+        int $seriesYear,
+        FiscalSeriesContingency $contingency,
+        string $submissionUuid,
+    ): AgtSeriesRequestResult {
+        $endpointPath = AgtOperation::RequestSeries->endpointPath();
+        $startedAt = hrtime(true);
+        $requestHash = null;
+
+        try {
+            $requestBody = $this->payloadBuilder->requestSeries(
+                $connection,
+                $legalEntity,
+                $documentType,
+                $seriesYear,
+                $contingency,
+                $submissionUuid,
+                now('UTC'),
+            );
+            $encodedBody = $this->canonicalJson->encode($requestBody);
+            $requestHash = hash('sha256', $encodedBody);
+            $response = $this->post($connection, $endpointPath, $encodedBody);
+
+            return $this->seriesRequestResult($response, $endpointPath, $requestHash, $startedAt);
+        } catch (SigningKeyUnavailable $exception) {
+            return $this->failedSeriesRequestResult(
+                $endpointPath,
+                $requestHash,
+                $startedAt,
+                $exception->getMessage(),
+                'SIGNING_KEY_UNAVAILABLE',
+                0,
+            );
+        } catch (ConnectionException) {
+            return $this->failedSeriesRequestResult(
+                $endpointPath,
+                $requestHash,
+                $startedAt,
+                'Não foi possível confirmar se a AGT criou a série. Sincronize as séries antes de repetir o pedido.',
+                'AGT_SERIES_REQUEST_UNCERTAIN',
+            );
+        } catch (Throwable) {
+            return $this->failedSeriesRequestResult(
+                $endpointPath,
+                $requestHash,
+                $startedAt,
+                'O pedido de série não pôde ser concluído de forma segura.',
                 'GATEWAY_FAILURE',
                 0,
             );
@@ -270,6 +327,53 @@ final readonly class RestAgtGateway implements AgtGateway
         );
     }
 
+    private function seriesRequestResult(
+        Response $response,
+        string $endpointPath,
+        string $requestHash,
+        int $startedAt,
+    ): AgtSeriesRequestResult {
+        $responseBody = $response->body();
+        $payload = $this->payload($response);
+        $resultCode = $this->normalizedCode($payload['resultCode'] ?? null);
+        $errorCodes = $this->errorCodes($payload['errorList'] ?? null);
+        $rawSeries = data_get($payload, 'seriesFEResult');
+        $seriesCode = is_array($rawSeries) ? $this->seriesCode($rawSeries['seriesCode'] ?? null) : null;
+        $authorizedQuantity = is_array($rawSeries)
+            ? $this->positiveInteger($rawSeries['authorizedQuantity'] ?? null)
+            : null;
+        $firstDocumentNumber = is_array($rawSeries)
+            ? $this->documentNumber($rawSeries['firstDocumentNo'] ?? null)
+            : null;
+        $lastDocumentNumber = is_array($rawSeries)
+            ? $this->documentNumber($rawSeries['lastDocumentNo'] ?? null)
+            : null;
+        $contractValid = in_array($resultCode, ['0', '1'], true)
+            && $seriesCode !== null
+            && $authorizedQuantity !== null
+            && $firstDocumentNumber !== null
+            && $lastDocumentNumber !== null;
+        $successful = $response->successful() && $errorCodes === [] && $contractValid;
+
+        return new AgtSeriesRequestResult(
+            successful: $successful,
+            endpoint: $endpointPath,
+            httpStatus: $response->status(),
+            requestBodySha256: $requestHash,
+            responseBodySha256: hash('sha256', $responseBody),
+            resultCode: $resultCode,
+            errorCodes: $successful ? [] : ($errorCodes !== [] ? $errorCodes : ['AGT_SERIES_CONTRACT_INVALID']),
+            seriesCode: $successful ? $seriesCode : null,
+            authorizedQuantity: $successful ? $authorizedQuantity : null,
+            firstDocumentNumber: $successful ? $firstDocumentNumber : null,
+            lastDocumentNumber: $successful ? $lastDocumentNumber : null,
+            safeMessage: $successful
+                ? "Série {$seriesCode} autorizada pela AGT com {$authorizedQuantity} número(s)."
+                : $this->safeResponseMessage($response, $errorCodes, 'solicitação de série'),
+            durationMs: $this->durationMs($startedAt),
+        );
+    }
+
     /**
      * @param  list<mixed>  $rawSeries
      * @return list<AgtSeriesData>
@@ -385,7 +489,12 @@ final readonly class RestAgtGateway implements AgtGateway
                 continue;
             }
 
-            $code = $this->normalizedCode($error['idError'] ?? $error['code'] ?? null);
+            $code = $this->normalizedCode(
+                $error['idError']
+                    ?? $error['errorCode']
+                    ?? $error['code']
+                    ?? null,
+            );
 
             if ($code !== null) {
                 $codes[] = $code;
@@ -529,6 +638,32 @@ final readonly class RestAgtGateway implements AgtGateway
             resultCode: null,
             errorCodes: [$errorCode],
             series: [],
+            safeMessage: $message,
+            durationMs: $this->durationMs($startedAt),
+            attemptCount: $attemptCount,
+        );
+    }
+
+    private function failedSeriesRequestResult(
+        string $endpointPath,
+        ?string $requestHash,
+        int $startedAt,
+        string $message,
+        string $errorCode,
+        int $attemptCount = 1,
+    ): AgtSeriesRequestResult {
+        return new AgtSeriesRequestResult(
+            successful: false,
+            endpoint: $endpointPath,
+            httpStatus: null,
+            requestBodySha256: $requestHash,
+            responseBodySha256: null,
+            resultCode: null,
+            errorCodes: [$errorCode],
+            seriesCode: null,
+            authorizedQuantity: null,
+            firstDocumentNumber: null,
+            lastDocumentNumber: null,
             safeMessage: $message,
             durationMs: $this->durationMs($startedAt),
             attemptCount: $attemptCount,

@@ -1,0 +1,120 @@
+<template>
+  <style>
+    @font-face { font-family:"PlexSans"; font-weight:400; font-display:block; src:url("assets/fonts/plex-sans-400.woff2") format("woff2"); }
+    @font-face { font-family:"PlexSans"; font-weight:600; font-display:block; src:url("assets/fonts/plex-sans-600.woff2") format("woff2"); }
+    @font-face { font-family:"PlexSans"; font-weight:700; font-display:block; src:url("assets/fonts/plex-sans-700.woff2") format("woff2"); }
+    @font-face { font-family:"PlexMono"; font-weight:400; font-display:block; src:url("assets/fonts/plex-mono-400.woff2") format("woff2"); }
+    @font-face { font-family:"PlexMono"; font-weight:600; font-display:block; src:url("assets/fonts/plex-mono-600.woff2") format("woff2"); }
+
+    #root { position:absolute; inset:0; width:1080px; height:1920px; overflow:hidden;
+            font-family:"PlexSans",sans-serif; color:#232322; }
+    .f1-ground { position:absolute; inset:0; background:#faf9f6; }
+    .f1-stage  { position:absolute; inset:0; }
+
+    .f1-label { position:absolute; left:96px; top:250px; font-size:26px; font-weight:600;
+                letter-spacing:0.18em; text-transform:uppercase; color:rgba(35,35,34,0.55); }
+
+    /* What they already have. Every card is a real document with a customer and
+       a value on it, because the thing that makes switching frightening is not
+       an abstraction — it is this pile, and the years of work inside it. */
+    .f1-stack { position:absolute; left:0; top:0; width:1080px; height:1920px;
+                transform-origin:540px 900px; }
+    .f1-card  { position:absolute; width:640px; height:152px; background:#ffffff;
+                border:2px solid rgba(35,35,34,0.13); padding:20px 28px;
+                box-shadow:0 10px 26px rgba(35,35,34,0.07); }
+    .f1-kind  { font-family:"PlexMono",monospace; font-size:19px; font-weight:600;
+                letter-spacing:0.1em; color:rgba(35,35,34,0.45); }
+    .f1-no    { font-family:"PlexMono",monospace; font-size:31px; font-weight:600;
+                margin-top:5px; }
+    .f1-foot  { display:flex; align-items:baseline; justify-content:space-between;
+                margin-top:4px; }
+    .f1-who   { font-size:25px; color:rgba(35,35,34,0.7); }
+    .f1-amt   { font-family:"PlexMono",monospace; font-size:25px; }
+
+    /* The one word that stays after the sentence has passed. */
+    .f1-word { position:absolute; left:96px; top:1400px; font-size:250px; font-weight:700;
+               line-height:0.9; letter-spacing:-0.045em; }
+  </style>
+
+  <div id="root" data-composition-id="01-mete-medo" data-width="1080" data-height="1920">
+    <div id="frame-01-ground" class="clip f1-ground" data-start="0" data-duration="5.328" data-track-index="0"></div>
+    <div id="frame-01-stage" class="clip f1-stage" data-start="0" data-duration="5.328" data-track-index="1">
+      <div class="f1-label">Para quem já factura</div>
+
+      <div class="f1-stack">
+        <div class="f1-card" style="left:222px; top:430px;">
+          <div class="f1-kind">FACTURA · Padaria Cazenga</div>
+          <div class="f1-foot"><div class="f1-no">FT 2024/0417</div><div class="f1-amt">36 900,00</div></div>
+        </div>
+        <div class="f1-card" style="left:226px; top:546px;">
+          <div class="f1-kind">FACTURA · Farmácia Talatona</div>
+          <div class="f1-foot"><div class="f1-no">FT 2024/0918</div><div class="f1-amt">128 400,00</div></div>
+        </div>
+        <div class="f1-card" style="left:230px; top:662px;">
+          <div class="f1-kind">RECIBO · Mercearia Kilamba</div>
+          <div class="f1-foot"><div class="f1-no">RC 2025/0233</div><div class="f1-amt">84 500,00</div></div>
+        </div>
+        <div class="f1-card" style="left:234px; top:778px;">
+          <div class="f1-kind">FACTURA · Auto Peças Benguela</div>
+          <div class="f1-foot"><div class="f1-no">FT 2025/1104</div><div class="f1-amt">57 250,00</div></div>
+        </div>
+        <div class="f1-card" style="left:238px; top:894px;">
+          <div class="f1-kind">FACTURA · Construções Namibe</div>
+          <div class="f1-foot"><div class="f1-no">FT 2025/1642</div><div class="f1-amt">412 000,00</div></div>
+        </div>
+        <div class="f1-card" style="left:242px; top:1010px;">
+          <div class="f1-kind">NOTA DE CRÉDITO · Clínica Maianga</div>
+          <div class="f1-foot"><div class="f1-no">NC 2026/0071</div><div class="f1-amt">19 800,00</div></div>
+        </div>
+        <div class="f1-card" style="left:246px; top:1126px;">
+          <div class="f1-kind">FACTURA-RECIBO · Mercearia Kilamba</div>
+          <div class="f1-foot"><div class="f1-no">FR 2026/1847</div><div class="f1-amt">139 080,00</div></div>
+        </div>
+      </div>
+
+      <div class="f1-word">MEDO</div>
+    </div>
+  </div>
+
+  <script>
+    window.__timelines = window.__timelines || {};
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      const q = (s) => document.querySelectorAll(s);
+      const one = (s) => document.querySelector(s);
+
+      /* Each card rests at its own slight angle — a real pile, not a diagram.
+         Hard-coded so the frame renders identically every time. */
+      const REST = [-0.8, 0.55, -0.45, 0.7, -0.55, 0.35, -0.15];
+
+      tl.fromTo(one("#root .f1-label"), { opacity: 0, y: 22 },
+        { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.15);
+
+      /* "…já paga por um programa de facturação." The pile builds while the
+         sentence runs: one document, then another, then years of them. */
+      q("#root .f1-card").forEach(function (card, i) {
+        tl.fromTo(card,
+          { opacity: 0, y: 52, rotation: 0, scale: 0.985 },
+          { opacity: 1, y: 0, rotation: REST[i], scale: 1,
+            duration: 0.44, ease: "power3.out" },
+          0.91 + i * 0.2);
+      });
+
+      /* "E mudar?" The pile shifts under the question and does not settle back
+         square — the doubt stays in the frame. */
+      tl.to(one("#root .f1-stack"),
+        { rotation: 2.2, y: -16, duration: 0.55, ease: "power2.inOut" }, 2.89);
+      tl.to(one("#root .f1-stack"),
+        { rotation: 1.6, y: -8, duration: 0.8, ease: "power1.out" }, 3.5);
+
+      /* "…mudar mete medo." The word lands on it, heavy, and stays. */
+      tl.fromTo(one("#root .f1-word"), { opacity: 0, y: 74, scale: 1.07 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "power4.out" }, 4.09);
+
+      tl.fromTo(one("#root .f1-stage"), { scale: 1 },
+        { scale: 1.02, duration: 5.328, ease: "none" }, 0);
+
+      window.__timelines["01-mete-medo"] = tl;
+    })();
+  </script>
+</template>

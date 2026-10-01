@@ -5,6 +5,7 @@ use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
 use App\Models\Establishment;
 use App\Models\FiscalDocument;
+use App\Models\FiscalDocumentLine;
 use App\Models\LegalEntity;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -176,7 +177,7 @@ test('the create screen can be opened directly as a credit note', function () {
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->where('document.document_type', 'NC')
-            ->has('documentTypes', 5)
+            ->has('documentTypes', 6)
             ->has('adjustableDocuments', 1)
             ->where('adjustableDocuments.0.document_no', 'FT TESTE/1')
         );
@@ -205,14 +206,25 @@ test('the AGT payload carries the corrected document and reason', function () {
         'references_document_id' => $company['invoice']->id,
         'references_document_no' => 'FT TESTE/1',
         'adjustment_reason' => 'Devolução parcial',
+    ]);
+    FiscalDocumentLine::factory()->create([
+        'workspace_id' => $company['legal_entity']->workspace_id,
+        'legal_entity_id' => $company['legal_entity']->id,
+        'fiscal_document_id' => $note->id,
+    ]);
+    FiscalDocument::withoutEvents(fn () => $note->forceFill([
         'status' => FiscalDocumentStatus::Issued,
         'system_entry_at' => now(),
-    ]);
+    ])->save());
 
     $payload = app(FiscalDocumentPayloadBuilder::class)->document($note->fresh());
 
-    expect($payload['referencingDocumentNo'])->toBe('FT TESTE/1')
-        ->and($payload['adjustmentReason'])->toBe('Devolução parcial')
+    expect($payload['lines'][0]['referenceInfo'])->toBe([
+        'reference' => 'FT TESTE/1',
+        'reason' => 'Devolução parcial',
+    ])
+        ->and($payload['lines'][0])->toHaveKey('creditAmount')
+        ->and($payload['lines'][0])->not->toHaveKey('debitAmount')
         ->and($payload['documentType'])->toBe('NC');
 });
 
@@ -255,5 +267,6 @@ test('an invoice payload is unchanged by the adjustment fields', function () {
     $payload = app(FiscalDocumentPayloadBuilder::class)->document($invoice->fresh());
 
     expect($payload)->not->toHaveKey('referencingDocumentNo')
-        ->and($payload)->not->toHaveKey('adjustmentReason');
+        ->and($payload)->not->toHaveKey('adjustmentReason')
+        ->and($payload['lines'])->toBe([]);
 });

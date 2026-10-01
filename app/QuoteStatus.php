@@ -23,10 +23,10 @@ enum QuoteStatus: string
         };
     }
 
-    /** Still open with the customer, so the total can still change. */
+    /** Only a draft can change; sending creates the SAF-T working-document record. */
     public function isEditable(): bool
     {
-        return in_array($this, [self::Draft, self::Sent], true);
+        return $this === self::Draft;
     }
 
     /**

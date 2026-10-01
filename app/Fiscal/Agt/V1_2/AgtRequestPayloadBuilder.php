@@ -5,6 +5,8 @@ namespace App\Fiscal\Agt\V1_2;
 use App\Fiscal\Agt\Contracts\JwsSigner;
 use App\Fiscal\Agt\Exceptions\SigningKeyUnavailable;
 use App\Fiscal\Documents\V1_2\FiscalDocumentPayloadBuilder;
+use App\FiscalDocumentType;
+use App\FiscalSeriesContingency;
 use App\Models\AgtConnection;
 use App\Models\FiscalDocument;
 use App\Models\LegalEntity;
@@ -90,6 +92,41 @@ final readonly class AgtRequestPayloadBuilder
                 $this->taxpayerKeyReference($connection),
             ),
             'softwareInfo' => $this->softwareInfo($connection),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public function requestSeries(
+        AgtConnection $connection,
+        LegalEntity $legalEntity,
+        FiscalDocumentType $documentType,
+        int $seriesYear,
+        FiscalSeriesContingency $contingency,
+        string $submissionUuid,
+        CarbonInterface $submittedAt,
+    ): array {
+        $signaturePayload = [
+            'taxRegistrationNumber' => (string) $legalEntity->tax_identification_number,
+            'seriesYear' => (string) $seriesYear,
+            'documentType' => $documentType->value,
+            'establishmentNumber' => (string) $connection->establishment_number,
+            'seriesContingencyIndicator' => $contingency->value,
+        ];
+
+        return [
+            'schemaVersion' => $connection->schema_version,
+            'submissionUUID' => $submissionUuid,
+            'taxRegistrationNumber' => (string) $legalEntity->tax_identification_number,
+            'submissionTimeStamp' => $submittedAt->clone()->utc()->format('Y-m-d\TH:i:s\Z'),
+            'softwareInfo' => $this->softwareInfo($connection),
+            'seriesYear' => (string) $seriesYear,
+            'documentType' => $documentType->value,
+            'establishmentNumber' => (string) $connection->establishment_number,
+            'jwsSignature' => $this->jwsSigner->sign(
+                $signaturePayload,
+                $this->taxpayerKeyReference($connection),
+            ),
+            'seriesContingencyIndicator' => $contingency->value,
         ];
     }
 

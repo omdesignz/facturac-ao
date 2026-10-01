@@ -1,0 +1,110 @@
+<template>
+  <style>
+    @font-face { font-family:"PlexSans"; font-weight:400; font-display:block; src:url("assets/fonts/plex-sans-400.woff2") format("woff2"); }
+    @font-face { font-family:"PlexSans"; font-weight:600; font-display:block; src:url("assets/fonts/plex-sans-600.woff2") format("woff2"); }
+    @font-face { font-family:"PlexSans"; font-weight:700; font-display:block; src:url("assets/fonts/plex-sans-700.woff2") format("woff2"); }
+    @font-face { font-family:"PlexMono"; font-weight:400; font-display:block; src:url("assets/fonts/plex-mono-400.woff2") format("woff2"); }
+
+    #root { position:absolute; inset:0; width:1080px; height:1920px; overflow:hidden;
+            font-family:"PlexSans",sans-serif; color:#232322; }
+    .f2-ground { position:absolute; inset:0; background:#faf9f6; }
+    .f2-stage  { position:absolute; inset:0; }
+
+    /* The pile from the frame before, opening into a list. Same objects, same
+       customers — they simply stop being a heap and become something you can
+       read. Nothing new arrives, which is the whole point. */
+    .f2-row  { position:absolute; left:96px; width:888px; height:74px;
+               display:flex; align-items:center; justify-content:space-between;
+               border-bottom:2px solid rgba(35,35,34,0.16);
+               background:#faf9f6; }
+    .f2-name { font-size:44px; font-weight:400; letter-spacing:-0.01em; }
+    .f2-meta { display:flex; align-items:center; gap:22px; }
+    .f2-nif  { font-family:"PlexMono",monospace; font-size:25px;
+               color:rgba(35,35,34,0.45); }
+    .f2-tick { width:26px; height:13px; border-left:5px solid #f9b233;
+               border-bottom:5px solid #f9b233; transform:rotate(-45deg);
+               margin-bottom:7px; }
+
+    .f2-rule { position:absolute; left:96px; top:980px; width:888px; height:8px;
+               background:#f9b233; transform-origin:left center; }
+
+    /* The word that stays, in the same slot the film uses every time. */
+    .f2-word { position:absolute; left:96px; right:96px; top:1080px; font-size:196px;
+               font-weight:700; line-height:0.92; letter-spacing:-0.04em; }
+  </style>
+
+  <div id="root" data-composition-id="02-nao-devia" data-width="1080" data-height="1920">
+    <div id="frame-02-ground" class="clip f2-ground" data-start="0" data-duration="3.66" data-track-index="0"></div>
+    <div id="frame-02-stage" class="clip f2-stage" data-start="0" data-duration="3.66" data-track-index="1">
+      <div class="f2-row" style="top:430px;">
+        <div class="f2-name">Mercearia Kilamba</div>
+        <div class="f2-meta"><div class="f2-nif">5417026183</div><div class="f2-tick"></div></div>
+      </div>
+      <div class="f2-row" style="top:518px;">
+        <div class="f2-name">Auto Peças Benguela</div>
+        <div class="f2-meta"><div class="f2-nif">5401938274</div><div class="f2-tick"></div></div>
+      </div>
+      <div class="f2-row" style="top:606px;">
+        <div class="f2-name">Farmácia Talatona</div>
+        <div class="f2-meta"><div class="f2-nif">5410772095</div><div class="f2-tick"></div></div>
+      </div>
+      <div class="f2-row" style="top:694px;">
+        <div class="f2-name">Padaria Cazenga</div>
+        <div class="f2-meta"><div class="f2-nif">5433810649</div><div class="f2-tick"></div></div>
+      </div>
+      <div class="f2-row" style="top:782px;">
+        <div class="f2-name">Construções Namibe</div>
+        <div class="f2-meta"><div class="f2-nif">5428165530</div><div class="f2-tick"></div></div>
+      </div>
+      <div class="f2-row" style="top:870px;">
+        <div class="f2-name">Clínica Maianga</div>
+        <div class="f2-meta"><div class="f2-nif">5419304728</div><div class="f2-tick"></div></div>
+      </div>
+
+      <div class="f2-rule"></div>
+      <div class="f2-word">CONSIGO</div>
+    </div>
+  </div>
+
+  <script>
+    window.__timelines = window.__timelines || {};
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      const q = (s) => document.querySelectorAll(s);
+      const one = (s) => document.querySelector(s);
+
+      /* Every row starts where the pile was — same place, same tilt — and
+         travels to its own line. The motion is the sentence: nothing is left
+         behind, it just arrives somewhere legible. */
+      const PILE_Y = 650;
+      const TILT = [-1.3, 0.9, -0.7, 1.2, -0.9, 0.6];
+
+      q("#root .f2-row").forEach(function (row, i) {
+        const top = parseFloat(row.style.top);
+        tl.fromTo(row,
+          { opacity: 0, y: (PILE_Y - top) * 0.45, rotation: TILT[i], scale: 0.98 },
+          { opacity: 1, y: 0, rotation: 0, scale: 1,
+            duration: 0.62, ease: "power3.out" },
+          0.5 + i * 0.1);
+      });
+
+      /* Each record confirms itself as it settles. */
+      tl.fromTo(q("#root .f2-tick"), { opacity: 0, scale: 0.4 },
+        { opacity: 1, scale: 1, duration: 0.28, stagger: 0.09, ease: "back.out(2.4)" }, 1.7);
+
+      /* The line they travelled along, drawn under them once they are all in. */
+      tl.fromTo(one("#root .f2-rule"), { scaleX: 0 },
+        { scaleX: 1, duration: 0.62, ease: "power3.out" }, 2.25);
+
+      /* "…vêm consigo." Lands on the word, and the frame cuts while it is still
+         ringing. */
+      tl.fromTo(one("#root .f2-word"), { opacity: 0, y: 64, scale: 1.06 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "power4.out" }, 2.82);
+
+      tl.fromTo(one("#root .f2-stage"), { scale: 1 },
+        { scale: 1.016, duration: 3.66, ease: "none" }, 0);
+
+      window.__timelines["02-nao-devia"] = tl;
+    })();
+  </script>
+</template>

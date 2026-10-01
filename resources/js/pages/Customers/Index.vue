@@ -406,7 +406,7 @@ async function deactivate(customer: Customer): Promise<void> {
                                         >
                                             <button
                                                 type="button"
-                                                class="rounded-lg p-2 text-zinc-500 focus-ring transition hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-white/5 dark:hover:text-white"
+                                                class="icon-button text-zinc-500 focus-ring transition hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-white/5 dark:hover:text-white"
                                                 @click="openEdit(customer)"
                                             >
                                                 <span class="sr-only"
@@ -421,7 +421,7 @@ async function deactivate(customer: Customer): Promise<void> {
                                             <button
                                                 v-if="customer.is_active"
                                                 type="button"
-                                                class="rounded-lg p-2 text-zinc-500 focus-ring transition hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-400/10 dark:hover:text-rose-400"
+                                                class="icon-button text-zinc-500 focus-ring transition hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-400/10 dark:hover:text-rose-400"
                                                 @click="deactivate(customer)"
                                             >
                                                 <span class="sr-only"

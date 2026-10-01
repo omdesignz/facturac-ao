@@ -255,7 +255,7 @@ test('an ordinary invoice still needs no payment details', function () {
         ->assertSessionHasNoErrors();
 });
 
-test('the AGT payload carries payment details and settled documents', function () {
+test('the AGT payload carries a payment receipt with its source documents', function () {
     $company = receiptCompany();
 
     $receipt = FiscalDocument::factory()->create([
@@ -283,9 +283,18 @@ test('the AGT payload carries payment details and settled documents', function (
 
     $payload = app(FiscalDocumentPayloadBuilder::class)->document($receipt->fresh());
 
-    expect($payload['paymentMethod'])->toBe('NU')
-        ->and($payload['settledDocuments'])->toHaveCount(1)
-        ->and($payload['settledDocuments'][0]['documentNo'])->toBe('FT TESTE/1');
+    expect($payload)->not->toHaveKey('lines')
+        ->and($payload)->not->toHaveKey('paymentMethod')
+        ->and($payload['paymentReceipt']['sourceDocuments'])->toHaveCount(1)
+        ->and($payload['paymentReceipt']['sourceDocuments'][0])->toMatchArray([
+            'lineNo' => '1',
+            'sourceDocumentID' => [
+                'originatingON' => 'FT TESTE/1',
+                'documentDate' => $company['invoice']->document_date->toDateString(),
+            ],
+        ])
+        ->and((string) $payload['paymentReceipt']['sourceDocuments'][0]['creditAmount'])
+        ->toBe('1000');
 });
 
 test('a receipt without payment details never reaches the AGT', function () {

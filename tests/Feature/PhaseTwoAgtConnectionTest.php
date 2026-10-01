@@ -124,6 +124,9 @@ test('a workspace member can inspect the connection without receiving secrets', 
             ->where('connection.credential_identity', 'pr••••••••••••er')
             ->missing('connection.basic_auth_username')
             ->missing('connection.basic_auth_password')
+            ->where('seriesRequest.default_document_type', 'FT')
+            ->where('seriesRequest.document_types.0.value', 'FT')
+            ->where('permissions.request_series', false)
             ->where('guardrails.production_enabled', false)
             ->where('guardrails.private_keys_in_database', false));
 });

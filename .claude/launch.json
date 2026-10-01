@@ -1,0 +1,23 @@
+{
+    "version": "0.0.1",
+    "configurations": [
+        {
+            "name": "video",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": [
+                "--prefix",
+                "videos/facturac-ao-switch",
+                "run",
+                "dev"
+            ],
+            "port": 3002
+        },
+        {
+            "name": "app",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "dev"],
+            "port": 5173,
+            "url": "https://vap-invoice.test"
+        }
+    ]
+}

@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<title>facturac.ao — mudar</title>
+<style>
+/*
+ * The switching film.
+ *
+ * The coming-soon piece talks to someone who invoices by hand. This one talks
+ * to someone who already pays for software and is not obviously unhappy — a
+ * harder sell, so the argument is built round the three things that actually
+ * stop people moving: the data they would lose, the numbering they cannot break
+ * and the money they would waste finding out.
+ *
+ * Same engine as coming-soon.html: nothing animates on its own, `frame(t)`
+ * places everything for the millisecond it is given.
+ */
+
+@font-face { font-family:'Plex'; font-weight:400; font-display:block; src:url('/build/assets/ibm-plex-sans-400-normal-CDDApCn2.woff2') format('woff2'); }
+@font-face { font-family:'Plex'; font-weight:600; font-display:block; src:url('/build/assets/ibm-plex-sans-600-normal-CuJfVYMP.woff2') format('woff2'); }
+@font-face { font-family:'Plex'; font-weight:700; font-display:block; src:url('/build/assets/ibm-plex-sans-700-normal-Bxkt5Cjx.woff2') format('woff2'); }
+@font-face { font-family:'PlexMono'; font-weight:400; font-display:block; src:url('/build/assets/ibm-plex-mono-400-normal-DMJ8VG8y.woff2') format('woff2'); }
+@font-face { font-family:'PlexMono'; font-weight:600; font-display:block; src:url('/build/assets/ibm-plex-mono-600-normal-BgSNZQsw.woff2') format('woff2'); }
+
+:root {
+    --paper: #faf9f6;
+    --ink: #171716;
+    --gold: #f9b233;
+    --gold-deep: #b35309;
+    --muted: #6f6f69;
+    --hair: rgba(23, 23, 22, 0.1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+    width: 100%; height: 100%;
+    background: var(--paper);
+    font-family: 'Plex', sans-serif;
+    color: var(--ink);
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+}
+
+#stage { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+
+body { --pad: 9vw; --h1: 8.2vw; --body: 4vw; --small: 3vw; }
+body.square { --pad: 7vw; --h1: 6.2vw; --body: 3.1vw; --small: 2.3vw; }
+
+.scene {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 0 var(--pad);
+    will-change: opacity, transform;
+}
+
+.line { font-weight: 700; font-size: var(--h1); line-height: 1.05; letter-spacing: -0.03em; }
+.word { display: inline-block; will-change: transform, opacity; }
+
+.kicker {
+    font-family: 'PlexMono', monospace; font-weight: 600; font-size: var(--small);
+    letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold-deep);
+}
+
+/* ------------------------------------------------------------- the old way */
+
+#pains { position: absolute; left: var(--pad); right: var(--pad); top: 50%; transform: translateY(-50%); }
+
+.pain {
+    position: relative;
+    font-weight: 600;
+    font-size: 5.4vw;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+    padding: 2.4vw 0;
+    color: var(--ink);
+    will-change: opacity, transform;
+}
+body.square .pain { font-size: 4vw; padding: 1.8vw 0; }
+
+/* The rule that crosses each complaint out when the film turns. */
+.strike {
+    position: absolute;
+    left: 0; top: 52%;
+    height: 0.55vw;
+    width: 100%;
+    background: var(--gold-deep);
+    border-radius: 99vw;
+    transform-origin: left center;
+    will-change: transform;
+}
+body.square .strike { height: 0.42vw; }
+
+/* ------------------------------------------------------------- the answers */
+
+.card {
+    position: absolute;
+    left: var(--pad); right: var(--pad);
+    display: flex; align-items: flex-start; gap: 3.2vw;
+    background: #fff;
+    border-radius: 3vw;
+    padding: 4.4vw;
+    box-shadow: 0 0.3vw 1vw rgba(23,23,22,0.05), 0 3vw 7vw -2.5vw rgba(23,23,22,0.2);
+    will-change: opacity, transform;
+}
+body.square .card { border-radius: 2.2vw; padding: 3.2vw; gap: 2.4vw; }
+
+.card-mark {
+    flex: none; width: 11vw; height: 11vw; border-radius: 2.6vw;
+    background: rgba(249,178,51,0.16);
+    display: grid; place-items: center;
+}
+body.square .card-mark { width: 8vw; height: 8vw; border-radius: 2vw; }
+.card-mark svg { width: 54%; height: 54%; }
+
+.card-title { font-weight: 700; font-size: 4.4vw; letter-spacing: -0.02em; line-height: 1.2; }
+body.square .card-title { font-size: 3.3vw; }
+.card-note { margin-top: 1.1vw; font-size: 3vw; color: var(--muted); line-height: 1.4; }
+body.square .card-note { font-size: 2.2vw; }
+
+/* ------------------------------------------------------------ the document */
+
+#doc {
+    position: absolute; left: 50%; top: 50%;
+    width: 74vw; background: #fff; border-radius: 3.2vw; padding: 5vw;
+    box-shadow: 0 0.3vw 1vw rgba(23,23,22,0.06), 0 4vw 9vw -3vw rgba(23,23,22,0.22);
+    will-change: transform, opacity;
+}
+body.square #doc { width: 56vw; padding: 4vw; border-radius: 2.4vw; }
+
+.doc-kind { font-family:'PlexMono',monospace; font-size:2.3vw; letter-spacing:0.16em; text-transform:uppercase; color:var(--muted); }
+body.square .doc-kind { font-size: 1.8vw; }
+.doc-no { font-family:'PlexMono',monospace; font-weight:600; font-size:3.4vw; margin-top:0.6vw; padding-bottom:2.4vw; border-bottom:1px solid var(--hair); }
+body.square .doc-no { font-size: 2.6vw; }
+.doc-line { display:flex; justify-content:space-between; gap:2vw; font-size:2.8vw; padding:1.4vw 0; color:#454543; will-change:opacity,transform; }
+body.square .doc-line { font-size: 2.1vw; }
+.doc-line .amt { font-family:'PlexMono',monospace; color:var(--ink); }
+.doc-total { display:flex; justify-content:space-between; margin-top:1.8vw; padding-top:2.2vw; border-top:1px solid var(--hair); font-weight:700; font-size:3.6vw; }
+body.square .doc-total { font-size: 2.7vw; }
+.doc-total .amt { font-family:'PlexMono',monospace; }
+#fiscal { display:flex; align-items:center; gap:2.6vw; margin-top:3.2vw; padding:2.6vw; border-radius:1.8vw; background:rgba(249,178,51,0.14); will-change:opacity,transform; }
+#qr { width:11vw; height:11vw; flex:none; background:#fff; border-radius:1vw; padding:0.8vw; }
+body.square #qr { width: 8vw; height: 8vw; }
+.proof-label { font-family:'PlexMono',monospace; font-size:1.7vw; letter-spacing:0.14em; text-transform:uppercase; color:var(--muted); }
+body.square .proof-label { font-size: 1.35vw; }
+.proof-value { font-family:'PlexMono',monospace; font-weight:600; font-size:2.5vw; margin-bottom:1vw; }
+body.square .proof-value { font-size: 1.9vw; }
+
+#seal { position:absolute; right:-4vw; bottom:-4vw; width:22vw; height:22vw; will-change:transform,opacity; }
+body.square #seal { width:16vw; height:16vw; right:-3vw; bottom:-3vw; }
+
+#stamped {
+    position:absolute; left:50%; top:50%; width:max-content;
+    display:flex; align-items:center; gap:1.6vw;
+    padding:1.6vw 3vw; border-radius:99vw;
+    background:var(--ink); color:#fff; font-weight:600; font-size:3vw;
+    will-change:transform,opacity;
+}
+body.square #stamped { font-size: 2.2vw; }
+#stamped .dot { width:1.4vw; height:1.4vw; border-radius:99vw; background:var(--gold); }
+
+/* ------------------------------------------------------------------ outro */
+
+#outro { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2.6vw; }
+#outro-mark { width:24vw; height:24vw; will-change:transform,opacity; }
+body.square #outro-mark { width:18vw; height:18vw; }
+#wordmark { font-weight:700; font-size:9vw; letter-spacing:-0.045em; will-change:opacity,transform; }
+body.square #wordmark { font-size:6.6vw; }
+#soon { font-family:'PlexMono',monospace; font-weight:600; font-size:3.2vw; letter-spacing:0.3em; text-transform:uppercase; color:var(--gold-deep); will-change:opacity,transform; }
+body.square #soon { font-size:2.4vw; }
+#cta {
+    margin-top:1.4vw; padding:2vw 4.6vw; border-radius:99vw;
+    background:var(--ink); color:#fff; font-weight:600; font-size:3.4vw;
+    will-change:opacity,transform;
+}
+body.square #cta { font-size:2.5vw; padding:1.6vw 3.6vw; }
+#rule { position:absolute; left:var(--pad); right:var(--pad); bottom:11vh; height:2px; background:var(--gold); transform-origin:left center; }
+</style>
+</head>
+<body>
+<div id="stage">
+
+    <div class="scene" id="s1">
+        <p class="kicker" id="s1k">Para quem já factura</p>
+        <p class="line" id="s1a" style="margin-top:3vw"></p>
+    </div>
+
+    <div id="pains">
+        <p class="pain" data-i="0">Só funciona naquele computador.<span class="strike"></span></p>
+        <p class="pain" data-i="1">Cada utilizador custa mais.<span class="strike"></span></p>
+        <p class="pain" data-i="2">E os seus dados ficam lá dentro.<span class="strike"></span></p>
+    </div>
+
+    <div class="scene" id="s3">
+        <p class="line" id="s3a"></p>
+    </div>
+
+    <div class="card" id="c0">
+        <span class="card-mark" data-icon="import"></span>
+        <span><span class="card-title">Traga os seus clientes e artigos</span><span class="card-note">Importa do Excel. Não recomeça do zero.</span></span>
+    </div>
+    <div class="card" id="c1">
+        <span class="card-mark" data-icon="hash"></span>
+        <span><span class="card-title">A numeração fica certa</span><span class="card-note">Sem saltos nem repetições, série a série.</span></span>
+    </div>
+    <div class="card" id="c2">
+        <span class="card-mark" data-icon="export"></span>
+        <span><span class="card-title">E sai quando quiser</span><span class="card-note">Exporta tudo num arquivo aberto. Sem pedir licença.</span></span>
+    </div>
+
+    <div id="doc">
+        <p class="doc-kind">Factura-recibo</p>
+        <p class="doc-no">FR LOJA2026/00184</p>
+        <div class="doc-line" data-row="0"><span>Arroz 25 kg · 4 sacos</span><span class="amt">62 000,00</span></div>
+        <div class="doc-line" data-row="1"><span>Óleo alimentar · 12 un</span><span class="amt">38 400,00</span></div>
+        <div class="doc-line" data-row="2"><span>Açúcar 1 kg · 30 un</span><span class="amt">21 600,00</span></div>
+        <div class="doc-total"><span>Total</span><span class="amt">139 080,00 Kz</span></div>
+        <div id="fiscal">
+            <div id="qr">
+                <svg viewBox="0 0 21 21" width="100%" height="100%"><path fill="#171716" d="M0 0h7v7H0zm2 2v3h3V2zM14 0h7v7h-7zm2 2v3h3V2zM0 14h7v7H0zm2 2v3h3v-3zM9 0h2v2H9zm2 2h2v2h-2zM9 4h2v2H9zm4 5h2v2h-2zm-4 0h2v2H9zm-9 0h2v2H0zm4 0h2v2H4zm5 4h2v2H9zm4 0h2v2h-2zm4 0h2v2h-2zm-8 4h2v2H9zm4 0h2v2h-2zm4 0h2v2h-2zm2-4h2v2h-2z"/></svg>
+            </div>
+            <div>
+                <p class="proof-label">Nº de validação</p>
+                <p class="proof-value">4192/AGT/2026</p>
+                <p class="proof-label">Assinatura</p>
+                <p class="proof-value" style="margin-bottom:0">9F2C·A104·7B3E</p>
+            </div>
+        </div>
+        <div id="seal"></div>
+    </div>
+    <div id="stamped"><span class="dot"></span>Comunicada à AGT</div>
+
+    <div id="outro">
+        <div id="outro-mark"></div>
+        <p id="wordmark">facturac<span style="color:var(--gold-deep)">.ao</span></p>
+        <p id="soon">Em breve</p>
+        <p id="cta">Experimente sem cartão</p>
+        <div id="rule"></div>
+    </div>
+</div>
+
+<script>
+const S = (s) => document.querySelector(s);
+const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+const at = (t, start, dur) => clamp01((t - start) / dur);
+const outQuint = (p) => 1 - Math.pow(1 - p, 5);
+const outBack = (p) => { const c = 1.7; return 1 + (c + 1) * Math.pow(p - 1, 3) + c * Math.pow(p - 1, 2); };
+const inQuad = (p) => p * p;
+const vh = (n) => (window.innerHeight * n) / 100;
+const vw = (n) => (window.innerWidth * n) / 100;
+
+function set(el, { o = 1, y = 0, x = 0, s = 1, rot = 0 } = {}) {
+    if (!el) return;
+    el.style.opacity = o;
+    el.style.transform = `translate(${x}px, ${y}px) scale(${s}) rotate(${rot}deg)`;
+}
+
+function words(el, text) {
+    el.innerHTML = text.split(' ').map((w) => `<span class="word">${w}</span>`).join(' ');
+    return [...el.querySelectorAll('.word')];
+}
+
+function line(spans, t, start, { step = 72, dur = 520, out = null } = {}) {
+    const leaving = out === null ? 0 : at(t, out, 320);
+    spans.forEach((span, i) => {
+        const p = outQuint(at(t, start + i * step, dur));
+        set(span, { o: p * (1 - leaving), y: (1 - p) * vh(3.2) - leaving * vh(2) });
+    });
+}
+
+function sealSvg() {
+    return `<svg viewBox="0 0 64 64" width="100%" height="100%" fill="none">
+      <g transform="rotate(-8 32 32)">
+        <circle cx="32" cy="32" r="29" stroke="#F9B233" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="0.4 5.2"/>
+        <circle cx="32" cy="32" r="19.5" stroke="#F9B233" stroke-width="2.6"/>
+        <path class="sealcheck" d="M22 33L29.2 40.2L43.8 22.4" stroke="#171716" stroke-width="5.4"
+              stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="34" stroke-dashoffset="34"/>
+      </g></svg>`;
+}
+
+const ICONS = {
+    import: `<svg viewBox="0 0 24 24" fill="none" stroke="#b35309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 20h16"/></svg>`,
+    hash: `<svg viewBox="0 0 24 24" fill="none" stroke="#b35309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"/></svg>`,
+    export: `<svg viewBox="0 0 24 24" fill="none" stroke="#b35309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V9"/><path d="m7 14 5-5 5 5"/><path d="M4 4h16"/></svg>`,
+};
+
+S('#seal').innerHTML = sealSvg();
+S('#outro-mark').innerHTML = sealSvg();
+document.querySelectorAll('.card-mark').forEach((m) => { m.innerHTML = ICONS[m.dataset.icon]; });
+
+const L1 = words(S('#s1a'), 'Já usa um programa de facturação.');
+const L3 = words(S('#s3a'), 'Mudar não tem de doer.');
+
+const T = {
+    s1: 200, s1out: 2500,
+    p0: 3000, p1: 4300, p2: 5600,
+    strike: 7200,
+    s3: 8400, s3out: 10400,
+    c0: 10900, c1: 12700, c2: 14500, cOut: 16400,
+    doc: 16900, rows: 17500, fiscal: 18400, seal: 19100, stamp: 19900, docOut: 21400,
+    outro: 21900,
+};
+
+const END = 26000;
+
+function frame(t) {
+    /* 1 · acknowledge what they already have ---------------------------- */
+    const s1Live = t < T.s1out + 400;
+    S('#s1').style.display = s1Live ? 'flex' : 'none';
+    if (s1Live) {
+        const k = outQuint(at(t, T.s1, 420));
+        const kOut = at(t, T.s1out, 300);
+        set(S('#s1k'), { o: k * (1 - kOut), y: (1 - k) * vh(2) });
+        line(L1, t, T.s1 + 240, { step: 76, out: T.s1out });
+    }
+
+    /* 2 · the complaints, then the rule through them --------------------- */
+    const painsLive = t >= T.p0 - 200 && t < T.s3 + 200;
+    S('#pains').style.display = painsLive ? 'block' : 'none';
+    if (painsLive) {
+        [T.p0, T.p1, T.p2].forEach((start, i) => {
+            const el = document.querySelector(`.pain[data-i="${i}"]`);
+            const p = outQuint(at(t, start, 520));
+            /* Each line dims as the next lands, so the eye always sits on the
+               newest complaint rather than re-reading the stack. */
+            const dim = i < 2 ? at(t, [T.p1, T.p2][i], 400) * 0.45 : 0;
+            const out = at(t, T.s3 - 500, 400);
+            el.style.opacity = p * (1 - dim) * (1 - out);
+            el.style.transform = `translateY(${(1 - p) * vw(3)}px)`;
+
+            const strike = el.querySelector('.strike');
+            /* Struck in sequence, quickly — one gesture, not three. */
+            strike.style.transform = `scaleX(${outQuint(at(t, T.strike + i * 130, 380))})`;
+        });
+    }
+
+    /* 3 · the turn ------------------------------------------------------- */
+    const s3Live = t >= T.s3 - 200 && t < T.s3out + 400;
+    S('#s3').style.display = s3Live ? 'flex' : 'none';
+    if (s3Live) line(L3, t, T.s3, { step: 80, out: T.s3out });
+
+    /* 4 · the three reasons people actually stay put --------------------- */
+    [T.c0, T.c1, T.c2].forEach((start, i) => {
+        const el = S('#c' + i);
+        const live = t >= start - 250 && t < T.cOut + 500;
+        el.style.display = live ? 'flex' : 'none';
+        if (!live) return;
+        const p = outQuint(at(t, start, 560));
+        const out = inQuad(at(t, T.cOut, 420));
+        el.style.top = `calc(50% + ${(i - 1) * vh(14)}px - ${vh(6)}px)`;
+        el.style.opacity = p * (1 - out);
+        el.style.transform = `translateY(${(1 - p) * vw(5) - out * vh(3)}px) scale(${0.97 + p * 0.03})`;
+    });
+
+    /* 5 · the product doing the thing ----------------------------------- */
+    const docLive = t >= T.doc - 200 && t < T.docOut + 700;
+    const doc = S('#doc');
+    doc.style.display = docLive ? 'block' : 'none';
+    S('#stamped').style.display = docLive ? 'flex' : 'none';
+
+    if (docLive) {
+        const rise = outQuint(at(t, T.doc, 660));
+        const leave = inQuad(at(t, T.docOut, 560));
+        doc.style.opacity = rise * (1 - leave);
+        doc.style.transform = `translate(-50%, calc(-50% + ${(1 - rise) * vh(4) - leave * vh(6)}px)) scale(${0.965 + rise * 0.035})`;
+
+        doc.querySelectorAll('.doc-line').forEach((row, i) => {
+            const p = outQuint(at(t, T.rows + i * 130, 400));
+            set(row, { o: p, y: (1 - p) * vh(0.9) });
+        });
+        const tot = outQuint(at(t, T.rows + 460, 400));
+        set(S('.doc-total'), { o: tot, y: (1 - tot) * vh(0.8) });
+        const fis = outQuint(at(t, T.fiscal, 480));
+        set(S('#fiscal'), { o: fis, y: (1 - fis) * vh(1.2) });
+
+        const press = at(t, T.seal, 520);
+        const eased = outBack(press);
+        const seal = S('#seal');
+        seal.style.opacity = press > 0 ? Math.min(1, press * 3) * 0.96 : 0;
+        seal.style.transform = `rotate(${-24 + eased * 24}deg) scale(${1.5 - eased * 0.5})`;
+        const draw = outQuint(at(t, T.seal + 300, 420));
+        const check = doc.querySelector('.sealcheck');
+        if (check) check.setAttribute('stroke-dashoffset', String(34 - draw * 34));
+
+        const st = outBack(at(t, T.stamp, 460));
+        const stOut = inQuad(at(t, T.docOut, 460));
+        const stamped = S('#stamped');
+        stamped.style.opacity = clamp01(st) * (1 - stOut);
+        stamped.style.transform = `translate(-50%, calc(-50% + ${vh(29)}px + ${(1 - st) * vh(1.6)}px)) scale(${0.9 + clamp01(st) * 0.1})`;
+    }
+
+    /* 6 · sign-off ------------------------------------------------------- */
+    const outLive = t >= T.outro - 200;
+    S('#outro').style.display = outLive ? 'flex' : 'none';
+    if (outLive) {
+        const mark = outBack(at(t, T.outro, 620));
+        set(S('#outro-mark'), { o: clamp01(mark * 2), s: 0.82 + clamp01(mark) * 0.18, rot: (1 - clamp01(mark)) * -14 });
+        const drawOut = outQuint(at(t, T.outro + 250, 440));
+        const oc = S('#outro-mark').querySelector('.sealcheck');
+        if (oc) oc.setAttribute('stroke-dashoffset', String(34 - drawOut * 34));
+
+        const w = outQuint(at(t, T.outro + 400, 500));
+        set(S('#wordmark'), { o: w, y: (1 - w) * vh(1.6) });
+        const s = outQuint(at(t, T.outro + 660, 500));
+        set(S('#soon'), { o: s, y: (1 - s) * vh(1.2) });
+        const c = outBack(at(t, T.outro + 950, 560));
+        set(S('#cta'), { o: clamp01(c), y: (1 - clamp01(c)) * vh(1.4), s: 0.94 + clamp01(c) * 0.06 });
+        S('#rule').style.transform = `scaleX(${outQuint(at(t, T.outro + 500, 900))})`;
+    }
+}
+
+window.frame = frame;
+window.VIDEO_END = END;
+window.CUES = T;
+frame(0);
+</script>
+</body>
+</html>
