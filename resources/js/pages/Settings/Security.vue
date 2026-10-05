@@ -320,7 +320,7 @@ watch(
                         <button
                             type="button"
                             :disabled="workSessionForm.processing"
-                            class="inline-flex w-fit items-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm focus-ring transition hover:bg-brand-600 disabled:opacity-60 dark:bg-accent-400 dark:text-brand-950 dark:hover:bg-accent-300"
+                            class="inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                             @click="saveWorkSession"
                         >
                             <LoaderCircle
@@ -441,7 +441,7 @@ watch(
                         <button
                             type="button"
                             :disabled="notificationForm.processing"
-                            class="inline-flex items-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm focus-ring transition hover:bg-brand-600 disabled:opacity-60 dark:bg-accent-400 dark:text-brand-950 dark:hover:bg-accent-300"
+                            class="inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                             @click="saveNotificationPreferences"
                         >
                             <LoaderCircle
@@ -525,7 +525,7 @@ watch(
                             <button
                                 v-if="!session.is_current"
                                 type="button"
-                                class="shrink-0 icon-button text-zinc-400 focus-ring transition hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-400/10 dark:hover:text-rose-300"
+                                class="icon-button shrink-0 text-zinc-400 focus-ring transition hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-400/10 dark:hover:text-rose-300"
                                 @click="endSession(session)"
                             >
                                 <span class="sr-only"
@@ -608,7 +608,7 @@ watch(
                             <button
                                 type="submit"
                                 :disabled="processing"
-                                class="flex items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 disabled:opacity-60 dark:bg-brand-500 dark:hover:bg-brand-400"
+                                class="inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                             >
                                 <LoaderCircle
                                     v-if="processing"
@@ -649,9 +649,7 @@ watch(
                         </div>
 
                         <div>
-                            <p
-                                class="eyebrow text-brand-700 dark:text-brand-300"
-                            >
+                            <p class="eyebrow text-zinc-500 dark:text-zinc-400">
                                 Passo final
                             </p>
                             <h3
@@ -702,7 +700,7 @@ watch(
                                 <button
                                     type="submit"
                                     :disabled="processing"
-                                    class="flex items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:opacity-60 dark:bg-brand-500 dark:hover:bg-brand-400"
+                                    class="inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                                 >
                                     <LoaderCircle
                                         v-if="processing"

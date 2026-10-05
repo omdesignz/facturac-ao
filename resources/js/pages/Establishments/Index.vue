@@ -176,11 +176,11 @@ const withoutSeries = computed(() =>
                     class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
                 >
                     <div>
-                        <p class="eyebrow text-brand-700 dark:text-brand-300">
+                        <p class="eyebrow text-zinc-500 dark:text-zinc-400">
                             Onde a empresa opera
                         </p>
                         <h1
-                            class="mt-2 text-3xl display text-zinc-950 dark:text-white"
+                            class="mt-2.5 text-[2.125rem] leading-[1.08] display text-zinc-950 dark:text-white"
                         >
                             Estabelecimentos
                         </h1>
@@ -197,7 +197,7 @@ const withoutSeries = computed(() =>
                     <button
                         v-if="canManage"
                         type="button"
-                        class="inline-flex w-fit items-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm focus-ring transition hover:bg-brand-600 dark:bg-accent-400 dark:text-brand-950 dark:hover:bg-accent-300"
+                        class="inline-flex h-10 items-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
                         @click="openCreate"
                     >
                         <Plus class="size-4" aria-hidden="true" />
@@ -538,7 +538,7 @@ const withoutSeries = computed(() =>
                     <button
                         type="submit"
                         :disabled="form.processing"
-                        class="inline-flex items-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white focus-ring transition hover:bg-brand-600 disabled:opacity-60 dark:bg-accent-400 dark:text-brand-950 dark:hover:bg-accent-300"
+                        class="inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                     >
                         <LoaderCircle
                             v-if="form.processing"

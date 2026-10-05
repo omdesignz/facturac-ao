@@ -31,11 +31,11 @@ function submit(): void {
         <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
             <div class="mx-auto max-w-3xl space-y-6">
                 <header>
-                    <p class="eyebrow text-brand-700 dark:text-brand-300">
+                    <p class="eyebrow text-zinc-500 dark:text-zinc-400">
                         Interno
                     </p>
                     <h1
-                        class="mt-2 text-3xl display text-zinc-950 dark:text-white"
+                        class="mt-2.5 text-[2.125rem] leading-[1.08] display text-zinc-950 dark:text-white"
                     >
                         Definições da plataforma
                     </h1>
@@ -115,7 +115,7 @@ function submit(): void {
                         <button
                             type="submit"
                             :disabled="form.processing"
-                            class="inline-flex items-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm focus-ring transition hover:bg-brand-600 disabled:opacity-60 dark:bg-accent-400 dark:text-brand-950 dark:hover:bg-accent-300"
+                            class="inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                         >
                             <LoaderCircle
                                 v-if="form.processing"

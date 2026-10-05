@@ -70,7 +70,7 @@ onMounted(() => {
                 <div class="mt-10">
                     <p
                         v-if="eyebrow"
-                        class="eyebrow text-brand-700 dark:text-brand-300"
+                        class="eyebrow text-zinc-500 dark:text-zinc-400"
                     >
                         {{ eyebrow }}
                     </p>

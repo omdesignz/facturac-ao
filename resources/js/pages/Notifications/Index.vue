@@ -143,11 +143,11 @@ function decodeEntities(label: string): string {
                     class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
                 >
                     <div>
-                        <p class="eyebrow text-brand-700 dark:text-brand-300">
+                        <p class="eyebrow text-zinc-500 dark:text-zinc-400">
                             O que aconteceu
                         </p>
                         <h1
-                            class="mt-2 text-3xl display text-zinc-950 dark:text-white"
+                            class="mt-2.5 text-[2.125rem] leading-[1.08] display text-zinc-950 dark:text-white"
                         >
                             Notificações
                         </h1>

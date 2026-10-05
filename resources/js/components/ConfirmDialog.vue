@@ -71,7 +71,7 @@ const isDanger = computed(() => activePrompt.value?.tone !== 'neutral');
                         leave-to="opacity-0 sm:scale-95"
                     >
                         <DialogPanel
-                            class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-zinc-900/10 dark:bg-zinc-900 dark:ring-white/10"
+                            class="relative w-full max-w-md rounded-[1.625rem] bg-white p-6 shadow-[0_0_0_1px_rgb(23_23_22/0.06),0_30px_80px_-30px_rgb(23_23_22/0.45)] dark:bg-zinc-900 dark:shadow-[0_0_0_1px_rgb(255_255_255/0.08),0_30px_80px_-20px_rgb(0_0_0/0.8)]"
                         >
                             <div v-if="activePrompt" class="flex gap-4">
                                 <span
@@ -109,7 +109,7 @@ const isDanger = computed(() => activePrompt.value?.tone !== 'neutral');
                                 <button
                                     ref="cancelButton"
                                     type="button"
-                                    class="rounded-xl px-4 py-2.5 text-sm font-semibold text-zinc-700 ring-1 ring-zinc-300 focus-ring transition hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
+                                    class="inline-flex h-10 items-center justify-center rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
                                     @click="answer(false)"
                                 >
                                     {{ activePrompt.cancelLabel ?? 'Cancelar' }}
@@ -119,8 +119,8 @@ const isDanger = computed(() => activePrompt.value?.tone !== 'neutral');
                                     :class="[
                                         isDanger
                                             ? 'bg-rose-600 text-white hover:bg-rose-500'
-                                            : 'bg-brand-700 text-white hover:bg-brand-600 dark:bg-accent-400 dark:text-brand-950 dark:hover:bg-accent-300',
-                                        'rounded-xl px-4 py-2.5 text-sm font-semibold shadow-sm focus-ring transition',
+                                            : 'bg-brand-950 text-white hover:bg-brand-800 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white',
+                                        'inline-flex h-10 items-center justify-center rounded-full px-[1.125rem] text-sm font-semibold focus-ring transition',
                                     ]"
                                     @click="answer(true)"
                                 >

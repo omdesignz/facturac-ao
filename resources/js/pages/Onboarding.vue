@@ -570,7 +570,7 @@ const steps = computed(() => [
                                     v-if="canUpdate"
                                     type="submit"
                                     :disabled="processing"
-                                    class="flex items-center justify-center gap-2 rounded-xl bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-brand-500 dark:hover:bg-brand-400"
+                                    class="inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                                 >
                                     <LoaderCircle
                                         v-if="processing"
@@ -691,7 +691,7 @@ const steps = computed(() => [
                                     </div>
                                     <a
                                         :href="saftUrl"
-                                        class="inline-flex items-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm focus-ring transition hover:bg-brand-600 dark:bg-accent-400 dark:text-brand-950 dark:hover:bg-accent-300"
+                                        class="inline-flex h-10 items-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
                                     >
                                         <Download
                                             class="size-4"
@@ -814,7 +814,7 @@ const steps = computed(() => [
                             <Link
                                 v-if="profileIsConfigured"
                                 :href="agtConnectionShow.url()"
-                                class="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-brand-700 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-600 dark:bg-brand-500 dark:text-brand-950 dark:hover:bg-brand-400"
+                                class="flex h-10 w-full items-center justify-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                             >
                                 <Landmark class="size-4" aria-hidden="true" />
                                 Preparar ligação AGT

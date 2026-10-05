@@ -532,7 +532,7 @@ function copyPaymentInstruction(): void {
                         <button
                             v-if="activePayment.can_resume && canManage"
                             type="button"
-                            class="mt-5 inline-flex items-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white focus-ring disabled:opacity-50 dark:bg-brand-500"
+                            class="inline-flex h-10 items-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
                             :disabled="resumeForm.processing || !mfaEnabled"
                             @click="resumePayment"
                         >
@@ -1085,8 +1085,8 @@ function copyPaymentInstruction(): void {
                                     :class="[
                                         isCurrentPlan(plan)
                                             ? 'bg-accent-400 text-brand-950 hover:bg-accent-300 focus-visible:outline-amber-300'
-                                            : 'bg-brand-700 text-white hover:bg-brand-600 focus-visible:outline-brand-600 dark:bg-brand-500 dark:hover:bg-brand-400',
-                                        'mt-8 inline-flex w-full items-center justify-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-semibold shadow-sm transition focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-45',
+                                            : 'bg-brand-950 text-white hover:bg-brand-800 focus-visible:outline-brand-600 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white',
+                                        'mt-8 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full px-[1.125rem] text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-45',
                                     ]"
                                     @click="openCheckout(plan)"
                                 >
@@ -1591,7 +1591,7 @@ function copyPaymentInstruction(): void {
                                     </button>
                                     <button
                                         type="button"
-                                        class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm focus-ring transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto dark:bg-brand-500 dark:hover:bg-brand-400"
+                                        class="flex h-10 w-full items-center justify-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
                                         :disabled="checkoutForm.processing"
                                         @click="submitCheckout"
                                     >

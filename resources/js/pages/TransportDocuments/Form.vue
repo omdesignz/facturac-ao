@@ -1276,7 +1276,7 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                                     v-if="transportDocument?.can_issue"
                                     type="button"
                                     :disabled="form.isDirty"
-                                    class="inline-flex items-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white focus-ring hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-45 dark:bg-accent-400 dark:text-brand-950 dark:hover:bg-accent-300"
+                                    class="inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                                     @click="issueDocument"
                                 >
                                     <CircleCheck

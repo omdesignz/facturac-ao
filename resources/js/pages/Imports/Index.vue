@@ -658,7 +658,7 @@ function historyUrl(publicId: string): string {
                             >
                                 <div>
                                     <p
-                                        class="eyebrow text-brand-700 dark:text-amber-300"
+                                        class="eyebrow text-zinc-500 dark:text-zinc-400"
                                     >
                                         Correspondência
                                     </p>
@@ -754,7 +754,7 @@ function historyUrl(publicId: string): string {
                                     </p>
                                     <button
                                         type="submit"
-                                        class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm focus-ring transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-accent-400 dark:text-brand-950 dark:hover:bg-accent-300"
+                                        class="inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                                         :disabled="
                                             !canValidate ||
                                             mappingForm.processing
@@ -1134,7 +1134,7 @@ function historyUrl(publicId: string): string {
                         >
                             <div>
                                 <p
-                                    class="eyebrow text-brand-700 dark:text-amber-300"
+                                    class="eyebrow text-zinc-500 dark:text-zinc-400"
                                 >
                                     Nova importação
                                 </p>
@@ -1237,7 +1237,7 @@ function historyUrl(publicId: string): string {
                                 </p>
                                 <button
                                     type="submit"
-                                    class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm focus-ring transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-accent-400 dark:text-brand-950 dark:hover:bg-accent-300"
+                                    class="inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                                     :disabled="
                                         !permissions.create ||
                                         uploadForm.file === null ||

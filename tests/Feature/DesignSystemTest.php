@@ -75,3 +75,15 @@ test('auth buttons use the shared pill roles', function () {
     expect((string) file_get_contents(resource_path('js/pages/Auth/Register.vue')))
         ->toContain('rounded-full bg-accent-400');
 });
+
+test('no screen falls back to the old brand-blue buttons or labels', function () {
+    foreach (File::allFiles(resource_path('js')) as $file) {
+        if ($file->getExtension() !== 'vue') {
+            continue;
+        }
+
+        expect($file->getContents())
+            ->not->toContain('bg-brand-700')
+            ->not->toContain('eyebrow text-brand-700');
+    }
+});

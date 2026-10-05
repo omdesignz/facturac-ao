@@ -220,7 +220,7 @@ async function remove(passkey: Passkey): Promise<void> {
                     />
                     <button
                         type="button"
-                        class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm focus-ring transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-accent-400 dark:text-brand-950 dark:hover:bg-accent-300"
+                        class="inline-flex h-10 items-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
                         :disabled="isLoading"
                         @click="submit"
                     >

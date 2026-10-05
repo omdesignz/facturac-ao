@@ -151,11 +151,11 @@ function inspectPeriod(): void {
                     class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between"
                 >
                     <div>
-                        <p class="eyebrow text-brand-700 dark:text-brand-300">
+                        <p class="eyebrow text-zinc-500 dark:text-zinc-400">
                             Ficheiro normalizado de auditoria
                         </p>
                         <h1
-                            class="mt-2 text-3xl display text-zinc-950 dark:text-white"
+                            class="mt-2.5 text-[2.125rem] leading-[1.08] display text-zinc-950 dark:text-white"
                         >
                             SAF-T (AO)
                         </h1>
