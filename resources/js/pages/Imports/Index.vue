@@ -471,7 +471,7 @@ function historyUrl(publicId: string): string {
                                 <button
                                     v-if="selected.permissions.cancel"
                                     type="button"
-                                    class="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-rose-700 ring-1 ring-rose-600/20 transition ring-inset hover:bg-rose-50 focus-visible:outline-2 focus-visible:outline-rose-600 disabled:opacity-50 dark:text-rose-300 dark:ring-rose-400/20 dark:hover:bg-rose-400/10"
+                                    class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-full px-[1.125rem] text-sm font-semibold text-rose-700 ring-1 ring-rose-600/20 transition ring-inset hover:bg-rose-50 focus-visible:outline-2 focus-visible:outline-rose-600 disabled:opacity-50 dark:text-rose-300 dark:ring-rose-400/20 dark:hover:bg-rose-400/10"
                                     :disabled="cancelForm.processing"
                                     @click="submitCancellation"
                                 >

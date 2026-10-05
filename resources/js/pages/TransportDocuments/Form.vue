@@ -457,7 +457,7 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                                 )
                             "
                             target="_blank"
-                            class="inline-flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-zinc-700 ring-1 ring-zinc-300 focus-ring hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
+                            class="inline-flex h-10 items-center justify-center gap-2 rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring ring-inset hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
                         >
                             <Printer class="size-4" aria-hidden="true" />
                             Imprimir
@@ -469,7 +469,7 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                                 )
                             "
                             target="_blank"
-                            class="inline-flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-zinc-700 ring-1 ring-zinc-300 focus-ring hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
+                            class="inline-flex h-10 items-center justify-center gap-2 rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring ring-inset hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
                         >
                             <FileDown class="size-4" aria-hidden="true" />
                             PDF
@@ -949,7 +949,7 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                                 </div>
                                 <button
                                     type="button"
-                                    class="inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold text-brand-700 ring-1 ring-brand-200 focus-ring hover:bg-brand-50 disabled:hidden dark:text-brand-300 dark:ring-brand-400/20 dark:hover:bg-brand-400/10"
+                                    class="inline-flex h-10 items-center justify-center gap-2 rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring ring-inset hover:bg-zinc-50 disabled:hidden dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
                                     @click="addLine"
                                 >
                                     <Plus class="size-4" aria-hidden="true" />
@@ -1244,7 +1244,7 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                                 <button
                                     v-if="transportDocument?.can_cancel"
                                     type="button"
-                                    class="inline-flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-rose-700 ring-1 ring-rose-200 focus-ring hover:bg-rose-50 dark:text-rose-300 dark:ring-rose-500/20 dark:hover:bg-rose-500/10"
+                                    class="inline-flex h-10 items-center justify-center gap-2 rounded-full px-[1.125rem] text-sm font-semibold text-rose-700 ring-1 ring-rose-200 focus-ring ring-inset hover:bg-rose-50 dark:text-rose-300 dark:ring-rose-500/20 dark:hover:bg-rose-500/10"
                                     @click="cancelDialogOpen = true"
                                 >
                                     <Ban
@@ -1256,7 +1256,7 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                                     v-if="!readOnly"
                                     type="submit"
                                     :disabled="form.processing"
-                                    class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-zinc-700 ring-1 ring-zinc-300 focus-ring hover:bg-zinc-50 disabled:opacity-60 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
+                                    class="inline-flex h-10 items-center justify-center gap-2 rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring ring-inset hover:bg-zinc-50 disabled:opacity-60 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
                                 >
                                     <LoaderCircle
                                         v-if="form.processing"
@@ -1292,6 +1292,7 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
         </div>
 
         <RecordDialog
+            eyebrow="Guias e transporte"
             :open="cancelDialogOpen"
             title="Anular guia"
             description="A guia continuará no registo e no SAF-T com estado anulado."

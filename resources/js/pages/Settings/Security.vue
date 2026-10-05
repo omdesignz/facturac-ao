@@ -749,7 +749,7 @@ watch(
                             <button
                                 type="button"
                                 :disabled="recoveryRequest.processing"
-                                class="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-zinc-700 ring-1 ring-zinc-300 transition hover:bg-zinc-50 disabled:opacity-60 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
+                                class="flex h-10 items-center justify-center gap-2 rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 transition ring-inset hover:bg-zinc-50 disabled:opacity-60 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
                                 @click="loadRecoveryCodes"
                             >
                                 <LoaderCircle
@@ -772,7 +772,7 @@ watch(
                                 <button
                                     type="submit"
                                     :disabled="processing"
-                                    class="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-rose-700 ring-1 ring-rose-200 transition hover:bg-rose-50 disabled:opacity-60 dark:text-rose-300 dark:ring-rose-400/20 dark:hover:bg-rose-400/10"
+                                    class="flex h-10 items-center justify-center gap-2 rounded-full px-[1.125rem] text-sm font-semibold text-rose-700 ring-1 ring-rose-200 transition ring-inset hover:bg-rose-50 disabled:opacity-60 dark:text-rose-300 dark:ring-rose-400/20 dark:hover:bg-rose-400/10"
                                 >
                                     <ShieldOff
                                         class="size-4"

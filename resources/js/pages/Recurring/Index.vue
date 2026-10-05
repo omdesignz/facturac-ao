@@ -393,7 +393,7 @@ const dueCount = computed(
                         <div class="mt-4 flex flex-wrap justify-end gap-2">
                             <button
                                 type="button"
-                                class="rounded-xl px-3 py-2 text-sm font-semibold text-zinc-700 ring-1 ring-zinc-300 focus-ring transition hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
+                                class="inline-flex h-10 items-center justify-center rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
                                 @click="openEdit(profile)"
                             >
                                 Editar
@@ -401,7 +401,7 @@ const dueCount = computed(
                             <button
                                 v-if="profile.is_active"
                                 type="button"
-                                class="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-rose-700 ring-1 ring-rose-300 focus-ring transition hover:bg-rose-50 dark:text-rose-300 dark:ring-rose-400/30 dark:hover:bg-rose-400/10"
+                                class="inline-flex h-10 items-center justify-center gap-2 rounded-full px-[1.125rem] text-sm font-semibold text-rose-700 ring-1 ring-rose-300 focus-ring transition ring-inset hover:bg-rose-50 dark:text-rose-300 dark:ring-rose-400/30 dark:hover:bg-rose-400/10"
                                 @click="deactivate(profile)"
                             >
                                 <Pause class="size-4" aria-hidden="true" />
@@ -421,6 +421,7 @@ const dueCount = computed(
         </div>
 
         <RecordDialog
+            eyebrow="Avenças"
             :open="dialogOpen"
             :title="editing ? `Editar ${editing.name}` : 'Nova avença'"
             description="Facturação que se repete sozinha na frequência escolhida."
@@ -639,7 +640,7 @@ const dueCount = computed(
                 >
                     <button
                         type="button"
-                        class="rounded-xl px-4 py-2.5 text-sm font-semibold text-zinc-700 ring-1 ring-zinc-300 focus-ring transition hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
+                        class="inline-flex h-10 items-center justify-center rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
                         @click="dialogOpen = false"
                     >
                         Cancelar

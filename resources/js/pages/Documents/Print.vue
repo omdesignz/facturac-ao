@@ -128,7 +128,7 @@ async function copyShareLink(): Promise<void> {
                 <button
                     v-if="shareUrl"
                     type="button"
-                    class="inline-flex items-center gap-2 rounded-xl bg-white px-3.5 py-2 text-sm font-semibold text-zinc-700 ring-1 ring-zinc-300 focus-ring transition hover:bg-zinc-50"
+                    class="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-white px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50"
                     @click="copyShareLink"
                 >
                     <Check v-if="copied" class="size-4" aria-hidden="true" />

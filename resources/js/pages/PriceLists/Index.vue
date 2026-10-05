@@ -400,11 +400,11 @@ function toggleDefault(): void {
                                 >
                                     <button
                                         type="button"
-                                        class="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold ring-1 focus-ring transition"
+                                        class="inline-flex h-8 items-center justify-center gap-1.5 rounded-full px-3 text-xs font-semibold ring-1 focus-ring transition ring-inset"
                                         :class="
                                             selected.is_default
                                                 ? 'text-amber-700 ring-amber-300 dark:text-amber-300 dark:ring-amber-400/30'
-                                                : 'text-zinc-600 ring-zinc-200 hover:bg-zinc-50 dark:text-zinc-300 dark:ring-white/15 dark:hover:bg-white/5'
+                                                : 'text-zinc-700 ring-zinc-900/10 hover:bg-zinc-50 dark:text-zinc-300 dark:ring-white/15 dark:hover:bg-white/5'
                                         "
                                         @click="toggleDefault"
                                     >
@@ -479,7 +479,7 @@ function toggleDefault(): void {
                                     </span>
                                     <button
                                         type="button"
-                                        class="rounded-lg px-2.5 py-1.5 font-semibold text-zinc-700 ring-1 ring-zinc-200 focus-ring transition hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
+                                        class="inline-flex h-10 items-center justify-center rounded-full px-[1.125rem] font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
                                         @click="applyBulkDiscount"
                                     >
                                         Aplicar a tudo
@@ -645,6 +645,7 @@ function toggleDefault(): void {
         </div>
 
         <RecordDialog
+            eyebrow="Tabelas de preços"
             :open="dialogOpen"
             title="Nova tabela de preços"
             description="Dê-lhe o nome por que a conhece — revenda, grossista, o nome do contrato."
@@ -700,7 +701,7 @@ function toggleDefault(): void {
                 <div class="flex justify-end gap-3 pt-2">
                     <button
                         type="button"
-                        class="rounded-xl px-4 py-2.5 text-sm font-semibold text-zinc-700 ring-1 ring-zinc-300 focus-ring transition hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
+                        class="inline-flex h-10 items-center justify-center rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
                         @click="dialogOpen = false"
                     >
                         Cancelar

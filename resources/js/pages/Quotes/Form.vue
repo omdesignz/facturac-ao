@@ -436,7 +436,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                         <button
                             v-if="quote && quote.status === 'draft'"
                             type="button"
-                            class="rounded-xl px-3 py-2 text-sm font-semibold text-zinc-700 ring-1 ring-zinc-300 focus-ring transition hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
+                            class="inline-flex h-10 items-center justify-center rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
                             @click="mark('sent')"
                         >
                             Marcar como enviado
@@ -444,7 +444,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                         <button
                             v-if="quote && quote.status === 'sent'"
                             type="button"
-                            class="rounded-xl px-3 py-2 text-sm font-semibold text-emerald-700 ring-1 ring-emerald-300 focus-ring transition hover:bg-emerald-50 dark:text-emerald-300 dark:ring-emerald-400/30 dark:hover:bg-emerald-400/10"
+                            class="inline-flex h-10 items-center justify-center rounded-full px-[1.125rem] text-sm font-semibold text-lime-800 ring-1 ring-lime-600/30 focus-ring transition ring-inset hover:bg-lime-50 dark:text-lime-300 dark:ring-lime-400/30 dark:hover:bg-lime-400/10"
                             @click="mark('accepted')"
                         >
                             Aceite
@@ -452,7 +452,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                         <button
                             v-if="quote && quote.status === 'sent'"
                             type="button"
-                            class="rounded-xl px-3 py-2 text-sm font-semibold text-rose-700 ring-1 ring-rose-300 focus-ring transition hover:bg-rose-50 dark:text-rose-300 dark:ring-rose-400/30 dark:hover:bg-rose-400/10"
+                            class="inline-flex h-10 items-center justify-center rounded-full px-[1.125rem] text-sm font-semibold text-rose-700 ring-1 ring-rose-300 focus-ring transition ring-inset hover:bg-rose-50 dark:text-rose-300 dark:ring-rose-400/30 dark:hover:bg-rose-400/10"
                             @click="mark('rejected')"
                         >
                             Recusado

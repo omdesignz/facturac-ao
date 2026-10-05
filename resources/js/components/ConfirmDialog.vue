@@ -54,7 +54,7 @@ const isDanger = computed(() => activePrompt.value?.tone !== 'neutral');
                 leave-from="opacity-100"
                 leave-to="opacity-0"
             >
-                <div class="fixed inset-0 bg-zinc-950/60 backdrop-blur-sm" />
+                <div class="fixed inset-0 dialog-scrim" />
             </TransitionChild>
 
             <div class="fixed inset-0 z-[60] overflow-y-auto">
@@ -71,7 +71,7 @@ const isDanger = computed(() => activePrompt.value?.tone !== 'neutral');
                         leave-to="opacity-0 sm:scale-95"
                     >
                         <DialogPanel
-                            class="relative w-full max-w-md rounded-[1.625rem] bg-white p-6 shadow-[0_0_0_1px_rgb(23_23_22/0.06),0_30px_80px_-30px_rgb(23_23_22/0.45)] dark:bg-zinc-900 dark:shadow-[0_0_0_1px_rgb(255_255_255/0.08),0_30px_80px_-20px_rgb(0_0_0/0.8)]"
+                            class="relative w-full max-w-md dialog-panel p-6"
                         >
                             <div v-if="activePrompt" class="flex gap-4">
                                 <span

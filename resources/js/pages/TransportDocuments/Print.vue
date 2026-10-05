@@ -118,7 +118,7 @@ function printDocument(): void {
             <div class="flex items-center gap-2">
                 <a
                     :href="transportDocumentPdf.url(document.public_id)"
-                    class="inline-flex items-center gap-2 rounded-xl bg-white px-3.5 py-2 text-sm font-semibold text-zinc-700 ring-1 ring-zinc-300 focus-ring hover:bg-zinc-50"
+                    class="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-white px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring ring-inset hover:bg-zinc-50"
                 >
                     <FileDown class="size-4" aria-hidden="true" /> PDF
                 </a>

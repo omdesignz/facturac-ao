@@ -492,6 +492,7 @@ function isInbound(quantity: string): boolean {
         </div>
 
         <RecordDialog
+            eyebrow="Existências"
             :open="dialogOpen"
             title="Registar movimento de existências"
             description="Entradas, acertos, transferências e quebras. As vendas são registadas automaticamente ao emitir."
@@ -627,7 +628,7 @@ function isInbound(quantity: string): boolean {
                 >
                     <button
                         type="button"
-                        class="rounded-xl px-4 py-2.5 text-sm font-semibold text-zinc-700 ring-1 ring-zinc-300 focus-ring transition hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
+                        class="inline-flex h-10 items-center justify-center rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
                         @click="dialogOpen = false"
                     >
                         Cancelar

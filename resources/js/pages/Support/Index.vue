@@ -425,6 +425,7 @@ const endedByLabel: Record<string, string> = {
         </div>
 
         <RecordDialog
+            eyebrow="Apoio ao cliente"
             :open="dialogOpen"
             :title="`Diagnosticar a conta de ${target?.name ?? ''}`"
             description="O motivo fica no registo permanente e é enviado ao cliente por email. Escreva o que precisa de reproduzir."
@@ -454,7 +455,7 @@ const endedByLabel: Record<string, string> = {
                 >
                     <button
                         type="button"
-                        class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold text-zinc-700 ring-1 ring-zinc-300 focus-ring transition hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
+                        class="inline-flex h-10 items-center justify-center rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
                         @click="dialogOpen = false"
                     >
                         Cancelar

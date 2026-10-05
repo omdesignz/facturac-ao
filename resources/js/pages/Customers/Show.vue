@@ -962,7 +962,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                                 sendingDocument ===
                                                 document.public_id
                                             "
-                                            class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-600 ring-1 ring-zinc-200 focus-ring transition hover:bg-zinc-50 disabled:opacity-50 dark:text-zinc-300 dark:ring-white/15 dark:hover:bg-white/5"
+                                            class="inline-flex h-8 items-center justify-center gap-1.5 rounded-full px-3 text-xs font-semibold text-zinc-600 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 disabled:opacity-50 dark:text-zinc-300 dark:ring-white/15 dark:hover:bg-white/5"
                                             :title="
                                                 document.sent_at
                                                     ? `Último envio a ${formatDate(document.sent_at)} · ${document.send_count}×`

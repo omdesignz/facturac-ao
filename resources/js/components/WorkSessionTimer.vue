@@ -111,9 +111,7 @@ const label = computed(
                     leave-from="opacity-100"
                     leave-to="opacity-0"
                 >
-                    <div
-                        class="fixed inset-0 bg-zinc-950/70 backdrop-blur-sm"
-                    />
+                    <div class="fixed inset-0 dialog-scrim" />
                 </TransitionChild>
 
                 <div class="fixed inset-0 z-[60] overflow-y-auto">
@@ -130,7 +128,7 @@ const label = computed(
                             leave-to="opacity-0 sm:scale-95"
                         >
                             <DialogPanel
-                                class="w-full max-w-md rounded-2xl bg-white p-6 text-center shadow-2xl ring-1 ring-zinc-900/10 dark:bg-zinc-900 dark:ring-white/10"
+                                class="w-full max-w-md dialog-panel p-6 text-center"
                             >
                                 <span
                                     class="mx-auto grid size-12 place-items-center rounded-2xl bg-amber-50 text-amber-700 dark:bg-amber-400/10 dark:text-amber-300"
@@ -164,7 +162,7 @@ const label = computed(
                                 >
                                     <button
                                         type="button"
-                                        class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-zinc-700 ring-1 ring-zinc-300 focus-ring transition hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
+                                        class="inline-flex h-10 items-center justify-center gap-2 rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
                                         @click="signOut"
                                     >
                                         <LogOut

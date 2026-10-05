@@ -17,6 +17,8 @@ defineProps<{
     open: boolean;
     title: string;
     description?: string;
+    /** A short label above the title naming the register, e.g. "Artigos". */
+    eyebrow?: string;
 }>();
 
 defineEmits<{ close: [] }>();
@@ -34,12 +36,12 @@ defineEmits<{ close: [] }>();
                 leave-from="opacity-100"
                 leave-to="opacity-0"
             >
-                <div class="fixed inset-0 bg-zinc-950/60 backdrop-blur-sm" />
+                <div class="fixed inset-0 dialog-scrim" />
             </TransitionChild>
 
             <div class="fixed inset-0 z-50 overflow-y-auto">
                 <div
-                    class="flex min-h-full items-end justify-center p-4 sm:items-center"
+                    class="flex min-h-full items-end justify-center pt-10 sm:items-center sm:p-6"
                 >
                     <TransitionChild
                         as="template"
@@ -51,32 +53,41 @@ defineEmits<{ close: [] }>();
                         leave-to="opacity-0 sm:scale-95"
                     >
                         <DialogPanel
-                            class="relative w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-zinc-900/10 dark:bg-zinc-900 dark:ring-white/10"
+                            class="relative w-full max-w-2xl dialog-panel p-6 max-sm:rounded-b-none max-sm:pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-8"
                         >
-                            <button
-                                type="button"
-                                class="absolute top-4 right-4 icon-button text-zinc-400 focus-ring transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-white/5 dark:hover:text-white"
-                                @click="$emit('close')"
+                            <p
+                                v-if="eyebrow"
+                                class="eyebrow text-zinc-500 dark:text-zinc-400"
                             >
-                                <span class="sr-only">Fechar</span>
-                                <X class="size-4" aria-hidden="true" />
-                            </button>
-
+                                {{ eyebrow }}
+                            </p>
                             <DialogTitle
-                                class="pr-10 text-lg font-semibold text-zinc-950 dark:text-white"
+                                class="pr-12 text-[1.625rem] leading-[1.12] display text-zinc-950 dark:text-white"
+                                :class="eyebrow ? 'mt-2' : ''"
                             >
                                 {{ title }}
                             </DialogTitle>
                             <p
                                 v-if="description"
-                                class="mt-1 text-sm/6 text-zinc-500 dark:text-zinc-400"
+                                class="mt-2 max-w-[34rem] text-sm/6 text-zinc-500 dark:text-zinc-400"
                             >
                                 {{ description }}
                             </p>
 
-                            <div class="mt-6">
+                            <div class="mt-7">
                                 <slot />
                             </div>
+
+                            <!-- Last in the DOM so the dialog opens focused on
+                                 the first field, not on its own close button. -->
+                            <button
+                                type="button"
+                                class="absolute top-5 right-5 icon-button rounded-full text-zinc-400 focus-ring transition hover:bg-zinc-900/[0.05] hover:text-zinc-800 sm:top-6 sm:right-6 dark:hover:bg-white/10 dark:hover:text-white"
+                                @click="$emit('close')"
+                            >
+                                <span class="sr-only">Fechar</span>
+                                <X class="size-4" aria-hidden="true" />
+                            </button>
                         </DialogPanel>
                     </TransitionChild>
                 </div>

@@ -752,7 +752,7 @@ function copyPaymentInstruction(): void {
                             >
                                 <button
                                     type="button"
-                                    class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3.5 py-2.5 text-sm font-semibold text-zinc-900 shadow-sm ring-1 ring-zinc-300 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
+                                    class="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-white px-[1.125rem] text-sm font-semibold text-zinc-900 ring-1 ring-zinc-900/10 transition ring-inset hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
                                     :disabled="refreshForm.processing"
                                     @click="refreshReference"
                                 >
@@ -1388,7 +1388,7 @@ function copyPaymentInstruction(): void {
                     leave-to="opacity-0"
                 >
                     <div
-                        class="fixed inset-0 bg-zinc-950/70 backdrop-blur-sm transition-opacity"
+                        class="fixed inset-0 dialog-scrim transition-opacity"
                     />
                 </TransitionChild>
 
@@ -1406,7 +1406,7 @@ function copyPaymentInstruction(): void {
                             leave-to="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                         >
                             <DialogPanel
-                                class="relative w-full transform overflow-hidden rounded-2xl bg-white p-6 text-left shadow-2xl ring-1 ring-zinc-900/10 transition-all sm:max-w-lg sm:p-7 dark:bg-zinc-900 dark:ring-white/10"
+                                class="relative w-full transform overflow-hidden dialog-panel p-6 text-left transition-all sm:max-w-lg sm:p-7"
                             >
                                 <button
                                     type="button"
@@ -1583,7 +1583,7 @@ function copyPaymentInstruction(): void {
                                 >
                                     <button
                                         type="button"
-                                        class="inline-flex w-full justify-center rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-zinc-900 shadow-sm ring-1 ring-zinc-300 transition hover:bg-zinc-50 disabled:opacity-50 sm:w-auto dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
+                                        class="inline-flex h-10 w-full items-center justify-center rounded-full bg-white px-[1.125rem] text-sm font-semibold text-zinc-900 ring-1 ring-zinc-900/10 transition ring-inset hover:bg-zinc-50 disabled:opacity-50 sm:w-auto dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
                                         :disabled="checkoutForm.processing"
                                         @click="closeCheckout"
                                     >

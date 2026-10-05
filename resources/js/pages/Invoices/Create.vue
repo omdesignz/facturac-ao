@@ -2798,7 +2798,7 @@ function confirmIssue(): void {
                         leave-to="opacity-0"
                     >
                         <div
-                            class="fixed inset-0 bg-zinc-950/70 backdrop-blur-sm transition-opacity"
+                            class="fixed inset-0 dialog-scrim transition-opacity"
                         />
                     </TransitionChild>
 
@@ -2816,7 +2816,7 @@ function confirmIssue(): void {
                                 leave-to="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                             >
                                 <DialogPanel
-                                    class="relative w-full max-w-[36.5rem] transform rounded-[1.625rem] bg-white p-6 text-left shadow-[0_0_0_1px_rgb(23_23_22/0.06),0_30px_80px_-30px_rgb(23_23_22/0.45)] transition-all sm:p-7 dark:bg-zinc-900 dark:shadow-[0_0_0_1px_rgb(255_255_255/0.08),0_30px_80px_-20px_rgb(0_0_0/0.8)]"
+                                    class="relative w-full max-w-[36.5rem] transform dialog-panel p-6 text-left transition-all sm:p-7"
                                 >
                                     <!--
                                         The irreversible step, shown as a before

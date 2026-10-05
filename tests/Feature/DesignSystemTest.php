@@ -87,3 +87,40 @@ test('no screen falls back to the old brand-blue buttons or labels', function ()
             ->not->toContain('eyebrow text-brand-700');
     }
 });
+
+test('every dialog sits on the shared scrim and panel', function () {
+    foreach (File::allFiles(resource_path('js')) as $file) {
+        $contents = $file->getContents();
+
+        if (! str_contains($contents, '<DialogPanel') || str_ends_with($file->getFilename(), 'AppLayout.vue')) {
+            continue;
+        }
+
+        expect($contents)
+            ->toContain('dialog-panel')
+            ->toContain('dialog-scrim');
+    }
+});
+
+test('a form dialog opens on its first field, not its close button', function () {
+    $dialog = (string) file_get_contents(resource_path('js/components/RecordDialog.vue'));
+
+    expect(strpos($dialog, '<slot />'))->toBeLessThan(strpos($dialog, '<span class="sr-only">Fechar</span>'));
+});
+
+test('secondary buttons are outline pills, not rounded boxes', function () {
+    foreach (File::allFiles(resource_path('js')) as $file) {
+        if ($file->getExtension() !== 'vue') {
+            continue;
+        }
+
+        preg_match_all('/<(?:button|Link|a)\b[^>]*?\sclass="([^"]*)"/s', $file->getContents(), $matches);
+
+        foreach ($matches[1] as $classes) {
+            $isOutlinedButton = str_contains($classes, 'ring-1') && str_contains($classes, 'font-semibold');
+
+            expect($isOutlinedButton && preg_match('/\brounded-(xl|lg|md)\b/', $classes) === 1)
+                ->toBeFalse("{$file->getRelativePathname()}: {$classes}");
+        }
+    }
+});
