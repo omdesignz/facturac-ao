@@ -425,7 +425,7 @@ async function copyShareLink(): Promise<void> {
                 >
                     <!-- eslint-disable-next-line vue/no-v-html -->
                     <div
-                        class="size-[22mm] [&>svg]:size-full"
+                        class="size-[30mm] [&>svg]:size-full"
                         v-html="document.authenticity.qr_svg"
                     />
                     <p class="mt-1 text-[0.5625rem] text-zinc-500">Verificar</p>

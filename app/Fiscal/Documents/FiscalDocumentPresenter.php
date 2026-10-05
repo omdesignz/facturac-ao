@@ -7,11 +7,6 @@ use App\FiscalTaxType;
 use App\Models\FiscalDocument;
 use App\Models\FiscalDocumentLine;
 use App\Models\PlatformSetting;
-use BaconQrCode\Common\ErrorCorrectionLevel;
-use BaconQrCode\Renderer\Image\SvgImageBackEnd;
-use BaconQrCode\Renderer\ImageRenderer;
-use BaconQrCode\Renderer\RendererStyle\RendererStyle;
-use BaconQrCode\Writer;
 use Illuminate\Support\Facades\URL;
 
 /**
@@ -23,7 +18,10 @@ use Illuminate\Support\Facades\URL;
  */
 class FiscalDocumentPresenter
 {
-    public function __construct(private FiscalCalculator $calculator) {}
+    public function __construct(
+        private FiscalCalculator $calculator,
+        private AgtQrCode $agtQrCode,
+    ) {}
 
     /**
      * How long a customer's link stays good.
@@ -151,8 +149,8 @@ class FiscalDocumentPresenter
                 'full_digest' => $document->document_payload_sha256,
                 'verification_url' => $this->agtVerificationUrl($document),
                 'qr_svg' => $this->qrCode($document),
-                // mPDF cannot use the raw markup the web page inlines, but it
-                // parses SVG behind a data URI.
+                // The PDF embeds the PNG the specification names; the web
+                // page inlines the vector twin above.
                 'qr_data_uri' => $this->qrDataUri($document),
             ],
 
@@ -288,27 +286,14 @@ class FiscalDocumentPresenter
     }
 
     /**
-     * The QR a phone can read to verify the document with AGT.
-     *
-     * Rendered as SVG so it stays sharp at any print size, and inline so the
-     * page needs nothing from the network to be printed.
+     * The QR a phone can read to verify the document with AGT, as markup for
+     * the web view. Only a numbered document has anything to verify.
      */
     private function qrCode(FiscalDocument $document): ?string
     {
-        if ($document->document_no === null) {
-            return null;
-        }
+        $url = $this->agtVerificationUrl($document);
 
-        $writer = new Writer(new ImageRenderer(
-            new RendererStyle(350, 0),
-            new SvgImageBackEnd,
-        ));
-
-        return $writer->writeString(
-            $this->agtVerificationUrl($document),
-            'UTF-8',
-            ErrorCorrectionLevel::M(),
-        );
+        return $url === null ? null : $this->agtQrCode->svg($url);
     }
 
     private function agtVerificationUrl(FiscalDocument $document): ?string
@@ -317,23 +302,18 @@ class FiscalDocumentPresenter
             return null;
         }
 
-        $baseUrl = rtrim((string) config('agt.qr.verification_url'), '?&');
-        $query = http_build_query([
-            'emissor' => $document->legalEntity->tax_identification_number,
-            'document' => $document->document_no,
-        ], '', '&', PHP_QUERY_RFC3986);
-
-        return $baseUrl.'?'.$query;
+        return $this->agtQrCode->verificationUrl(
+            (string) $document->legalEntity->tax_identification_number,
+            $document->document_no,
+        );
     }
 
-    /** The same QR, wrapped so a PDF <img> can carry it. */
+    /** The same QR as the 350 × 350 PNG the AGT specifies, for the PDF. */
     private function qrDataUri(FiscalDocument $document): ?string
     {
-        $svg = $this->qrCode($document);
+        $url = $this->agtVerificationUrl($document);
 
-        return $svg === null
-            ? null
-            : 'data:image/svg+xml;base64,'.base64_encode($svg);
+        return $url === null ? null : $this->agtQrCode->pngDataUri($url);
     }
 
     /**

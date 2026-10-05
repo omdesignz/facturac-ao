@@ -93,10 +93,11 @@
     </tbody>
 </table>
 
-<table style="width: 100%; border-collapse: collapse; margin-top: 14pt;">
+{{-- Totals and verification stay together on one page. --}}
+<table style="width: 100%; border-collapse: collapse; margin-top: 14pt; page-break-inside: avoid;">
     <tr>
         <td style="width: 50%; vertical-align: top; padding-right: 12pt;">
-            <div class="section-title">Valores totais</div>
+            <table class="section-title"><tr><td>Valores totais</td></tr></table>
             <table class="totals" style="margin-top: 4pt;">
                 <tr>
                     <td class="label">Divisas</td>
@@ -156,11 +157,14 @@
             </table>
         </td>
     </tr>
+    {{-- In the same unbreakable block, so the page with the total is the
+         page with the QR that verifies it. --}}
+    <tr>
+        <td colspan="2" style="padding-top: 18pt;">
+            @include('documents.pdf._authenticity', ['qrImage' => $document['authenticity']['qr_data_uri']])
+        </td>
+    </tr>
 </table>
-
-<div style="margin-top: 18pt;">
-    @include('documents.pdf._authenticity', ['qrImage' => $document['authenticity']['qr_data_uri']])
-</div>
 
 </body>
 </html>

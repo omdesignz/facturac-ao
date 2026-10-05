@@ -109,6 +109,8 @@ No private key, taxpayer credential, or production taxpayer data is included in 
 65. Please confirm wording for original, subsequent copy, cancelled, corrected, invalid, and contingency documents.
 66. Are A4 and thermal/POS layouts both certifiable if every mandatory field and QR rule is satisfied?
 
+The QR specification names version 4 (33 × 33 modules) at correction level M, which holds at most 62 bytes in byte mode, while the URL it prescribes is over 110 bytes once the NIF and document number are added. Please confirm that the smallest version that holds the URL at level M is acceptable (version 7 for a ten-digit NIF), or say which other requirement should give way.
+
 ## 10. SAF-T and statutory reporting
 
 67. Is there a supported producer API for direct submission of invoicing, acquisitions, inventory, or accounting SAF-T files?

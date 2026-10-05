@@ -36,10 +36,20 @@
         letter-spacing: 1pt;
     }
 
-    .party-box {
+    /*
+     * A bordered box is a one-cell table, not a div: mPDF draws a bordered
+     * block inside a table cell one line at a time, which prints as a stack
+     * of underlined fragments instead of a box.
+     */
+    table.party-box {
+        width: 100%;
+        border-collapse: collapse;
         border: 0.6pt solid #333;
-        border-radius: 4pt;
-        padding: 7pt 9pt;
+    }
+    table.party-box td {
+        padding: 6pt 8pt;
+        vertical-align: top;
+        line-height: 1.45;
     }
 
     table.grid {
@@ -80,11 +90,30 @@
     }
     table.totals tr.grand td { background: #e6e6e6; font-weight: bold; }
 
-    .section-title {
+    /* Full-width grey band. A table for the same reason as the party box. */
+    table.section-title {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    table.section-title td {
         background: #cfcfcf;
         padding: 3.5pt 6pt;
         font-weight: bold;
         font-size: 8pt;
+    }
+
+    /*
+     * The verification block. Fixed size and never split or squeezed: the QR
+     * must reach the reader square and at a size a phone can read.
+     */
+    table.authenticity {
+        width: 100%;
+        border-collapse: collapse;
+        page-break-inside: avoid;
+    }
+    img.qr {
+        width: 30mm;
+        height: 30mm;
     }
 
     .notice {

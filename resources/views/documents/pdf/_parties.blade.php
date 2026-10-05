@@ -5,13 +5,17 @@
 <table style="width: 100%; border-collapse: collapse;">
     <tr>
         <td style="width: 55%; vertical-align: top; padding-right: 14pt;">
-            <div class="party-box">
-                <div><span class="bold">Contribuinte:</span> {{ $document['customer']['name'] }}</div>
-                @if ($document['customer']['address_line'])
-                    <div><span class="bold">Localização:</span> {{ $document['customer']['address_line'] }}</div>
-                @endif
-                <div><span class="bold">NIF:</span> {{ $document['customer']['tax_identification_number'] }}</div>
-            </div>
+            <table class="party-box">
+                <tr>
+                    <td>
+                        <span class="bold">Contribuinte:</span> {{ $document['customer']['name'] }}<br>
+                        @if ($document['customer']['address_line'])
+                            <span class="bold">Localização:</span> {{ $document['customer']['address_line'] }}<br>
+                        @endif
+                        <span class="bold">NIF:</span> {{ $document['customer']['tax_identification_number'] }}
+                    </td>
+                </tr>
+            </table>
         </td>
         <td style="width: 45%; vertical-align: top; text-align: right;">
             <div class="bold">{{ $document['company']['legal_name'] }}</div>

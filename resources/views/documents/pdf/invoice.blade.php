@@ -68,19 +68,19 @@
     <thead>
         <tr>
             <th rowspan="2" style="width: 5%;">Tipo</th>
-            <th rowspan="2" style="width: 10%;">Código</th>
-            <th rowspan="2" style="width: 18%;">Descrição</th>
+            <th rowspan="2" style="width: 9%;">Código</th>
+            <th rowspan="2" style="width: 23%;">Descrição</th>
             <th rowspan="2" style="width: 7%;">Qt</th>
             <th rowspan="2" style="width: 9%;">Preço Unit</th>
-            <th rowspan="2" style="width: 7%;">Desc.</th>
+            <th rowspan="2" style="width: 6%;">Desc.</th>
             <th rowspan="2" style="width: 9%;">Valor</th>
-            <th colspan="3" style="width: 24%;">Impostos</th>
-            <th rowspan="2" style="width: 11%;">Total</th>
+            <th colspan="3" style="width: 20%;">Impostos</th>
+            <th rowspan="2" style="width: 12%;">Total</th>
         </tr>
         <tr>
-            <th style="width: 8%;">IEC</th>
+            <th style="width: 6%;">IEC</th>
             <th style="width: 8%;">IVA</th>
-            <th style="width: 8%;">Iselo</th>
+            <th style="width: 6%;">Iselo</th>
         </tr>
     </thead>
     <tbody>
@@ -101,9 +101,9 @@
                         </div>
                     @endif
                 </td>
-                <td class="right nowrap">{{ $line['quantity'] }} {{ $line['unit_of_measure'] }}</td>
+                <td class="right nowrap">{{ $number($line['quantity']) }} {{ $line['unit_of_measure'] }}</td>
                 <td class="right nowrap">{{ $money($line['unit_price_minor']) }}</td>
-                <td class="right nowrap">{{ $line['discount_rate'] }}%</td>
+                <td class="right nowrap">{{ $percent($line['discount_rate']) }}</td>
                 <td class="right nowrap">{{ $money($line['net_amount_minor']) }}</td>
                 <td class="right nowrap">{{ $money($line['taxes_by_type']['IEC']) }}</td>
                 <td class="right nowrap">{{ $money($line['taxes_by_type']['IVA']) }}</td>
@@ -114,7 +114,8 @@
     </tbody>
 </table>
 
-<table style="width: 100%; border-collapse: collapse; margin-top: 12pt;">
+{{-- Totals and verification stay together on one page: half a summary is no summary. --}}
+<table style="width: 100%; border-collapse: collapse; margin-top: 12pt; page-break-inside: avoid;">
     <tr>
         <td style="width: 52%; vertical-align: top; padding-right: 12pt;">
             @if (count($document['withholdings']) > 0)
@@ -136,8 +137,8 @@
                             <tr>
                                 <td>{{ $withheld['type'] }}</td>
                                 <td>{{ $withheld['tax'] }}</td>
-                                <td class="right">{{ $withheld['rate'] }}%</td>
-                                <td class="right">{{ $money($withheld['amount_minor']) }}</td>
+                                <td class="right nowrap">{{ $percent($withheld['rate']) }}</td>
+                                <td class="right nowrap">{{ $money($withheld['amount_minor']) }}</td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -152,7 +153,7 @@
         </td>
 
         <td style="width: 48%; vertical-align: top;">
-            <div class="section-title">Totais do documento (valores em {{ $document['currency_code'] }})</div>
+            <table class="section-title"><tr><td>Totais do documento (valores em {{ $document['currency_code'] }})</td></tr></table>
             <table class="grid" style="margin-top: 4pt;">
                 <thead>
                     <tr>
@@ -164,7 +165,7 @@
                     @foreach ($document['tax_summary'] as $index => $row)
                         <tr @class(['alt' => $index % 2 === 1])>
                             <td>
-                                Incidência a {{ $row['rate'] }}%
+                                Incidência a {{ $percent($row['rate']) }}
                                 @if ($row['exemption_code'])
                                     <span class="muted">· {{ $row['exemption_code'] }}</span>
                                 @endif
@@ -172,7 +173,7 @@
                             <td class="right nowrap">{{ $money($row['base_minor']) }}</td>
                         </tr>
                         <tr @class(['alt' => $index % 2 === 1])>
-                            <td>Imposto a {{ $row['rate'] }}%</td>
+                            <td>Imposto a {{ $percent($row['rate']) }}</td>
                             <td class="right nowrap">{{ $money($row['tax_minor']) }}</td>
                         </tr>
                     @endforeach
@@ -226,11 +227,14 @@
             </table>
         </td>
     </tr>
+    {{-- In the same unbreakable block, so the page with the total is the
+         page with the QR that verifies it. --}}
+    <tr>
+        <td colspan="2" style="padding-top: 16pt;">
+            @include('documents.pdf._authenticity', ['qrImage' => $document['authenticity']['qr_data_uri']])
+        </td>
+    </tr>
 </table>
-
-<div style="margin-top: 16pt;">
-    @include('documents.pdf._authenticity', ['qrImage' => $document['authenticity']['qr_data_uri']])
-</div>
 
 </body>
 </html>

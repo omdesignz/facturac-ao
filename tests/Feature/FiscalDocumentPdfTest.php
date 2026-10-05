@@ -1,6 +1,8 @@
 <?php
 
 use App\Fiscal\Documents\FiscalDocumentPdf;
+use App\Fiscal\Documents\FiscalDocumentPresenter;
+use App\Fiscal\Documents\PrintFormat;
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
 use App\Models\Establishment;
@@ -103,6 +105,42 @@ function pageCount(string $pdf): int
     return preg_match_all('#/Type\s*/Page[^s]#', $pdf);
 }
 
+/**
+ * Every image the PDF draws, as [width, height] in points, read from the
+ * placement matrix in the page content ("w 0 0 h x y cm /I1 Do").
+ *
+ * @return list<array{0: float, 1: float}>
+ */
+function drawnImageSizes(string $pdf): array
+{
+    preg_match_all('#stream\r?\n(.*?)\r?\nendstream#s', $pdf, $streams);
+    $sizes = [];
+
+    foreach ($streams[1] as $stream) {
+        $content = @gzuncompress($stream);
+
+        if ($content === false) {
+            continue;
+        }
+
+        preg_match_all('#([-\d.]+) 0 0 ([-\d.]+) [-\d.]+ [-\d.]+ cm\s*/I\d+ Do#', $content, $placements, PREG_SET_ORDER);
+
+        foreach ($placements as $placement) {
+            $sizes[] = [(float) $placement[1], (float) $placement[2]];
+        }
+    }
+
+    return $sizes;
+}
+
+/** @return list<string> the image dictionaries embedded in the PDF */
+function embeddedImages(string $pdf): array
+{
+    preg_match_all('#<<[^>]*?/Subtype /Image.*?>>\r?\nstream#s', $pdf, $images);
+
+    return $images[0];
+}
+
 // ------------------------------------------------------------------ rendering
 
 test('an issued document renders as a PDF', function () {
@@ -131,6 +169,72 @@ test('the filename is the document number, safe for a filesystem', function () {
     expect(app(FiscalDocumentPdf::class)->filename($document))
         ->not->toContain('/')
         ->and(app(FiscalDocumentPdf::class)->filename($document))->toEndWith('.pdf');
+});
+
+test('the verification QR is the 350 × 350 PNG, drawn square at 30 mm', function (int $lines) {
+    $fixture = pdfFixture();
+    $pdf = app(FiscalDocumentPdf::class)->render(documentWithLines($fixture, $lines));
+
+    $qrImages = array_values(array_filter(
+        embeddedImages($pdf),
+        fn (string $image): bool => str_contains($image, '/Width 350') && str_contains($image, '/Height 350'),
+    ));
+
+    // 30 mm in PDF points. Same size whether the totals end page one or
+    // land at the foot of page three: never squeezed to fit.
+    $thirtyMillimetres = 30 / 25.4 * 72;
+    $drawn = drawnImageSizes($pdf);
+
+    expect($qrImages)->toHaveCount(1)
+        ->and($qrImages[0])->not->toContain('/SMask')
+        ->and($drawn)->toHaveCount(1)
+        ->and($drawn[0][0])->toBe($drawn[0][1])
+        ->and($drawn[0][0])->toEqualWithDelta($thirtyMillimetres, 0.01);
+})->with([
+    'one page' => 3,
+    'totals at a page break' => 18,
+    'three pages' => 60,
+]);
+
+test('a receipt carries the same square QR', function () {
+    $fixture = pdfFixture();
+    $pdf = app(FiscalDocumentPdf::class)->render(
+        documentWithLines($fixture, lines: 1, type: FiscalDocumentType::Receipt),
+    );
+
+    expect(drawnImageSizes($pdf))->toHaveCount(1)
+        ->and(drawnImageSizes($pdf)[0][0])->toBe(drawnImageSizes($pdf)[0][1]);
+});
+
+test('the PDF says what made it and keeps its scratch files off the private disk', function () {
+    $fixture = pdfFixture();
+    $pdf = app(FiscalDocumentPdf::class)->render(documentWithLines($fixture));
+
+    // mPDF writes metadata as UTF-16 text strings.
+    $creator = "\xFE\xFF".mb_convert_encoding((string) config('app.name'), 'UTF-16BE', 'UTF-8');
+
+    expect($pdf)->toContain('/Creator ('.$creator.')')
+        ->and(is_dir(storage_path('framework/cache/mpdf')))->toBeTrue();
+});
+
+test('figures print the Angolan way, not as machine decimals', function () {
+    $fixture = pdfFixture();
+    $document = documentWithLines($fixture, lines: 1);
+
+    $html = view('documents.pdf.invoice', [
+        'document' => app(FiscalDocumentPresenter::class)->forPrint($document),
+        'settlements' => [],
+        'logo' => null,
+        'money' => fn (int $minor): string => app(PrintFormat::class)->money($minor),
+        'number' => fn (string $value, int $minimumDecimals = 0): string => app(PrintFormat::class)->decimal($value, $minimumDecimals),
+        'percent' => fn (string $value): string => app(PrintFormat::class)->percent($value),
+    ])->render();
+
+    // "1.000 UN" reads as a thousand units to an Angolan reader.
+    expect($html)->toContain('1 UN')
+        ->not->toContain('1.000 UN')
+        ->toContain('Imposto a 14%')
+        ->not->toContain('14.00%');
 });
 
 test('a receipt uses its own sheet', function () {

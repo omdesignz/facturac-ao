@@ -6,7 +6,6 @@
     @include('documents.pdf._styles')
     <style>
         .route-box { border: 0.6pt solid #777; padding: 6pt 8pt; vertical-align: top; }
-        .cancelled-watermark { position: fixed; top: 43%; left: 0; right: 0; text-align: center; font-size: 58pt; font-weight: bold; color: rgba(190, 24, 93, 0.12); transform: rotate(-14deg); }
     </style>
 </head>
 <body>
@@ -33,29 +32,34 @@
     <table style="width: 100%; border-collapse: collapse; font-size: 7pt;" class="muted"><tr><td>{{ $document['document_no'] }}</td><td class="right">Pág. {PAGENO}/{nbpg}</td></tr></table>
 </htmlpagefooter>
 
-@if ($document['status'] === 'cancelled')
-    <div class="cancelled-watermark">ANULADO</div>
-@endif
 
 <table style="width: 100%; border-collapse: collapse; margin-top: 4pt;">
     <tr>
         <td style="width: 50%; vertical-align: top; padding-right: 8pt;">
-            <div class="section-title">EMISSOR</div>
-            <div class="party-box" style="border-radius: 0; border-top: 0;">
-                <div class="bold">{{ $document['company']['legal_name'] }}</div>
-                <div>NIF {{ $document['company']['tax_identification_number'] }}</div>
-                <div>{{ $document['establishment']['name'] }} · {{ $document['establishment']['code'] }}</div>
-                <div>{{ $document['company']['address'] }}, {{ $document['company']['city'] }} · {{ $document['company']['province'] }}</div>
-            </div>
+            <table class="section-title"><tr><td>EMISSOR</td></tr></table>
+            <table class="party-box" style="border-top: 0;">
+                <tr>
+                    <td>
+                        <span class="bold">{{ $document['company']['legal_name'] }}</span><br>
+                        NIF {{ $document['company']['tax_identification_number'] }}<br>
+                        {{ $document['establishment']['name'] }} · {{ $document['establishment']['code'] }}<br>
+                        {{ $document['company']['address'] }}, {{ $document['company']['city'] }} · {{ $document['company']['province'] }}
+                    </td>
+                </tr>
+            </table>
         </td>
         <td style="width: 50%; vertical-align: top; padding-left: 8pt;">
-            <div class="section-title">{{ mb_strtoupper($document['party_label']) }}</div>
-            <div class="party-box" style="border-radius: 0; border-top: 0;">
-                <div class="bold">{{ $document['recipient']['name'] }}</div>
-                <div>NIF {{ $document['recipient']['tax_identification_number'] }}</div>
-                <div>{{ $document['recipient']['address'] }}</div>
-                <div>{{ $document['recipient']['city'] }}@if($document['recipient']['province']), {{ $document['recipient']['province'] }}@endif · {{ $document['recipient']['country_code'] }}</div>
-            </div>
+            <table class="section-title"><tr><td>{{ mb_strtoupper($document['party_label']) }}</td></tr></table>
+            <table class="party-box" style="border-top: 0;">
+                <tr>
+                    <td>
+                        <span class="bold">{{ $document['recipient']['name'] }}</span><br>
+                        NIF {{ $document['recipient']['tax_identification_number'] }}<br>
+                        {{ $document['recipient']['address'] }}<br>
+                        {{ $document['recipient']['city'] }}@if($document['recipient']['province']), {{ $document['recipient']['province'] }}@endif · {{ $document['recipient']['country_code'] }}
+                    </td>
+                </tr>
+            </table>
         </td>
     </tr>
 </table>
@@ -76,7 +80,7 @@
     <tr>
         <th>Transportador</th><td>{{ $document['transporter']['name'] ?? '—' }}</td>
         <th>NIF / matrícula</th><td>{{ $document['transporter']['tax_identification_number'] ?? '—' }} / {{ $document['transporter']['vehicle_registration'] ?? '—' }}</td>
-        <th>Peso / volumes</th><td>{{ $document['gross_weight_kg'] ? $document['gross_weight_kg'].' kg' : '—' }} / {{ $document['package_count'] ?? '—' }}</td>
+        <th>Peso / volumes</th><td>{{ $document['gross_weight_kg'] ? $number($document['gross_weight_kg']).' kg' : '—' }} / {{ $document['package_count'] ?? '—' }}</td>
     </tr>
 </table>
 
@@ -84,7 +88,7 @@
     <thead><tr><th style="width: 6%;">#</th><th style="width: 15%;">Código</th><th>Mercadoria</th><th style="width: 17%;">Quantidade</th><th style="width: 16%;">Preço unitário</th><th style="width: 16%;">Valor</th></tr></thead>
     <tbody>
         @foreach ($document['lines'] as $index => $line)
-            <tr @class(['alt' => $index % 2 === 1])><td class="center">{{ $line['line_number'] }}</td><td>{{ $line['product_code'] }}</td><td>{{ $line['product_description'] }}</td><td class="right nowrap">{{ $line['quantity'] }} {{ $line['unit_of_measure'] }}</td><td class="right nowrap">{{ $line['unit_price'] }}</td><td class="right nowrap bold">{{ $money($line['net_amount_minor']) }}</td></tr>
+            <tr @class(['alt' => $index % 2 === 1])><td class="center">{{ $line['line_number'] }}</td><td>{{ $line['product_code'] }}</td><td>{{ $line['product_description'] }}</td><td class="right nowrap">{{ $number($line['quantity']) }} {{ $line['unit_of_measure'] }}</td><td class="right nowrap">{{ $number($line['unit_price'], 2) }}</td><td class="right nowrap bold">{{ $money($line['net_amount_minor']) }}</td></tr>
         @endforeach
     </tbody>
 </table>

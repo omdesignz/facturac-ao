@@ -3,6 +3,7 @@
 use App\Actions\IssueTransportDocument;
 use App\Actions\SaveTransportDocumentDraft;
 use App\Exceptions\BillingActionRefused;
+use App\Fiscal\Documents\PdfSheet;
 use App\Fiscal\Documents\TransportDocumentPdf;
 use App\Models\Customer;
 use App\Models\Establishment;
@@ -15,6 +16,7 @@ use App\TransportDocumentType;
 use App\WorkspaceRole;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Fortify;
+use Mockery\MockInterface;
 
 /**
  * @return array{owner: User, legalEntity: LegalEntity, establishment: Establishment}
@@ -360,3 +362,29 @@ function transportActionProfile(array $payload): array
         ], $payload['lines']),
     ];
 }
+
+test('a cancelled guide is stamped ANULADO on every page by the PDF engine', function () {
+    $fixture = transportModuleFixture();
+    $draft = app(SaveTransportDocumentDraft::class)->execute(
+        $fixture['legalEntity'],
+        $fixture['owner'],
+        transportActionProfile(transportModulePayload($fixture)),
+    );
+    $document = app(IssueTransportDocument::class)->execute($draft, $fixture['owner'], 1);
+    $watermarks = [];
+
+    $this->mock(PdfSheet::class, function (MockInterface $sheet) use (&$watermarks): void {
+        $sheet->shouldReceive('logo')->andReturnNull();
+        $sheet->shouldReceive('render')->andReturnUsing(function (string $view, array $data, array $metadata) use (&$watermarks): string {
+            $watermarks[] = $metadata['watermark'];
+
+            return '%PDF-';
+        });
+    });
+
+    app(TransportDocumentPdf::class)->render($document);
+    $document->forceFill(['status' => TransportDocumentStatus::Cancelled])->saveQuietly();
+    app(TransportDocumentPdf::class)->render($document->fresh());
+
+    expect($watermarks)->toBe([null, 'ANULADO']);
+});
