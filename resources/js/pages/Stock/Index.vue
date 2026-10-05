@@ -12,6 +12,8 @@ import {
 import { computed, ref, watch } from 'vue';
 import FlashBanner from '@/components/FlashBanner.vue';
 import FormError from '@/components/FormError.vue';
+import PageHeader from '@/components/PageHeader.vue';
+import PageStat from '@/components/PageStat.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -183,82 +185,59 @@ function isInbound(quantity: string): boolean {
             <div class="mx-auto max-w-6xl space-y-6">
                 <FlashBanner />
 
-                <header
-                    class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
+                <PageHeader
+                    eyebrow="Artigos · Existências"
+                    title="Existências"
+                    description="O que tem em cada estabelecimento. Emitir uma factura dá baixa automaticamente; uma nota de crédito devolve."
                 >
-                    <div>
-                        <p class="eyebrow text-brand-700 dark:text-brand-300">
-                            Inventário
-                        </p>
-                        <h1
-                            class="mt-2 text-3xl display text-zinc-950 dark:text-white"
+                    <template #actions>
+                        <button
+                            v-if="canManage && trackedItems.length > 0"
+                            type="button"
+                            class="inline-flex h-10 w-fit items-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
+                            @click="openDialog"
                         >
-                            Existências
-                        </h1>
-                        <p
-                            class="mt-2 max-w-2xl text-sm/6 text-zinc-600 dark:text-zinc-400"
+                            <PackagePlus class="size-4" aria-hidden="true" />
+                            Registar movimento
+                        </button>
+                    </template>
+                    <template #stats>
+                        <PageStat
+                            label="Artigos seguidos"
+                            :value="summary.tracked_items"
+                        />
+                        <PageStat
+                            label="Valor em armazém"
+                            :value="money(summary.total_value_minor)"
+                        />
+                        <PageStat
+                            label="Abaixo do mínimo"
+                            :value="summary.low_count"
                         >
-                            O que tem em cada estabelecimento. Emitir uma
-                            factura dá baixa automaticamente; uma nota de
-                            crédito devolve.
-                        </p>
-                    </div>
-
-                    <button
-                        v-if="canManage && trackedItems.length > 0"
-                        type="button"
-                        class="inline-flex w-fit items-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm focus-ring transition hover:bg-brand-600 dark:bg-accent-400 dark:text-brand-950 dark:hover:bg-accent-300"
-                        @click="openDialog"
-                    >
-                        <PackagePlus class="size-4" aria-hidden="true" />
-                        Registar movimento
-                    </button>
-                </header>
-
-                <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <div class="rounded-2xl surface p-4">
-                        <p class="eyebrow text-zinc-500">Artigos seguidos</p>
-                        <p
-                            class="mt-2 numeric text-2xl font-semibold text-zinc-950 dark:text-white"
+                            <span
+                                :class="
+                                    summary.low_count > 0
+                                        ? 'text-orange-600 dark:text-orange-400'
+                                        : ''
+                                "
+                                >{{ summary.low_count }}</span
+                            >
+                        </PageStat>
+                        <PageStat
+                            label="Saldo negativo"
+                            :value="summary.negative_count"
                         >
-                            {{ summary.tracked_items }}
-                        </p>
-                    </div>
-                    <div class="rounded-2xl surface p-4">
-                        <p class="eyebrow text-zinc-500">Valor em armazém</p>
-                        <p
-                            class="mt-2 numeric text-2xl font-semibold text-zinc-950 dark:text-white"
-                        >
-                            {{ money(summary.total_value_minor) }}
-                        </p>
-                    </div>
-                    <div class="rounded-2xl surface p-4">
-                        <p class="eyebrow text-zinc-500">Abaixo do mínimo</p>
-                        <p
-                            :class="[
-                                summary.low_count > 0
-                                    ? 'text-amber-700 dark:text-amber-300'
-                                    : 'text-zinc-950 dark:text-white',
-                                'mt-2 numeric text-2xl font-semibold',
-                            ]"
-                        >
-                            {{ summary.low_count }}
-                        </p>
-                    </div>
-                    <div class="rounded-2xl surface p-4">
-                        <p class="eyebrow text-zinc-500">Saldo negativo</p>
-                        <p
-                            :class="[
-                                summary.negative_count > 0
-                                    ? 'text-rose-700 dark:text-rose-300'
-                                    : 'text-zinc-950 dark:text-white',
-                                'mt-2 numeric text-2xl font-semibold',
-                            ]"
-                        >
-                            {{ summary.negative_count }}
-                        </p>
-                    </div>
-                </section>
+                            <span
+                                :class="
+                                    summary.negative_count > 0
+                                        ? 'text-rose-600 dark:text-rose-400'
+                                        : ''
+                                "
+                                >{{ summary.negative_count }}</span
+                            >
+                        </PageStat>
+                    </template>
+                </PageHeader>
 
                 <div
                     v-if="summary.negative_count > 0"
@@ -275,9 +254,11 @@ function isInbound(quantity: string): boolean {
                     </p>
                 </div>
 
-                <div class="overflow-hidden rounded-2xl surface">
+                <div
+                    class="overflow-hidden rounded-3xl bg-zinc-900/[0.04] dark:bg-white/[0.04]"
+                >
                     <div
-                        class="flex flex-col gap-3 border-b border-zinc-100 p-4 sm:flex-row sm:items-center dark:border-white/10"
+                        class="flex flex-col gap-3 border-b border-zinc-900/[0.07] p-4 sm:flex-row sm:items-center dark:border-white/10"
                     >
                         <label class="relative w-full sm:max-w-xs">
                             <span class="sr-only">Procurar artigo</span>
@@ -332,7 +313,7 @@ function isInbound(quantity: string): boolean {
                     <div v-else class="overflow-x-auto">
                         <table class="min-w-full text-left text-sm">
                             <thead
-                                class="border-b border-zinc-100 dark:border-white/10"
+                                class="border-b border-zinc-900/[0.07] dark:border-white/10"
                             >
                                 <tr>
                                     <th class="px-4 py-3 eyebrow text-zinc-500">
@@ -359,7 +340,7 @@ function isInbound(quantity: string): boolean {
                                 </tr>
                             </thead>
                             <tbody
-                                class="divide-y divide-zinc-100 dark:divide-white/10"
+                                class="divide-y divide-zinc-900/[0.06] dark:divide-white/10"
                             >
                                 <tr v-for="level in levels" :key="level.id">
                                     <td class="px-4 py-3">
@@ -419,9 +400,11 @@ function isInbound(quantity: string): boolean {
                     </div>
                 </div>
 
-                <section class="overflow-hidden rounded-2xl surface">
+                <section
+                    class="overflow-hidden rounded-3xl bg-zinc-900/[0.04] dark:bg-white/[0.04]"
+                >
                     <header
-                        class="border-b border-zinc-100 p-4 dark:border-white/10"
+                        class="border-b border-zinc-900/[0.07] p-4 dark:border-white/10"
                     >
                         <h2
                             class="text-sm font-semibold text-zinc-950 dark:text-white"
@@ -445,7 +428,7 @@ function isInbound(quantity: string): boolean {
 
                     <ul
                         v-else
-                        class="divide-y divide-zinc-100 dark:divide-white/10"
+                        class="divide-y divide-zinc-900/[0.06] dark:divide-white/10"
                     >
                         <li
                             v-for="movement in movements"
@@ -652,7 +635,7 @@ function isInbound(quantity: string): boolean {
                     <button
                         type="submit"
                         :disabled="form.processing"
-                        class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm focus-ring transition hover:bg-brand-600 disabled:opacity-60 dark:bg-accent-400 dark:text-brand-950 dark:hover:bg-accent-300"
+                        class="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                     >
                         <LoaderCircle
                             v-if="form.processing"

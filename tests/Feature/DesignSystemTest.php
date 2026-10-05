@@ -34,6 +34,12 @@ test('the screens that used a banner now use the shared page header', function (
     'Customers/Index',
     'Customers/Show',
     'Debts/Index',
+    'Catalogue/Index',
+    'PriceLists/Index',
+    'Stock/Index',
+    'Quotes/Index',
+    'TransportDocuments/Index',
+    'Recurring/Index',
 ]);
 
 test('the dashboard and the debts page colour debt age the same way', function (string $page) {

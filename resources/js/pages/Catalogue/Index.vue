@@ -10,6 +10,7 @@ import {
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import FormError from '@/components/FormError.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
@@ -189,39 +190,29 @@ async function deactivate(item: CatalogueItem): Promise<void> {
 
         <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
             <div class="mx-auto max-w-6xl space-y-6">
-                <header
-                    class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
+                <PageHeader
+                    eyebrow="Artigos"
+                    title="Artigos e serviços"
+                    description="O que vende, com o preço e o IVA já definidos. Numa factura basta escolher — os valores entram sozinhos."
                 >
-                    <div>
-                        <p class="eyebrow text-brand-700 dark:text-brand-300">
-                            Registos
-                        </p>
-                        <h1
-                            class="mt-2 text-3xl display text-zinc-950 dark:text-white"
+                    <template #actions>
+                        <button
+                            v-if="canManage"
+                            type="button"
+                            class="inline-flex h-10 w-fit items-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
+                            @click="openCreate"
                         >
-                            Artigos e serviços
-                        </h1>
-                        <p
-                            class="mt-2 max-w-2xl text-sm/6 text-zinc-600 dark:text-zinc-400"
-                        >
-                            O que vende, com o preço e o IVA já definidos. Numa
-                            factura basta escolher — os valores entram sozinhos.
-                        </p>
-                    </div>
-                    <button
-                        v-if="canManage"
-                        type="button"
-                        class="inline-flex w-fit items-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm focus-ring transition hover:bg-brand-600 dark:bg-accent-400 dark:text-brand-950 dark:hover:bg-accent-300"
-                        @click="openCreate"
-                    >
-                        <Plus class="size-4" aria-hidden="true" />
-                        Novo artigo
-                    </button>
-                </header>
+                            <Plus class="size-4" aria-hidden="true" />
+                            Novo artigo
+                        </button>
+                    </template>
+                </PageHeader>
 
-                <div class="overflow-hidden rounded-2xl surface">
+                <div
+                    class="overflow-hidden rounded-3xl bg-zinc-900/[0.04] dark:bg-white/[0.04]"
+                >
                     <div
-                        class="flex flex-col gap-3 border-b border-zinc-100 p-4 sm:flex-row sm:items-center dark:border-white/10"
+                        class="flex flex-col gap-3 border-b border-zinc-900/[0.07] p-4 sm:flex-row sm:items-center dark:border-white/10"
                     >
                         <label class="relative w-full sm:max-w-xs">
                             <span class="sr-only">Procurar artigos</span>
@@ -282,7 +273,7 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                         <table class="min-w-full text-sm">
                             <thead>
                                 <tr
-                                    class="border-b border-zinc-100 text-left dark:border-white/10"
+                                    class="border-b border-zinc-900/[0.07] text-left dark:border-white/10"
                                 >
                                     <th class="px-4 py-3 eyebrow text-zinc-500">
                                         Artigo
@@ -311,7 +302,7 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                                 </tr>
                             </thead>
                             <tbody
-                                class="divide-y divide-zinc-100 dark:divide-white/10"
+                                class="divide-y divide-zinc-900/[0.06] dark:divide-white/10"
                             >
                                 <tr
                                     v-for="item in items.data"
@@ -406,7 +397,7 @@ async function deactivate(item: CatalogueItem): Promise<void> {
 
                     <nav
                         v-if="items.links.length > 3"
-                        class="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-100 px-4 py-3 dark:border-white/10"
+                        class="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-900/[0.07] px-4 py-3 dark:border-white/10"
                     >
                         <p class="text-xs text-zinc-500 dark:text-zinc-400">
                             <span class="numeric"
@@ -421,11 +412,11 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                                 :key="link.label"
                                 :class="[
                                     link.active
-                                        ? 'bg-brand-700 text-white dark:bg-accent-400 dark:text-brand-950'
+                                        ? 'bg-brand-950 text-white dark:bg-zinc-100 dark:text-brand-950'
                                         : link.url
                                           ? 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-white/5'
                                           : 'text-zinc-300 dark:text-zinc-600',
-                                    'rounded-lg px-2.5 py-1.5 text-xs font-semibold',
+                                    'inline-flex h-8 min-w-8 items-center justify-center rounded-full px-2.5 text-xs font-semibold',
                                 ]"
                                 @click="link.url && router.get(link.url)"
                                 >{{ pageLabel(link.label) }}</component
@@ -647,7 +638,7 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                     <button
                         type="submit"
                         :disabled="form.processing"
-                        class="inline-flex items-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm focus-ring transition hover:bg-brand-600 disabled:opacity-60 dark:bg-accent-400 dark:text-brand-950 dark:hover:bg-accent-300"
+                        class="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                     >
                         <LoaderCircle
                             v-if="form.processing"

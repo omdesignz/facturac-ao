@@ -12,6 +12,7 @@ import {
 import { computed, ref, watch } from 'vue';
 import FlashBanner from '@/components/FlashBanner.vue';
 import FormError from '@/components/FormError.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { confirmAction } from '@/lib/confirm';
@@ -259,41 +260,27 @@ function toggleDefault(): void {
             <div class="mx-auto max-w-6xl space-y-6">
                 <FlashBanner />
 
-                <header
-                    class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
+                <PageHeader
+                    eyebrow="Artigos · Tabelas de preços"
+                    title="Tabelas de preços"
+                    description="Um preço combinado com um cliente vale sempre mais que a tabela dele; a tabela vale mais que o preço do artigo."
                 >
-                    <div>
-                        <p class="eyebrow text-brand-700 dark:text-brand-300">
-                            Preços
-                        </p>
-                        <h1
-                            class="mt-2 text-3xl display text-zinc-950 dark:text-white"
+                    <template #actions>
+                        <button
+                            v-if="canManage"
+                            type="button"
+                            class="inline-flex h-10 w-fit items-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
+                            @click="openDialog"
                         >
-                            Tabelas de preços
-                        </h1>
-                        <p
-                            class="mt-2 max-w-2xl text-sm/6 text-zinc-600 dark:text-zinc-400"
-                        >
-                            Um preço combinado com um cliente vale sempre mais
-                            que a tabela dele; a tabela vale mais que o preço do
-                            artigo.
-                        </p>
-                    </div>
-
-                    <button
-                        v-if="canManage"
-                        type="button"
-                        class="inline-flex w-fit items-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm focus-ring transition hover:bg-brand-600 dark:bg-accent-400 dark:text-brand-950 dark:hover:bg-accent-300"
-                        @click="openDialog"
-                    >
-                        <Plus class="size-4" aria-hidden="true" />
-                        Nova tabela
-                    </button>
-                </header>
+                            <Plus class="size-4" aria-hidden="true" />
+                            Nova tabela
+                        </button>
+                    </template>
+                </PageHeader>
 
                 <div
                     v-if="lists.length === 0"
-                    class="flex flex-col items-center gap-3 rounded-2xl surface px-6 py-16 text-center"
+                    class="flex flex-col items-center gap-3 rounded-3xl bg-zinc-900/[0.04] px-6 py-16 text-center dark:bg-white/[0.04]"
                 >
                     <Tags class="size-8 text-zinc-400" aria-hidden="true" />
                     <p
@@ -311,7 +298,7 @@ function toggleDefault(): void {
                     <button
                         v-if="canManage"
                         type="button"
-                        class="mt-2 inline-flex items-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white focus-ring transition hover:bg-brand-600 dark:bg-accent-400 dark:text-brand-950 dark:hover:bg-accent-300"
+                        class="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300"
                         @click="openDialog"
                     >
                         <Plus class="size-4" aria-hidden="true" />
@@ -368,7 +355,9 @@ function toggleDefault(): void {
                     </nav>
 
                     <section v-if="selected" class="space-y-4">
-                        <div class="rounded-2xl surface p-5">
+                        <div
+                            class="rounded-3xl bg-zinc-900/[0.04] p-5 dark:bg-white/[0.04]"
+                        >
                             <div
                                 class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
                             >
@@ -446,9 +435,11 @@ function toggleDefault(): void {
                             </div>
                         </div>
 
-                        <div class="overflow-hidden rounded-2xl surface">
+                        <div
+                            class="overflow-hidden rounded-3xl bg-zinc-900/[0.04] dark:bg-white/[0.04]"
+                        >
                             <header
-                                class="flex flex-col gap-3 border-b border-zinc-100 p-5 sm:flex-row sm:items-end sm:justify-between dark:border-white/10"
+                                class="flex flex-col gap-3 border-b border-zinc-900/[0.07] p-5 sm:flex-row sm:items-end sm:justify-between dark:border-white/10"
                             >
                                 <div>
                                     <h3
@@ -507,7 +498,7 @@ function toggleDefault(): void {
                             <div v-else class="overflow-x-auto">
                                 <table class="min-w-full text-left text-sm">
                                     <thead
-                                        class="border-b border-zinc-100 dark:border-white/10"
+                                        class="border-b border-zinc-900/[0.07] dark:border-white/10"
                                     >
                                         <tr>
                                             <th
@@ -533,7 +524,7 @@ function toggleDefault(): void {
                                         </tr>
                                     </thead>
                                     <tbody
-                                        class="divide-y divide-zinc-100 dark:divide-white/10"
+                                        class="divide-y divide-zinc-900/[0.06] dark:divide-white/10"
                                     >
                                         <tr
                                             v-for="row in selected.rows"
@@ -598,12 +589,12 @@ function toggleDefault(): void {
 
                             <div
                                 v-if="canManage && selected.rows.length > 0"
-                                class="flex items-center justify-end gap-3 border-t border-zinc-100 p-4 dark:border-white/10"
+                                class="flex items-center justify-end gap-3 border-t border-zinc-900/[0.07] p-4 dark:border-white/10"
                             >
                                 <button
                                     type="button"
                                     :disabled="pricesForm.processing"
-                                    class="inline-flex items-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm focus-ring transition hover:bg-brand-600 disabled:opacity-60 dark:bg-accent-400 dark:text-brand-950 dark:hover:bg-accent-300"
+                                    class="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                                     @click="savePrices"
                                 >
                                     <LoaderCircle
@@ -623,7 +614,7 @@ function toggleDefault(): void {
 
                         <div
                             v-if="selected.customers.length > 0"
-                            class="rounded-2xl surface p-5"
+                            class="rounded-3xl bg-zinc-900/[0.04] p-5 dark:bg-white/[0.04]"
                         >
                             <h3
                                 class="text-sm font-semibold text-zinc-950 dark:text-white"
@@ -717,7 +708,7 @@ function toggleDefault(): void {
                     <button
                         type="submit"
                         :disabled="listForm.processing"
-                        class="inline-flex items-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white focus-ring transition hover:bg-brand-600 disabled:opacity-60 dark:bg-accent-400 dark:text-brand-950 dark:hover:bg-accent-300"
+                        class="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                     >
                         <LoaderCircle
                             v-if="listForm.processing"

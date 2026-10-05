@@ -13,6 +13,7 @@ import { computed, ref } from 'vue';
 import DateInput from '@/components/DateInput.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
 import FormError from '@/components/FormError.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
@@ -244,54 +245,39 @@ const dueCount = computed(
             <div class="mx-auto max-w-6xl space-y-6">
                 <FlashBanner />
 
-                <header
-                    class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
+                <PageHeader
+                    eyebrow="Documentos · Avenças"
+                    title="Avenças"
+                    description="Facturação que se repete sozinha, na frequência que escolher. Por omissão deixamos um rascunho para rever — emitir é irreversível, por isso só acontece se o pedir."
                 >
-                    <div>
-                        <p class="eyebrow text-brand-700 dark:text-brand-300">
-                            Serviços contínuos
-                        </p>
-                        <h1
-                            class="mt-2 text-3xl display text-zinc-950 dark:text-white"
-                        >
-                            Avenças
-                        </h1>
-                        <p
-                            class="mt-2 max-w-2xl text-sm/6 text-zinc-600 dark:text-zinc-400"
-                        >
-                            Facturação que se repete sozinha, na frequência que
-                            escolher. Por omissão deixamos um rascunho para
-                            rever — emitir é irreversível, por isso só acontece
-                            se o pedir.
-                        </p>
-                    </div>
+                    <template #actions>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <button
+                                v-if="dueCount > 0"
+                                type="button"
+                                class="inline-flex h-10 items-center gap-2 rounded-full px-[1.125rem] text-sm font-semibold text-zinc-700 ring-1 ring-zinc-900/10 focus-ring transition hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
+                                @click="runNow"
+                            >
+                                <Zap class="size-4" aria-hidden="true" />
+                                Gerar agora ({{ dueCount }})
+                            </button>
 
-                    <div class="flex flex-wrap items-center gap-3">
-                        <button
-                            v-if="dueCount > 0"
-                            type="button"
-                            class="inline-flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-zinc-700 ring-1 ring-zinc-300 focus-ring transition hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
-                            @click="runNow"
-                        >
-                            <Zap class="size-4" aria-hidden="true" />
-                            Gerar agora ({{ dueCount }})
-                        </button>
-
-                        <button
-                            v-if="customers.length > 0"
-                            type="button"
-                            class="inline-flex w-fit items-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm focus-ring transition hover:bg-brand-600 dark:bg-accent-400 dark:text-brand-950 dark:hover:bg-accent-300"
-                            @click="openCreate"
-                        >
-                            <Plus class="size-4" aria-hidden="true" />
-                            Nova avença
-                        </button>
-                    </div>
-                </header>
+                            <button
+                                v-if="customers.length > 0"
+                                type="button"
+                                class="inline-flex h-10 w-fit items-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
+                                @click="openCreate"
+                            >
+                                <Plus class="size-4" aria-hidden="true" />
+                                Nova avença
+                            </button>
+                        </div>
+                    </template>
+                </PageHeader>
 
                 <div
                     v-if="profiles.length === 0"
-                    class="flex flex-col items-center gap-2 rounded-2xl surface px-4 py-16 text-center"
+                    class="flex flex-col items-center gap-2 rounded-3xl bg-zinc-900/[0.04] px-4 py-16 text-center dark:bg-white/[0.04]"
                 >
                     <CalendarSync
                         class="size-8 text-zinc-300 dark:text-zinc-600"
@@ -307,7 +293,7 @@ const dueCount = computed(
                     <li
                         v-for="profile in profiles"
                         :key="profile.public_id"
-                        class="rounded-2xl surface p-5"
+                        class="rounded-3xl bg-zinc-900/[0.04] p-5 dark:bg-white/[0.04]"
                     >
                         <div class="flex flex-wrap items-start gap-x-4 gap-y-2">
                             <div class="min-w-0 flex-1">
@@ -661,7 +647,7 @@ const dueCount = computed(
                     <button
                         type="submit"
                         :disabled="form.processing"
-                        class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm focus-ring transition hover:bg-brand-600 disabled:opacity-60 dark:bg-accent-400 dark:text-brand-950 dark:hover:bg-accent-300"
+                        class="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                     >
                         <LoaderCircle
                             v-if="form.processing"

@@ -1,18 +1,11 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import {
-    Ban,
-    Boxes,
-    CircleCheck,
-    FilePenLine,
-    Filter,
-    Plus,
-    Search,
-    Truck,
-} from '@lucide/vue';
+import { Filter, Plus, Search, Truck } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import DateInput from '@/components/DateInput.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
+import PageHeader from '@/components/PageHeader.vue';
+import PageStat from '@/components/PageStat.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -117,25 +110,21 @@ const statusCards = computed(() => [
         label: 'Total',
         detail: 'movimentos registados',
         count: props.summary.total,
-        icon: Boxes,
     },
     {
         label: 'Rascunhos',
         detail: 'a preparar',
         count: props.summary.draft,
-        icon: FilePenLine,
     },
     {
         label: 'Emitidos',
         detail: 'prontos para circular',
         count: props.summary.issued,
-        icon: CircleCheck,
     },
     {
         label: 'Anulados',
         detail: 'mantidos no SAF-T',
         count: props.summary.cancelled,
-        icon: Ban,
     },
 ]);
 
@@ -202,77 +191,34 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
             <div class="mx-auto max-w-7xl space-y-6">
                 <FlashBanner />
 
-                <header
-                    class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between"
+                <PageHeader
+                    eyebrow="Documentos · Guias e transporte"
+                    title="Guias e transporte"
+                    description="Prepare guias de remessa, transporte, activos próprios e devoluções. Depois de emitidas, ficam imutáveis e seguem no SAF-T (AO). Na API v1.2 actual, estes tipos não pertencem ao endpoint de facturas; são declarados em MovementOfGoods."
                 >
-                    <div>
-                        <p class="eyebrow text-brand-700 dark:text-brand-300">
-                            Movimento de mercadorias
-                        </p>
-                        <h1
-                            class="mt-2 text-3xl display text-zinc-950 dark:text-white"
+                    <template #actions>
+                        <Link
+                            v-if="permissions.create"
+                            :href="createTransportDocument.url()"
+                            class="inline-flex h-10 w-fit items-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                            Guias e transporte
-                        </h1>
-                        <p
-                            class="mt-2 max-w-2xl text-sm/6 text-zinc-600 dark:text-zinc-400"
-                        >
-                            Prepare guias de remessa, transporte, activos
-                            próprios e devoluções. Depois de emitidas, ficam
-                            imutáveis e seguem no SAF-T (AO). Na API v1.2
-                            actual, estes tipos não pertencem ao endpoint de
-                            facturas; são declarados em MovementOfGoods.
-                        </p>
-                    </div>
-
-                    <Link
-                        v-if="permissions.create"
-                        :href="createTransportDocument.url()"
-                        class="inline-flex w-fit items-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm focus-ring transition hover:bg-brand-600 dark:bg-accent-400 dark:text-brand-950 dark:hover:bg-accent-300"
-                    >
-                        <Plus class="size-4" aria-hidden="true" />
-                        Nova guia
-                    </Link>
-                </header>
+                            <Plus class="size-4" aria-hidden="true" />
+                            Nova guia
+                        </Link>
+                    </template>
+                    <template #stats>
+                        <PageStat
+                            v-for="card in statusCards"
+                            :key="card.label"
+                            :label="card.label"
+                            :value="card.count"
+                            :detail="card.detail"
+                        />
+                    </template>
+                </PageHeader>
 
                 <section
-                    class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
-                    aria-label="Resumo das guias"
-                >
-                    <article
-                        v-for="card in statusCards"
-                        :key="card.label"
-                        class="rounded-2xl surface p-4"
-                    >
-                        <div class="flex items-center justify-between gap-3">
-                            <div>
-                                <p
-                                    class="text-sm font-medium text-zinc-700 dark:text-zinc-300"
-                                >
-                                    {{ card.label }}
-                                </p>
-                                <p
-                                    class="mt-1 numeric text-2xl font-semibold text-zinc-950 dark:text-white"
-                                >
-                                    {{ card.count }}
-                                </p>
-                            </div>
-                            <component
-                                :is="card.icon"
-                                class="size-5 text-brand-600 dark:text-brand-300"
-                                aria-hidden="true"
-                            />
-                        </div>
-                        <p
-                            class="mt-2 text-xs text-zinc-500 dark:text-zinc-400"
-                        >
-                            {{ card.detail }}
-                        </p>
-                    </article>
-                </section>
-
-                <section
-                    class="rounded-2xl surface p-4 sm:p-5"
+                    class="rounded-3xl bg-zinc-900/[0.04] p-4 sm:p-5 dark:bg-white/[0.04]"
                     aria-label="Filtros"
                 >
                     <form
@@ -346,7 +292,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
 
                 <section
                     v-if="documents.data.length === 0"
-                    class="rounded-2xl surface px-5 py-16 text-center"
+                    class="rounded-3xl bg-zinc-900/[0.04] px-5 py-16 text-center dark:bg-white/[0.04]"
                 >
                     <Truck
                         class="mx-auto size-9 text-zinc-300 dark:text-zinc-600"
@@ -363,11 +309,14 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                     </p>
                 </section>
 
-                <section v-else class="overflow-hidden rounded-2xl surface">
+                <section
+                    v-else
+                    class="overflow-hidden rounded-3xl bg-zinc-900/[0.04] dark:bg-white/[0.04]"
+                >
                     <div class="overflow-x-auto">
                         <table class="min-w-full text-left text-sm">
                             <thead
-                                class="border-b border-zinc-100 dark:border-white/10"
+                                class="border-b border-zinc-900/[0.07] dark:border-white/10"
                             >
                                 <tr>
                                     <th class="px-5 py-3 eyebrow text-zinc-500">
@@ -393,7 +342,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                 </tr>
                             </thead>
                             <tbody
-                                class="divide-y divide-zinc-100 dark:divide-white/10"
+                                class="divide-y divide-zinc-900/[0.06] dark:divide-white/10"
                             >
                                 <tr
                                     v-for="document in documents.data"
@@ -487,7 +436,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
 
                     <nav
                         v-if="documents.links.length > 3"
-                        class="flex flex-wrap gap-1 border-t border-zinc-100 p-4 dark:border-white/10"
+                        class="flex flex-wrap gap-1 border-t border-zinc-900/[0.07] p-4 dark:border-white/10"
                         aria-label="Paginação"
                     >
                         <Link
