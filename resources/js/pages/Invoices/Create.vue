@@ -23,7 +23,6 @@ import {
     Send,
     ShieldCheck,
     Trash2,
-    TriangleAlert,
     UserRound,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
@@ -538,6 +537,63 @@ const selectedFiscalSeries = computed(() =>
         (series) => series.public_id === issueForm.series_public_id,
     ),
 );
+/** "este recibo", "esta factura": the document types are not all feminine. */
+const issueDemonstrative = computed(() =>
+    /^recibo/i.test(documentTypeLabel.value) ? 'este' : 'esta',
+);
+
+/** "Factura para X." without doubling the stop when X ends in "Lda." */
+const issueAddressee = computed(() =>
+    `${documentTypeLabel.value} para ${form.customer.name.trim() || 'o cliente'}`.replace(
+        /\.?$/,
+        '.',
+    ),
+);
+
+/** The number the series will assign, spelled as the server composes it. */
+const nextDocumentNumber = computed(() => {
+    const series = selectedFiscalSeries.value;
+
+    return series === undefined
+        ? null
+        : `${form.document_type} ${series.series_code.trim().toUpperCase()}/${series.next_number}`;
+});
+
+/** What becomes permanent the moment the document is issued. */
+const issueFacts = computed(() => {
+    const establishment = props.establishments.find(
+        (candidate) => candidate.public_id === form.establishment_public_id,
+    );
+    const customer = [
+        form.customer.name,
+        form.customer.tax_identification_number
+            ? `NIF ${form.customer.tax_identification_number}`
+            : null,
+    ]
+        .filter(Boolean)
+        .join(' · ');
+
+    return [
+        {
+            label: 'Série',
+            value: [
+                selectedFiscalSeries.value?.series_code,
+                establishment?.name,
+            ]
+                .filter(Boolean)
+                .join(' · '),
+            numeric: false,
+        },
+        { label: 'Cliente', value: customer || '—', numeric: false },
+        { label: 'IVA', value: formatMoney(totals.value.tax), numeric: true },
+        {
+            label: 'Total',
+            value: formatMoney(totals.value.gross),
+            numeric: true,
+        },
+    ];
+});
+
 const canOpenIssue = computed(
     () =>
         props.document.public_id !== null &&
@@ -2763,126 +2819,171 @@ function confirmIssue(): void {
                                 leave-to="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                             >
                                 <DialogPanel
-                                    class="relative w-full max-w-lg transform overflow-hidden rounded-2xl bg-white text-left shadow-xl ring-1 ring-zinc-900/5 transition-all dark:bg-zinc-900 dark:ring-white/10"
+                                    class="relative w-full max-w-[36.5rem] transform rounded-[1.625rem] bg-white p-6 text-left shadow-[0_0_0_1px_rgb(23_23_22/0.06),0_30px_80px_-30px_rgb(23_23_22/0.45)] transition-all sm:p-7 dark:bg-zinc-900 dark:shadow-[0_0_0_1px_rgb(255_255_255/0.08),0_30px_80px_-20px_rgb(0_0_0/0.8)]"
                                 >
+                                    <!--
+                                        The irreversible step, shown as a before
+                                        and after: what the document is now,
+                                        what it becomes, and the facts that are
+                                        fixed from here on.
+                                    -->
                                     <form @submit.prevent="confirmIssue">
-                                        <div class="px-5 pt-6 pb-5 sm:p-6">
-                                            <div
-                                                class="flex size-11 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-400/10 dark:text-amber-300"
+                                        <span
+                                            class="inline-flex h-[1.625rem] items-center gap-1.5 rounded-full bg-accent-50 pr-2.5 pl-1 text-[0.78rem] font-semibold text-accent-800 ring-1 ring-accent-200 ring-inset dark:bg-accent-400/10 dark:text-accent-300 dark:ring-accent-400/20"
+                                        >
+                                            <span
+                                                class="grid size-[1.125rem] place-items-center rounded-full bg-brand-950 dark:bg-zinc-100"
+                                                aria-hidden="true"
                                             >
-                                                <TriangleAlert
-                                                    class="size-5"
-                                                    aria-hidden="true"
+                                                <span
+                                                    class="size-1.5 rounded-full bg-accent-400"
                                                 />
-                                            </div>
-                                            <DialogTitle
-                                                as="h2"
-                                                class="mt-4 text-base font-semibold text-zinc-950 dark:text-white"
-                                            >
-                                                Emitir esta factura?
-                                            </DialogTitle>
-                                            <p
-                                                class="mt-2 text-sm/6 text-zinc-600 dark:text-zinc-400"
-                                            >
-                                                Esta confirmação é irreversível.
-                                                O servidor recalculará todos os
-                                                valores antes de atribuir o
-                                                próximo número da série.
-                                            </p>
-                                            <dl
-                                                class="mt-5 divide-y divide-zinc-100 rounded-xl bg-zinc-50 px-4 text-sm ring-1 ring-zinc-200 dark:divide-white/10 dark:bg-white/[0.03] dark:ring-white/10"
-                                            >
-                                                <div
-                                                    class="flex items-center justify-between gap-4 py-3"
-                                                >
-                                                    <dt
-                                                        class="text-zinc-500 dark:text-zinc-400"
-                                                    >
-                                                        Série
-                                                    </dt>
-                                                    <dd
-                                                        class="font-semibold text-zinc-950 dark:text-white"
-                                                    >
-                                                        {{
-                                                            selectedFiscalSeries?.series_code ??
-                                                            '—'
-                                                        }}
-                                                    </dd>
-                                                </div>
-                                                <div
-                                                    class="flex items-center justify-between gap-4 py-3"
-                                                >
-                                                    <dt
-                                                        class="text-zinc-500 dark:text-zinc-400"
-                                                    >
-                                                        Próximo número
-                                                    </dt>
-                                                    <dd
-                                                        class="font-mono font-semibold text-zinc-950 dark:text-white"
-                                                    >
-                                                        {{
-                                                            selectedFiscalSeries?.next_number ??
-                                                            '—'
-                                                        }}
-                                                    </dd>
-                                                </div>
-                                                <div
-                                                    class="flex items-center justify-between gap-4 py-3"
-                                                >
-                                                    <dt
-                                                        class="text-zinc-500 dark:text-zinc-400"
-                                                    >
-                                                        Total
-                                                    </dt>
-                                                    <dd
-                                                        class="font-mono font-semibold text-zinc-950 dark:text-white"
-                                                    >
-                                                        {{
-                                                            formatMoney(
-                                                                totals.gross,
-                                                            )
-                                                        }}
-                                                    </dd>
-                                                </div>
-                                            </dl>
+                                            </span>
+                                            Verificado antes de emitir
+                                        </span>
+                                        <DialogTitle
+                                            as="h2"
+                                            class="mt-4 text-[1.6875rem] leading-[1.12] font-normal tracking-[-0.025em] text-zinc-950 dark:text-white"
+                                        >
+                                            Emitir {{ issueDemonstrative }}
+                                            {{
+                                                documentTypeLabel.toLowerCase()
+                                            }}?
+                                        </DialogTitle>
+                                        <p
+                                            class="mt-2.5 text-[0.9rem]/6 text-zinc-600 dark:text-zinc-400"
+                                        >
+                                            {{ issueAddressee }} Depois de
+                                            emitido, o documento já não pode ser
+                                            alterado: uma correcção faz-se com
+                                            uma nota de crédito. O servidor
+                                            recalcula todos os valores antes de
+                                            atribuir o número.
+                                        </p>
+
+                                        <div
+                                            class="mt-5 grid gap-3 sm:grid-cols-2"
+                                        >
                                             <div
-                                                v-if="
-                                                    issueForm.errors
-                                                        .series_public_id ||
-                                                    issueForm.errors.revision
-                                                "
-                                                class="mt-4 rounded-xl bg-rose-50 p-3 text-sm text-rose-700 ring-1 ring-rose-200 dark:bg-rose-400/10 dark:text-rose-300 dark:ring-rose-400/20"
-                                                role="alert"
+                                                class="rounded-[1.125rem] bg-zinc-900/[0.04] px-4 py-4 dark:bg-white/[0.04]"
                                             >
-                                                {{
-                                                    issueForm.errors
-                                                        .series_public_id ??
-                                                    issueForm.errors.revision
-                                                }}
+                                                <p
+                                                    class="text-[0.8rem] text-zinc-600 dark:text-zinc-400"
+                                                >
+                                                    Agora · Rascunho
+                                                </p>
+                                                <p
+                                                    class="mt-2.5 numeric text-[1.5rem] leading-none tracking-[-0.025em] text-zinc-950 dark:text-white"
+                                                >
+                                                    {{
+                                                        formatMoney(
+                                                            totals.gross,
+                                                        )
+                                                    }}
+                                                </p>
+                                                <span
+                                                    class="mt-3 inline-flex rounded-full bg-zinc-200/80 px-2 py-0.5 text-xs font-semibold text-zinc-700 dark:bg-white/10 dark:text-zinc-300"
+                                                    >Pode alterar</span
+                                                >
+                                            </div>
+                                            <div
+                                                class="rounded-[1.125rem] bg-accent-50 px-4 py-4 ring-[1.5px] ring-accent-400 ring-inset dark:bg-accent-400/[0.07]"
+                                            >
+                                                <p
+                                                    class="text-[0.8rem] text-zinc-600 dark:text-zinc-400"
+                                                >
+                                                    Depois · Emitido
+                                                </p>
+                                                <p
+                                                    class="mt-2.5 truncate font-mono text-[1.3rem] leading-none tracking-[-0.01em] text-zinc-950 dark:text-white"
+                                                >
+                                                    {{
+                                                        nextDocumentNumber ??
+                                                        '—'
+                                                    }}
+                                                </p>
+                                                <span
+                                                    class="mt-3 inline-flex rounded-full bg-lime-300 px-2 py-0.5 text-xs font-semibold text-lime-950"
+                                                    >Assinado e enviado à
+                                                    AGT</span
+                                                >
                                             </div>
                                         </div>
+
+                                        <dl class="mt-3.5">
+                                            <div
+                                                v-for="fact in issueFacts"
+                                                :key="fact.label"
+                                                class="flex min-h-[2.875rem] items-center justify-between gap-5 border-b border-zinc-900/[0.07] py-2 text-[0.85rem] dark:border-white/10"
+                                            >
+                                                <dt
+                                                    class="text-zinc-500 dark:text-zinc-400"
+                                                >
+                                                    {{ fact.label }}
+                                                </dt>
+                                                <dd
+                                                    class="text-right font-medium text-zinc-950 dark:text-white"
+                                                    :class="{
+                                                        numeric: fact.numeric,
+                                                    }"
+                                                >
+                                                    {{ fact.value }}
+                                                </dd>
+                                            </div>
+                                        </dl>
+
+                                        <p
+                                            class="mt-4 flex items-center gap-2.5 rounded-[0.875rem] bg-zinc-900/[0.04] px-3.5 py-2.5 text-[0.78rem] text-zinc-600 dark:bg-white/[0.04] dark:text-zinc-400"
+                                        >
+                                            <ShieldCheck
+                                                class="size-4 shrink-0"
+                                                aria-hidden="true"
+                                            />
+                                            Fica no histórico com o seu nome, a
+                                            hora e a assinatura do documento.
+                                        </p>
+
                                         <div
-                                            class="flex flex-col-reverse gap-3 bg-zinc-50 px-5 py-4 sm:flex-row sm:justify-end sm:px-6 dark:bg-white/[0.03]"
+                                            v-if="
+                                                issueForm.errors
+                                                    .series_public_id ||
+                                                issueForm.errors.revision
+                                            "
+                                            class="mt-4 rounded-[0.875rem] bg-rose-50 p-3 text-sm text-rose-700 ring-1 ring-rose-200 dark:bg-rose-400/10 dark:text-rose-300 dark:ring-rose-400/20"
+                                            role="alert"
+                                        >
+                                            {{
+                                                issueForm.errors
+                                                    .series_public_id ??
+                                                issueForm.errors.revision
+                                            }}
+                                        </div>
+
+                                        <div
+                                            class="mt-5 flex flex-col-reverse gap-2.5 sm:flex-row sm:items-center"
                                         >
                                             <button
                                                 type="button"
                                                 :disabled="issueForm.processing"
-                                                class="inline-flex justify-center rounded-xl bg-white px-3.5 py-2.5 text-sm font-semibold text-zinc-900 shadow-sm ring-1 ring-zinc-300 transition hover:bg-zinc-50 disabled:opacity-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
+                                                class="inline-flex h-10 items-center justify-center rounded-full bg-white px-[1.125rem] text-[0.85rem] font-semibold text-zinc-900 shadow-[0_1px_2px_rgb(23_23_22/0.04)] ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 disabled:opacity-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
                                                 @click="closeIssueDialog"
                                             >
                                                 Voltar e rever
                                             </button>
+                                            <span
+                                                class="hidden flex-1 sm:block"
+                                            />
                                             <button
                                                 type="submit"
                                                 :disabled="issueForm.processing"
-                                                class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-700 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm focus-ring transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-brand-500 dark:hover:bg-brand-400"
+                                                class="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-[0.85rem] font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                                             >
                                                 <LoaderCircle
                                                     v-if="issueForm.processing"
                                                     class="size-4 animate-spin"
                                                     aria-hidden="true"
                                                 />
-                                                <Send
+                                                <Check
                                                     v-else
                                                     class="size-4"
                                                     aria-hidden="true"

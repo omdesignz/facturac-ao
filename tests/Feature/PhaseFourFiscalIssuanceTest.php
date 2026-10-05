@@ -7,6 +7,7 @@ use App\AgtConnectionStatus;
 use App\AgtOperation;
 use App\AgtSubmissionStatus;
 use App\Fiscal\Agt\Contracts\AgtGateway;
+use App\Fiscal\Documents\FiscalDocumentNumber;
 use App\FiscalDocumentEventType;
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
@@ -605,4 +606,20 @@ test('the durable outbox reuses frozen bytes and records receipt validation and 
     expect(fn () => $submission->attempts()->firstOrFail()->update([
         'safe_message' => 'Evidence altered',
     ]))->toThrow(DomainException::class);
+});
+
+test('the issue dialog previews the number exactly as the series will compose it', function () {
+    // The dialog shows the future number before the server assigns it. If the
+    // two ever spelled it differently, the confirmation would promise one
+    // number and the document would carry another.
+    expect(app(FiscalDocumentNumber::class)->compose(FiscalDocumentType::Invoice, ' 2026 ', 149))
+        ->toBe('FT 2026/149');
+
+    $page = (string) file_get_contents(resource_path('js/pages/Invoices/Create.vue'));
+
+    expect($page)
+        ->toContain('`${form.document_type} ${series.series_code.trim().toUpperCase()}/${series.next_number}`')
+        ->toContain('Depois · Emitido')
+        ->toContain('Fica no histórico com o seu nome, a')
+        ->toContain('Confirmar emissão');
 });
