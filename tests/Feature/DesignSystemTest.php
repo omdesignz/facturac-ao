@@ -48,3 +48,24 @@ test('headings are set at regular weight and labels stay quiet', function () {
         ->toMatch('/@utility display \{\s*font-weight: 400;/')
         ->toMatch('/@utility eyebrow \{[^}]*font-weight: 500;[^}]*letter-spacing: 0\.07em;/s');
 });
+
+test('the sign-in screens show the brand, not a dark slab or an endorsement', function () {
+    $layout = (string) file_get_contents(resource_path('js/layouts/AuthLayout.vue'));
+
+    expect($layout)
+        ->toContain('<BrandWordmark')
+        ->not->toContain('bg-brand-950 lg:block')
+        ->not->toContain('fiscal-grid')
+        // A document can be validated by the AGT; the software saying it is
+        // "aceite pela AGT" would claim an endorsement it does not hold.
+        ->not->toContain('Aceite pela AGT');
+});
+
+test('auth buttons use the shared pill roles', function () {
+    foreach (File::files(resource_path('js/pages/Auth')) as $file) {
+        expect($file->getContents())->not->toContain('bg-brand-700');
+    }
+
+    expect((string) file_get_contents(resource_path('js/pages/Auth/Register.vue')))
+        ->toContain('rounded-full bg-accent-400');
+});

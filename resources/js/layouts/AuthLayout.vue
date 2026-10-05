@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { Check, Moon, ShieldCheck, Sun } from '@lucide/vue';
+import { Moon, Sun } from '@lucide/vue';
 import { computed, onMounted, ref } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
+import BrandWordmark from '@/components/BrandWordmark.vue';
 import CookieConsent from '@/components/CookieConsent.vue';
 import {
     applyAppearance,
@@ -22,6 +23,9 @@ const page = usePage();
 const legalLinks = computed(() => page.props.legal.links);
 
 const isDark = ref(false);
+
+/** The deadline line only makes sense until the day it passes. */
+const beforeMandate = new Date() < new Date(2027, 0, 1);
 
 function refreshThemeState(): void {
     isDark.value = document.documentElement.classList.contains('dark');
@@ -52,7 +56,7 @@ onMounted(() => {
         >
             <button
                 type="button"
-                class="absolute top-5 right-5 rounded-xl p-2.5 text-zinc-500 ring-1 ring-zinc-200 focus-ring transition hover:bg-zinc-50 hover:text-zinc-950 dark:text-zinc-400 dark:ring-white/10 dark:hover:bg-white/5 dark:hover:text-white"
+                class="absolute top-5 right-5 rounded-full p-2.5 text-zinc-500 ring-1 ring-zinc-900/10 focus-ring transition hover:bg-zinc-50 hover:text-zinc-950 dark:text-zinc-400 dark:ring-white/10 dark:hover:bg-white/5 dark:hover:text-white"
                 :aria-label="isDark ? 'Usar tema claro' : 'Usar tema escuro'"
                 @click="toggleAppearance"
             >
@@ -105,99 +109,93 @@ onMounted(() => {
         </main>
 
         <!--
-            The panel shows a specimen of the thing the product makes rather
-            than talking about it: an Angolan invoice's own footer, set in the
-            mono face, ending in the acceptance everyone here is actually
-            waiting for. That artifact is the one memorable element, so the
-            copy around it stays plain and the surface carries no decoration
-            beyond the fiscal grid the rest of the application already uses.
+            The brand moment: the name explains itself. "facturação" loses its
+            tilde and cedilla and becomes the domain, which is also how to type
+            it. Underneath, a specimen of what the product makes, as paper.
         -->
         <aside
-            class="sticky top-0 hidden h-screen flex-1 overflow-hidden bg-brand-950 lg:block"
+            class="sticky top-0 hidden h-screen flex-1 overflow-hidden bg-zinc-900/[0.035] lg:block dark:bg-white/[0.03]"
             aria-label="O que a aplicação faz a cada documento"
         >
-            <div class="fiscal-grid absolute inset-0 opacity-40" />
-            <div
-                class="absolute inset-y-0 left-0 w-px bg-white/10"
-                aria-hidden="true"
-            />
-
             <div
                 class="relative flex h-full flex-col justify-between gap-10 overflow-y-auto p-10 xl:p-16"
             >
                 <p
-                    class="inline-flex w-fit items-center gap-2 text-xs font-semibold tracking-[0.14em] text-brand-100/60 uppercase"
+                    class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                 >
-                    <ShieldCheck
-                        class="size-4 text-accent-400"
-                        aria-hidden="true"
-                    />
                     Facturação electrónica · Angola
                 </p>
 
                 <div class="max-w-xl">
-                    <h2
-                        class="text-4xl leading-[1.1] display text-white xl:text-[3.25rem]"
+                    <BrandWordmark
+                        animated
+                        title="facturação transforma-se em facturac.ao"
+                        class="h-auto w-full max-w-md text-brand-950 dark:text-white"
+                    />
+                    <p
+                        class="mt-8 text-xl tracking-[-0.02em] text-zinc-950 dark:text-white"
                     >
-                        Numerado, assinado, comunicado.
-                    </h2>
-                    <p class="mt-6 max-w-md text-base/7 text-brand-100/65">
-                        Um documento fiscal só vale se as três coisas
-                        acontecerem, e por esta ordem. Atribuímos a série e o
-                        número na emissão, assinamos o conteúdo tal como saiu, e
-                        entregamos à AGT — se a rede falhar a meio, retomamos do
+                        Tire o til. Tire a cedilha. Ponha um ponto.
+                    </p>
+                    <p
+                        class="mt-3 max-w-md text-[0.9375rem]/7 text-zinc-600 dark:text-zinc-400"
+                    >
+                        Cada documento é numerado, assinado e comunicado à AGT,
+                        por esta ordem. Se a rede falhar a meio, retomamos do
                         ponto onde parou.
+                        <template v-if="beforeMandate">
+                            A partir de 1 de janeiro de 2027, todas as empresas
+                            facturam assim.
+                        </template>
                     </p>
                 </div>
 
-                <figure class="max-w-md">
+                <figure class="max-w-sm">
                     <figcaption class="sr-only">
                         Exemplo do rodapé de uma factura emitida pela aplicação
                     </figcaption>
-
                     <div
-                        class="rounded-2xl border border-white/10 bg-white/[0.04] p-5 font-mono text-xs/6 text-brand-100/70"
+                        class="rounded-md bg-white p-5 text-xs/6 text-zinc-600 shadow-[0_2px_6px_rgb(23_23_22/0.06),0_40px_70px_-36px_rgb(23_23_22/0.38)] ring-1 ring-zinc-900/5"
                     >
-                        <div class="flex items-baseline justify-between gap-4">
-                            <span class="text-sm text-white">FT 2026/1042</span>
+                        <div class="flex items-center justify-between gap-4">
                             <span
-                                class="inline-flex items-center gap-1.5 rounded-md bg-accent-400/15 px-2 py-1 text-[0.7rem] font-semibold text-accent-300 not-italic"
+                                class="font-mono text-sm font-medium text-zinc-950"
+                                >FT 2026/1042</span
                             >
-                                <Check class="size-3" aria-hidden="true" />
-                                Aceite pela AGT
-                            </span>
+                            <span
+                                class="inline-flex h-[1.375rem] items-center rounded-full bg-lime-300 px-2 text-xs font-semibold text-lime-950"
+                                >Validada</span
+                            >
                         </div>
-
                         <dl
-                            class="mt-4 space-y-1.5 border-t border-white/10 pt-4"
+                            class="mt-4 space-y-1.5 border-t border-zinc-100 pt-4"
                         >
                             <div class="flex justify-between gap-4">
                                 <dt>NIF do cliente</dt>
-                                <dd class="text-brand-100 tabular-nums">
+                                <dd class="font-mono text-zinc-800">
                                     5417 654 321
                                 </dd>
                             </div>
                             <div class="flex justify-between gap-4">
                                 <dt>IVA 14%</dt>
-                                <dd class="text-brand-100 tabular-nums">
+                                <dd class="numeric text-zinc-800">
                                     14 000,00 Kz
                                 </dd>
                             </div>
                             <div class="flex justify-between gap-4">
-                                <dt class="text-white">Total</dt>
+                                <dt class="text-zinc-950">Total</dt>
                                 <dd
-                                    class="text-sm font-semibold text-white tabular-nums"
+                                    class="numeric text-sm font-semibold text-zinc-950"
                                 >
                                     114 000,00 Kz
                                 </dd>
                             </div>
                         </dl>
-
                         <p
-                            class="mt-4 border-t border-white/10 pt-4 text-[0.7rem]/5 break-all text-brand-100/45"
+                            class="mt-4 border-t border-zinc-100 pt-4 font-mono text-[0.7rem]/5 break-all text-zinc-400"
                         >
                             Assinatura
-                            <span class="text-brand-100/70"
+                            <span class="text-zinc-600"
                                 >9f2c·a710·4be3·d885</span
                             >
                         </p>

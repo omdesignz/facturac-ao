@@ -159,7 +159,7 @@ const flash = computed(
                         name="remember"
                         type="checkbox"
                         value="1"
-                        class="col-start-1 row-start-1 appearance-none rounded border border-zinc-300 bg-white focus-ring checked:border-brand-700 checked:bg-brand-700 dark:border-white/15 dark:bg-white/5 dark:checked:border-brand-500 dark:checked:bg-brand-500"
+                        class="col-start-1 row-start-1 appearance-none rounded border border-zinc-300 bg-white focus-ring checked:border-brand-950 checked:bg-brand-950 dark:border-white/15 dark:bg-white/5 dark:checked:border-brand-500 dark:checked:bg-brand-500"
                     />
                     <svg
                         class="pointer-events-none col-start-1 row-start-1 size-3.5 self-center justify-self-center stroke-white opacity-0 group-has-checked:opacity-100"
@@ -181,7 +181,7 @@ const flash = computed(
             <button
                 type="submit"
                 :disabled="processing"
-                class="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-700 px-3 py-2.5 text-sm/6 font-semibold text-white shadow-sm focus-ring transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-brand-500 dark:hover:bg-brand-400"
+                class="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-brand-950 px-4 text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
             >
                 <LoaderCircle
                     v-if="processing"
@@ -196,7 +196,7 @@ const flash = computed(
             <button
                 type="button"
                 :disabled="passkeyPending"
-                class="flex w-full items-center justify-center gap-2 rounded-xl bg-white px-3 py-2.5 text-sm/6 font-semibold text-zinc-900 shadow-sm ring-1 ring-zinc-300 focus-ring transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
+                class="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-white px-4 text-sm font-semibold text-zinc-900 ring-1 ring-zinc-900/10 focus-ring transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
                 @click="signInWithPasskey"
             >
                 <LoaderCircle
@@ -238,7 +238,7 @@ const flash = computed(
             </div>
             <a
                 :href="googleRedirect.url()"
-                class="flex w-full items-center justify-center gap-3 rounded-xl bg-white px-3 py-2.5 text-sm font-semibold text-zinc-900 shadow-sm ring-1 ring-zinc-300 focus-ring transition hover:bg-zinc-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
+                class="flex h-11 w-full items-center justify-center gap-3 rounded-full bg-white px-4 text-sm font-semibold text-zinc-900 ring-1 ring-zinc-900/10 focus-ring transition hover:bg-zinc-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
             >
                 <GoogleMark />
                 Google
