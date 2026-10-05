@@ -1,94 +1,24 @@
 <script setup lang="ts">
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue';
 import { Link, usePage } from '@inertiajs/vue3';
-import {
-    Boxes,
-    Building2,
-    CalendarSync,
-    ChartLine,
-    Check,
-    ChevronsUpDown,
-    ClipboardList,
-    CreditCard,
-    FileClock,
-    FileCode2,
-    Files,
-    FileMinus2,
-    FileSignature,
-    FileUp,
-    HandCoins,
-    LifeBuoy,
-    Landmark,
-    LayoutDashboard,
-    Package,
-    Tags,
-    ReceiptEuro,
-    ReceiptText,
-    Settings2,
-    SlidersHorizontal,
-    ShieldCheck,
-    Store,
-    Truck,
-    UserCog,
-    Users,
-} from '@lucide/vue';
+import { Check, ChevronsUpDown } from '@lucide/vue';
 import { computed } from 'vue';
-import type { Component } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
-import RailTooltip from '@/components/RailTooltip.vue';
-import { dashboard, onboarding } from '@/routes';
-import { show as agtConnection } from '@/routes/agt/connection';
-import { index as agtSubmissions } from '@/routes/agt/submissions';
-import { index as analyticsIndex } from '@/routes/analytics';
-import { show as billingShow } from '@/routes/billing';
-import { index as billingCatalogue } from '@/routes/catalogue';
-import { index as customersIndex } from '@/routes/customers';
-import { index as debtsIndex } from '@/routes/debts';
-import { index as documentsIndex } from '@/routes/documents';
-import { index as establishmentsIndex } from '@/routes/establishments';
-import { index as helpIndex } from '@/routes/help';
-import { index as importIndex } from '@/routes/imports';
-import { index as priceListsIndex } from '@/routes/price-lists';
-import { index as quotesIndex } from '@/routes/quotes';
-import { index as recurringIndex } from '@/routes/recurring';
-import { index as saftIndex } from '@/routes/saft';
-import { account as accountSettings, security } from '@/routes/settings';
-import { index as stockIndex } from '@/routes/stock';
-import { index as supportIndex } from '@/routes/support';
-import { index as supportComplaints } from '@/routes/support/complaints';
-import { edit as supportSettings } from '@/routes/support/settings';
-import { index as transportDocumentsIndex } from '@/routes/transport-documents';
+import { useNavigation } from '@/lib/navigation';
 import { update as switchWorkspace } from '@/routes/workspace/current';
 
-withDefaults(
-    defineProps<{
-        /** Renders the icon-only rail. Desktop only — the mobile dialog is always expanded. */
-        collapsed?: boolean;
-    }>(),
-    {
-        collapsed: false,
-    },
-);
-
+/**
+ * The full navigation, used where there is room for words: the menu that
+ * slides in on phones and tablets. Desktop uses AppRail; both read the same
+ * groups from lib/navigation, so a page can never be in one and not the other.
+ */
 defineEmits<{
     navigate: [];
 }>();
 
-interface NavigationItem {
-    name: string;
-    href: string;
-    match: string;
-    /** Distinguishes filtered register entries that share `/documentos`. */
-    matchFamily?: 'invoice' | 'adjustment' | 'receipt';
-    icon: Component;
-}
-
-interface NavigationSection {
-    label: string;
-    items: NavigationItem[];
-}
-
 const page = usePage();
+const { groups, activeItem } = useNavigation();
+
 const currentWorkspace = computed(() => page.props.currentWorkspace);
 const legalEntity = computed(() => currentWorkspace.value?.legal_entity);
 
@@ -112,211 +42,6 @@ const workspaceDetail = computed(() => {
     return currentWorkspace.value?.role_label ?? 'A preparar';
 });
 
-const baseSections: NavigationSection[] = [
-    {
-        label: 'Visão geral',
-        items: [
-            {
-                name: 'Painel fiscal',
-                href: dashboard.url(),
-                match: '/dashboard',
-                icon: LayoutDashboard,
-            },
-            {
-                name: 'Análises',
-                href: analyticsIndex.url(),
-                match: '/analises',
-                icon: ChartLine,
-            },
-        ],
-    },
-    {
-        label: 'Facturação',
-        items: [
-            {
-                name: 'Documentos fiscais',
-                href: documentsIndex.url(),
-                match: '/documentos',
-                icon: Files,
-            },
-            {
-                name: 'Facturas',
-                href: documentsIndex.url({ query: { family: 'invoice' } }),
-                match: '/documentos',
-                matchFamily: 'invoice',
-                icon: ReceiptText,
-            },
-            {
-                name: 'Recibos',
-                href: documentsIndex.url({ query: { family: 'receipt' } }),
-                match: '/documentos',
-                matchFamily: 'receipt',
-                icon: ReceiptEuro,
-            },
-            {
-                name: 'Notas de correcção',
-                href: documentsIndex.url({ query: { family: 'adjustment' } }),
-                match: '/documentos',
-                matchFamily: 'adjustment',
-                icon: FileMinus2,
-            },
-            {
-                name: 'Orçamentos',
-                href: quotesIndex.url(),
-                match: '/orcamentos',
-                icon: FileSignature,
-            },
-            {
-                name: 'Guias e transporte',
-                href: transportDocumentsIndex.url(),
-                match: '/guias',
-                icon: Truck,
-            },
-            {
-                name: 'Avenças',
-                href: recurringIndex.url(),
-                match: '/avencas',
-                icon: CalendarSync,
-            },
-            {
-                name: 'Monitor AGT',
-                href: agtSubmissions.url(),
-                match: '/agt/submissions',
-                icon: FileClock,
-            },
-            {
-                name: 'SAF-T (AO)',
-                href: saftIndex.url(),
-                match: '/saft',
-                icon: FileCode2,
-            },
-        ],
-    },
-    {
-        label: 'Registos',
-        items: [
-            {
-                name: 'Clientes',
-                href: customersIndex.url(),
-                match: '/customers',
-                icon: Users,
-            },
-            {
-                name: 'Artigos e serviços',
-                href: billingCatalogue.url(),
-                match: '/catalogue',
-                icon: Package,
-            },
-            {
-                name: 'Tabelas de preços',
-                href: priceListsIndex.url(),
-                match: '/tabelas-de-precos',
-                icon: Tags,
-            },
-            {
-                name: 'Dívidas',
-                href: debtsIndex.url(),
-                match: '/dividas',
-                icon: HandCoins,
-            },
-            {
-                name: 'Existências',
-                href: stockIndex.url(),
-                match: '/existencias',
-                icon: Boxes,
-            },
-            {
-                name: 'Importar dados',
-                href: importIndex.url(),
-                match: '/imports',
-                icon: FileUp,
-            },
-        ],
-    },
-    {
-        label: 'Configuração',
-        items: [
-            {
-                name: 'Preparar empresa',
-                href: onboarding.url(),
-                match: '/onboarding',
-                icon: Building2,
-            },
-            {
-                name: 'Estabelecimentos',
-                href: establishmentsIndex.url(),
-                match: '/estabelecimentos',
-                icon: Store,
-            },
-            {
-                name: 'Ligação AGT',
-                href: agtConnection.url(),
-                match: '/agt/connection',
-                icon: Landmark,
-            },
-            {
-                name: 'Conta e segurança',
-                href: security.url(),
-                match: '/settings/security',
-                icon: Settings2,
-            },
-            {
-                name: 'A sua conta',
-                href: accountSettings.url(),
-                match: '/settings/conta',
-                icon: UserCog,
-            },
-            {
-                name: 'Plano e cobrança',
-                href: billingShow.url(),
-                match: '/settings/billing',
-                icon: CreditCard,
-            },
-            {
-                name: 'Ajuda e reclamações',
-                href: helpIndex.url(),
-                match: '/ajuda',
-                icon: LifeBuoy,
-            },
-        ],
-    },
-];
-
-/**
- * The support console only exists for the platform's own staff, so customers
- * are never shown a door they cannot open.
- */
-const sections = computed<NavigationSection[]>(() =>
-    page.props.auth.user?.is_support_staff === true
-        ? [
-              ...baseSections,
-              {
-                  label: 'Interno',
-                  items: [
-                      {
-                          name: 'Apoio ao cliente',
-                          href: supportIndex.url(),
-                          match: '/support',
-                          icon: LifeBuoy,
-                      },
-                      {
-                          name: 'Reclamações',
-                          href: supportComplaints.url(),
-                          match: '/support/reclamacoes',
-                          icon: ClipboardList,
-                      },
-                      {
-                          name: 'Definições',
-                          href: supportSettings.url(),
-                          match: '/support/definicoes',
-                          icon: SlidersHorizontal,
-                      },
-                  ],
-              },
-          ]
-        : baseSections,
-);
-
 function initials(name: string): string {
     return name
         .trim()
@@ -326,85 +51,40 @@ function initials(name: string): string {
         .join('')
         .toUpperCase();
 }
-
-function isCurrent(item: NavigationItem): boolean {
-    const isDocumentComposer =
-        item.match === '/documentos' &&
-        page.url.startsWith('/documents/invoices');
-
-    if (!page.url.startsWith(item.match) && !isDocumentComposer) {
-        return false;
-    }
-
-    if (item.matchFamily === undefined) {
-        return !/[?&]family=(invoice|receipt|adjustment)\b/.test(page.url);
-    }
-
-    return (
-        new URLSearchParams(page.url.split('?')[1] ?? '').get('family') ===
-        item.matchFamily
-    );
-}
 </script>
 
 <template>
-    <!-- The root deliberately has no overflow: when collapsed the workspace
-         menu is wider than the rail and must not be clipped. Scrolling lives
-         on the <nav> below instead. -->
     <div
-        data-rail
-        :class="[
-            collapsed ? 'items-center gap-y-4 px-3' : 'gap-y-6 px-5',
-            'flex h-full grow flex-col bg-brand-950 pb-5 text-white dark:bg-brand-950 dark:ring-1 dark:ring-white/10',
-        ]"
+        class="flex h-full grow flex-col gap-y-6 overflow-y-auto bg-white px-5 pb-6 dark:bg-zinc-950"
     >
-        <div
-            :class="[
-                collapsed ? 'h-16 justify-center' : 'h-20',
-                'flex shrink-0 items-center',
-            ]"
-        >
-            <AppLogo inverted :compact="collapsed" />
+        <div class="flex h-20 shrink-0 items-center">
+            <AppLogo />
         </div>
 
-        <Menu as="div" :class="[collapsed ? '' : 'w-full', 'relative']">
-            <RailTooltip
-                v-if="collapsed"
-                :label="displayName"
-                :detail="workspaceDetail"
-            >
-                <MenuButton
-                    class="grid size-11 place-items-center rounded-xl bg-accent-400 text-sm font-bold text-brand-950 focus-ring-inverted transition hover:bg-accent-300"
-                >
-                    <span class="sr-only">Mudar de espaço de trabalho</span>
-                    {{ initials(displayName) }}
-                </MenuButton>
-            </RailTooltip>
-
+        <Menu as="div" class="relative w-full">
             <MenuButton
-                v-else
-                class="group flex w-full items-center gap-3 rounded-xl border border-white/10 bg-white/[0.06] p-3 text-left focus-ring-inverted transition hover:border-white/20 hover:bg-white/10"
+                class="group flex w-full items-center gap-3 rounded-2xl bg-zinc-900/[0.04] p-3 text-left focus-ring transition hover:bg-zinc-900/[0.07] dark:bg-white/[0.05] dark:hover:bg-white/10"
             >
                 <span class="sr-only">Mudar de espaço de trabalho</span>
                 <span
-                    class="grid size-9 shrink-0 place-items-center rounded-lg bg-accent-400 text-sm font-bold text-brand-950"
+                    class="grid size-9 shrink-0 place-items-center rounded-xl bg-accent-400 text-sm font-bold text-brand-950"
                     >{{ initials(displayName) }}</span
                 >
                 <span class="min-w-0 flex-1">
-                    <span class="block truncate text-sm font-semibold">{{
-                        displayName
-                    }}</span>
                     <span
-                        class="mt-0.5 block truncate text-xs text-brand-100/65"
+                        class="block truncate text-sm font-semibold text-zinc-950 dark:text-white"
+                        >{{ displayName }}</span
+                    >
+                    <span
+                        class="mt-0.5 block truncate text-xs text-zinc-500 dark:text-zinc-400"
                         >{{ workspaceDetail }}</span
                     >
                 </span>
                 <ChevronsUpDown
-                    class="size-4 shrink-0 text-brand-100/60 transition group-hover:text-white"
+                    class="size-4 shrink-0 text-zinc-400"
                     aria-hidden="true"
                 />
             </MenuButton>
-
             <transition
                 enter-active-class="transition ease-out duration-100"
                 enter-from-class="scale-95 opacity-0"
@@ -414,14 +94,11 @@ function isCurrent(item: NavigationItem): boolean {
                 leave-to-class="scale-95 opacity-0"
             >
                 <MenuItems
-                    :class="[
-                        collapsed
-                            ? 'w-64 origin-top-left'
-                            : 'w-full origin-top',
-                        'absolute left-0 z-30 mt-2 rounded-xl bg-white p-1.5 text-zinc-900 shadow-2xl ring-1 ring-zinc-900/10 focus:outline-none dark:bg-zinc-900 dark:text-white dark:ring-white/10',
-                    ]"
+                    class="absolute left-0 z-30 mt-2 w-full origin-top rounded-2xl bg-white p-1.5 text-zinc-900 shadow-[0_0_0_1px_rgb(23_23_22/0.06),0_20px_50px_-20px_rgb(23_23_22/0.4)] focus:outline-none dark:bg-zinc-900 dark:text-white dark:shadow-[0_0_0_1px_rgb(255_255_255/0.08)]"
                 >
-                    <p class="px-2.5 pt-1.5 pb-2 eyebrow text-zinc-400">
+                    <p
+                        class="px-2.5 pt-1.5 pb-2 text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-400 uppercase"
+                    >
                         Espaços de trabalho
                     </p>
                     <MenuItem
@@ -437,7 +114,7 @@ function isCurrent(item: NavigationItem): boolean {
                             :disabled="workspace.current"
                             :class="[
                                 active ? 'bg-zinc-100 dark:bg-white/5' : '',
-                                'flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm disabled:cursor-default',
+                                'flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-sm disabled:cursor-default',
                             ]"
                         >
                             <span class="min-w-0 flex-1">
@@ -451,7 +128,7 @@ function isCurrent(item: NavigationItem): boolean {
                             </span>
                             <Check
                                 v-if="workspace.current"
-                                class="size-4 text-brand-700 dark:text-brand-300"
+                                class="size-4 text-accent-600 dark:text-accent-400"
                                 aria-hidden="true"
                             />
                         </Link>
@@ -460,115 +137,52 @@ function isCurrent(item: NavigationItem): boolean {
             </transition>
         </Menu>
 
-        <nav
-            class="flex min-h-0 w-full flex-1 flex-col overflow-x-clip overflow-y-auto"
-            aria-label="Navegação principal"
-        >
-            <ul
-                role="list"
-                :class="[
-                    collapsed ? 'gap-y-4' : 'gap-y-5',
-                    'flex flex-1 flex-col',
-                ]"
-            >
-                <li
-                    v-for="(section, sectionIndex) in sections"
-                    :key="section.label"
-                >
-                    <!-- Collapsed, the group headings are replaced by a rule so
-                         the grouping survives without the labels. -->
-                    <div
-                        v-if="collapsed && sectionIndex > 0"
-                        class="mx-auto mb-3 h-px w-6 bg-white/15"
-                        aria-hidden="true"
-                    />
-                    <p v-if="!collapsed" class="px-2 eyebrow text-brand-100/50">
-                        {{ section.label }}
+        <nav aria-label="Navegação principal">
+            <ul role="list" class="flex flex-col gap-y-5">
+                <li v-for="group in groups" :key="group.key">
+                    <p
+                        v-if="group.items.length > 1"
+                        class="px-2 text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-400 uppercase"
+                    >
+                        {{ group.name }}
                     </p>
                     <ul
                         role="list"
                         :class="[
-                            collapsed ? 'flex flex-col items-center' : 'mt-2',
-                            'space-y-1',
+                            group.items.length > 1 ? 'mt-2' : '',
+                            'space-y-0.5',
                         ]"
                     >
-                        <li v-for="item in section.items" :key="item.name">
-                            <RailTooltip
-                                :label="item.name"
-                                :disabled="!collapsed"
+                        <li v-for="item in group.items" :key="item.name">
+                            <Link
+                                :href="item.href"
+                                prefetch
+                                :aria-current="
+                                    activeItem === item ? 'page' : undefined
+                                "
+                                :class="[
+                                    activeItem === item
+                                        ? 'bg-zinc-900/[0.06] font-semibold text-zinc-950 dark:bg-white/10 dark:text-white'
+                                        : 'text-zinc-700 hover:bg-zinc-900/[0.04] hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-white/5 dark:hover:text-white',
+                                    'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm focus-ring transition',
+                                ]"
+                                @click="$emit('navigate')"
                             >
-                                <Link
-                                    :href="item.href"
-                                    prefetch
-                                    :aria-label="
-                                        collapsed ? item.name : undefined
-                                    "
-                                    :aria-current="
-                                        isCurrent(item) ? 'page' : undefined
-                                    "
+                                <component
+                                    :is="item.icon"
                                     :class="[
-                                        isCurrent(item)
-                                            ? 'bg-white text-brand-950 shadow-sm'
-                                            : 'text-brand-100/80 hover:bg-white/10 hover:text-white',
-                                        collapsed
-                                            ? 'size-11 justify-center'
-                                            : 'gap-3 px-3 py-2.5',
-                                        'group flex items-center rounded-xl text-sm font-semibold focus-ring-inverted transition',
+                                        activeItem === item
+                                            ? 'text-accent-600 dark:text-accent-400'
+                                            : 'text-zinc-400',
+                                        'size-5 shrink-0',
                                     ]"
-                                    @click="$emit('navigate')"
-                                >
-                                    <component
-                                        :is="item.icon"
-                                        :class="[
-                                            isCurrent(item)
-                                                ? 'text-brand-700'
-                                                : 'text-brand-200/65 group-hover:text-accent-400',
-                                            'size-5 shrink-0 transition',
-                                        ]"
-                                        :stroke-width="1.8"
-                                        aria-hidden="true"
-                                    />
-                                    <!-- Truncates rather than spilling out of
-                                         the rail while the width animates. -->
-                                    <span v-if="!collapsed" class="truncate">{{
-                                        item.name
-                                    }}</span>
-                                </Link>
-                            </RailTooltip>
+                                    :stroke-width="1.75"
+                                    aria-hidden="true"
+                                />
+                                <span class="truncate">{{ item.name }}</span>
+                            </Link>
                         </li>
                     </ul>
-                </li>
-
-                <li
-                    :class="[collapsed ? 'flex justify-center' : '', 'mt-auto']"
-                >
-                    <RailTooltip
-                        v-if="collapsed"
-                        label="Chaves AGT protegidas"
-                        detail="Cifradas e fora da base de dados"
-                    >
-                        <div
-                            class="grid size-11 place-items-center rounded-xl bg-emerald-300/[0.08] text-emerald-300 ring-1 ring-emerald-300/20"
-                        >
-                            <ShieldCheck class="size-5" aria-hidden="true" />
-                            <span class="sr-only"
-                                >As suas chaves AGT estão protegidas</span
-                            >
-                        </div>
-                    </RailTooltip>
-                    <template v-else>
-                        <div
-                            class="flex items-start gap-2.5 rounded-xl border border-emerald-300/20 bg-emerald-300/[0.08] px-3 py-2.5"
-                        >
-                            <ShieldCheck
-                                class="mt-0.5 size-4 shrink-0 text-emerald-300"
-                                aria-hidden="true"
-                            />
-                            <p class="text-xs/5 text-emerald-100/80">
-                                Chaves AGT cifradas, fora da base de dados.
-                            </p>
-                        </div>
-                    </template>
                 </li>
             </ul>
         </nav>

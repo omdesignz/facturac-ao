@@ -20,8 +20,6 @@ import {
     Menu as MenuIcon,
     Monitor,
     Moon,
-    PanelLeftClose,
-    PanelLeftOpen,
     Search,
     TriangleAlert,
     Sun,
@@ -29,6 +27,7 @@ import {
 } from '@lucide/vue';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import type { Component } from 'vue';
+import AppRail from '@/components/AppRail.vue';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import CookieConsent from '@/components/CookieConsent.vue';
 import ImpersonationBanner from '@/components/ImpersonationBanner.vue';
@@ -41,10 +40,6 @@ import {
     storeAppearance,
 } from '@/lib/appearance';
 import type { Appearance } from '@/lib/appearance';
-import {
-    getStoredSidebarCollapsed,
-    storeSidebarCollapsed,
-} from '@/lib/sidebar';
 import { logout, onboarding } from '@/routes';
 import {
     index as notificationsIndex,
@@ -54,7 +49,6 @@ import {
 import { security } from '@/routes/settings';
 
 const sidebarOpen = ref(false);
-const sidebarCollapsed = ref(getStoredSidebarCollapsed());
 const appearance = ref<Appearance>('system');
 const page = usePage();
 
@@ -204,11 +198,6 @@ function markEverythingRead(): void {
 function changeAppearance(value: Appearance): void {
     appearance.value = value;
     storeAppearance(value);
-}
-
-function toggleSidebar(): void {
-    sidebarCollapsed.value = !sidebarCollapsed.value;
-    storeSidebarCollapsed(sidebarCollapsed.value);
 }
 
 const searchInput = ref<HTMLInputElement | null>(null);
@@ -373,20 +362,12 @@ onBeforeUnmount(() => {
         </TransitionRoot>
 
         <div
-            :class="[
-                sidebarCollapsed ? 'lg:w-20' : 'lg:w-72',
-                'hidden transition-[width] duration-300 ease-in-out lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:flex-col',
-            ]"
+            class="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-[4.5rem] lg:flex-col"
         >
-            <SidebarNavigation :collapsed="sidebarCollapsed" />
+            <AppRail />
         </div>
 
-        <div
-            :class="[
-                sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-72',
-                'transition-[padding] duration-300 ease-in-out',
-            ]"
-        >
+        <div class="lg:pl-[4.5rem]">
             <header
                 class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-4 border-b border-zinc-200/80 bg-white/90 px-4 backdrop-blur-xl sm:px-6 lg:px-8 dark:border-white/10 dark:bg-zinc-950/85"
             >
@@ -397,30 +378,6 @@ onBeforeUnmount(() => {
                 >
                     <span class="sr-only">Abrir navegação</span>
                     <MenuIcon class="size-6" aria-hidden="true" />
-                </button>
-
-                <button
-                    type="button"
-                    class="-ml-1 hidden icon-button text-zinc-500 focus-ring transition hover:bg-zinc-100 hover:text-zinc-950 lg:block dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white"
-                    :aria-expanded="!sidebarCollapsed"
-                    :title="
-                        sidebarCollapsed
-                            ? 'Expandir navegação'
-                            : 'Recolher navegação'
-                    "
-                    @click="toggleSidebar"
-                >
-                    <span class="sr-only">{{
-                        sidebarCollapsed
-                            ? 'Expandir navegação'
-                            : 'Recolher navegação'
-                    }}</span>
-                    <PanelLeftOpen
-                        v-if="sidebarCollapsed"
-                        class="size-5"
-                        aria-hidden="true"
-                    />
-                    <PanelLeftClose v-else class="size-5" aria-hidden="true" />
                 </button>
 
                 <div
