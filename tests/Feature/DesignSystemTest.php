@@ -135,3 +135,22 @@ test('the product speaks Hanken Grotesk, and the logo never depends on it', func
         ->and((string) file_get_contents(resource_path('js/components/BrandWordmark.vue')))
         ->toContain('<path');
 });
+
+test('the top bar is one quiet row of shared menus', function () {
+    $layout = (string) file_get_contents(resource_path('js/layouts/AppLayout.vue'));
+    $header = (string) file_get_contents(resource_path('js/components/AppHeader.vue'));
+
+    expect($layout)->toContain('<AppHeader')
+        ->not->toContain('<header')
+        ->and($header)->toContain('<NotificationsMenu />')
+        ->toContain('<AccountMenu />');
+
+    foreach (['NotificationsMenu.vue', 'AccountMenu.vue', 'AppRail.vue'] as $component) {
+        expect((string) file_get_contents(resource_path("js/components/{$component}")))
+            ->toContain('menu-panel');
+    }
+
+    // Light, dark and system live in the account menu, not as a fourth icon.
+    expect((string) file_get_contents(resource_path('js/components/AccountMenu.vue')))
+        ->toContain('changeAppearance');
+});

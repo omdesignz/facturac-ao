@@ -61,7 +61,7 @@ const label = computed(
         <span
             :class="[
                 tone,
-                'hidden items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium tabular-nums transition-colors md:inline-flex',
+                'hidden h-8 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium tabular-nums transition-colors md:inline-flex',
             ]"
             :title="label"
         >

@@ -222,6 +222,11 @@ input[type='search']::-webkit-search-decoration {
     @apply rounded-[1.625rem] bg-white shadow-[0_0_0_1px_rgb(23_23_22/0.06),0_30px_80px_-30px_rgb(23_23_22/0.45)] dark:bg-zinc-900 dark:shadow-[0_0_0_1px_rgb(255_255_255/0.08),0_30px_80px_-20px_rgb(0_0_0/0.8)];
 }
 
+/** Dropdowns and flyouts: the rail's menus, the bell, the account menu. */
+@utility menu-panel {
+    @apply rounded-2xl bg-white text-zinc-900 shadow-[0_0_0_1px_rgb(23_23_22/0.06),0_20px_50px_-20px_rgb(23_23_22/0.4)] focus:outline-none dark:bg-zinc-900 dark:text-white dark:shadow-[0_0_0_1px_rgb(255_255_255/0.08),0_20px_50px_-20px_rgb(0_0_0/0.8)];
+}
+
 /** Keyboard focus treatment shared by every interactive element. */
 @utility focus-ring {
     @apply focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 dark:focus-visible:outline-brand-300;

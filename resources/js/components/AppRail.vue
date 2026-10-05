@@ -151,7 +151,7 @@ onBeforeUnmount(cancelClose);
                 leave-to-class="scale-95 opacity-0"
             >
                 <MenuItems
-                    class="absolute top-0 left-[calc(100%+0.75rem)] z-50 w-64 origin-top-left rounded-2xl bg-white p-1.5 text-zinc-900 shadow-[0_0_0_1px_rgb(23_23_22/0.06),0_20px_50px_-20px_rgb(23_23_22/0.4)] focus:outline-none dark:bg-zinc-900 dark:text-white dark:shadow-[0_0_0_1px_rgb(255_255_255/0.08),0_20px_50px_-20px_rgb(0_0_0/0.8)]"
+                    class="absolute top-0 left-[calc(100%+0.75rem)] z-50 w-64 origin-top-left menu-panel p-1.5"
                 >
                     <p
                         class="px-2.5 pt-1.5 pb-2 text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-400 uppercase"
@@ -261,9 +261,7 @@ onBeforeUnmount(cancelClose);
                         v-if="openGroup === group.key"
                         class="absolute top-0 left-full z-50 pl-3"
                     >
-                        <div
-                            class="w-60 rounded-2xl bg-white p-1.5 shadow-[0_0_0_1px_rgb(23_23_22/0.06),0_20px_50px_-20px_rgb(23_23_22/0.4)] dark:bg-zinc-900 dark:shadow-[0_0_0_1px_rgb(255_255_255/0.08),0_20px_50px_-20px_rgb(0_0_0/0.8)]"
-                        >
+                        <div class="w-60 menu-panel p-1.5">
                             <p
                                 class="px-2.5 pt-1.5 pb-1.5 text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-400 uppercase"
                             >

@@ -119,10 +119,10 @@ test('a query needs two characters and a signed-in user', function () {
 });
 
 test('the header search box is wired to the search endpoint', function () {
-    $layout = (string) file_get_contents(resource_path('js/layouts/AppLayout.vue'));
+    $header = (string) file_get_contents(resource_path('js/components/AppHeader.vue'));
     $palette = (string) file_get_contents(resource_path('js/components/GlobalSearch.vue'));
 
-    expect($layout)->toContain('<GlobalSearch />')
+    expect($header)->toContain('<GlobalSearch />')
         ->and($palette)->toContain("import { search } from '@/routes';")
         ->and($palette)->toContain('http.get(search.url())');
 });
