@@ -124,3 +124,14 @@ test('secondary buttons are outline pills, not rounded boxes', function () {
         }
     }
 });
+
+test('the product speaks Hanken Grotesk, and the logo never depends on it', function () {
+    $styles = (string) file_get_contents(resource_path('css/app.css'));
+    $vite = (string) file_get_contents(base_path('vite.config.ts'));
+
+    expect($styles)->toMatch("/--font-sans:\s+'Hanken Grotesk'/")
+        ->not->toContain('IBM Plex Sans')
+        ->and($vite)->toContain("bunny('Hanken Grotesk'")
+        ->and((string) file_get_contents(resource_path('js/components/BrandWordmark.vue')))
+        ->toContain('<path');
+});

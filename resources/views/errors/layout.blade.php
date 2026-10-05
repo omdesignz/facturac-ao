@@ -75,7 +75,7 @@
                 padding: 1.5rem;
                 background: var(--ground);
                 color: var(--ink);
-                font-family: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+                font-family: 'Hanken Grotesk', ui-sans-serif, system-ui, -apple-system, sans-serif;
                 line-height: 1.6;
                 -webkit-font-smoothing: antialiased;
             }

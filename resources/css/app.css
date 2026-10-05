@@ -12,7 +12,7 @@
      * pages' headlines only, never for the product itself.
      */
     --font-sans:
-        'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif,
+        'Hanken Grotesk', ui-sans-serif, system-ui, sans-serif,
         'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
         'Noto Color Emoji';
     --font-mono:
@@ -78,7 +78,7 @@ body {
     min-width: 320px;
     font-optical-sizing: auto;
     /*
-     * IBM Plex Sans ships 400–700 and Plex Mono 400–600. Disabling synthesis
+     * Hanken Grotesk ships 400–700 and Plex Mono 400–600. Disabling synthesis
      * makes any request for a weight we do not ship fail loudly rather than
      * being faked by the browser.
      */
@@ -239,17 +239,6 @@ input[type='search']::-webkit-search-decoration {
 
 @utility form-input-sm {
     @apply rounded-lg px-2.5 py-2 text-xs;
-}
-
-/**
- * The wordmark is pinned to its own family and metrics rather than inheriting
- * --font-sans, so changing the UI typeface can never silently change the logo.
- * The durable fix is outlined vector artwork; this holds the line until then.
- */
-.brand-wordmark {
-    font-family: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
-    font-weight: 600;
-    letter-spacing: -0.035em;
 }
 
 /**
