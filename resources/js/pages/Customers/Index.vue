@@ -12,6 +12,7 @@ import {
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import FormError from '@/components/FormError.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
@@ -220,59 +221,40 @@ async function deactivate(customer: Customer): Promise<void> {
 
         <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
             <div class="mx-auto max-w-6xl space-y-6">
-                <header
-                    class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
+                <PageHeader
+                    eyebrow="Clientes"
+                    title="Clientes"
+                    description="Quem factura com mais frequência. Guarde uma vez e escolha na factura, sem voltar a escrever o NIF."
                 >
-                    <div>
-                        <p class="eyebrow text-brand-700 dark:text-brand-300">
-                            Registos
-                        </p>
-                        <h1
-                            class="mt-2 text-3xl display text-zinc-950 dark:text-white"
-                        >
-                            Clientes
-                        </h1>
-                        <p
-                            class="mt-2 max-w-2xl text-sm/6 text-zinc-600 dark:text-zinc-400"
-                        >
-                            Quem factura com mais frequência. Guarde uma vez e
-                            escolha na factura, sem voltar a escrever o NIF.
-                        </p>
-                    </div>
-                    <button
-                        v-if="canManage"
-                        type="button"
-                        class="inline-flex w-fit items-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm focus-ring transition hover:bg-brand-600 dark:bg-accent-400 dark:text-brand-950 dark:hover:bg-accent-300"
-                        @click="openCreate"
-                    >
-                        <Plus class="size-4" aria-hidden="true" />
-                        Novo cliente
-                    </button>
-                </header>
-
-                <div class="overflow-hidden rounded-2xl surface">
-                    <div
-                        class="flex flex-col gap-3 border-b border-zinc-100 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-white/10"
-                    >
-                        <label class="relative w-full sm:max-w-xs">
+                    <template #actions>
+                        <label class="relative w-full sm:w-72">
                             <span class="sr-only">Procurar clientes</span>
                             <Search
-                                class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-zinc-400"
+                                class="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-zinc-400"
                                 aria-hidden="true"
                             />
                             <input
                                 v-model="search"
                                 type="search"
-                                placeholder="Nome, NIF ou email…"
-                                class="block w-full rounded-xl bg-white py-2.5 pr-3 pl-9 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 placeholder:text-zinc-400 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                placeholder="Nome, NIF ou email"
+                                class="h-10 w-full rounded-full bg-zinc-900/[0.045] pr-4 pl-10 text-sm text-zinc-950 outline-none placeholder:text-zinc-400 focus:bg-white focus:ring-2 focus:ring-brand-950 dark:bg-white/[0.06] dark:text-white dark:focus:bg-zinc-900 dark:focus:ring-zinc-200"
                             />
                         </label>
-                        <p class="text-xs text-zinc-500 dark:text-zinc-400">
-                            <span class="numeric">{{ customers.total }}</span>
-                            {{ customers.total === 1 ? 'cliente' : 'clientes' }}
-                        </p>
-                    </div>
+                        <button
+                            v-if="canManage"
+                            type="button"
+                            class="inline-flex h-10 items-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300"
+                            @click="openCreate"
+                        >
+                            <Plus class="size-4" aria-hidden="true" />
+                            Novo cliente
+                        </button>
+                    </template>
+                </PageHeader>
 
+                <div
+                    class="overflow-hidden rounded-3xl bg-zinc-900/[0.04] dark:bg-white/[0.04]"
+                >
                     <div
                         v-if="customers.data.length === 0"
                         class="px-6 py-16 text-center"
@@ -305,7 +287,7 @@ async function deactivate(customer: Customer): Promise<void> {
                         <table class="min-w-full text-sm">
                             <thead>
                                 <tr
-                                    class="border-b border-zinc-100 text-left dark:border-white/10"
+                                    class="border-b border-zinc-900/[0.07] text-left dark:border-white/10"
                                 >
                                     <th class="px-4 py-3 eyebrow text-zinc-500">
                                         Cliente
@@ -327,11 +309,12 @@ async function deactivate(customer: Customer): Promise<void> {
                                 </tr>
                             </thead>
                             <tbody
-                                class="divide-y divide-zinc-100 dark:divide-white/10"
+                                class="divide-y divide-zinc-900/[0.06] dark:divide-white/10"
                             >
                                 <tr
                                     v-for="customer in customers.data"
                                     :key="customer.public_id"
+                                    class="transition hover:bg-zinc-900/[0.025] dark:hover:bg-white/[0.03]"
                                 >
                                     <td class="px-4 py-3">
                                         <Link
@@ -406,7 +389,7 @@ async function deactivate(customer: Customer): Promise<void> {
                                         >
                                             <button
                                                 type="button"
-                                                class="icon-button text-zinc-500 focus-ring transition hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-white/5 dark:hover:text-white"
+                                                class="icon-button rounded-full text-zinc-500 focus-ring transition hover:bg-zinc-900/[0.06] hover:text-zinc-900 dark:hover:bg-white/10 dark:hover:text-white"
                                                 @click="openEdit(customer)"
                                             >
                                                 <span class="sr-only"
@@ -421,7 +404,7 @@ async function deactivate(customer: Customer): Promise<void> {
                                             <button
                                                 v-if="customer.is_active"
                                                 type="button"
-                                                class="icon-button text-zinc-500 focus-ring transition hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-400/10 dark:hover:text-rose-400"
+                                                class="icon-button rounded-full text-zinc-500 focus-ring transition hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-400/10 dark:hover:text-rose-400"
                                                 @click="deactivate(customer)"
                                             >
                                                 <span class="sr-only"
@@ -441,8 +424,9 @@ async function deactivate(customer: Customer): Promise<void> {
                     </div>
 
                     <nav
-                        v-if="customers.links.length > 3"
-                        class="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-100 px-4 py-3 dark:border-white/10"
+                        v-if="customers.data.length > 0"
+                        aria-label="Paginação"
+                        class="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-900/[0.07] px-4 py-3 dark:border-white/10"
                     >
                         <p class="text-xs text-zinc-500 dark:text-zinc-400">
                             <span class="numeric"
@@ -451,18 +435,21 @@ async function deactivate(customer: Customer): Promise<void> {
                             de
                             <span class="numeric">{{ customers.total }}</span>
                         </p>
-                        <div class="flex flex-wrap gap-1">
+                        <div
+                            v-if="customers.links.length > 3"
+                            class="flex flex-wrap gap-1"
+                        >
                             <component
                                 :is="link.url ? 'button' : 'span'"
                                 v-for="link in customers.links"
                                 :key="link.label"
                                 :class="[
                                     link.active
-                                        ? 'bg-brand-700 text-white dark:bg-accent-400 dark:text-brand-950'
+                                        ? 'bg-brand-950 text-white dark:bg-zinc-100 dark:text-brand-950'
                                         : link.url
-                                          ? 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-white/5'
+                                          ? 'text-zinc-600 hover:bg-zinc-900/[0.05] dark:text-zinc-300 dark:hover:bg-white/5'
                                           : 'text-zinc-300 dark:text-zinc-600',
-                                    'rounded-lg px-2.5 py-1.5 text-xs font-semibold',
+                                    'inline-flex h-8 min-w-8 items-center justify-center rounded-full px-2.5 text-xs font-semibold',
                                 ]"
                                 @click="link.url && router.get(link.url)"
                                 >{{ pageLabel(link.label) }}</component

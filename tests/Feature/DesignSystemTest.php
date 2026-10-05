@@ -31,7 +31,15 @@ test('the screens that used a banner now use the shared page header', function (
     'Imports/Index',
     'Onboarding',
     'Invoices/Create',
+    'Customers/Index',
+    'Customers/Show',
+    'Debts/Index',
 ]);
+
+test('the dashboard and the debts page colour debt age the same way', function (string $page) {
+    expect((string) file_get_contents(resource_path("js/pages/{$page}.vue")))
+        ->toContain("import { agingBucketColours, agingShare } from '@/lib/aging';");
+})->with(['Dashboard', 'Debts/Index']);
 
 test('headings are set at regular weight and labels stay quiet', function () {
     $css = (string) file_get_contents(resource_path('css/app.css'));

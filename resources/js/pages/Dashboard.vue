@@ -16,6 +16,7 @@ import type { Component } from 'vue';
 import DocumentLifecycle from '@/components/DocumentLifecycle.vue';
 import type { LifecycleStep } from '@/components/DocumentLifecycle.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { agingBucketColours, agingShare } from '@/lib/aging';
 import { onboarding } from '@/routes';
 import { show as agtConnection } from '@/routes/agt/connection';
 import { index as agtSubmissions } from '@/routes/agt/submissions';
@@ -477,19 +478,6 @@ const reviewStatement = computed(() => {
 });
 
 /* ------------------------------------------------------------- collections */
-
-/** Ageing colours, from current to the oldest debt: ink, gold, orange, red. */
-const bucketColours: Record<string, string> = {
-    current: 'bg-brand-950 dark:bg-zinc-200',
-    d1_30: 'bg-accent-400',
-    d31_60: 'bg-orange-500',
-    d61_90: 'bg-rose-500',
-    d90_plus: 'bg-rose-700',
-};
-
-function bucketShare(value: number, total: number): string {
-    return `${total > 0 ? (value / total) * 100 : 0}%`;
-}
 </script>
 
 <template>
@@ -1367,9 +1355,9 @@ function bucketShare(value: number, total: number): string {
                                     )"
                                     :key="bucket.key"
                                     class="rounded-[3px]"
-                                    :class="bucketColours[bucket.key]"
+                                    :class="agingBucketColours[bucket.key]"
                                     :style="{
-                                        width: bucketShare(
+                                        width: agingShare(
                                             bucket.total_minor,
                                             collections.outstanding_minor,
                                         ),
@@ -1384,7 +1372,7 @@ function bucketShare(value: number, total: number): string {
                                 >
                                     <span
                                         class="size-2 rounded-[2px]"
-                                        :class="bucketColours[bucket.key]"
+                                        :class="agingBucketColours[bucket.key]"
                                         aria-hidden="true"
                                     />
                                     <dt
@@ -1489,9 +1477,11 @@ function bucketShare(value: number, total: number): string {
                                             "
                                             :key="bucket.key"
                                             class="rounded-[3px]"
-                                            :class="bucketColours[bucket.key]"
+                                            :class="
+                                                agingBucketColours[bucket.key]
+                                            "
                                             :style="{
-                                                width: bucketShare(
+                                                width: agingShare(
                                                     customer.buckets[
                                                         bucket.key
                                                     ] ?? 0,

@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { CircleCheck, Gauge, TriangleAlert } from '@lucide/vue';
+import { CircleCheck, TriangleAlert } from '@lucide/vue';
 import { computed } from 'vue';
-import ChartBars from '@/components/charts/ChartBars.vue';
-import ChartFrame from '@/components/charts/ChartFrame.vue';
-import StatTile from '@/components/charts/StatTile.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
+import PageHeader from '@/components/PageHeader.vue';
+import PageStat from '@/components/PageStat.vue';
+import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { agingBucketColours, agingShare } from '@/lib/aging';
 import { show as showCustomer } from '@/routes/customers';
 
 interface DebtRow {
@@ -35,51 +36,37 @@ const props = defineProps<{
     currencyCode: string;
 }>();
 
-const moneyFormatter = new Intl.NumberFormat('pt-AO', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-});
+const currencyLabel = computed(() =>
+    props.currencyCode === 'AOA' ? 'Kz' : props.currencyCode,
+);
 
-const compactFormatter = new Intl.NumberFormat('pt-AO', {
-    notation: 'compact',
-    maximumFractionDigits: 1,
-});
+function wholeAmount(minor: number): string {
+    return new Intl.NumberFormat('pt-AO', {
+        maximumFractionDigits: 0,
+    }).format(Math.round(minor / 100));
+}
 
 function money(minor: number): string {
-    return `${moneyFormatter.format(minor / 100)} ${props.currencyCode}`;
+    return `${new Intl.NumberFormat('pt-AO', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    }).format(minor / 100)} ${currencyLabel.value}`;
 }
 
-function compactMoney(minor: number): string {
-    return `${compactFormatter.format(minor / 100)} ${props.currencyCode}`;
+function plural(count: number, one: string, many: string): string {
+    return `${count} ${count === 1 ? one : many}`;
 }
 
-/**
- * Ordinal buckets take one hue that darkens with age: the order is the
- * information, so the colour should carry it rather than spend five identities.
- */
-const bucketBars = computed(() =>
-    props.totals
-        .filter((bucket) => bucket.total_minor > 0)
-        .map((bucket) => ({
-            label: bucket.label,
-            value: bucket.total_minor,
-        })),
+const oldestDays = computed(
+    () => props.customers[0]?.oldest_days_past_due ?? 0,
 );
 
-const bucketRows = computed(() =>
-    props.totals.map((bucket) => [bucket.label, money(bucket.total_minor)]),
-);
-
-function ageTone(days: number): string {
-    if (days > 90) {
-        return 'text-rose-700 dark:text-rose-400';
-    }
-
-    if (days > 30) {
-        return 'text-amber-700 dark:text-amber-400';
-    }
-
-    return 'text-zinc-600 dark:text-zinc-400';
+/** Read aloud in place of the bar: every bucket that holds money, with its amount. */
+function bucketSummary(row: DebtRow): string {
+    return props.buckets
+        .filter((bucket) => (row.buckets[bucket.key] ?? 0) > 0)
+        .map((bucket) => `${bucket.label}: ${money(row.buckets[bucket.key])}`)
+        .join('; ');
 }
 </script>
 
@@ -88,96 +75,182 @@ function ageTone(days: number): string {
         <Head title="Dívidas" />
 
         <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-            <div class="mx-auto max-w-6xl space-y-6">
+            <div class="mx-auto max-w-6xl">
                 <FlashBanner />
 
-                <header>
-                    <p class="eyebrow text-brand-700 dark:text-brand-300">
-                        Conta corrente
-                    </p>
-                    <h1
-                        class="mt-2 text-3xl display text-zinc-950 dark:text-white"
-                    >
-                        Dívidas de clientes
-                    </h1>
-                    <p
-                        class="mt-2 max-w-2xl text-sm/6 text-zinc-600 dark:text-zinc-400"
-                    >
-                        Quanto está por receber e há quanto tempo. A idade conta
-                        a partir do vencimento acordado, não da data da factura.
-                    </p>
-                </header>
+                <PageHeader
+                    eyebrow="Clientes · Dívidas"
+                    title="Dívidas de clientes"
+                    description="Quanto está por receber e há quanto tempo. A idade conta a partir do vencimento acordado, não da data da factura."
+                >
+                    <template #stats>
+                        <PageStat
+                            label="Por receber"
+                            :value="`${wholeAmount(summary.outstanding_minor)}`"
+                            :detail="
+                                plural(
+                                    summary.customer_count,
+                                    'cliente em dívida',
+                                    'clientes em dívida',
+                                )
+                            "
+                        />
+                        <PageStat
+                            label="Vencido"
+                            :value="wholeAmount(summary.overdue_minor)"
+                            :detail="
+                                summary.overdue_minor > 0
+                                    ? 'já passou do prazo'
+                                    : 'nada vencido'
+                            "
+                        >
+                            <span
+                                :class="
+                                    summary.overdue_minor > 0
+                                        ? 'text-rose-600 dark:text-rose-400'
+                                        : ''
+                                "
+                                >{{ wholeAmount(summary.overdue_minor) }}</span
+                            >
+                        </PageStat>
+                        <PageStat
+                            label="Acima do limite"
+                            :value="summary.over_limit_count"
+                            detail="limite de crédito acordado"
+                        />
+                        <PageStat
+                            label="Dívida mais antiga"
+                            :value="
+                                oldestDays > 0
+                                    ? plural(oldestDays, 'dia', 'dias')
+                                    : '—'
+                            "
+                            :detail="
+                                oldestDays > 0
+                                    ? customers[0]?.name
+                                    : 'nada em atraso'
+                            "
+                        />
+                    </template>
+                </PageHeader>
 
-                <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <StatTile
-                        label="Por receber"
-                        :value="money(summary.outstanding_minor)"
-                        :detail="`${summary.customer_count} cliente(s)`"
+                <p
+                    v-if="summary.over_limit_count > 0"
+                    class="mt-6 flex items-start gap-3 rounded-2xl bg-orange-50 p-4 text-sm/6 text-orange-900 dark:bg-orange-400/10 dark:text-orange-200"
+                >
+                    <TriangleAlert
+                        class="mt-0.5 size-5 shrink-0 text-orange-600 dark:text-orange-300"
+                        aria-hidden="true"
                     />
-                    <StatTile
-                        label="Vencido"
-                        :value="money(summary.overdue_minor)"
-                        :tone="
-                            summary.overdue_minor > 0 ? 'critical' : 'neutral'
-                        "
-                    />
-                    <StatTile
-                        label="Acima do limite"
-                        :value="String(summary.over_limit_count)"
-                        :tone="
-                            summary.over_limit_count > 0 ? 'warning' : 'neutral'
-                        "
-                        detail="clientes"
-                    />
-                    <StatTile
-                        label="Dívida mais antiga"
-                        :value="
-                            customers.length === 0
-                                ? '—'
-                                : `${customers[0].oldest_days_past_due} dias`
-                        "
-                        :tone="
-                            (customers[0]?.oldest_days_past_due ?? 0) > 90
-                                ? 'critical'
-                                : 'neutral'
-                        "
-                    />
+                    <span>
+                        {{
+                            plural(
+                                summary.over_limit_count,
+                                'cliente deve',
+                                'clientes devem',
+                            )
+                        }}
+                        mais do que o limite de crédito acordado. Vale a pena
+                        cobrar antes de emitir mais.
+                    </span>
+                </p>
+
+                <!-- ------------------------------------------- ageing -->
+                <section
+                    class="mt-6 rounded-3xl bg-zinc-900/[0.04] p-6 dark:bg-white/[0.04]"
+                    aria-labelledby="aging-title"
+                >
+                    <h2
+                        id="aging-title"
+                        class="text-base font-medium text-zinc-950 dark:text-white"
+                    >
+                        Antiguidade dos saldos
+                    </h2>
+                    <p
+                        class="mt-1 text-[0.8125rem] text-zinc-500 dark:text-zinc-400"
+                    >
+                        Quanto de cada escalão está por cobrar.
+                    </p>
+
+                    <template v-if="summary.outstanding_minor > 0">
+                        <div class="mt-5 flex h-3 gap-[3px]" aria-hidden="true">
+                            <span
+                                v-for="bucket in totals.filter(
+                                    (item) => item.total_minor > 0,
+                                )"
+                                :key="bucket.key"
+                                class="rounded-[3px]"
+                                :class="agingBucketColours[bucket.key]"
+                                :style="{
+                                    width: agingShare(
+                                        bucket.total_minor,
+                                        summary.outstanding_minor,
+                                    ),
+                                }"
+                            />
+                        </div>
+                        <dl
+                            class="mt-5 grid gap-x-8 gap-y-4 sm:grid-cols-3 lg:grid-cols-5"
+                        >
+                            <div v-for="bucket in totals" :key="bucket.key">
+                                <dt
+                                    class="flex items-center gap-2 text-[0.8125rem] text-zinc-600 dark:text-zinc-300"
+                                >
+                                    <span
+                                        class="size-2 rounded-[2px]"
+                                        :class="agingBucketColours[bucket.key]"
+                                        aria-hidden="true"
+                                    />
+                                    {{ bucket.label }}
+                                </dt>
+                                <dd
+                                    class="mt-1.5 numeric text-lg tracking-[-0.02em]"
+                                    :class="
+                                        bucket.total_minor > 0
+                                            ? 'text-zinc-950 dark:text-white'
+                                            : 'text-zinc-400 dark:text-zinc-500'
+                                    "
+                                >
+                                    {{ wholeAmount(bucket.total_minor) }}
+                                    <span class="text-xs text-zinc-400">{{
+                                        currencyLabel
+                                    }}</span>
+                                </dd>
+                            </div>
+                        </dl>
+                    </template>
+                    <p
+                        v-else
+                        class="mt-5 text-sm text-zinc-500 dark:text-zinc-400"
+                    >
+                        Nada por receber. Todas as facturas estão liquidadas.
+                    </p>
                 </section>
 
-                <ChartFrame
-                    title="Antiguidade dos saldos"
-                    subtitle="Quanto de cada escalão está por cobrar."
-                    :columns="['Escalão', 'Por receber']"
-                    :rows="bucketRows"
-                    :empty="summary.outstanding_minor === 0"
-                    empty-message="Nada por receber. Todas as facturas estão liquidadas."
+                <!-- ----------------------------------------- by customer -->
+                <section
+                    class="mt-5 rounded-3xl bg-zinc-900/[0.04] p-6 dark:bg-white/[0.04]"
+                    aria-labelledby="customers-title"
                 >
-                    <ChartBars :bars="bucketBars" :format="compactMoney" />
-                </ChartFrame>
-
-                <section class="overflow-hidden rounded-2xl surface">
-                    <header
-                        class="border-b border-zinc-100 p-5 dark:border-white/10"
+                    <h2
+                        id="customers-title"
+                        class="text-base font-medium text-zinc-950 dark:text-white"
                     >
-                        <h2
-                            class="text-sm font-semibold text-zinc-950 dark:text-white"
-                        >
-                            Por cliente
-                        </h2>
-                        <p
-                            class="mt-1 text-sm/6 text-zinc-500 dark:text-zinc-400"
-                        >
-                            Ordenado pela dívida mais antiga — a ordem por que
-                            se cobra.
-                        </p>
-                    </header>
+                        Por cliente
+                    </h2>
+                    <p
+                        class="mt-1 text-[0.8125rem] text-zinc-500 dark:text-zinc-400"
+                    >
+                        Quem deve há mais tempo primeiro: a ordem por que se
+                        cobra.
+                    </p>
 
                     <div
                         v-if="customers.length === 0"
-                        class="flex flex-col items-center gap-2 px-5 py-14 text-center"
+                        class="flex flex-col items-center gap-2 py-12 text-center"
                     >
                         <CircleCheck
-                            class="size-8 text-emerald-500"
+                            class="size-7 text-lime-600 dark:text-lime-400"
                             aria-hidden="true"
                         />
                         <p class="text-sm/6 text-zinc-500 dark:text-zinc-400">
@@ -185,129 +258,103 @@ function ageTone(days: number): string {
                         </p>
                     </div>
 
-                    <div v-else class="overflow-x-auto">
-                        <table class="min-w-full text-left text-sm">
-                            <thead
-                                class="border-b border-zinc-100 dark:border-white/10"
-                            >
-                                <tr>
-                                    <th class="px-5 py-3 eyebrow text-zinc-500">
-                                        Cliente
-                                    </th>
-                                    <th
-                                        v-for="bucket in buckets"
-                                        :key="bucket.key"
-                                        class="hidden px-3 py-3 text-right eyebrow text-zinc-500 lg:table-cell"
-                                    >
-                                        {{ bucket.label }}
-                                    </th>
-                                    <th
-                                        class="px-5 py-3 text-right eyebrow text-zinc-500"
-                                    >
-                                        Total
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody
-                                class="divide-y divide-zinc-100 dark:divide-white/10"
-                            >
-                                <tr v-for="row in customers" :key="row.name">
-                                    <td class="px-5 py-3">
-                                        <component
-                                            :is="
-                                                row.customer_public_id
-                                                    ? Link
-                                                    : 'span'
-                                            "
-                                            :href="
-                                                row.customer_public_id
-                                                    ? showCustomer.url(
-                                                          row.customer_public_id,
-                                                      )
-                                                    : undefined
-                                            "
-                                            class="rounded font-medium text-zinc-950 underline-offset-4 focus-ring hover:underline dark:text-white"
-                                        >
-                                            {{ row.name }}
-                                        </component>
-                                        <p class="text-xs">
-                                            <span
-                                                :class="
-                                                    ageTone(
-                                                        row.oldest_days_past_due,
-                                                    )
-                                                "
-                                            >
-                                                {{
-                                                    row.oldest_days_past_due > 0
-                                                        ? `${row.oldest_days_past_due} dias em atraso`
-                                                        : 'Dentro do prazo'
-                                                }}
-                                            </span>
-                                            <span
-                                                v-if="row.over_limit"
-                                                class="ms-2 inline-flex items-center gap-1 font-semibold text-rose-700 dark:text-rose-400"
-                                            >
-                                                <Gauge
-                                                    class="size-3"
-                                                    aria-hidden="true"
-                                                />
-                                                acima do limite
-                                            </span>
-                                        </p>
-                                    </td>
-
-                                    <td
-                                        v-for="bucket in buckets"
-                                        :key="bucket.key"
-                                        class="hidden px-3 py-3 text-right numeric whitespace-nowrap lg:table-cell"
+                    <ul v-else role="list" class="mt-4">
+                        <li
+                            v-for="row in customers"
+                            :key="row.customer_public_id ?? row.name"
+                            class="grid grid-cols-1 items-center gap-3 border-t border-zinc-900/[0.06] py-4 sm:grid-cols-[minmax(0,16rem)_minmax(0,1fr)_auto] dark:border-white/10"
+                        >
+                            <div class="min-w-0">
+                                <component
+                                    :is="row.customer_public_id ? Link : 'span'"
+                                    :href="
+                                        row.customer_public_id
+                                            ? showCustomer.url(
+                                                  row.customer_public_id,
+                                              )
+                                            : undefined
+                                    "
+                                    class="block truncate rounded text-sm font-semibold text-zinc-950 focus-ring dark:text-white"
+                                    :class="
+                                        row.customer_public_id
+                                            ? 'underline-offset-4 hover:underline'
+                                            : ''
+                                    "
+                                    >{{ row.name }}</component
+                                >
+                                <p
+                                    class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400"
+                                >
+                                    <span>{{
+                                        plural(
+                                            row.document_count,
+                                            'documento',
+                                            'documentos',
+                                        )
+                                    }}</span>
+                                    <span
                                         :class="
-                                            (row.buckets[bucket.key] ?? 0) > 0
-                                                ? 'text-zinc-700 dark:text-zinc-300'
-                                                : 'text-zinc-300 dark:text-zinc-600'
+                                            row.oldest_days_past_due > 90
+                                                ? 'font-medium text-rose-700 dark:text-rose-400'
+                                                : row.oldest_days_past_due > 0
+                                                  ? 'text-rose-600 dark:text-rose-400'
+                                                  : ''
                                         "
-                                    >
+                                        >·
                                         {{
-                                            (row.buckets[bucket.key] ?? 0) > 0
-                                                ? compactMoney(
-                                                      row.buckets[bucket.key],
-                                                  )
-                                                : '—'
-                                        }}
-                                    </td>
-
-                                    <td
-                                        class="px-5 py-3 text-right numeric font-medium whitespace-nowrap text-zinc-950 dark:text-white"
+                                            row.oldest_days_past_due > 0
+                                                ? `há ${plural(row.oldest_days_past_due, 'dia', 'dias')} em atraso`
+                                                : 'dentro do prazo'
+                                        }}</span
                                     >
-                                        {{ money(row.outstanding_minor) }}
-                                        <span
-                                            v-if="row.overdue_minor > 0"
-                                            class="block text-xs font-normal text-rose-700 dark:text-rose-400"
-                                        >
-                                            {{ money(row.overdue_minor) }}
-                                            vencido
-                                        </span>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
+                                    <StatusBadge
+                                        v-if="row.over_limit"
+                                        label="Acima do limite"
+                                        tone="warning"
+                                    />
+                                </p>
+                            </div>
 
-                <p
-                    v-if="summary.over_limit_count > 0"
-                    class="flex items-start gap-3 rounded-2xl bg-amber-50 p-4 text-sm/6 text-amber-900 ring-1 ring-amber-200 dark:bg-amber-400/10 dark:text-amber-200 dark:ring-amber-400/20"
-                >
-                    <TriangleAlert
-                        class="mt-0.5 size-5 shrink-0"
-                        aria-hidden="true"
-                    />
-                    <span>
-                        {{ summary.over_limit_count }} cliente(s) devem mais do
-                        que o limite de crédito acordado. Vale a pena cobrar
-                        antes de emitir mais.
-                    </span>
-                </p>
+                            <div
+                                class="flex h-2.5 gap-[3px]"
+                                role="img"
+                                :aria-label="bucketSummary(row)"
+                            >
+                                <span
+                                    v-for="bucket in buckets"
+                                    v-show="(row.buckets[bucket.key] ?? 0) > 0"
+                                    :key="bucket.key"
+                                    class="rounded-[3px]"
+                                    :class="agingBucketColours[bucket.key]"
+                                    :style="{
+                                        width: agingShare(
+                                            row.buckets[bucket.key] ?? 0,
+                                            row.outstanding_minor,
+                                        ),
+                                    }"
+                                />
+                            </div>
+
+                            <p class="sm:text-right">
+                                <span
+                                    class="numeric text-sm font-semibold text-zinc-950 dark:text-white"
+                                    >{{ wholeAmount(row.outstanding_minor) }}
+                                    <span class="font-normal text-zinc-400">{{
+                                        currencyLabel
+                                    }}</span></span
+                                >
+                                <span
+                                    v-if="row.overdue_minor > 0"
+                                    class="mt-0.5 block numeric text-xs text-rose-600 dark:text-rose-400"
+                                    >{{
+                                        wholeAmount(row.overdue_minor)
+                                    }}
+                                    vencidos</span
+                                >
+                            </p>
+                        </li>
+                    </ul>
+                </section>
             </div>
         </div>
     </AppLayout>

@@ -20,9 +20,10 @@ import { computed, ref } from 'vue';
 import ChartBars from '@/components/charts/ChartBars.vue';
 import ChartFrame from '@/components/charts/ChartFrame.vue';
 import ChartTrend from '@/components/charts/ChartTrend.vue';
-import StatTile from '@/components/charts/StatTile.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
 import FormError from '@/components/FormError.vue';
+import PageHeader from '@/components/PageHeader.vue';
+import PageStat from '@/components/PageStat.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -136,6 +137,13 @@ const compactFormatter = new Intl.NumberFormat('pt-AO', {
 
 function money(minor: number): string {
     return `${moneyFormatter.format(minor / 100)} ${props.currencyCode}`;
+}
+
+/** Whole kwanzas for the figures row; the centimos are on each document. */
+function wholeAmount(minor: number): string {
+    return new Intl.NumberFormat('pt-AO', {
+        maximumFractionDigits: 0,
+    }).format(Math.round(minor / 100));
 }
 
 function compactMoney(minor: number): string {
@@ -286,34 +294,70 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
 
                 <FlashBanner />
 
-                <header
-                    class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
-                >
-                    <div class="min-w-0">
-                        <p class="eyebrow text-brand-700 dark:text-brand-300">
-                            Cliente
-                        </p>
-                        <h1
-                            class="mt-2 text-3xl display text-zinc-950 dark:text-white"
+                <PageHeader eyebrow="Clientes · Cliente" :title="customer.name">
+                    <template #meta>
+                        <StatusBadge
+                            :tone="customer.is_active ? 'success' : 'neutral'"
+                            :label="customer.is_active ? 'Activo' : 'Inactivo'"
+                        />
+                        <span
+                            class="font-mono text-[0.8125rem] text-zinc-600 dark:text-zinc-400"
+                            >NIF {{ customer.tax_identification_number }} ·
+                            {{ customer.country_code }}</span
                         >
-                            {{ customer.name }}
-                        </h1>
-                        <p
-                            class="mt-2 numeric text-sm text-zinc-600 dark:text-zinc-400"
+                    </template>
+                    <template #stats>
+                        <PageStat
+                            label="Facturado"
+                            :value="wholeAmount(summary.billed_minor)"
+                            :detail="
+                                summary.document_count === 1
+                                    ? '1 documento'
+                                    : `${summary.document_count} documentos`
+                            "
+                        />
+                        <PageStat
+                            label="Recebido"
+                            :value="wholeAmount(summary.paid_minor)"
+                            :detail="
+                                collectionRate === null
+                                    ? undefined
+                                    : `${collectionRate}% do facturado`
+                            "
+                        />
+                        <PageStat
+                            label="Em dívida"
+                            :value="wholeAmount(summary.outstanding_minor)"
+                            :detail="
+                                summary.credited_minor > 0
+                                    ? `${money(summary.credited_minor)} creditado`
+                                    : undefined
+                            "
+                        />
+                        <PageStat
+                            label="Vencido"
+                            :value="wholeAmount(summary.overdue_minor)"
+                            :detail="
+                                summary.overdue_count === 1
+                                    ? '1 documento'
+                                    : `${summary.overdue_count} documentos`
+                            "
                         >
-                            NIF {{ customer.tax_identification_number }} ·
-                            {{ customer.country_code }}
-                        </p>
-                    </div>
-
-                    <StatusBadge
-                        :tone="customer.is_active ? 'success' : 'neutral'"
-                        :label="customer.is_active ? 'Activo' : 'Inactivo'"
-                    />
-                </header>
+                            <span
+                                :class="
+                                    summary.overdue_minor > 0
+                                        ? 'text-rose-600 dark:text-rose-400'
+                                        : ''
+                                "
+                                >{{ wholeAmount(summary.overdue_minor) }}</span
+                            >
+                        </PageStat>
+                    </template>
+                </PageHeader>
 
                 <section
-                    class="flex flex-wrap gap-x-6 gap-y-2 rounded-2xl surface p-4 text-sm"
+                    aria-label="Contactos e condições"
+                    class="flex flex-wrap gap-x-6 gap-y-2 border-y border-zinc-900/[0.07] py-3.5 text-sm dark:border-white/10"
                 >
                     <a
                         v-if="customer.email"
@@ -395,7 +439,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
 
                 <div
                     v-if="overLimit"
-                    class="flex items-start gap-3 rounded-2xl bg-rose-50 p-4 text-sm/6 text-rose-900 ring-1 ring-rose-200 dark:bg-rose-400/10 dark:text-rose-200 dark:ring-rose-400/20"
+                    class="flex items-start gap-3 rounded-2xl bg-orange-50 p-4 text-sm/6 text-orange-900 dark:bg-orange-400/10 dark:text-orange-200"
                 >
                     <TriangleAlert
                         class="mt-0.5 size-5 shrink-0"
@@ -407,49 +451,9 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                     </p>
                 </div>
 
-                <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <StatTile
-                        label="Facturado"
-                        :value="money(summary.billed_minor)"
-                        :detail="`${summary.document_count} documento(s)`"
-                    />
-                    <StatTile
-                        label="Recebido"
-                        :value="money(summary.paid_minor)"
-                        tone="good"
-                        :detail="
-                            collectionRate === null
-                                ? undefined
-                                : `${collectionRate}% do facturado`
-                        "
-                    />
-                    <StatTile
-                        label="Em dívida"
-                        :value="money(summary.outstanding_minor)"
-                        :tone="
-                            summary.outstanding_minor > 0
-                                ? 'warning'
-                                : 'neutral'
-                        "
-                        :detail="
-                            summary.credited_minor > 0
-                                ? `${money(summary.credited_minor)} creditado`
-                                : undefined
-                        "
-                    />
-                    <StatTile
-                        label="Vencido"
-                        :value="money(summary.overdue_minor)"
-                        :tone="
-                            summary.overdue_minor > 0 ? 'critical' : 'neutral'
-                        "
-                        :detail="`${summary.overdue_count} documento(s)`"
-                    />
-                </section>
-
                 <div
                     v-if="summary.overdue_minor > 0"
-                    class="flex items-start gap-3 rounded-2xl bg-rose-50 p-4 text-sm/6 text-rose-900 ring-1 ring-rose-200 dark:bg-rose-400/10 dark:text-rose-200 dark:ring-rose-400/20"
+                    class="flex items-start gap-3 rounded-2xl bg-rose-50 p-4 text-sm/6 text-rose-900 dark:bg-rose-400/10 dark:text-rose-200"
                 >
                     <TriangleAlert
                         class="mt-0.5 size-5 shrink-0"
@@ -457,8 +461,12 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                     />
                     <p>
                         {{ money(summary.overdue_minor) }} em
-                        {{ summary.overdue_count }} documento(s) já passou da
-                        data de vencimento.
+                        {{
+                            summary.overdue_count === 1
+                                ? '1 documento já passou'
+                                : `${summary.overdue_count} documentos já passaram`
+                        }}
+                        da data de vencimento.
                     </p>
                 </div>
 
