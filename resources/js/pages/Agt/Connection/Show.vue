@@ -24,6 +24,8 @@ import {
 } from '@lucide/vue';
 import { computed } from 'vue';
 import FormError from '@/components/FormError.vue';
+import PageHeader from '@/components/PageHeader.vue';
+import PageStat from '@/components/PageStat.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { update } from '@/routes/agt/connection';
@@ -180,73 +182,35 @@ function formatDate(value: string | null): string {
 
         <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
             <div class="mx-auto max-w-[100rem] space-y-8">
-                <section
-                    class="relative overflow-hidden rounded-3xl bg-brand-950 px-6 py-7 text-white shadow-[0_28px_80px_-45px_rgba(8,40,32,0.9)] sm:px-8 sm:py-9"
+                <PageHeader
+                    eyebrow="AGT · Ligação"
+                    title="Ligação à AGT"
+                    description="Configure as credenciais, confirme a custódia das chaves e sincronize as séries autorizadas. A emissão continua separada e exige uma confirmação explícita."
                 >
-                    <div
-                        class="absolute -top-32 -right-20 size-96 rounded-full bg-sky-300/10 blur-3xl"
-                        aria-hidden="true"
-                    />
-                    <div
-                        class="relative flex flex-col justify-between gap-8 xl:flex-row xl:items-end"
-                    >
-                        <div class="max-w-3xl">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <StatusBadge
-                                    :label="connection.status_label"
-                                    :tone="statusTone(connection.status)"
-                                    :pulse="connection.status === 'ready'"
-                                />
-                                <span
-                                    class="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-semibold text-brand-100/75"
-                                >
-                                    {{ connection.environment_label }} · schema
-                                    {{ connection.schema_version }}
-                                </span>
-                            </div>
-                            <h1
-                                class="mt-5 text-4xl leading-[1.05] display sm:text-5xl"
-                            >
-                                A sua ligação à AGT.<br />
-                                <span class="text-accent-400"
-                                    >Testar antes de valer.</span
-                                >
-                            </h1>
-                            <p
-                                class="mt-4 max-w-2xl text-sm/6 text-brand-100/70 sm:text-base/7"
-                            >
-                                Configure as credenciais, confirme a custódia
-                                das chaves e sincronize as séries fiscais
-                                autorizadas. A emissão continua separada e exige
-                                uma confirmação explícita.
-                            </p>
-                        </div>
-                        <div
-                            class="grid min-w-[18rem] grid-cols-2 gap-px overflow-hidden rounded-2xl bg-white/10 ring-1 ring-white/10"
-                        >
-                            <div class="bg-white/[0.06] p-4">
-                                <p class="text-xs text-brand-100/60">
-                                    Requisitos
-                                </p>
-                                <p
-                                    class="mt-1 numeric text-2xl font-semibold tracking-tight"
-                                >
-                                    {{ completedRequirements }}/{{
-                                        readiness.items.length
-                                    }}
-                                </p>
-                            </div>
-                            <div class="bg-white/[0.06] p-4">
-                                <p class="text-xs text-brand-100/60">
-                                    Última verificação
-                                </p>
-                                <p class="mt-1 text-sm font-semibold">
-                                    {{ formatDate(connection.verified_at) }}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </section>
+                    <template #meta>
+                        <StatusBadge
+                            :label="connection.status_label"
+                            :tone="statusTone(connection.status)"
+                            :pulse="connection.status === 'ready'"
+                        />
+                        <StatusBadge
+                            :label="`${connection.environment_label} · schema ${connection.schema_version}`"
+                            tone="neutral"
+                        />
+                    </template>
+                    <template #stats>
+                        <PageStat
+                            label="Requisitos"
+                            :value="`${completedRequirements}/${readiness.items.length}`"
+                            detail="para emitir em homologação"
+                        />
+                        <PageStat
+                            label="Última verificação"
+                            :value="formatDate(connection.verified_at)"
+                            compact
+                        />
+                    </template>
+                </PageHeader>
 
                 <div
                     v-if="flashSuccess"

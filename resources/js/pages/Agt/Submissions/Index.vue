@@ -5,18 +5,15 @@ import {
     ChevronRight,
     CircleAlert,
     Clock3,
-    CloudCog,
-    FileCheck2,
-    FileClock,
-    FileWarning,
     Fingerprint,
     Inbox,
     LoaderCircle,
     RefreshCw,
     Send,
-    ShieldCheck,
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import PageHeader from '@/components/PageHeader.vue';
+import PageStat from '@/components/PageStat.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -215,54 +212,66 @@ function abbreviate(value: string | null): string {
 
         <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
             <div class="mx-auto max-w-[100rem] space-y-7">
-                <header
-                    class="flex flex-col gap-5 border-b border-zinc-200 pb-6 sm:flex-row sm:items-end sm:justify-between dark:border-white/10"
+                <PageHeader
+                    eyebrow="AGT · Monitor"
+                    title="Onde está cada factura"
+                    description="Acompanhe cada documento desde a fila segura até ao resultado final devolvido pela AGT, sem repetir uma emissão."
                 >
-                    <div>
-                        <div
-                            class="flex items-center gap-2 text-sm font-semibold text-brand-700 dark:text-brand-300"
+                    <template #actions>
+                        <Form
+                            v-if="permissions.refresh"
+                            v-bind="refresh.form()"
+                            :options="{ preserveScroll: true }"
+                            #default="{ processing }"
                         >
-                            <CloudCog class="size-4" aria-hidden="true" />
-                            Entrega fiscal assíncrona
-                        </div>
-                        <h1
-                            class="mt-2 text-3xl display text-zinc-950 sm:text-4xl dark:text-white"
+                            <button
+                                type="submit"
+                                :disabled="processing || activeTotal === 0"
+                                class="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-white px-[1.125rem] text-sm font-semibold whitespace-nowrap text-zinc-900 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
+                            >
+                                <LoaderCircle
+                                    v-if="processing"
+                                    class="size-4 animate-spin"
+                                    aria-hidden="true"
+                                />
+                                <RefreshCw
+                                    v-else
+                                    class="size-4"
+                                    aria-hidden="true"
+                                />
+                                Actualizar estados
+                            </button>
+                        </Form>
+                    </template>
+                    <template #stats>
+                        <PageStat
+                            label="Validadas pela AGT"
+                            :value="summary.valid"
+                        />
+                        <PageStat
+                            label="Na fila ou em validação"
+                            :value="activeTotal"
+                        />
+                        <PageStat
+                            label="Requerem atenção"
+                            :value="attentionTotal"
                         >
-                            Onde está cada factura
-                        </h1>
-                        <p
-                            class="mt-2 max-w-2xl text-sm/6 text-zinc-600 dark:text-zinc-400"
-                        >
-                            Acompanhe cada documento desde a fila segura até ao
-                            resultado final devolvido pela AGT, sem repetir uma
-                            emissão.
-                        </p>
-                    </div>
-                    <Form
-                        v-if="permissions.refresh"
-                        v-bind="refresh.form()"
-                        :options="{ preserveScroll: true }"
-                        #default="{ processing }"
-                    >
-                        <button
-                            type="submit"
-                            :disabled="processing || activeTotal === 0"
-                            class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3.5 py-2.5 text-sm font-semibold whitespace-nowrap text-zinc-900 shadow-sm ring-1 ring-zinc-300 focus-ring transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
-                        >
-                            <LoaderCircle
-                                v-if="processing"
-                                class="size-4 animate-spin"
-                                aria-hidden="true"
-                            />
-                            <RefreshCw
-                                v-else
-                                class="size-4"
-                                aria-hidden="true"
-                            />
-                            Actualizar estados
-                        </button>
-                    </Form>
-                </header>
+                            <span
+                                :class="
+                                    attentionTotal > 0
+                                        ? 'text-rose-600 dark:text-rose-400'
+                                        : ''
+                                "
+                                >{{ attentionTotal }}</span
+                            >
+                        </PageStat>
+                        <PageStat
+                            label="Registos preservados"
+                            :value="total"
+                            detail="Todas as entregas ficam guardadas"
+                        />
+                    </template>
+                </PageHeader>
 
                 <div
                     v-if="flashSuccess"
@@ -280,73 +289,6 @@ function abbreviate(value: string | null): string {
                     <CircleAlert class="size-5 shrink-0" aria-hidden="true" />
                     {{ flashError }}
                 </div>
-
-                <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    <article class="rounded-2xl surface p-5">
-                        <FileCheck2
-                            class="size-5 text-emerald-600 dark:text-emerald-400"
-                            aria-hidden="true"
-                        />
-                        <p
-                            class="mt-5 numeric text-3xl font-semibold tracking-tight text-zinc-950 dark:text-white"
-                        >
-                            {{ summary.valid }}
-                        </p>
-                        <p
-                            class="mt-1 text-sm text-zinc-500 dark:text-zinc-400"
-                        >
-                            Validadas pela AGT
-                        </p>
-                    </article>
-                    <article class="rounded-2xl surface p-5">
-                        <FileClock
-                            class="size-5 text-sky-600 dark:text-sky-400"
-                            aria-hidden="true"
-                        />
-                        <p
-                            class="mt-5 numeric text-3xl font-semibold tracking-tight text-zinc-950 dark:text-white"
-                        >
-                            {{ activeTotal }}
-                        </p>
-                        <p
-                            class="mt-1 text-sm text-zinc-500 dark:text-zinc-400"
-                        >
-                            Na fila ou em validação
-                        </p>
-                    </article>
-                    <article class="rounded-2xl surface p-5">
-                        <FileWarning
-                            class="size-5 text-rose-600 dark:text-rose-400"
-                            aria-hidden="true"
-                        />
-                        <p
-                            class="mt-5 numeric text-3xl font-semibold tracking-tight text-zinc-950 dark:text-white"
-                        >
-                            {{ attentionTotal }}
-                        </p>
-                        <p
-                            class="mt-1 text-sm text-zinc-500 dark:text-zinc-400"
-                        >
-                            Requerem atenção
-                        </p>
-                    </article>
-                    <article
-                        class="rounded-2xl bg-brand-950 p-5 text-white shadow-sm ring-1 ring-white/10"
-                    >
-                        <ShieldCheck
-                            class="size-5 text-accent-400"
-                            aria-hidden="true"
-                        />
-                        <p
-                            class="mt-5 numeric text-3xl font-semibold tracking-tight"
-                        >
-                            {{ total }}
-                        </p>
-                        <p class="mt-1 text-sm text-brand-100/65">
-                            Registos de entrega preservados
-                        </p>
-                    </article>
-                </section>
 
                 <div
                     class="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(22rem,0.75fr)]"

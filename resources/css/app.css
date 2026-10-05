@@ -133,25 +133,25 @@ input[type='search']::-webkit-search-decoration {
 }
 
 /**
- * Display heading treatment. Since the serif was dropped there is no second
- * family — a heading is the UI sans set heavier and tighter. Use in place of
- * pairing `font-semibold` with `tracking-tight` on every headline.
+ * Display heading treatment: the UI sans at regular weight, set tight. Size
+ * carries the hierarchy, so a heading never needs to shout in bold; weight is
+ * kept for the values inside rows and cards.
  */
 @utility display {
-    font-weight: 600;
+    font-weight: 400;
     letter-spacing: -0.028em;
 }
 
 /**
- * Uppercase section label. Replaces the ad-hoc
- * `text-xs font-semibold tracking-[0.1?em] uppercase` spellings that had
- * drifted between 0.12em and 0.18em across pages.
+ * Uppercase label for a value or a small group ("TOTAL", "ENTREGA AGT"). Kept
+ * quiet — medium weight, light tracking — so it names what follows without
+ * competing with it.
  */
 @utility eyebrow {
     font-size: 0.6875rem;
     line-height: 1.2;
-    font-weight: 600;
-    letter-spacing: 0.16em;
+    font-weight: 500;
+    letter-spacing: 0.07em;
     text-transform: uppercase;
 }
 

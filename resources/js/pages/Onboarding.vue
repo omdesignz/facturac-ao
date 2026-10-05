@@ -18,6 +18,7 @@ import {
 import { computed, ref } from 'vue';
 import DateInput from '@/components/DateInput.vue';
 import FormError from '@/components/FormError.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -205,41 +206,26 @@ const steps = computed(() => [
 
         <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
             <div class="mx-auto max-w-7xl space-y-8">
-                <header
-                    class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between"
+                <PageHeader
+                    eyebrow="Configuração · Preparar empresa"
+                    title="Fale-nos da sua empresa"
+                    description="É este NIF e esta morada que vão sair impressos em cada factura. Depois de confirmar, ligamos a sua conta à AGT."
                 >
-                    <div>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <StatusBadge
-                                :label="company.status_label"
-                                :tone="
-                                    profileIsConfigured ? 'success' : 'warning'
-                                "
-                            />
-                        </div>
-                        <h1
-                            class="mt-4 text-4xl display text-zinc-950 sm:text-5xl dark:text-white"
+                    <template #meta>
+                        <StatusBadge
+                            :label="company.status_label"
+                            :tone="profileIsConfigured ? 'success' : 'warning'"
+                        />
+                    </template>
+                    <template #actions>
+                        <Link
+                            :href="dashboard.url()"
+                            class="inline-flex h-10 items-center rounded-full bg-white px-[1.125rem] text-sm font-semibold text-zinc-900 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
                         >
-                            Fale-nos da sua empresa<br /><span
-                                class="text-brand-700 dark:text-brand-300"
-                                >uma vez só.</span
-                            >
-                        </h1>
-                        <p
-                            class="mt-3 max-w-2xl text-sm/6 text-zinc-600 sm:text-base/7 dark:text-zinc-400"
-                        >
-                            É este NIF e esta morada que vão sair impressos em
-                            cada factura. Depois de confirmar, ligamos a sua
-                            conta à AGT.
-                        </p>
-                    </div>
-                    <Link
-                        :href="dashboard.url()"
-                        class="w-fit rounded-xl px-4 py-2.5 text-sm font-semibold text-zinc-700 ring-1 ring-zinc-300 transition hover:bg-white dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
-                    >
-                        Voltar ao painel
-                    </Link>
-                </header>
+                            Voltar ao painel
+                        </Link>
+                    </template>
+                </PageHeader>
 
                 <nav
                     aria-label="Progresso de configuração"

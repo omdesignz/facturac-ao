@@ -29,6 +29,8 @@ import {
     X,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import PageHeader from '@/components/PageHeader.vue';
+import PageStat from '@/components/PageStat.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { checkout } from '@/routes/billing';
@@ -318,107 +320,45 @@ function copyPaymentInstruction(): void {
 
         <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
             <div class="mx-auto max-w-[100rem] space-y-8">
-                <section
-                    class="relative isolate overflow-hidden rounded-3xl bg-brand-950 px-6 py-8 text-white shadow-[0_28px_80px_-45px_rgba(8,40,32,0.9)] sm:px-8 lg:px-10"
+                <PageHeader
+                    eyebrow="Configuração · Plano e cobrança"
+                    title="Plano e cobrança"
+                    :description="
+                        gateway.hosted
+                            ? 'Escolha o plano e o método de pagamento na página segura da WiPay. A assinatura só é activada após confirmação autenticada do pagamento.'
+                            : 'Escolha o plano, gere uma Referência EMIS e pague através de qualquer banco, ATM ou aplicação bancária. A assinatura só é activada depois da confirmação do provedor.'
+                    "
                 >
-                    <div
-                        class="absolute -top-28 -right-24 size-80 rounded-full bg-accent-400/15 blur-3xl"
-                        aria-hidden="true"
-                    />
-                    <div
-                        class="absolute -bottom-24 left-1/4 size-64 rounded-full bg-emerald-400/10 blur-3xl"
-                        aria-hidden="true"
-                    />
-                    <div
-                        class="relative flex flex-col justify-between gap-7 xl:flex-row xl:items-end"
-                    >
-                        <div class="max-w-3xl">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <StatusBadge
-                                    :label="
-                                        gateway.hosted
-                                            ? 'Pagamento seguro com WiPay'
-                                            : 'Pagamento por Referência EMIS'
-                                    "
-                                    tone="info"
-                                />
-                                <span
-                                    class="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-semibold text-brand-100/75"
-                                >
-                                    <Landmark
-                                        class="size-3.5"
-                                        aria-hidden="true"
-                                    />
-                                    {{ gateway.method }}
-                                </span>
-                            </div>
-                            <h1
-                                class="mt-5 max-w-4xl text-4xl leading-[1.05] display sm:text-5xl"
-                            >
-                                Um plano claro.
-                                <span class="text-accent-400"
-                                    >Pague como já paga.</span
-                                >
-                            </h1>
-                            <p
-                                class="mt-4 max-w-2xl text-sm/6 text-brand-100/70 sm:text-base/7"
-                            >
-                                <template v-if="gateway.hosted">
-                                    Escolha o plano e o método de pagamento na
-                                    página segura da WiPay. A assinatura só é
-                                    activada após confirmação autenticada do
-                                    pagamento.
-                                </template>
-                                <template v-else
-                                    >Escolha o plano, gere uma Referência EMIS e
-                                    pague através de qualquer banco, ATM ou
-                                    aplicação bancária. A assinatura só é
-                                    activada depois da confirmação do
-                                    provedor.</template
-                                >
-                            </p>
-                        </div>
-
-                        <div
-                            class="grid min-w-full gap-3 sm:grid-cols-2 xl:min-w-[28rem]"
-                        >
-                            <div
-                                class="rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur"
-                            >
-                                <p
-                                    class="text-xs font-semibold tracking-wider text-brand-100/55 uppercase"
-                                >
-                                    Operador
-                                </p>
-                                <p class="mt-2 text-sm font-semibold">
-                                    {{ gateway.provider }}
-                                </p>
-                                <p class="mt-1 text-xs text-brand-100/60">
-                                    {{ gateway.environment_label }}
-                                </p>
-                            </div>
-                            <div
-                                class="rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur"
-                            >
-                                <p
-                                    class="text-xs font-semibold tracking-wider text-brand-100/55 uppercase"
-                                >
-                                    Pagamento activo
-                                </p>
-                                <p class="mt-2 text-sm font-semibold">
-                                    {{
-                                        activeReference || activePayment
-                                            ? 'A aguardar'
-                                            : 'Nenhuma'
-                                    }}
-                                </p>
-                                <p class="mt-1 text-xs text-brand-100/60">
-                                    Valor exacto e confirmação automática
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </section>
+                    <template #meta>
+                        <StatusBadge
+                            :label="
+                                gateway.hosted
+                                    ? 'Pagamento seguro com WiPay'
+                                    : 'Pagamento por Referência EMIS'
+                            "
+                            tone="info"
+                        />
+                        <StatusBadge :label="gateway.method" tone="neutral" />
+                    </template>
+                    <template #stats>
+                        <PageStat
+                            label="Operador"
+                            :value="gateway.provider"
+                            :detail="gateway.environment_label"
+                            compact
+                        />
+                        <PageStat
+                            label="Pagamento activo"
+                            :value="
+                                activeReference || activePayment
+                                    ? 'A aguardar'
+                                    : 'Nenhum'
+                            "
+                            detail="Valor exacto e confirmação automática"
+                            compact
+                        />
+                    </template>
+                </PageHeader>
 
                 <section
                     v-if="

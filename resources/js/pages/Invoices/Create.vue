@@ -28,6 +28,7 @@ import {
 import { computed, ref, watch } from 'vue';
 import DateInput from '@/components/DateInput.vue';
 import FormError from '@/components/FormError.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -1006,65 +1007,61 @@ function confirmIssue(): void {
             @submit.prevent="submit"
         >
             <div class="mx-auto max-w-[100rem] space-y-7">
-                <header
-                    class="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between"
+                <PageHeader
+                    :eyebrow="
+                        document.public_id === null
+                            ? 'Documentos · Novo documento'
+                            : 'Documentos · Rascunho'
+                    "
+                    :title="
+                        document.public_id === null
+                            ? newDocumentLabel
+                            : `Editar ${documentTypeLabel.toLowerCase()}`
+                    "
+                    description="Prepare e confira os dados. Guardar não atribui número, não assina e não envia nada à AGT."
                 >
-                    <div>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <StatusBadge label="Rascunho" tone="draft" />
-                            <StatusBadge
-                                v-if="
-                                    isAdjustment &&
-                                    document.references_document_no
-                                "
-                                :label="`Corrige ${document.references_document_no}`"
-                                tone="warning"
-                            />
-                            <StatusBadge
-                                :label="`Contrato AGT ${guardrails.schema_version}`"
-                                tone="info"
-                            />
-                            <span
-                                v-if="document.revision > 0"
-                                class="text-xs font-semibold text-zinc-500 dark:text-zinc-400"
-                            >
-                                Revisão {{ document.revision }}
-                            </span>
-                        </div>
-                        <h1
-                            class="mt-4 text-4xl display text-zinc-950 sm:text-5xl dark:text-white"
-                        >
-                            {{
-                                document.public_id === null
-                                    ? newDocumentLabel
-                                    : `Editar ${documentTypeLabel.toLowerCase()}`
-                            }}
-                        </h1>
-                        <p
-                            class="mt-2 max-w-2xl text-sm/6 text-zinc-600 dark:text-zinc-400"
-                        >
-                            Prepare e confira os dados. Guardar não atribui
-                            número, não assina e não envia nada à AGT.
-                        </p>
-                    </div>
-                    <button
-                        type="submit"
-                        :disabled="
-                            form.processing || establishments.length === 0
-                        "
-                        class="inline-flex w-fit items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm focus-ring transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-brand-500 dark:hover:bg-brand-400"
-                    >
-                        <LoaderCircle
-                            v-if="form.processing"
-                            class="size-4 animate-spin"
-                            aria-hidden="true"
+                    <template #meta>
+                        <StatusBadge label="Rascunho" tone="draft" />
+                        <StatusBadge
+                            v-if="
+                                isAdjustment && document.references_document_no
+                            "
+                            :label="`Corrige ${document.references_document_no}`"
+                            tone="warning"
                         />
-                        <Save v-else class="size-4" aria-hidden="true" />
-                        {{
-                            form.processing ? 'A guardar…' : 'Guardar rascunho'
-                        }}
-                    </button>
-                </header>
+                        <StatusBadge
+                            :label="`Contrato AGT ${guardrails.schema_version}`"
+                            tone="neutral"
+                        />
+                        <span
+                            v-if="document.revision > 0"
+                            class="text-xs font-medium text-zinc-500 dark:text-zinc-400"
+                        >
+                            Revisão {{ document.revision }}
+                        </span>
+                    </template>
+                    <template #actions>
+                        <button
+                            type="submit"
+                            :disabled="
+                                form.processing || establishments.length === 0
+                            "
+                            class="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-white px-[1.125rem] text-sm font-semibold text-zinc-900 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
+                        >
+                            <LoaderCircle
+                                v-if="form.processing"
+                                class="size-4 animate-spin"
+                                aria-hidden="true"
+                            />
+                            <Save v-else class="size-4" aria-hidden="true" />
+                            {{
+                                form.processing
+                                    ? 'A guardar…'
+                                    : 'Guardar rascunho'
+                            }}
+                        </button>
+                    </template>
+                </PageHeader>
 
                 <div
                     v-if="flashSuccess"

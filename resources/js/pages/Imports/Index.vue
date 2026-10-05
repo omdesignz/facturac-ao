@@ -19,6 +19,8 @@ import {
     Users,
 } from '@lucide/vue';
 import { computed, watch } from 'vue';
+import PageHeader from '@/components/PageHeader.vue';
+import PageStat from '@/components/PageStat.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -333,101 +335,35 @@ function historyUrl(publicId: string): string {
 
         <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
             <div class="mx-auto max-w-[100rem] space-y-8">
-                <section
-                    class="relative isolate overflow-hidden rounded-3xl bg-brand-950 px-6 py-8 text-white shadow-[0_28px_80px_-45px_rgba(8,40,32,0.9)] sm:px-8 lg:px-10"
+                <PageHeader
+                    eyebrow="Configuração · Importar dados"
+                    title="Importar dados"
+                    description="Importe clientes, produtos e serviços a partir do Excel, CSV ou da exportação de outra aplicação. Mostramos tudo o que vai entrar antes de gravar seja o que for."
                 >
-                    <div
-                        class="absolute -top-32 -right-24 size-80 rounded-full bg-accent-400/15 blur-3xl"
-                        aria-hidden="true"
-                    />
-                    <div
-                        class="absolute -bottom-24 left-1/3 size-64 rounded-full bg-emerald-400/10 blur-3xl"
-                        aria-hidden="true"
-                    />
-                    <div
-                        class="relative flex flex-col justify-between gap-7 xl:flex-row xl:items-end"
-                    >
-                        <div class="max-w-3xl">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <StatusBadge
-                                    label="Nada é gravado sem confirmar"
-                                    tone="info"
-                                />
-                                <span
-                                    class="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-semibold text-brand-100/75"
-                                >
-                                    <ShieldCheck
-                                        class="size-3.5"
-                                        aria-hidden="true"
-                                    />
-                                    Ficheiros privados
-                                </span>
-                            </div>
-                            <h1
-                                class="mt-5 max-w-4xl text-4xl leading-[1.05] display sm:text-5xl"
-                            >
-                                Traga os seus dados.
-                                <span class="text-accent-400"
-                                    >Sem trazer os erros.</span
-                                >
-                            </h1>
-                            <p
-                                class="mt-4 max-w-2xl text-sm/6 text-brand-100/70 sm:text-base/7"
-                            >
-                                Importe clientes, produtos e serviços a partir
-                                do Excel, CSV ou da exportação de outra
-                                aplicação. Mostramos-lhe tudo o que vai entrar
-                                antes de gravar seja o que for.
-                            </p>
-                        </div>
-
-                        <dl
-                            class="grid min-w-full gap-3 sm:grid-cols-3 xl:min-w-[36rem]"
-                        >
-                            <div
-                                class="rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur"
-                            >
-                                <dt
-                                    class="text-xs font-semibold tracking-wider text-brand-100/55 uppercase"
-                                >
-                                    Limite
-                                </dt>
-                                <dd class="mt-2 text-sm font-semibold">
-                                    {{
-                                        guardrails.maximum_rows.toLocaleString(
-                                            'pt-AO',
-                                        )
-                                    }}
-                                    linhas
-                                </dd>
-                            </div>
-                            <div
-                                class="rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur"
-                            >
-                                <dt
-                                    class="text-xs font-semibold tracking-wider text-brand-100/55 uppercase"
-                                >
-                                    Integridade
-                                </dt>
-                                <dd class="mt-2 text-sm font-semibold">
-                                    SHA-256
-                                </dd>
-                            </div>
-                            <div
-                                class="rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur"
-                            >
-                                <dt
-                                    class="text-xs font-semibold tracking-wider text-brand-100/55 uppercase"
-                                >
-                                    Empresa
-                                </dt>
-                                <dd class="mt-2 truncate text-sm font-semibold">
-                                    {{ company.legal_name }}
-                                </dd>
-                            </div>
-                        </dl>
-                    </div>
-                </section>
+                    <template #meta>
+                        <StatusBadge
+                            label="Nada é gravado sem confirmar"
+                            tone="info"
+                        />
+                        <StatusBadge
+                            label="Ficheiros privados"
+                            tone="neutral"
+                        />
+                    </template>
+                    <template #stats>
+                        <PageStat
+                            label="Limite"
+                            :value="`${guardrails.maximum_rows.toLocaleString('pt-AO')} linhas`"
+                            compact
+                        />
+                        <PageStat label="Integridade" value="SHA-256" compact />
+                        <PageStat
+                            label="Empresa"
+                            :value="company.legal_name"
+                            compact
+                        />
+                    </template>
+                </PageHeader>
 
                 <section
                     v-if="selected"
