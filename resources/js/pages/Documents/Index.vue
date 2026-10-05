@@ -27,6 +27,7 @@ import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { confirmAction } from '@/lib/confirm';
+import { statusTone } from '@/lib/document-status';
 import { index as agtSubmissions } from '@/routes/agt/submissions';
 import { show as customerShow } from '@/routes/customers';
 import {
@@ -40,15 +41,6 @@ import {
     send as sendInvoice,
 } from '@/routes/invoices';
 import type { SelectOption } from '@/types/select';
-
-type StatusTone =
-    | 'success'
-    | 'warning'
-    | 'danger'
-    | 'info'
-    | 'neutral'
-    | 'draft'
-    | 'contingency';
 
 interface PaginationLink {
     url: string | null;
@@ -416,34 +408,6 @@ function closeDocument(): void {
         replace: true,
         only: ['selected'],
     });
-}
-
-function statusTone(value: string): StatusTone {
-    if (value === 'draft') {
-        return 'draft';
-    }
-
-    if (value === 'valid') {
-        return 'success';
-    }
-
-    if (['invalid', 'rejected', 'cancelled', 'failed'].includes(value)) {
-        return 'danger';
-    }
-
-    if (value === 'contingency' || value === 'retrying') {
-        return 'warning';
-    }
-
-    if (
-        ['issued', 'pending', 'sending', 'received', 'processing'].includes(
-            value,
-        )
-    ) {
-        return 'info';
-    }
-
-    return 'neutral';
 }
 
 function workflowIsActive(value: string): boolean {

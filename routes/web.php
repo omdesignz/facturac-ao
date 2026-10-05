@@ -31,6 +31,7 @@ use App\Http\Controllers\FiscalDocumentDeliveryController;
 use App\Http\Controllers\FiscalDocumentIndexController;
 use App\Http\Controllers\FiscalDocumentIssueController;
 use App\Http\Controllers\FiscalDocumentPrintController;
+use App\Http\Controllers\GlobalSearchController;
 use App\Http\Controllers\HelpController;
 use App\Http\Controllers\HostedPaymentResumeController;
 use App\Http\Controllers\ImpersonationController;
@@ -164,6 +165,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             ->name('settings.sessions.destroy');
 
         Route::get('/dashboard', DashboardController::class)->name('dashboard');
+        Route::get('/pesquisa', GlobalSearchController::class)
+            ->middleware('throttle:90,1')
+            ->name('search');
         Route::get('/analises', AnalyticsController::class)->name('analytics.index');
         Route::get('/onboarding', [OnboardingController::class, 'show'])->name('onboarding');
         Route::put('/onboarding', [OnboardingController::class, 'update'])->name('onboarding.update');

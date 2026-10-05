@@ -20,16 +20,16 @@ import {
     Menu as MenuIcon,
     Monitor,
     Moon,
-    Search,
     TriangleAlert,
     Sun,
     X,
 } from '@lucide/vue';
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import type { Component } from 'vue';
 import AppRail from '@/components/AppRail.vue';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import CookieConsent from '@/components/CookieConsent.vue';
+import GlobalSearch from '@/components/GlobalSearch.vue';
 import ImpersonationBanner from '@/components/ImpersonationBanner.vue';
 import SidebarNavigation from '@/components/SidebarNavigation.vue';
 import TermsReacceptanceNotice from '@/components/TermsReacceptanceNotice.vue';
@@ -200,87 +200,9 @@ function changeAppearance(value: Appearance): void {
     storeAppearance(value);
 }
 
-const searchInput = ref<HTMLInputElement | null>(null);
-const isApplePlatform = ref(false);
-
-/** ['⌘', 'K'] on Apple hardware, ['Ctrl', 'K'] everywhere else. */
-const shortcutKeys = computed(() =>
-    isApplePlatform.value ? ['⌘', 'K'] : ['Ctrl', 'K'],
-);
-
-const shortcutHint = computed(
-    () =>
-        `Pesquisar (${shortcutKeys.value.join(isApplePlatform.value ? '' : '+')})`,
-);
-
-function detectApplePlatform(): boolean {
-    if (typeof navigator === 'undefined') {
-        return false;
-    }
-
-    const platform =
-        (navigator as { userAgentData?: { platform?: string } }).userAgentData
-            ?.platform ??
-        navigator.platform ??
-        '';
-
-    return /mac|iphone|ipad|ipod/i.test(platform);
-}
-
-function isTypingInFormField(target: EventTarget | null): boolean {
-    if (!(target instanceof HTMLElement)) {
-        return false;
-    }
-
-    return (
-        target.isContentEditable ||
-        ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)
-    );
-}
-
-function handleShortcut(event: KeyboardEvent): void {
-    if (event.key !== 'k' && event.key !== 'K') {
-        return;
-    }
-
-    // Match the modifier we actually advertise on this platform.
-    const modifier = isApplePlatform.value ? event.metaKey : event.ctrlKey;
-
-    if (!modifier || event.altKey) {
-        return;
-    }
-
-    event.preventDefault();
-    searchInput.value?.focus();
-    searchInput.value?.select();
-}
-
-function handleSearchEscape(event: KeyboardEvent): void {
-    if (event.key === 'Escape') {
-        searchInput.value?.blur();
-    }
-}
-
-function handleGlobalKeydown(event: KeyboardEvent): void {
-    if (
-        isTypingInFormField(event.target) &&
-        event.target !== searchInput.value
-    ) {
-        return;
-    }
-
-    handleShortcut(event);
-}
-
 onMounted(() => {
     appearance.value = getStoredAppearance();
     applyAppearance(appearance.value);
-    isApplePlatform.value = detectApplePlatform();
-    window.addEventListener('keydown', handleGlobalKeydown);
-});
-
-onBeforeUnmount(() => {
-    window.removeEventListener('keydown', handleGlobalKeydown);
 });
 </script>
 
@@ -385,39 +307,8 @@ onBeforeUnmount(() => {
                     aria-hidden="true"
                 />
 
-                <div class="flex flex-1 gap-4 self-stretch lg:gap-6">
-                    <label class="relative flex min-w-0 flex-1 items-center">
-                        <span class="sr-only">{{ shortcutHint }}</span>
-                        <Search
-                            class="pointer-events-none absolute left-0 size-5 text-zinc-400"
-                            aria-hidden="true"
-                        />
-                        <input
-                            ref="searchInput"
-                            type="search"
-                            class="h-full w-full min-w-0 bg-transparent pr-3 pl-8 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 dark:text-white dark:placeholder:text-zinc-500"
-                            placeholder="Pesquisar factura, cliente ou NIF…"
-                            :aria-keyshortcuts="
-                                isApplePlatform ? 'Meta+K' : 'Control+K'
-                            "
-                            @keydown="handleSearchEscape"
-                        />
-                        <!--
-                            shrink-0 keeps the flex row from squeezing the keys
-                            until the label wraps onto two lines.
-                        -->
-                        <span
-                            class="hidden shrink-0 items-center gap-1 sm:flex"
-                            aria-hidden="true"
-                        >
-                            <kbd
-                                v-for="key in shortcutKeys"
-                                :key="key"
-                                class="grid h-5 min-w-5 place-items-center rounded border border-zinc-200 bg-zinc-50 px-1.5 font-mono text-[0.6875rem] leading-none font-medium text-zinc-500 shadow-[inset_0_-1px_0_rgba(0,0,0,0.06)] dark:border-white/10 dark:bg-white/5 dark:text-zinc-400 dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.06)]"
-                                >{{ key }}</kbd
-                            >
-                        </span>
-                    </label>
+                <div class="flex flex-1 items-center gap-4 lg:gap-6">
+                    <GlobalSearch />
 
                     <div class="flex items-center gap-2 sm:gap-3">
                         <WorkSessionTimer />
