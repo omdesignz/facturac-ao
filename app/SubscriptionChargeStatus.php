@@ -10,16 +10,18 @@ enum SubscriptionChargeStatus: string
     case Expired = 'expired';
     case Failed = 'failed';
     case Cancelled = 'cancelled';
+    case Review = 'review';
 
     public function label(): string
     {
         return match ($this) {
-            self::Creating => 'A criar referência',
+            self::Creating => 'A preparar pagamento',
             self::Pending => 'A aguardar pagamento',
             self::Paid => 'Pago',
             self::Expired => 'Expirado',
             self::Failed => 'Falhou',
             self::Cancelled => 'Cancelado',
+            self::Review => 'Confirmação por verificar',
         };
     }
 }

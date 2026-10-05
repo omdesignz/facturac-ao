@@ -38,6 +38,7 @@ return [
 
         // Moves money, or the references that collect it.
         'billing.checkout',
+        'billing.payments.resume',
         'billing.references.refresh',
         'billing.references.simulate',
 

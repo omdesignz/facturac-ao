@@ -27,6 +27,16 @@ class StartSubscriptionCheckoutRequest extends FormRequest
                 Rule::exists('subscription_plans', 'public_id')
                     ->where('is_active', true),
             ],
+            'customer_phone' => [Rule::requiredIf(config('billing.gateway') === 'wipay'), 'nullable', 'string', 'regex:/\A9\d{8}\z/'],
+        ];
+    }
+
+    /** @return array<string, string> */
+    public function messages(): array
+    {
+        return [
+            'customer_phone.required' => 'Indique o telemóvel para o pagamento.',
+            'customer_phone.regex' => 'Use nove dígitos, começando por 9, sem o indicativo +244.',
         ];
     }
 }

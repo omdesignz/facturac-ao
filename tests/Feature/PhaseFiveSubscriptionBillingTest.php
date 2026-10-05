@@ -22,6 +22,10 @@ use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Fortify;
 
+beforeEach(function (): void {
+    config()->set('billing.gateway', 'pay4all');
+});
+
 /**
  * @return array{user: User, workspace: Workspace, plan: SubscriptionPlan}
  */

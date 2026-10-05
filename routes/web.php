@@ -32,6 +32,7 @@ use App\Http\Controllers\FiscalDocumentIndexController;
 use App\Http\Controllers\FiscalDocumentIssueController;
 use App\Http\Controllers\FiscalDocumentPrintController;
 use App\Http\Controllers\HelpController;
+use App\Http\Controllers\HostedPaymentResumeController;
 use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\LegalDocumentController;
@@ -177,6 +178,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::post('/settings/billing/checkout', BillingCheckoutController::class)
             ->middleware(['mfa', 'password.confirm', 'throttle:6,1'])
             ->name('billing.checkout');
+        Route::post('/settings/billing/payments/{payment}/resume', HostedPaymentResumeController::class)
+            ->middleware(['mfa', 'password.confirm', 'throttle:6,1'])
+            ->name('billing.payments.resume');
         Route::post(
             '/settings/billing/references/{emisPaymentReference}/refresh',
             BillingReferenceRefreshController::class,

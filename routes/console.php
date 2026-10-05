@@ -16,6 +16,11 @@ Schedule::command('billing:expire-emis-references')
     ->everyMinute()
     ->withoutOverlapping();
 
+Schedule::command('payments:recover')
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->onOneServer();
+
 // Once a day is enough: profiles are dated to a day, not a moment, and the
 // generator catches up on anything it missed.
 Schedule::command('billing:generate-recurring-invoices')

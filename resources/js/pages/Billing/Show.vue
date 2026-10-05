@@ -6,7 +6,7 @@ import {
     TransitionChild,
     TransitionRoot,
 } from '@headlessui/vue';
-import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage, usePoll } from '@inertiajs/vue3';
 import {
     BadgeCheck,
     Banknote,
@@ -28,10 +28,11 @@ import {
     TriangleAlert,
     X,
 } from '@lucide/vue';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { checkout } from '@/routes/billing';
+import { resume } from '@/routes/billing/payments';
 import { refresh, simulate } from '@/routes/billing/references';
 import { security } from '@/routes/settings';
 
@@ -85,9 +86,23 @@ interface SubscriptionCharge {
     paid_at: string | null;
     plan_name: string;
     reference: PaymentReference | null;
+    payment: HostedPayment | null;
+}
+
+interface HostedPayment {
+    public_id: string;
+    provider_id: string | null;
+    amount_minor: number;
+    currency_code: string;
+    status: string;
+    status_label: string;
+    environment: string;
+    retry_after_at: string | null;
+    can_resume: boolean;
 }
 
 interface Gateway {
+    hosted: boolean;
     provider: string;
     method: string;
     environment: string;
@@ -103,6 +118,7 @@ const props = defineProps<{
     plans: SubscriptionPlan[];
     subscription: Subscription | null;
     activeReference: PaymentReference | null;
+    activePayment: HostedPayment | null;
     charges: SubscriptionCharge[];
     gateway: Gateway;
     canManage: boolean;
@@ -111,7 +127,8 @@ const props = defineProps<{
 const page = usePage();
 const selectedPlan = ref<SubscriptionPlan | null>(null);
 const copiedField = ref<'entity' | 'reference' | 'instruction' | null>(null);
-const checkoutForm = useForm({ plan_public_id: '' });
+const checkoutForm = useForm({ plan_public_id: '', customer_phone: '' });
+const resumeForm = useForm({});
 const refreshForm = useForm({});
 const simulationForm = useForm({});
 
@@ -128,8 +145,38 @@ const canStartCheckout = computed(
         props.canManage &&
         mfaEnabled.value &&
         props.gateway.available &&
-        props.activeReference === null,
+        props.activeReference === null &&
+        props.activePayment === null,
 );
+const { start: startPaymentPolling, stop: stopPaymentPolling } = usePoll(
+    5000,
+    { only: ['activePayment', 'subscription', 'charges'] },
+    { autoStart: false },
+);
+watch(
+    () => props.activePayment?.status,
+    (status) => {
+        if (
+            status &&
+            ['created', 'creating', 'pending', 'paid', 'rejected'].includes(
+                status,
+            )
+        ) {
+            startPaymentPolling();
+        } else {
+            stopPaymentPolling();
+        }
+    },
+    { immediate: true },
+);
+
+function resumePayment(): void {
+    if (props.activePayment === null) {
+        return;
+    }
+
+    resumeForm.post(resume.url(props.activePayment.public_id));
+}
 
 function formatMoney(amountMinor: number, currencyCode = 'AOA'): string {
     return new Intl.NumberFormat('pt-AO', {
@@ -157,11 +204,15 @@ function statusTone(status: string): BadgeTone {
         return 'success';
     }
 
-    if (['creating', 'pending', 'past_due'].includes(status)) {
+    if (
+        ['created', 'creating', 'pending', 'past_due', 'review'].includes(
+            status,
+        )
+    ) {
         return 'warning';
     }
 
-    if (['failed', 'cancelled'].includes(status)) {
+    if (['failed', 'cancelled', 'rejected'].includes(status)) {
         return 'danger';
     }
 
@@ -284,7 +335,11 @@ function copyPaymentInstruction(): void {
                         <div class="max-w-3xl">
                             <div class="flex flex-wrap items-center gap-2">
                                 <StatusBadge
-                                    label="Pagamento por Referência EMIS"
+                                    :label="
+                                        gateway.hosted
+                                            ? 'Pagamento seguro com WiPay'
+                                            : 'Pagamento por Referência EMIS'
+                                    "
                                     tone="info"
                                 />
                                 <span
@@ -294,7 +349,7 @@ function copyPaymentInstruction(): void {
                                         class="size-3.5"
                                         aria-hidden="true"
                                     />
-                                    Referência EMIS
+                                    {{ gateway.method }}
                                 </span>
                             </div>
                             <h1
@@ -308,10 +363,19 @@ function copyPaymentInstruction(): void {
                             <p
                                 class="mt-4 max-w-2xl text-sm/6 text-brand-100/70 sm:text-base/7"
                             >
-                                Escolha o plano, gere uma Referência EMIS e
-                                pague através de qualquer banco, ATM ou
-                                aplicação bancária. A assinatura só é activada
-                                depois da confirmação do provedor.
+                                <template v-if="gateway.hosted">
+                                    Escolha o plano e o método de pagamento na
+                                    página segura da WiPay. A assinatura só é
+                                    activada após confirmação autenticada do
+                                    pagamento.
+                                </template>
+                                <template v-else
+                                    >Escolha o plano, gere uma Referência EMIS e
+                                    pague através de qualquer banco, ATM ou
+                                    aplicação bancária. A assinatura só é
+                                    activada depois da confirmação do
+                                    provedor.</template
+                                >
                             </p>
                         </div>
 
@@ -339,11 +403,11 @@ function copyPaymentInstruction(): void {
                                 <p
                                     class="text-xs font-semibold tracking-wider text-brand-100/55 uppercase"
                                 >
-                                    Referência activa
+                                    Pagamento activo
                                 </p>
                                 <p class="mt-2 text-sm font-semibold">
                                     {{
-                                        activeReference
+                                        activeReference || activePayment
                                             ? 'A aguardar'
                                             : 'Nenhuma'
                                     }}
@@ -357,7 +421,9 @@ function copyPaymentInstruction(): void {
                 </section>
 
                 <section
-                    v-if="gateway.simulated"
+                    v-if="
+                        gateway.simulated || gateway.environment === 'sandbox'
+                    "
                     class="rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-600/15 dark:bg-amber-400/10 dark:ring-amber-400/20"
                     aria-labelledby="simulation-heading"
                 >
@@ -371,18 +437,45 @@ function copyPaymentInstruction(): void {
                                 id="simulation-heading"
                                 class="text-sm font-semibold text-amber-900 dark:text-amber-100"
                             >
-                                Ambiente de testes — não pague esta referência
+                                Ambiente de testes — sem movimento de dinheiro
                             </h2>
                             <p
                                 class="mt-1 text-sm/6 text-amber-800/80 dark:text-amber-100/75"
                             >
-                                A entidade e a referência geradas aqui são
-                                simuladas e não são pagáveis. A produção fica
-                                bloqueada até instalar a especificação API e as
-                                credenciais comerciais da Pay4All.
+                                <template v-if="gateway.hosted">
+                                    Está no sandbox da WiPay. Use os números de
+                                    teste fornecidos pelo operador; não
+                                    introduza dados de pagamentos reais. Uma
+                                    confirmação de teste não activa uma
+                                    assinatura em produção.
+                                </template>
+                                <template v-else
+                                    >A entidade e a referência geradas aqui são
+                                    simuladas e não são pagáveis. A produção
+                                    fica bloqueada até instalar a especificação
+                                    API e as credenciais comerciais da
+                                    Pay4All.</template
+                                >
                             </p>
                         </div>
                     </div>
+                </section>
+
+                <section
+                    v-if="!gateway.available"
+                    class="rounded-2xl surface p-5"
+                    role="status"
+                >
+                    <h2
+                        class="text-sm font-semibold text-zinc-950 dark:text-white"
+                    >
+                        Pagamentos temporariamente indisponíveis
+                    </h2>
+                    <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                        A ligação com o operador ainda não está pronta. Pode
+                        consultar o plano e o histórico; não efectue
+                        transferências manuais.
+                    </p>
                 </section>
 
                 <section
@@ -422,7 +515,107 @@ function copyPaymentInstruction(): void {
                     class="grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(22rem,0.85fr)]"
                 >
                     <section
-                        v-if="activeReference"
+                        v-if="activePayment"
+                        class="rounded-2xl surface p-6"
+                        aria-labelledby="hosted-payment-heading"
+                        aria-live="polite"
+                    >
+                        <div
+                            class="flex flex-wrap items-center justify-between gap-3"
+                        >
+                            <h2
+                                id="hosted-payment-heading"
+                                class="text-base font-semibold text-zinc-950 dark:text-white"
+                            >
+                                Pagamento WiPay
+                            </h2>
+                            <StatusBadge
+                                :label="activePayment.status_label"
+                                :tone="statusTone(activePayment.status)"
+                            />
+                        </div>
+                        <p
+                            class="mt-5 numeric text-3xl font-semibold text-zinc-950 dark:text-white"
+                        >
+                            {{
+                                formatMoney(
+                                    activePayment.amount_minor,
+                                    activePayment.currency_code,
+                                )
+                            }}
+                        </p>
+                        <p
+                            class="mt-2 text-sm text-zinc-500 dark:text-zinc-400"
+                        >
+                            <template v-if="activePayment.status === 'review'"
+                                >Ainda não foi possível confirmar o resultado.
+                                Não repita o pagamento. Contacte o apoio e
+                                indique o identificador abaixo.</template
+                            >
+                            <template
+                                v-else-if="activePayment.status === 'paid'"
+                                >Pagamento confirmado. Estamos a actualizar a
+                                assinatura.</template
+                            >
+                            <template
+                                v-else-if="activePayment.status === 'rejected'"
+                            >
+                                O operador recusou o pagamento. Estamos a fechar
+                                este pedido; poderá iniciar outro quando o
+                                estado for actualizado.
+                            </template>
+                            <template
+                                v-else-if="activePayment.status === 'created'"
+                                >O pedido ainda não foi iniciado. Pode tentar
+                                novamente com o mesmo identificador.</template
+                            >
+                            <template v-else
+                                >A confirmação chega directamente da WiPay.
+                                Voltar da página de pagamento não confirma, por
+                                si só, o pagamento.</template
+                            >
+                        </p>
+                        <p
+                            class="mt-4 font-mono text-xs break-all text-zinc-500 dark:text-zinc-400"
+                        >
+                            {{ activePayment.public_id }}
+                        </p>
+                        <p
+                            v-if="activePayment.retry_after_at"
+                            class="mt-3 text-sm text-zinc-500 dark:text-zinc-400"
+                        >
+                            Tente novamente após
+                            {{
+                                formatDate(activePayment.retry_after_at, true)
+                            }}.
+                        </p>
+                        <button
+                            v-if="activePayment.can_resume && canManage"
+                            type="button"
+                            class="mt-5 inline-flex items-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white focus-ring disabled:opacity-50 dark:bg-brand-500"
+                            :disabled="resumeForm.processing || !mfaEnabled"
+                            @click="resumePayment"
+                        >
+                            <LoaderCircle
+                                v-if="resumeForm.processing"
+                                class="size-4 animate-spin"
+                                aria-hidden="true"
+                            />
+                            <CreditCard
+                                v-else
+                                class="size-4"
+                                aria-hidden="true"
+                            />
+                            {{
+                                activePayment.status === 'created'
+                                    ? 'Tentar novamente'
+                                    : 'Continuar na WiPay'
+                            }}
+                        </button>
+                    </section>
+
+                    <section
+                        v-else-if="activeReference"
                         class="overflow-hidden rounded-2xl surface"
                         aria-labelledby="reference-heading"
                     >
@@ -672,13 +865,17 @@ function copyPaymentInstruction(): void {
                             id="no-reference-heading"
                             class="mt-4 text-base font-semibold text-zinc-950 dark:text-white"
                         >
-                            Nenhuma Referência EMIS pendente
+                            {{
+                                gateway.hosted
+                                    ? 'Nenhum pagamento pendente'
+                                    : 'Nenhuma Referência EMIS pendente'
+                            }}
                         </h2>
                         <p
                             class="mx-auto mt-2 max-w-lg text-sm/6 text-zinc-500 dark:text-zinc-400"
                         >
-                            Seleccione um plano abaixo. Antes de gerar a
-                            referência, mostramos o valor, o período e todas as
+                            Seleccione um plano abaixo. Antes de iniciar o
+                            pagamento, mostramos o valor, o período e todas as
                             condições para uma confirmação consciente.
                         </p>
                     </section>
@@ -806,10 +1003,18 @@ function copyPaymentInstruction(): void {
                                     class="mt-0.5 size-4 shrink-0 text-emerald-600 dark:text-emerald-400"
                                     aria-hidden="true"
                                 />
-                                Valor do plano cobrado em AOA. A taxa comercial
-                                Pay4All de {{ feePercentage }}% é controlada
-                                internamente e não é somada à referência do
-                                cliente.
+                                <template v-if="gateway.hosted"
+                                    >Valor exacto do plano em AOA. Não guardamos
+                                    PINs nem dados bancários; o método é
+                                    escolhido na página segura da
+                                    WiPay.</template
+                                >
+                                <template v-else
+                                    >Valor do plano cobrado em AOA. A taxa
+                                    comercial Pay4All de {{ feePercentage }}% é
+                                    controlada internamente e não é somada à
+                                    referência do cliente.</template
+                                >
                             </div>
                         </div>
                     </aside>
@@ -831,9 +1036,8 @@ function copyPaymentInstruction(): void {
                         <p
                             class="mt-3 text-sm/6 text-zinc-500 dark:text-zinc-400"
                         >
-                            Os preços são administrados na plataforma. Nenhum
-                            valor de plano foi inferido da proposta comercial da
-                            Pay4All.
+                            Os preços são administrados na plataforma. O valor
+                            apresentado é o total da assinatura.
                         </p>
                     </div>
 
@@ -951,8 +1155,8 @@ function copyPaymentInstruction(): void {
                                         aria-hidden="true"
                                     />
                                     {{
-                                        activeReference
-                                            ? 'Conclua a referência activa'
+                                        activeReference || activePayment
+                                            ? 'Conclua o pagamento activo'
                                             : isCurrentPlan(plan)
                                               ? 'Renovar este plano'
                                               : 'Escolher plano'
@@ -1033,7 +1237,7 @@ function copyPaymentInstruction(): void {
                                                 scope="col"
                                                 class="px-3 py-3.5 text-left text-xs font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-300"
                                             >
-                                                Referência EMIS
+                                                Pagamento
                                             </th>
                                             <th
                                                 scope="col"
@@ -1093,6 +1297,15 @@ function copyPaymentInstruction(): void {
                                                             .reference
                                                     }}
                                                 </span>
+                                                <span
+                                                    v-else-if="charge.payment"
+                                                    class="font-mono text-xs"
+                                                >
+                                                    WiPay ·
+                                                    {{
+                                                        charge.payment.public_id
+                                                    }}
+                                                </span>
                                                 <span v-else>—</span>
                                             </td>
                                             <td
@@ -1109,10 +1322,16 @@ function copyPaymentInstruction(): void {
                                                 class="px-3 py-4 text-sm whitespace-nowrap"
                                             >
                                                 <StatusBadge
-                                                    :label="charge.status_label"
+                                                    :label="
+                                                        charge.payment
+                                                            ?.status_label ??
+                                                        charge.status_label
+                                                    "
                                                     :tone="
                                                         statusTone(
-                                                            charge.status,
+                                                            charge.payment
+                                                                ?.status ??
+                                                                charge.status,
                                                         )
                                                     "
                                                 />
@@ -1147,7 +1366,7 @@ function copyPaymentInstruction(): void {
                         <p
                             class="mt-1 text-sm text-zinc-500 dark:text-zinc-400"
                         >
-                            A primeira Referência EMIS aparecerá aqui.
+                            O primeiro pagamento aparecerá aqui.
                         </p>
                     </div>
                 </section>
@@ -1208,8 +1427,8 @@ function copyPaymentInstruction(): void {
                             <p
                                 class="mt-1 text-xs/5 text-zinc-500 dark:text-zinc-400"
                             >
-                                Eventos de criação, expiração e pagamento são
-                                append-only.
+                                O histórico de pedidos e confirmações é
+                                preservado sem alterações.
                             </p>
                         </div>
                     </div>
@@ -1270,7 +1489,11 @@ function copyPaymentInstruction(): void {
                                     as="h2"
                                     class="mt-5 pr-10 text-lg font-semibold text-zinc-950 dark:text-white"
                                 >
-                                    Gerar Referência EMIS
+                                    {{
+                                        gateway.hosted
+                                            ? 'Continuar para a WiPay'
+                                            : 'Gerar Referência EMIS'
+                                    }}
                                 </DialogTitle>
                                 <p
                                     class="mt-2 text-sm/6 text-zinc-500 dark:text-zinc-400"
@@ -1336,6 +1559,62 @@ function copyPaymentInstruction(): void {
                                     </div>
                                 </dl>
 
+                                <div v-if="gateway.hosted" class="mt-5">
+                                    <label
+                                        for="payment-customer-phone"
+                                        class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                    >
+                                        Telemóvel do pagador
+                                    </label>
+                                    <input
+                                        id="payment-customer-phone"
+                                        v-model="checkoutForm.customer_phone"
+                                        type="tel"
+                                        inputmode="numeric"
+                                        autocomplete="tel-national"
+                                        maxlength="9"
+                                        pattern="9[0-9]{8}"
+                                        required
+                                        class="mt-2 block w-full rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-zinc-950 focus-ring disabled:opacity-50 dark:border-white/15 dark:bg-white/5 dark:text-white"
+                                        placeholder="9xxxxxxxx"
+                                        :disabled="checkoutForm.processing"
+                                        :aria-invalid="
+                                            Boolean(
+                                                checkoutForm.errors
+                                                    .customer_phone,
+                                            )
+                                        "
+                                        aria-describedby="payment-phone-hint payment-phone-error"
+                                        @keydown.enter="submitCheckout"
+                                    />
+                                    <p
+                                        id="payment-phone-hint"
+                                        class="mt-2 text-xs/5 text-zinc-500 dark:text-zinc-400"
+                                    >
+                                        Indique os 9 dígitos, sem +244.
+                                        <template
+                                            v-if="
+                                                gateway.environment ===
+                                                'sandbox'
+                                            "
+                                        >
+                                            No sandbox, use 900000000 para
+                                            simular um pagamento
+                                            aceite.</template
+                                        >
+                                    </p>
+                                    <p
+                                        v-if="
+                                            checkoutForm.errors.customer_phone
+                                        "
+                                        id="payment-phone-error"
+                                        class="mt-2 text-sm text-rose-600 dark:text-rose-400"
+                                        role="alert"
+                                    >
+                                        {{ checkoutForm.errors.customer_phone }}
+                                    </p>
+                                </div>
+
                                 <div
                                     class="mt-5 flex gap-3 rounded-xl bg-amber-50 p-3 text-xs/5 text-amber-800 ring-1 ring-amber-600/15 dark:bg-amber-400/10 dark:text-amber-100 dark:ring-amber-400/20"
                                 >
@@ -1343,8 +1622,8 @@ function copyPaymentInstruction(): void {
                                         class="mt-0.5 size-4 shrink-0"
                                         aria-hidden="true"
                                     />
-                                    Gerar a referência não activa o plano. A
-                                    activação ocorre apenas depois de a Pay4All
+                                    Preparar o pedido não activa o plano. A
+                                    activação ocorre apenas depois de o operador
                                     confirmar o pagamento exacto.
                                 </div>
 
@@ -1386,7 +1665,11 @@ function copyPaymentInstruction(): void {
                                             class="size-4"
                                             aria-hidden="true"
                                         />
-                                        Gerar referência
+                                        {{
+                                            gateway.hosted
+                                                ? 'Continuar para a WiPay'
+                                                : 'Gerar referência'
+                                        }}
                                     </button>
                                 </div>
                             </DialogPanel>

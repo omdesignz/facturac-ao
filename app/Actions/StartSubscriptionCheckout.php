@@ -159,6 +159,10 @@ final readonly class StartSubscriptionCheckout
                 ->first();
 
             if ($existingCharge instanceof SubscriptionCharge) {
+                if ($existingCharge->hostedPayment()->exists()) {
+                    throw new DomainException('Conclua ou verifique o pagamento WiPay pendente antes de gerar uma referência.');
+                }
+
                 if ($existingCharge->due_at->isFuture()) {
                     if ($existingCharge->subscription_plan_id !== $plan->id) {
                         throw new DomainException(

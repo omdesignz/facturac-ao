@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 /**
  * @property int $id
@@ -96,6 +97,12 @@ class SubscriptionCharge extends Model
     public function paymentReference(): HasOne
     {
         return $this->hasOne(EmisPaymentReference::class);
+    }
+
+    /** @return MorphOne<Payment, $this> */
+    public function hostedPayment(): MorphOne
+    {
+        return $this->morphOne(Payment::class, 'payable');
     }
 
     /** @return array<string, string> */

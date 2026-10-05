@@ -18,6 +18,7 @@ class SubscriptionActivated extends Notification implements ShouldQueue
         public readonly string $planName,
         public readonly string $periodEndsAt,
         public readonly string $paymentReferencePublicId,
+        public readonly string $paymentMethod = 'Referência EMIS',
     ) {
         $this->afterCommit();
     }
@@ -53,7 +54,7 @@ class SubscriptionActivated extends Notification implements ShouldQueue
             ->subject('Assinatura '.(string) config('app.name').' activada')
             ->greeting('Pagamento confirmado')
             ->line("A assinatura do plano {$this->planName} está activa.")
-            ->line('A confirmação foi recebida através da Referência EMIS e registada no histórico de cobrança.')
+            ->line('A confirmação foi recebida através de '.$this->paymentMethod.' e registada no histórico de cobrança.')
             ->action('Ver plano e cobrança', route('billing.show'))
             ->line('Não responda com comprovativos: o estado é confirmado directamente pelo provedor.');
     }
