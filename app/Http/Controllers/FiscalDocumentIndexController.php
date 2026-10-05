@@ -26,10 +26,16 @@ class FiscalDocumentIndexController extends Controller
 
         Inertia::encryptHistory();
 
-        return Inertia::render('Documents/Index', $register->for(
-            $legalEntity,
-            $request->filters(),
-            $request->user()?->can('create', FiscalDocument::class) === true,
-        ));
+        $canPrepareDocuments = $request->user()?->can('create', FiscalDocument::class) === true;
+        $selected = $request->selectedDocument();
+
+        return Inertia::render('Documents/Index', [
+            ...$register->for($legalEntity, $request->filters(), $canPrepareDocuments),
+            // Loaded on its own when a row is opened, so picking a document
+            // never re-runs the list query.
+            'selected' => fn (): ?array => $selected === null
+                ? null
+                : $register->selected($legalEntity, $selected, $canPrepareDocuments),
+        ]);
     }
 }

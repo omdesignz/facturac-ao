@@ -1,6 +1,7 @@
 <?php
 
 use App\AgtSubmissionStatus;
+use App\FiscalDocumentEventType;
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
 use App\Models\AgtConnection;
@@ -8,6 +9,7 @@ use App\Models\AgtSubmission;
 use App\Models\Customer;
 use App\Models\Establishment;
 use App\Models\FiscalDocument;
+use App\Models\FiscalDocumentEvent;
 use App\Models\LegalEntity;
 use App\Models\User;
 use App\Models\Workspace;
@@ -202,4 +204,63 @@ test('invalid and cross-tenant register filters are rejected', function () {
         ]))
         ->assertRedirect(route('documents.index'))
         ->assertSessionHasErrors(['status', 'establishment', 'to']);
+});
+
+test('opening a document loads its detail panel with history, without re-running the list', function () {
+    $company = fiscalRegisterCompany();
+    $document = fiscalRegisterDocument($company, [
+        'document_type' => FiscalDocumentType::Invoice,
+        'status' => FiscalDocumentStatus::Valid,
+        'document_no' => 'FT 2026SEDE/7',
+        'issued_at' => now()->subHour(),
+        'frozen_at' => now()->subHour(),
+        'system_entry_at' => now()->subHour(),
+    ]);
+
+    foreach ([
+        [FiscalDocumentEventType::Issued, now()->subHour(), $company['user']->id, ['document_no' => 'FT 2026SEDE/7']],
+        [FiscalDocumentEventType::Validated, now()->subMinutes(50), null, []],
+    ] as [$type, $at, $actor, $context]) {
+        FiscalDocumentEvent::query()->create([
+            'workspace_id' => $company['workspace']->id,
+            'legal_entity_id' => $company['legal_entity']->id,
+            'fiscal_document_id' => $document->id,
+            'actor_user_id' => $actor,
+            'event_type' => $type,
+            'safe_context' => $context,
+            'occurred_at' => $at,
+        ]);
+    }
+
+    $this->actingAs($company['user'])
+        ->get(route('documents.index', ['documento' => $document->public_id]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Documents/Index')
+            ->where('selected.public_id', $document->public_id)
+            ->where('selected.document_no', 'FT 2026SEDE/7')
+            ->where('selected.snapshot.steps.3.state', 'done')
+            ->where('selected.history.0.type', 'validated')
+            ->where('selected.history.0.tone', 'done')
+            ->where('selected.history.1.label', 'Documento emitido')
+            ->where('selected.history.1.actor_name', $company['user']->name)
+        );
+});
+
+test('a document from another company cannot be opened by its public id', function () {
+    $company = fiscalRegisterCompany();
+    $stranger = fiscalRegisterCompany();
+    $theirs = fiscalRegisterDocument($stranger, ['document_no' => 'FT ALHEIA/1']);
+
+    $this->actingAs($company['user'])
+        ->get(route('documents.index', ['documento' => $theirs->public_id]))
+        ->assertInertia(fn (Assert $page) => $page->where('selected', null));
+});
+
+test('the register opens with no document selected', function () {
+    $company = fiscalRegisterCompany();
+    fiscalRegisterDocument($company);
+
+    $this->actingAs($company['user'])
+        ->get(route('documents.index'))
+        ->assertInertia(fn (Assert $page) => $page->where('selected', null));
 });

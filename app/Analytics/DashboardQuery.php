@@ -4,7 +4,6 @@ namespace App\Analytics;
 
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
-use App\Models\AgtSubmission;
 use App\Models\FiscalDocument;
 use App\Models\LegalEntity;
 use Carbon\CarbonImmutable;
@@ -20,22 +19,10 @@ use Illuminate\Database\Eloquent\Builder;
  */
 class DashboardQuery
 {
-    /** The statuses of a document the AGT has not finished with yet. */
-    private const array IN_FLIGHT = [
-        FiscalDocumentStatus::Issued,
-        FiscalDocumentStatus::Received,
-        FiscalDocumentStatus::Processing,
-    ];
-
-    /** Statuses that need someone to act, matching the register's "Requer atenção". */
-    private const array NEEDS_ATTENTION = [
-        FiscalDocumentStatus::Invalid,
-        FiscalDocumentStatus::Contingency,
-    ];
-
     public function __construct(
         private ReceivablesQuery $receivables,
         private AgingQuery $aging,
+        private DocumentSnapshot $snapshot,
     ) {}
 
     /**
@@ -75,9 +62,9 @@ class DashboardQuery
                 ->where('document_type', FiscalDocumentType::CreditNote)
                 ->count(),
             'valid_today' => $countFor([FiscalDocumentStatus::Valid]),
-            'pending_today' => $countFor([...self::IN_FLIGHT, FiscalDocumentStatus::Contingency]),
+            'pending_today' => $countFor([...DocumentSnapshot::IN_FLIGHT, FiscalDocumentStatus::Contingency]),
             'invalid_today' => $countFor([FiscalDocumentStatus::Invalid]),
-            'attention_count' => $all->clone()->whereIn('status', self::NEEDS_ATTENTION)->count(),
+            'attention_count' => $all->clone()->whereIn('status', DocumentSnapshot::NEEDS_ATTENTION)->count(),
             'outstanding_minor' => $overall['outstanding_minor'],
             'overdue_minor' => $overall['overdue_minor'],
             'overdue_count' => $overall['overdue_count'],
@@ -132,8 +119,8 @@ class DashboardQuery
         $documents = FiscalDocument::query()->where('legal_entity_id', $legalEntity->id);
 
         return [
-            'attention_count' => $documents->clone()->whereIn('status', self::NEEDS_ATTENTION)->count(),
-            'in_flight_count' => $documents->clone()->whereIn('status', self::IN_FLIGHT)->count(),
+            'attention_count' => $documents->clone()->whereIn('status', DocumentSnapshot::NEEDS_ATTENTION)->count(),
+            'in_flight_count' => $documents->clone()->whereIn('status', DocumentSnapshot::IN_FLIGHT)->count(),
             'overdue_count' => $overdueCount,
             'drafts_open' => $documents->clone()->where('status', FiscalDocumentStatus::Draft)->count(),
         ];
@@ -200,132 +187,6 @@ class DashboardQuery
      */
     private function present(FiscalDocument $document, string $reason, CarbonImmutable $now): array
     {
-        $document = $this->receivables
-            ->withBalances(FiscalDocument::query()->whereKey($document->id))
-            ->with(['establishment:id,name', 'issuer:id,name'])
-            ->withCount('lines')
-            ->firstOrFail();
-
-        $submission = $document->submissions()->latest('id')->first();
-        $outstanding = $this->receivables->outstandingMinor($document);
-        $daysPastDue = $document->due_date !== null && $outstanding > 0
-            ? max(0, (int) $document->due_date->startOfDay()->diffInDays($now->startOfDay(), false))
-            : 0;
-
-        return [
-            'reason' => $reason,
-            'public_id' => $document->public_id,
-            'document_no' => $document->document_no,
-            'type_label' => $document->document_type->label(),
-            'status' => $document->status->value,
-            'status_label' => $document->status->label(),
-            'customer_name' => $document->customer_name,
-            'customer_tax_identification_number' => $document->customer_tax_identification_number,
-            'establishment_name' => $document->establishment->name ?? null,
-            'issuer_name' => $document->issuer->name ?? null,
-            'lines_count' => (int) $document->getAttribute('lines_count'),
-            'gross_total_minor' => $document->gross_total_minor,
-            'tax_payable_minor' => $document->tax_payable_minor,
-            'outstanding_minor' => $outstanding,
-            'currency_code' => $document->currency_code,
-            'document_date' => $document->document_date->toDateString(),
-            'due_date' => $document->due_date?->toDateString(),
-            'days_past_due' => $daysPastDue,
-            'agt_message' => $this->needsExplaining($document) ? $submission?->safe_message : null,
-            'agt_error_codes' => $this->needsExplaining($document) ? ($submission->last_error_codes ?? []) : [],
-            'steps' => $this->steps($document, $submission, $outstanding, $daysPastDue),
-        ];
-    }
-
-    private function needsExplaining(FiscalDocument $document): bool
-    {
-        return in_array($document->status, self::NEEDS_ATTENTION, true);
-    }
-
-    /**
-     * The document's life so far, as the dashboard's lifecycle track draws it.
-     *
-     * Every timestamp is one the record actually carries; a stage it has not
-     * reached is left without one rather than guessed.
-     *
-     * @return list<array{key: string, label: string, at: string|null, state: string, detail: string|null}>
-     */
-    private function steps(
-        FiscalDocument $document,
-        ?AgtSubmission $submission,
-        int $outstanding,
-        int $daysPastDue,
-    ): array {
-        $status = $document->status;
-        $sentAt = $submission->submitted_at ?? $submission?->received_at;
-
-        $agt = match (true) {
-            $status === FiscalDocumentStatus::Valid => [
-                'label' => 'Validada',
-                'at' => $submission?->completed_at,
-                'state' => 'done',
-                'detail' => null,
-            ],
-            $status === FiscalDocumentStatus::Invalid => [
-                'label' => 'Inválida',
-                'at' => $submission->failed_at ?? $submission?->completed_at,
-                'state' => 'error',
-                'detail' => $submission?->safe_message,
-            ],
-            default => [
-                'label' => 'Validada',
-                'at' => null,
-                'state' => in_array($status, self::IN_FLIGHT, true) ? 'current' : 'todo',
-                'detail' => null,
-            ],
-        };
-
-        $steps = [
-            ['key' => 'draft', 'label' => 'Rascunho', 'at' => $document->created_at, 'state' => 'done', 'detail' => null],
-            ['key' => 'issued', 'label' => 'Emitida', 'at' => $document->issued_at, 'state' => 'done', 'detail' => null],
-            [
-                'key' => 'sent',
-                'label' => $status === FiscalDocumentStatus::Contingency ? 'Em contingência' : 'Enviada à AGT',
-                'at' => $sentAt,
-                'state' => match (true) {
-                    $sentAt !== null => 'done',
-                    $status === FiscalDocumentStatus::Contingency => 'current',
-                    default => 'todo',
-                },
-                'detail' => null,
-            ],
-            ['key' => 'agt', ...$agt],
-        ];
-
-        // Only documents that put money on an account can be paid. A credit
-        // note or a standalone receipt ends at validation.
-        if ($this->receivables->isBillable($document->document_type)) {
-            $paid = $document->document_type === FiscalDocumentType::InvoiceReceipt || $outstanding === 0;
-
-            $steps[] = [
-                'key' => 'paid',
-                'label' => 'Paga',
-                'at' => $document->document_type === FiscalDocumentType::InvoiceReceipt ? $document->issued_at : null,
-                'state' => match (true) {
-                    $paid => 'done',
-                    $daysPastDue > 0 => 'error',
-                    default => 'todo',
-                },
-                'detail' => match (true) {
-                    $paid => null,
-                    $daysPastDue > 0 => 'Vencida há '.$daysPastDue.' '.($daysPastDue === 1 ? 'dia' : 'dias'),
-                    $document->due_date !== null => 'Vence a '.$document->due_date->format('d/m'),
-                    default => null,
-                },
-            ];
-        }
-
-        return array_map(
-            fn (array $step): array => [
-                ...$step,
-                'at' => $step['at']?->toIso8601String(),
-            ],
-            $steps,
-        );
+        return ['reason' => $reason, ...$this->snapshot->describe($document, $now)];
     }
 }

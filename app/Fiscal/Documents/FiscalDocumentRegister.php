@@ -3,16 +3,53 @@
 namespace App\Fiscal\Documents;
 
 use App\AgtSubmissionStatus;
+use App\Analytics\DocumentSnapshot;
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
 use App\Models\AgtSubmission;
 use App\Models\FiscalDocument;
 use App\Models\LegalEntity;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 final class FiscalDocumentRegister
 {
+    public function __construct(private DocumentSnapshot $snapshot) {}
+
+    /**
+     * One document for the detail panel: the same row the list shows, its
+     * snapshot and its history.
+     *
+     * Looked up inside the company only, so a public id from another
+     * workspace finds nothing rather than someone else's invoice.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function selected(LegalEntity $legalEntity, string $publicId, bool $canPrepareDocuments): ?array
+    {
+        $document = FiscalDocument::query()
+            ->where('workspace_id', $legalEntity->workspace_id)
+            ->where('legal_entity_id', $legalEntity->id)
+            ->where('public_id', $publicId)
+            ->with([
+                'customer:id,public_id,email',
+                'establishment:id,public_id,name,code',
+                'submissions' => fn ($query) => $query->latest('id'),
+            ])
+            ->first();
+
+        if (! $document instanceof FiscalDocument) {
+            return null;
+        }
+
+        return [
+            ...$this->present($document, $canPrepareDocuments),
+            'snapshot' => $this->snapshot->describe($document, CarbonImmutable::now()),
+            'history' => $this->snapshot->history($document),
+        ];
+    }
+
     /**
      * @param  array{
      *     q: string,

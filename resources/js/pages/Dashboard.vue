@@ -13,6 +13,8 @@ import {
 } from '@lucide/vue';
 import { computed } from 'vue';
 import type { Component } from 'vue';
+import DocumentLifecycle from '@/components/DocumentLifecycle.vue';
+import type { LifecycleStep } from '@/components/DocumentLifecycle.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { onboarding } from '@/routes';
 import { show as agtConnection } from '@/routes/agt/connection';
@@ -54,16 +56,6 @@ interface Kpis {
     overdue_count: number;
 }
 
-type StepState = 'done' | 'current' | 'error' | 'todo';
-
-interface FocusStep {
-    key: string;
-    label: string;
-    at: string | null;
-    state: StepState;
-    detail: string | null;
-}
-
 interface FocusDocument {
     reason: 'invalid' | 'contingency' | 'overdue' | 'latest';
     public_id: string;
@@ -85,7 +77,7 @@ interface FocusDocument {
     days_past_due: number;
     agt_message: string | null;
     agt_error_codes: string[];
-    steps: FocusStep[];
+    steps: LifecycleStep[];
 }
 
 interface Review {
@@ -327,32 +319,6 @@ function statusPillClasses(focus: FocusDocument): string {
     }
 
     return 'bg-accent-400 text-brand-950';
-}
-
-/** Where along the track the work has got to, as a fraction of its length. */
-function progressFor(steps: FocusStep[]): number {
-    const reached = steps.reduce(
-        (last, step, index) => (step.state === 'todo' ? last : index),
-        0,
-    );
-
-    return steps.length > 1 ? reached / (steps.length - 1) : 1;
-}
-
-function stepPosition(index: number, count: number): string {
-    return `${count > 1 ? (index / (count - 1)) * 100 : 0}%`;
-}
-
-function stepAlignment(index: number, count: number): string {
-    if (index === 0) {
-        return 'translate-x-0 text-left';
-    }
-
-    if (index === count - 1) {
-        return '-translate-x-full text-right';
-    }
-
-    return '-translate-x-1/2 text-center';
 }
 
 /* ------------------------------------------------------------------ review */
@@ -1115,87 +1081,10 @@ function bucketShare(value: number, total: number): string {
                         </div>
 
                         <!-- Lifecycle track: every stage the record has really reached. -->
-                        <div class="mt-auto pt-10">
-                            <div class="relative mx-1 h-6">
-                                <span
-                                    class="absolute inset-x-0 top-[0.6875rem] h-0.5 rounded-full bg-zinc-900/10 dark:bg-white/10"
-                                />
-                                <span
-                                    class="absolute top-[0.6875rem] left-0 h-0.5 rounded-full bg-brand-950 dark:bg-zinc-100"
-                                    :style="{
-                                        width: `${progressFor(focus.steps) * 100}%`,
-                                    }"
-                                />
-                                <span
-                                    v-for="(step, index) in focus.steps"
-                                    :key="step.key"
-                                    class="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
-                                    :style="{
-                                        left: stepPosition(
-                                            index,
-                                            focus.steps.length,
-                                        ),
-                                    }"
-                                    :class="{
-                                        'size-2.5 bg-brand-950 ring-[3px] ring-zinc-100 dark:bg-zinc-100 dark:ring-zinc-900':
-                                            step.state === 'done',
-                                        'size-4 bg-accent-400 ring-4 ring-accent-400/25':
-                                            step.state === 'current',
-                                        'size-4 bg-white ring-4 [box-shadow:inset_0_0_0_4px_var(--color-rose-500)] ring-rose-500/25 dark:bg-zinc-900':
-                                            step.state === 'error',
-                                        'size-2.5 bg-zinc-100 ring-2 ring-zinc-300 dark:bg-zinc-900 dark:ring-zinc-600':
-                                            step.state === 'todo',
-                                    }"
-                                    aria-hidden="true"
-                                />
-                            </div>
-                            <ol
-                                class="relative mt-2 h-12"
-                                aria-label="Estado do documento"
-                            >
-                                <li
-                                    v-for="(step, index) in focus.steps"
-                                    :key="step.key"
-                                    class="absolute top-0 text-xs font-semibold whitespace-nowrap"
-                                    :class="[
-                                        stepAlignment(
-                                            index,
-                                            focus.steps.length,
-                                        ),
-                                        step.state === 'error'
-                                            ? 'text-rose-600 dark:text-rose-400'
-                                            : step.state === 'todo'
-                                              ? 'text-zinc-400 dark:text-zinc-500'
-                                              : 'text-zinc-950 dark:text-white',
-                                    ]"
-                                    :style="{
-                                        left: stepPosition(
-                                            index,
-                                            focus.steps.length,
-                                        ),
-                                    }"
-                                >
-                                    {{ step.label }}
-                                    <span
-                                        class="mt-0.5 block font-normal"
-                                        :class="
-                                            step.state === 'error'
-                                                ? 'text-rose-600 dark:text-rose-400'
-                                                : 'text-zinc-500 dark:text-zinc-400'
-                                        "
-                                        >{{
-                                            step.key === 'paid'
-                                                ? (step.detail ??
-                                                  (step.state === 'done'
-                                                      ? 'liquidada'
-                                                      : '—'))
-                                                : formatTime(step.at)
-                                        }}</span
-                                    >
-                                </li>
-                            </ol>
-                        </div>
-
+                        <DocumentLifecycle
+                            class="mt-auto pt-10"
+                            :steps="focus.steps"
+                        />
                         <div class="mt-4 flex flex-wrap gap-2.5">
                             <a
                                 :href="documentPrint.url(focus.public_id)"

@@ -52,6 +52,7 @@ class IndexFiscalDocumentsRequest extends FormRequest
             ],
             'from' => ['nullable', 'date_format:Y-m-d'],
             'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
+            'documento' => ['nullable', 'string', 'max:40'],
         ];
     }
 
@@ -90,6 +91,14 @@ class IndexFiscalDocumentsRequest extends FormRequest
             'from' => (string) ($validated['from'] ?? ''),
             'to' => (string) ($validated['to'] ?? ''),
         ];
+    }
+
+    /** The document open in the detail panel, if any: a public id, not yet checked against the company. */
+    public function selectedDocument(): ?string
+    {
+        $documento = $this->validated()['documento'] ?? null;
+
+        return is_string($documento) && $documento !== '' ? $documento : null;
     }
 
     public function currentLegalEntity(): ?LegalEntity
