@@ -8,8 +8,8 @@
 
 @theme inline {
     /*
-     * One voice. Headings are the same sans as the UI, set heavier and tighter
-     * via the `display` utility — there is deliberately no second family.
+     * The UI speaks in one sans. The display face below is for the public
+     * pages' headlines only, never for the product itself.
      */
     --font-sans:
         'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif,
@@ -18,6 +18,17 @@
     --font-mono:
         'IBM Plex Mono', ui-monospace, 'SF Mono', SFMono-Regular, Menlo,
         Consolas, 'Liberation Mono', monospace;
+
+    /*
+     * The brand's headline face. Century Gothic is used where the visitor's
+     * system already has it (it ships with Microsoft Office); it is not served
+     * from here, because a web licence is a separate purchase. Didact Gothic is
+     * the free, near-identical fallback loaded for everyone else. The logo
+     * never depends on either: BrandWordmark draws it as outlines.
+     */
+    --font-display:
+        'Century Gothic', 'CenturyGothic', 'Didact Gothic', ui-sans-serif,
+        system-ui, sans-serif;
 
     /* Wordmark grey — brand-600 is the exact logo lettering colour. */
     --color-brand-50: #f7f7f5;
@@ -153,6 +164,21 @@ input[type='search']::-webkit-search-decoration {
     font-feature-settings:
         'tnum' 1,
         'lnum' 1;
+}
+
+/**
+ * The brand's full stop: the gold dot from the wordmark, set inline in a line
+ * of display type ("atenc●ao", "Emitida●"). Sits on the baseline like a period,
+ * larger so it reads as deliberate. On a gold surface, set --wordmark-dot.
+ */
+@utility brand-dot {
+    display: inline-block;
+    width: 0.19em;
+    height: 0.19em;
+    margin-inline: 0.065em 0.05em;
+    border-radius: 9999px;
+    background-color: var(--wordmark-dot, var(--color-accent-400));
+    vertical-align: baseline;
 }
 
 /** The standard raised panel: white in light, zinc-900 in dark, hairline ring. */

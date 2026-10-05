@@ -72,7 +72,7 @@ test('ships the facturac ao brand and complete browser icon set', function () {
         ->and($layout)->not->toBeFalse()
         ->toContain('/site.webmanifest', '/safari-pinned-tab.svg')
         ->and($masterLogo)->not->toBeFalse()
-        ->toContain('#f9b233', '#575756')
+        ->toContain('#f9b233', '#171716')
         ->and($appIconSize)->not->toBeFalse()
         ->and([$appIconSize[0], $appIconSize[1]])->toBe([512, 512]);
 });
@@ -114,4 +114,25 @@ test('does not place private key material in the phase zero dossier', function (
         ->not->toBeFalse()
         ->not->toContain('-----BEGIN PRIVATE KEY-----')
         ->not->toContain('-----BEGIN RSA PRIVATE KEY-----');
+});
+
+test('the logo and icons are drawn from the wordmark, not a font or the old seal', function () {
+    // The letters are outlines, so no icon or logo depends on a font being
+    // installed, and none of them still carries the retired check-mark seal.
+    foreach (['brand/facturac-ao.svg', 'brand/facturac-ao-dark.svg', 'brand/facturac-ao-mark.svg', 'brand/facturac-ao-app-icon.svg', 'favicon.svg', 'safari-pinned-tab.svg'] as $file) {
+        $svg = (string) file_get_contents(public_path($file));
+
+        expect($svg)
+            ->toContain('<path')
+            ->not->toContain('<text')
+            ->not->toContain('rotate(-8');
+    }
+
+    $manifest = json_decode((string) file_get_contents(public_path('site.webmanifest')), true, flags: JSON_THROW_ON_ERROR);
+
+    expect($manifest['description'])->not->toContain('Aceite pela AGT')
+        ->and((string) file_get_contents(resource_path('js/components/AppLogo.vue')))
+        ->toContain("import BrandWordmark from '@/components/BrandWordmark.vue';")
+        ->toContain("import BrandMark from '@/components/BrandMark.vue';")
+        ->not->toContain('BrandSymbol');
 });

@@ -31,17 +31,29 @@ test('the landing page asks a first-time visitor about cookie choices', function
 
 test('the landing page offers interactive product proof with accessible motion', function () {
     $landing = (string) file_get_contents(resource_path('js/pages/Landing.vue'));
-    $orb = (string) file_get_contents(resource_path('js/components/FiscalStatusOrb.vue'));
+    $wordmark = (string) file_get_contents(resource_path('js/components/BrandWordmark.vue'));
 
     expect($landing)
-        ->toContain("import FiscalStatusOrb from '@/components/FiscalStatusOrb.vue';")
+        ->toContain("import BrandWordmark from '@/components/BrandWordmark.vue';")
         ->toContain('aria-label="Escolher um momento do negócio"')
         ->toContain('aria-label="Escolher estado do documento"')
         ->toContain('@click="selectLifecycle(index)"')
-        ->toContain('<FiscalStatusOrb')
-        ->and($orb)
+        ->toContain('(prefers-reduced-motion: reduce)')
+        ->and($wordmark)
         ->toContain('role="img"')
         ->toContain('@media (prefers-reduced-motion: reduce)');
+});
+
+test('the wordmark is drawn as outlines so it never depends on a font file', function () {
+    // Century Gothic is licensed for documents, not for serving to browsers, so
+    // the logo has to be artwork rather than text set in the typeface.
+    $wordmark = (string) file_get_contents(resource_path('js/components/BrandWordmark.vue'));
+
+    expect($wordmark)
+        ->toContain('<path')
+        ->toContain('class="wordmark-dot"')
+        ->not->toContain('<text')
+        ->not->toContain('font-family');
 });
 
 test('someone already signed in is sent to their dashboard', function () {

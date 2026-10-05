@@ -1,54 +1,60 @@
 <script setup lang="ts">
-import BrandSymbol from '@/components/BrandSymbol.vue';
+import BrandMark from '@/components/BrandMark.vue';
+import BrandWordmark from '@/components/BrandWordmark.vue';
 
 withDefaults(
     defineProps<{
         compact?: boolean;
         inverted?: boolean;
+        /** The signature line under the wordmark. Off where space is tight, like a printed footer. */
+        tagline?: boolean;
     }>(),
     {
         compact: false,
         inverted: false,
+        tagline: true,
     },
 );
 </script>
 
 <template>
+    <!--
+        Sized in em, so the logo follows the font size of wherever it is placed:
+        a class like text-xs on the component shrinks the whole lockup.
+    -->
     <div
-        class="flex items-center gap-2.5"
-        aria-label="facturac.ao — Feito para humanos, para negócios angolanos."
+        class="inline-flex flex-col items-start gap-[0.55em]"
+        aria-label="facturac.ao — Emitida. Validada. Paga."
+        role="img"
     >
-        <BrandSymbol
+        <BrandMark
+            v-if="compact"
             :class="[
-                compact ? 'size-9' : 'size-10 sm:size-11',
-                'shrink-0',
+                'h-[1.6em] w-auto shrink-0',
                 inverted
-                    ? 'text-stone-100'
-                    : 'text-brand-600 dark:text-stone-100',
+                    ? 'text-stone-50'
+                    : 'text-brand-950 dark:text-stone-50',
             ]"
+            aria-hidden="true"
         />
-        <div v-if="!compact" class="min-w-0">
-            <p
+        <template v-else>
+            <BrandWordmark
                 :class="[
-                    'brand-wordmark truncate text-base',
+                    'h-[1.375em] w-auto',
                     inverted
                         ? 'text-stone-50'
-                        : 'text-brand-600 dark:text-stone-50',
+                        : 'text-brand-950 dark:text-stone-50',
                 ]"
-            >
-                facturac<span class="text-accent-400">.ao</span>
-            </p>
+                aria-hidden="true"
+            />
             <!--
-                Stacked rather than run on one line: at the lockup's tracking
-                the full slogan is wider than the 288px sidebar and would
-                truncate. aria-label above carries it as one sentence.
-
-                The second line used to read "Aceite pela AGT", which claimed an
-                endorsement the product does not hold. A document can be aceite
-                pela AGT — the software saying it of itself is a different claim
-                altogether, and not one to make on every screen.
+                The three stages of every invoice, each closed by the gold dot
+                from the wordmark. It replaces "Feito para humanos", and like the
+                line before it makes no claim about the AGT: a document can be
+                validated by the AGT, the software cannot say so of itself.
             -->
             <p
+                v-if="tagline"
                 :class="[
                     'eyebrow',
                     inverted
@@ -57,9 +63,11 @@ withDefaults(
                 ]"
                 aria-hidden="true"
             >
-                <span class="block truncate">Feito para humanos</span>
-                <span class="block truncate">Para negócios angolanos</span>
+                Emitida<span class="brand-dot" /> Validada<span
+                    class="brand-dot"
+                />
+                Paga<span class="brand-dot" />
             </p>
-        </div>
+        </template>
     </div>
 </template>

@@ -20,6 +20,10 @@ export default defineConfig({
                     weights: [400, 500, 600],
                     optimizedFallbacks: false,
                 }),
+                bunny('Didact Gothic', {
+                    weights: [400],
+                    optimizedFallbacks: false,
+                }),
             ],
         }),
         inertia(),

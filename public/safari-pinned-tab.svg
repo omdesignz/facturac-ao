@@ -1,7 +1,4 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- Monochrome mask icon, rendered small: same simplified cut as favicon.svg. -->
-  <g transform="rotate(-8 256 256)" fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="256" cy="256" r="168" stroke-width="34"/>
-    <path d="M183 262L238 317L340 190" stroke-width="46"/>
-  </g>
+  <!-- Monochrome mask icon: the "c." mark in one colour, as Safari requires. -->
+  <g transform="translate(35.21 -11.64) scale(5.01)"><path fill="#000" d="M58.74 37.62 47.66 43.72Q44.53 40.45 41.48 39.18Q38.43 37.91 34.33 37.91Q26.86 37.91 22.24 42.38Q17.63 46.85 17.63 53.83Q17.63 60.62 22.07 64.91Q26.51 69.21 33.74 69.21Q42.68 69.21 47.66 63.11L58.15 70.28Q49.61 81.37 34.03 81.37Q20.02 81.37 12.08 73.07Q4.15 64.77 4.15 53.63Q4.15 45.92 8.01 39.42Q11.87 32.93 18.77 29.22Q25.68 25.51 34.23 25.51Q42.14 25.51 48.44 28.66Q54.74 31.81 58.74 37.62Z"/><circle fill="#000" cx="74.01" cy="70" r="10"/></g>
 </svg>

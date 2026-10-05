@@ -416,7 +416,7 @@ async function copyShareLink(): Promise<void> {
                     <p v-if="document.support_email" class="mt-1">
                         {{ document.support_email }}
                     </p>
-                    <AppLogo class="mt-3 h-4 opacity-60" />
+                    <AppLogo :tagline="false" class="mt-3 text-xs opacity-60" />
                 </div>
 
                 <div

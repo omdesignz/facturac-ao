@@ -20,7 +20,19 @@ test('each error page renders in Portuguese and carries the brand', function (in
     expect($html)->toContain('lang="pt-AO"')
         ->and($html)->toContain('facturac.ao')
         ->and($html)->toContain("Erro {$status}")
-        ->and($html)->toContain('Feito para humanos');
+        ->and($html)->toContain('Emitida. Validada. Paga.')
+        ->and($html)->not->toContain('Feito para humanos');
+})->with('statuses');
+
+test('error pages draw the wordmark inline so a broken build cannot hide it', function (int $status) {
+    $html = view("errors.{$status}")->render();
+
+    // Outlines, not text in a font and not an image: either would need
+    // something this page is not allowed to depend on.
+    expect($html)->toContain('aria-label="facturac.ao"')
+        ->and($html)->toContain('<path fill="currentColor"')
+        ->and($html)->not->toContain('rotate(-8')
+        ->and($html)->not->toContain('<img');
 })->with('statuses');
 
 test('error pages do not depend on the asset build', function (int $status) {
