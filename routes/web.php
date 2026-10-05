@@ -61,6 +61,8 @@ use App\Http\Controllers\TransportDocumentIssueController;
 use App\Http\Controllers\TransportDocumentPrintController;
 use App\Http\Controllers\WorkSessionPreferenceController;
 use App\Http\Controllers\WorkspaceSetupController;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // Public: the first thing a visitor without an account can see.
@@ -263,10 +265,14 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::delete('/catalogue/{catalogueItem}', [CatalogueItemController::class, 'destroy'])
             ->name('catalogue.destroy');
 
-        Route::get('/existencias', [StockController::class, 'index'])
+        Route::get('/inventario', [StockController::class, 'index'])
             ->name('stock.index');
-        Route::post('/existencias/movimentos', [StockController::class, 'store'])
+        Route::post('/inventario/movimentos', [StockController::class, 'store'])
             ->name('stock.movements.store');
+        // The page was called Existências; links already sent in notifications
+        // (with their ?search=) and bookmarks keep working.
+        Route::get('/existencias', fn (Request $request): RedirectResponse => redirect()
+            ->route('stock.index', $request->query(), 301));
 
         Route::get('/dividas', DebtController::class)->name('debts.index');
 

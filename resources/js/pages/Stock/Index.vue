@@ -17,6 +17,7 @@ import PageStat from '@/components/PageStat.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { index as stockIndex } from '@/routes/stock';
 import { store as storeMovement } from '@/routes/stock/movements';
 import type { SelectOption } from '@/types/select';
 
@@ -86,7 +87,7 @@ let searchTimer: ReturnType<typeof setTimeout> | undefined;
 
 function reload(): void {
     router.get(
-        '/existencias',
+        stockIndex.url(),
         {
             search: search.value || undefined,
             establishment: establishmentFilter.value || undefined,
@@ -179,15 +180,15 @@ function isInbound(quantity: string): boolean {
 
 <template>
     <AppLayout>
-        <Head title="Existências" />
+        <Head title="Inventário" />
 
         <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
             <div class="mx-auto max-w-6xl space-y-6">
                 <FlashBanner />
 
                 <PageHeader
-                    eyebrow="Artigos · Existências"
-                    title="Existências"
+                    eyebrow="Artigos · Inventário"
+                    title="Inventário"
                     description="O que tem em cada estabelecimento. Emitir uma factura dá baixa automaticamente; uma nota de crédito devolve."
                 >
                     <template #actions>
@@ -304,8 +305,8 @@ function isInbound(quantity: string): boolean {
                         <p class="text-sm/6 text-zinc-500 dark:text-zinc-400">
                             {{
                                 summary.tracked_items === 0
-                                    ? 'Nenhum artigo controla existências. Active o controlo na ficha do artigo.'
-                                    : 'Sem existências para este filtro.'
+                                    ? 'Nenhum artigo controla inventário. Active o controlo na ficha do artigo.'
+                                    : 'Nenhum artigo em inventário para este filtro.'
                             }}
                         </p>
                     </div>
@@ -492,9 +493,9 @@ function isInbound(quantity: string): boolean {
         </div>
 
         <RecordDialog
-            eyebrow="Existências"
+            eyebrow="Inventário"
             :open="dialogOpen"
-            title="Registar movimento de existências"
+            title="Registar movimento de inventário"
             description="Entradas, acertos, transferências e quebras. As vendas são registadas automaticamente ao emitir."
             @close="dialogOpen = false"
         >

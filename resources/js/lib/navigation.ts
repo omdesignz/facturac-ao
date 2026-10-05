@@ -161,9 +161,9 @@ const baseGroups: NavigationGroup[] = [
                 icon: Tags,
             },
             {
-                name: 'Existências',
+                name: 'Inventário',
                 href: stockIndex.url(),
-                match: '/existencias',
+                match: '/inventario',
                 icon: Boxes,
             },
         ],

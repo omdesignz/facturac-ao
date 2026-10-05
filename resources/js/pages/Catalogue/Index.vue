@@ -594,7 +594,7 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                             type="checkbox"
                             class="size-4 rounded border-zinc-300 text-brand-700 focus-ring dark:border-white/15 dark:bg-white/5"
                         />
-                        Controlar existências deste artigo
+                        Controlar o inventário deste artigo
                     </label>
                     <p
                         class="ms-7 mt-1.5 text-xs text-zinc-500 dark:text-zinc-400"

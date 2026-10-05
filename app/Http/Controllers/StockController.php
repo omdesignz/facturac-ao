@@ -21,7 +21,7 @@ use Inertia\Response;
 use InvalidArgumentException;
 
 /**
- * Existências: what is on hand, what it is worth, and how it got that way.
+ * Inventário: what is on hand, what it is worth, and how it got that way.
  */
 class StockController extends Controller
 {

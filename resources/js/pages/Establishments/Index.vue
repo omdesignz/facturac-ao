@@ -135,7 +135,7 @@ async function remove(establishment: EstablishmentRow): Promise<void> {
             : `Desactivar ${establishment.name}?`,
         message: establishment.can_delete
             ? 'Nada aponta ainda para este estabelecimento, por isso desaparece por completo.'
-            : 'Já emitiu ou guarda existências, por isso fica registado — deixa apenas de aparecer ao emitir.',
+            : 'Já emitiu ou guarda inventário, por isso fica registado — deixa apenas de aparecer ao emitir.',
         confirmLabel: establishment.can_delete
             ? 'Remover estabelecimento'
             : 'Desactivar estabelecimento',
@@ -188,7 +188,7 @@ const withoutSeries = computed(() =>
                             class="mt-2 max-w-2xl text-sm/6 text-zinc-600 dark:text-zinc-400"
                         >
                             Cada loja, armazém ou posto tem a sua própria série
-                            da AGT e as suas próprias existências. É por isso
+                            da AGT e o seu próprio inventário. É por isso
                             que uma factura diz de onde foi emitida, e não só
                             por quem.
                         </p>

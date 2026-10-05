@@ -33,7 +33,7 @@ enum NotificationTopic: string
             self::QuoteAccepted => 'Orçamentos aceites',
             self::QuoteExpiring => 'Orçamentos a expirar',
             self::RecurringGenerated => 'Avenças geradas',
-            self::StockLow => 'Existências no mínimo',
+            self::StockLow => 'Inventário no mínimo',
             self::CreditLimitExceeded => 'Clientes acima do limite',
             self::ImportCompleted => 'Importações concluídas',
             self::BillingActivity => 'Plano e pagamentos',

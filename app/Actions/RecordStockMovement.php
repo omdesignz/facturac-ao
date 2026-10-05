@@ -43,7 +43,7 @@ class RecordStockMovement
         }
 
         if (! $item->tracks_stock) {
-            throw BillingActionRefused::because("O artigo {$item->code} não controla existências.");
+            throw BillingActionRefused::because("O artigo {$item->code} não controla inventário.");
         }
 
         if ($item->legal_entity_id !== $establishment->legal_entity_id) {
@@ -176,7 +176,7 @@ class RecordStockMovement
 
         if ($unitCostMicros === null || $unitCostMicros < 0) {
             throw new InvalidArgumentException(
-                'Indique o custo unitário para uma entrada de existências.',
+                'Indique o custo unitário para uma entrada em inventário.',
             );
         }
 

@@ -377,7 +377,7 @@ const included: { group: string; items: string[] }[] = [
         items: [
             'Clientes com prazos e limite de crédito',
             'Tabelas de preços e preços por cliente',
-            'Artigos, existências e movimentos de stock',
+            'Artigos, inventário e movimentos de stock',
             'Vários estabelecimentos, cada um com a sua série',
             'Envio dos documentos por email ao cliente',
             'Extractos, dívidas e análise de vendas',

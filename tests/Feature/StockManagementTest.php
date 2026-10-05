@@ -353,3 +353,12 @@ test('another company cannot move this company stock', function () {
 
     expect(StockLevel::query()->count())->toBe(0);
 });
+
+test('the stock page lives at /inventario and old links still arrive there', function () {
+    expect(route('stock.index', absolute: false))->toBe('/inventario');
+
+    $this->actingAs(User::factory()->withWorkspace('VAP Inventário')->create())
+        ->get('/existencias?search=CAFE-001')
+        ->assertMovedPermanently()
+        ->assertRedirectContains('/inventario?search=CAFE-001');
+});

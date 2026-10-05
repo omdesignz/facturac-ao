@@ -216,7 +216,7 @@ const catalogueOptions = computed<SelectOption<string>[]>(() => [
     ...props.catalogueItems.map((item) => ({
         value: item.public_id,
         label: `${item.code} — ${item.name}`,
-        hint: item.tracks_stock ? 'Controla existências' : '',
+        hint: item.tracks_stock ? 'Controla inventário' : '',
     })),
 ]);
 const selectedCustomer = computed(() =>
