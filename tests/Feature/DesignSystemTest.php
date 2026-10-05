@@ -92,7 +92,7 @@ test('every dialog sits on the shared scrim and panel', function () {
     foreach (File::allFiles(resource_path('js')) as $file) {
         $contents = $file->getContents();
 
-        if (! str_contains($contents, '<DialogPanel') || str_ends_with($file->getFilename(), 'AppLayout.vue')) {
+        if (! str_contains($contents, '<DialogPanel')) {
             continue;
         }
 
@@ -153,4 +153,15 @@ test('the top bar is one quiet row of shared menus', function () {
     // Light, dark and system live in the account menu, not as a fourth icon.
     expect((string) file_get_contents(resource_path('js/components/AccountMenu.vue')))
         ->toContain('changeAppearance');
+});
+
+test('the phone menu is a floating panel that closes from inside itself', function () {
+    $drawer = (string) file_get_contents(resource_path('js/components/SidebarNavigation.vue'));
+
+    // The scrim is light now, so a white close button on it would vanish.
+    expect($drawer)->toContain('Fechar navegação')
+        ->toContain("\$emit('close')")
+        ->toContain('menu-panel')
+        ->and((string) file_get_contents(resource_path('js/layouts/AppLayout.vue')))
+        ->not->toContain('Fechar navegação');
 });

@@ -5,7 +5,6 @@ import {
     TransitionChild,
     TransitionRoot,
 } from '@headlessui/vue';
-import { X } from '@lucide/vue';
 import { ref } from 'vue';
 import AppHeader from '@/components/AppHeader.vue';
 import AppRail from '@/components/AppRail.vue';
@@ -47,45 +46,24 @@ const sidebarOpen = ref(false);
                     <div class="fixed inset-0 dialog-scrim" />
                 </TransitionChild>
 
-                <div class="fixed inset-0 flex">
+                <div
+                    class="fixed inset-0 flex p-2 pt-[max(0.5rem,env(safe-area-inset-top))] pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+                >
                     <TransitionChild
                         as="template"
                         enter="transition ease-in-out duration-300 transform"
-                        enter-from="-translate-x-full"
+                        enter-from="-translate-x-[105%]"
                         enter-to="translate-x-0"
                         leave="transition ease-in-out duration-300 transform"
                         leave-from="translate-x-0"
-                        leave-to="-translate-x-full"
+                        leave-to="-translate-x-[105%]"
                     >
                         <DialogPanel
-                            class="relative mr-16 flex w-full max-w-xs flex-1"
+                            class="flex w-full max-w-[20rem] overflow-hidden dialog-panel"
                         >
-                            <TransitionChild
-                                as="template"
-                                enter="ease-in-out duration-200"
-                                enter-from="opacity-0"
-                                enter-to="opacity-100"
-                                leave="ease-in-out duration-200"
-                                leave-from="opacity-100"
-                                leave-to="opacity-0"
-                            >
-                                <div
-                                    class="absolute top-0 left-full flex w-16 justify-center pt-5"
-                                >
-                                    <button
-                                        type="button"
-                                        class="-m-2.5 p-2.5 text-white"
-                                        @click="sidebarOpen = false"
-                                    >
-                                        <span class="sr-only"
-                                            >Fechar navegação</span
-                                        >
-                                        <X class="size-6" aria-hidden="true" />
-                                    </button>
-                                </div>
-                            </TransitionChild>
                             <SidebarNavigation
                                 @navigate="sidebarOpen = false"
+                                @close="sidebarOpen = false"
                             />
                         </DialogPanel>
                     </TransitionChild>
