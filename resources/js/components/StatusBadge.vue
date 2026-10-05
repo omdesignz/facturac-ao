@@ -1,15 +1,4 @@
 <script setup lang="ts">
-import {
-    CircleCheck,
-    CircleDashed,
-    CircleX,
-    Clock3,
-    FilePenLine,
-    ShieldAlert,
-    WifiOff,
-} from '@lucide/vue';
-import { computed } from 'vue';
-
 type StatusTone =
     | 'success'
     | 'warning'
@@ -19,7 +8,7 @@ type StatusTone =
     | 'draft'
     | 'contingency';
 
-const props = withDefaults(
+withDefaults(
     defineProps<{
         label: string;
         tone?: StatusTone;
@@ -31,55 +20,43 @@ const props = withDefaults(
     },
 );
 
+/**
+ * One pill for every status in the app.
+ *
+ * A single shape — 22px, fully round, 12/600 — so a status reads the same on
+ * every page, and the colour always arrives with a word: nobody has to know
+ * the palette to know what a state means. The colours keep to the brand's
+ * roles: lime for done, gold for something the system is still working on,
+ * orange for a warning, red for a failure, grey for everything at rest.
+ */
 const styles: Record<StatusTone, string> = {
-    success:
-        'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-400/10 dark:text-emerald-300 dark:ring-emerald-400/20',
+    success: 'bg-lime-300 text-lime-950',
+    info: 'bg-accent-400 text-brand-950',
     warning:
-        'bg-amber-50 text-amber-800 ring-amber-600/20 dark:bg-amber-400/10 dark:text-amber-300 dark:ring-amber-400/20',
-    danger: 'bg-rose-50 text-rose-700 ring-rose-600/20 dark:bg-rose-400/10 dark:text-rose-300 dark:ring-rose-400/20',
-    info: 'bg-sky-50 text-sky-700 ring-sky-600/20 dark:bg-sky-400/10 dark:text-sky-300 dark:ring-sky-400/20',
-    neutral:
-        'bg-zinc-100 text-zinc-700 ring-zinc-500/20 dark:bg-white/5 dark:text-zinc-300 dark:ring-white/10',
-    draft: 'bg-violet-50 text-violet-700 ring-violet-600/20 dark:bg-violet-400/10 dark:text-violet-300 dark:ring-violet-400/20',
+        'bg-orange-50 text-orange-700 dark:bg-orange-400/10 dark:text-orange-300',
+    danger: 'bg-rose-50 text-rose-700 dark:bg-rose-400/10 dark:text-rose-300',
     contingency:
-        'bg-orange-50 text-orange-800 ring-orange-600/20 dark:bg-orange-400/10 dark:text-orange-300 dark:ring-orange-400/20',
+        'bg-orange-100 text-orange-800 dark:bg-orange-400/15 dark:text-orange-200',
+    neutral: 'bg-zinc-200/70 text-zinc-700 dark:bg-white/10 dark:text-zinc-300',
+    draft: 'bg-white text-zinc-600 ring-1 ring-zinc-900/10 ring-inset dark:bg-transparent dark:text-zinc-300 dark:ring-white/15',
 };
-
-const icons = {
-    success: CircleCheck,
-    warning: ShieldAlert,
-    danger: CircleX,
-    info: Clock3,
-    neutral: CircleDashed,
-    draft: FilePenLine,
-    contingency: WifiOff,
-} as const;
-
-const icon = computed(() => icons[props.tone]);
 </script>
 
 <template>
     <span
         :class="[
             styles[tone],
-            'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset',
+            'inline-flex h-[1.375rem] items-center gap-1.5 rounded-full px-2 text-xs font-semibold whitespace-nowrap',
         ]"
     >
         <span v-if="pulse" class="relative flex size-1.5" aria-hidden="true">
             <span
-                class="absolute inline-flex size-full animate-ping rounded-full bg-current opacity-40"
+                class="absolute inline-flex size-full animate-ping rounded-full bg-current opacity-40 motion-reduce:animate-none"
             />
             <span
                 class="relative inline-flex size-1.5 rounded-full bg-current"
             />
         </span>
-        <component
-            :is="icon"
-            v-else
-            class="size-3.5"
-            :stroke-width="2"
-            aria-hidden="true"
-        />
         {{ label }}
     </span>
 </template>
