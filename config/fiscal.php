@@ -70,9 +70,19 @@ return [
          * is frozen once used: a redesign is a new version for new documents,
          * never an edit to one that documents already depend on.
          */
-        'layout' => 'v1',
+        'layout' => 'v2',
         'layouts' => [
-            'v1' => ['margin_top' => 34],
+            'v1' => ['margin_top' => 34, 'font' => 'dejavusans'],
+            // Lighter type, hairline rules and one clear total, in the
+            // manner of enterprise ERP documents.
+            'v2' => [
+                'margin_top' => 31,
+                'margin_bottom' => 20,
+                'margin_header' => 9,
+                'margin_footer' => 9,
+                'font' => 'hankengrotesk',
+                'substitutions' => true,
+            ],
         ],
         // Repeat requests for the same document share one render for this long.
         'cache_seconds' => (int) env('FISCAL_PDF_CACHE_SECONDS', 600),

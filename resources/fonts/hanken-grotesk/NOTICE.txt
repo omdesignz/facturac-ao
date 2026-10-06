@@ -1,0 +1,7 @@
+Hanken Grotesk (Regular, Medium, SemiBold, Bold), Latin subset.
+Copyright Hanken Design Co. Licensed under the SIL Open Font License 1.1:
+https://openfontlicense.org/open-font-license-official-text/
+
+Converted to TrueType from the WOFF files the application already serves, so
+mPDF can embed them in fiscal document PDFs (layout v2). The official OFL.txt
+should be kept alongside these files.

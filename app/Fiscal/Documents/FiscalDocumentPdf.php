@@ -40,7 +40,7 @@ class FiscalDocumentPdf
                 'title' => (string) $document->document_no,
                 'author' => $print->issuer['legal_name'],
                 'subject' => $document->document_type->label(),
-                'margin_top' => (int) config("fiscal.print.layouts.{$print->layout_version}.margin_top", 34),
+                'engine' => $this->engine($print->layout_version),
             ],
         );
     }
@@ -70,5 +70,25 @@ class FiscalDocumentPdf
         $view = "documents.pdf.{$layoutVersion}.{$sheet}";
 
         return $view;
+    }
+
+    /**
+     * The engine settings a layout version was designed against, read with
+     * typed getters so a mistyped config value fails loudly.
+     *
+     * @return array{font: string, substitutions: bool, margin_top: int, margin_bottom: int, margin_header: int, margin_footer: int}
+     */
+    private function engine(string $layoutVersion): array
+    {
+        $key = "fiscal.print.layouts.{$layoutVersion}";
+
+        return [
+            'font' => config()->string("{$key}.font", 'dejavusans'),
+            'substitutions' => config()->boolean("{$key}.substitutions", false),
+            'margin_top' => config()->integer("{$key}.margin_top", 34),
+            'margin_bottom' => config()->integer("{$key}.margin_bottom", 18),
+            'margin_header' => config()->integer("{$key}.margin_header", 8),
+            'margin_footer' => config()->integer("{$key}.margin_footer", 9),
+        ];
     }
 }

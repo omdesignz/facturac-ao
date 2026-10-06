@@ -21,10 +21,14 @@ use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 
 /**
- * The fingerprint of the v1 layout files. Documents issued under v1 are
- * re-rendered with exactly these files; see the frozen-layout test.
+ * The fingerprint of each layout's files. Documents are re-rendered with
+ * exactly the files of the version they were issued under; see the
+ * frozen-layout test.
  */
-const FROZEN_V1_LAYOUT = 'c590bc229e456e4ce1843557bde3bf825d711c28dac0e53231b4c6b75692ff69';
+const FROZEN_LAYOUTS = [
+    'v1' => 'c590bc229e456e4ce1843557bde3bf825d711c28dac0e53231b4c6b75692ff69',
+    'v2' => '6c48131289231a5edd5e79eabad494df9731dbfaf98c7fa63bc367e01ce1b93e',
+];
 
 /**
  * @return array{owner: User, legalEntity: LegalEntity, establishment: Establishment}
@@ -428,7 +432,7 @@ test('a document prints from a record frozen on first use, not from today\'s pro
 
     $printed = app(FiscalDocumentPresenter::class)->forPrint($document->fresh(), $prints->verified($document->fresh()));
 
-    expect($record->layout_version)->toBe('v1')
+    expect($record->layout_version)->toBe(config('fiscal.print.layout'))
         ->and($record->source_sha256)->toHaveLength(64)
         ->and($printed['company']['legal_name'])->toBe($issuedName)
         ->and($printed['company']['address_line'])->not->toBe('Rua Nova, 1')
@@ -574,14 +578,72 @@ test('the backfill freezes a print record for every issued document without one'
     expect(FiscalDocumentPrint::query()->count())->toBe(3);
 });
 
-test('a used layout version is frozen: changing it means adding a new version', function () {
-    // Documents issued under v1 are re-rendered with these exact files for as
-    // long as they are kept. A fix or redesign goes in documents/pdf/v2 and
-    // config('fiscal.print.layout') moves to it; v1 itself never changes.
-    $files = collect(File::files(resource_path('views/documents/pdf/v1')))
+test('a used layout version is frozen: changing it means adding a new version', function (string $version) {
+    // Documents issued under a version are re-rendered with these exact files
+    // for as long as they are kept. A fix or redesign goes in a new version
+    // and config('fiscal.print.layout') moves to it; a used one never changes.
+    $files = collect(File::files(resource_path("views/documents/pdf/{$version}")))
         ->sortBy(fn ($file): string => $file->getFilename())
         ->map(fn ($file): string => $file->getFilename().':'.hash_file('sha256', $file->getPathname()))
         ->implode("\n");
 
-    expect(hash('sha256', $files))->toBe(FROZEN_V1_LAYOUT);
+    expect(hash('sha256', $files))->toBe(FROZEN_LAYOUTS[$version]);
+})->with(array_keys(FROZEN_LAYOUTS));
+
+test('every layout version in use has its engine settings and is pinned', function () {
+    $current = config('fiscal.print.layout');
+
+    expect(array_keys(config('fiscal.print.layouts')))->toBe(array_keys(FROZEN_LAYOUTS))
+        ->and(FROZEN_LAYOUTS)->toHaveKey($current);
+});
+
+test('new documents print with the current layout; older ones keep theirs', function () {
+    $fixture = pdfFixture();
+    $prints = app(FiscalDocumentPrints::class);
+
+    config(['fiscal.print.layout' => 'v1']);
+    $older = documentWithLines($fixture, lines: 1);
+    $prints->record($older);
+
+    config(['fiscal.print.layout' => 'v2']);
+    $newer = documentWithLines($fixture, lines: 1);
+
+    // Font names sit in the PDF's uncompressed font dictionaries: v1 is set
+    // in DejaVu Sans, v2 in Hanken Grotesk.
+    expect($prints->pdf($older->fresh()))->toContain('DejaVuSans')->not->toContain('HankenGrotesk')
+        ->and($prints->pdf($newer))->toContain('HankenGrotesk')
+        ->and($prints->record($newer)->layout_version)->toBe('v2');
+});
+
+test('a customer name outside the Latin script still prints, from a face that has it', function () {
+    $fixture = pdfFixture();
+    $document = documentWithLines($fixture, lines: 1);
+    DB::table('fiscal_documents')->where('id', $document->id)
+        ->update(['customer_name' => '中国铁建 (Angola), Lda.']);
+
+    expect(app(FiscalDocumentPrints::class)->pdf($document->fresh()))->toContain('Sun-ExtA');
+});
+
+test('a correction says which document it corrects and why', function () {
+    $fixture = pdfFixture();
+    $document = documentWithLines($fixture, lines: 1, type: FiscalDocumentType::CreditNote);
+    DB::table('fiscal_documents')->where('id', $document->id)->update([
+        'references_document_no' => 'FT 2026/417',
+        'adjustment_reason' => 'Devolução de mercadoria',
+    ]);
+    $document = $document->fresh();
+    $format = app(PrintFormat::class);
+
+    $html = view('documents.pdf.v2.invoice', [
+        'document' => app(FiscalDocumentPresenter::class)->forPrint($document, app(FiscalDocumentPrints::class)->record($document)),
+        'settlements' => [],
+        'logo' => null,
+        'money' => fn (int $minor): string => $format->money($minor),
+        'number' => fn (string $value, int $minimumDecimals = 0): string => $format->decimal($value, $minimumDecimals),
+        'percent' => fn (string $value): string => $format->percent($value),
+    ])->render();
+
+    expect($html)->toContain('Documento de origem')
+        ->toContain('FT 2026/417')
+        ->toContain('Devolução de mercadoria');
 });

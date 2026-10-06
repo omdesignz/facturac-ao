@@ -74,6 +74,9 @@ class FiscalDocumentPresenter
             'base_currency_code' => (string) config('fiscal.saft.currency_code', 'AOA'),
             'notes' => $document->notes,
             'payment_method_label' => $document->payment_method?->label(),
+            // What a correcting document corrects, and why.
+            'references_document_no' => $document->references_document_no,
+            'adjustment_reason' => $document->adjustment_reason,
 
             'company' => $print instanceof FiscalDocumentPrint
                 ? array_diff_key($print->issuer, ['support_email' => true])
