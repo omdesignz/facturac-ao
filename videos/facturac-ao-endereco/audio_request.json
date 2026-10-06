@@ -1,0 +1,40 @@
+{
+  "lines": [
+    {
+      "id": "01",
+      "sfx": [
+        "keyboard-typing",
+        "error-buzz"
+      ]
+    },
+    {
+      "id": "02",
+      "sfx": [
+        "keyboard-key",
+        "whoosh-up",
+        "drop-thud",
+        "bounce-pop",
+        "success-chime"
+      ]
+    },
+    {
+      "id": "03",
+      "sfx": [
+        "whoosh-soft",
+        "pop-soft",
+        "pop-soft",
+        "pop-confirm"
+      ]
+    },
+    {
+      "id": "04",
+      "sfx": [
+        "riser-short",
+        "impact-soft"
+      ]
+    }
+  ],
+  "bgm": {
+    "mode": "none"
+  }
+}

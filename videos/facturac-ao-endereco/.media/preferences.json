@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "preferences": {
+    "aspect": {
+      "value": "1080x1920",
+      "confirmed_in": [
+        "facturac-ao-endereco"
+      ],
+      "updated_at": "2026-10-06T07:59:34.145Z"
+    },
+    "language": {
+      "value": "pt-AO",
+      "confirmed_in": [
+        "facturac-ao-endereco"
+      ],
+      "updated_at": "2026-10-06T07:59:34.178Z"
+    },
+    "flow": {
+      "value": "automation",
+      "confirmed_in": [
+        "facturac-ao-endereco"
+      ],
+      "updated_at": "2026-10-06T07:59:34.213Z"
+    },
+    "storyboard": {
+      "value": "no",
+      "confirmed_in": [
+        "facturac-ao-endereco"
+      ],
+      "updated_at": "2026-10-06T07:59:34.249Z"
+    },
+    "style_preset.product-launch-video": {
+      "value": "blue-professional",
+      "confirmed_in": [
+        "facturac-ao-endereco"
+      ],
+      "updated_at": "2026-10-06T08:02:02.698Z"
+    }
+  },
+  "sightings": {}
+}

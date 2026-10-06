@@ -1,0 +1,38 @@
+{
+  "lines": [
+    {
+      "id": "01",
+      "sfx": [
+        "whoosh-soft",
+        "typewriter-key"
+      ]
+    },
+    {
+      "id": "02",
+      "sfx": [
+        "whoosh-up",
+        "drop-thud",
+        "bounce-pop",
+        "pop-confirm"
+      ]
+    },
+    {
+      "id": "03",
+      "sfx": [
+        "pop-soft",
+        "pop-soft",
+        "pop-confirm"
+      ]
+    },
+    {
+      "id": "04",
+      "sfx": [
+        "riser-short",
+        "impact-soft"
+      ]
+    }
+  ],
+  "bgm": {
+    "mode": "none"
+  }
+}

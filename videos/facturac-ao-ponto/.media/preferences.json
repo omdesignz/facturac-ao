@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "preferences": {
+    "aspect": {
+      "value": "1080x1920",
+      "confirmed_in": [
+        "facturac-ao-ponto"
+      ],
+      "updated_at": "2026-10-06T07:59:33.998Z"
+    },
+    "language": {
+      "value": "pt-AO",
+      "confirmed_in": [
+        "facturac-ao-ponto"
+      ],
+      "updated_at": "2026-10-06T07:59:34.039Z"
+    },
+    "flow": {
+      "value": "automation",
+      "confirmed_in": [
+        "facturac-ao-ponto"
+      ],
+      "updated_at": "2026-10-06T07:59:34.075Z"
+    },
+    "storyboard": {
+      "value": "no",
+      "confirmed_in": [
+        "facturac-ao-ponto"
+      ],
+      "updated_at": "2026-10-06T07:59:34.110Z"
+    },
+    "style_preset.product-launch-video": {
+      "value": "cobalt-grid",
+      "confirmed_in": [
+        "facturac-ao-ponto"
+      ],
+      "updated_at": "2026-10-06T08:02:02.594Z"
+    }
+  },
+  "sightings": {}
+}

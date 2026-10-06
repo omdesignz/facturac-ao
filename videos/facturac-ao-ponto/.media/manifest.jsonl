@@ -1,0 +1,10 @@
+{"id":"bgm_001","type":"bgm","path":"assets/bgm/track.mp3","source":"search","description":"upbeat playful afro-house pop, bright marimba and plucks, punchy kick, claps, joyful and confident, no vocals","duration":18,"provenance":{"provider":"heygen","prompt":"upbeat playful afro-house pop, bright marimba and plucks, punchy kick, claps, joyful and confident, no vocals"}}
+{"id":"sfx_001","type":"sfx","path":"assets/sfx/whoosh-soft.mp3","source":"search","description":"whoosh-soft","duration":1.6,"provenance":{"provider":"heygen","prompt":"whoosh-soft"}}
+{"id":"sfx_002","type":"sfx","path":"assets/sfx/typewriter-key.mp3","source":"search","description":"typewriter-key","duration":2.5,"provenance":{"provider":"heygen","prompt":"typewriter-key"}}
+{"id":"sfx_003","type":"sfx","path":"assets/sfx/whoosh-up.mp3","source":"search","description":"whoosh-up","duration":1.6,"provenance":{"provider":"heygen","prompt":"whoosh-up"}}
+{"id":"sfx_004","type":"sfx","path":"assets/sfx/drop-thud.mp3","source":"search","description":"drop-thud","duration":0.8,"provenance":{"provider":"heygen","prompt":"drop-thud"}}
+{"id":"sfx_005","type":"sfx","path":"assets/sfx/bounce-pop.mp3","source":"search","description":"bounce-pop","duration":2.8,"provenance":{"provider":"heygen","prompt":"bounce-pop"}}
+{"id":"sfx_006","type":"sfx","path":"assets/sfx/pop-confirm.mp3","source":"search","description":"pop-confirm","duration":0.6,"provenance":{"provider":"heygen","prompt":"pop-confirm"}}
+{"id":"sfx_007","type":"sfx","path":"assets/sfx/pop-soft.mp3","source":"search","description":"pop-soft","duration":0.6,"provenance":{"provider":"heygen","prompt":"pop-soft"}}
+{"id":"sfx_008","type":"sfx","path":"assets/sfx/riser-short.mp3","source":"search","description":"riser-short","duration":5,"provenance":{"provider":"heygen","prompt":"riser-short"}}
+{"id":"sfx_009","type":"sfx","path":"assets/sfx/impact-soft.mp3","source":"search","description":"impact-soft","duration":2.8,"provenance":{"provider":"heygen","prompt":"impact-soft"}}

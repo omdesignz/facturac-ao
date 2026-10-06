@@ -1,0 +1,13 @@
+{"id":"bgm_001","type":"bgm","path":"assets/bgm/track.mp3","source":"search","description":"bright upbeat electronic pop, playful plucks and claps, bouncy bass, optimistic tech launch energy, no vocals","duration":24,"provenance":{"provider":"heygen","prompt":"bright upbeat electronic pop, playful plucks and claps, bouncy bass, optimistic tech launch energy, no vocals"}}
+{"id":"sfx_001","type":"sfx","path":"assets/sfx/keyboard-typing.mp3","source":"search","description":"keyboard-typing","duration":44.4,"provenance":{"provider":"heygen","prompt":"keyboard-typing"}}
+{"id":"sfx_002","type":"sfx","path":"assets/sfx/error-buzz.mp3","source":"search","description":"error-buzz","duration":1.2,"provenance":{"provider":"heygen","prompt":"error-buzz"}}
+{"id":"sfx_003","type":"sfx","path":"assets/sfx/keyboard-key.mp3","source":"search","description":"keyboard-key","duration":54.6,"provenance":{"provider":"heygen","prompt":"keyboard-key"}}
+{"id":"sfx_004","type":"sfx","path":"assets/sfx/whoosh-up.mp3","source":"search","description":"whoosh-up","duration":1.6,"provenance":{"provider":"heygen","prompt":"whoosh-up"}}
+{"id":"sfx_005","type":"sfx","path":"assets/sfx/drop-thud.mp3","source":"search","description":"drop-thud","duration":0.8,"provenance":{"provider":"heygen","prompt":"drop-thud"}}
+{"id":"sfx_006","type":"sfx","path":"assets/sfx/bounce-pop.mp3","source":"search","description":"bounce-pop","duration":2.8,"provenance":{"provider":"heygen","prompt":"bounce-pop"}}
+{"id":"sfx_007","type":"sfx","path":"assets/sfx/success-chime.mp3","source":"search","description":"success-chime","duration":4.8,"provenance":{"provider":"heygen","prompt":"success-chime"}}
+{"id":"sfx_008","type":"sfx","path":"assets/sfx/whoosh-soft.mp3","source":"search","description":"whoosh-soft","duration":1.6,"provenance":{"provider":"heygen","prompt":"whoosh-soft"}}
+{"id":"sfx_009","type":"sfx","path":"assets/sfx/pop-soft.mp3","source":"search","description":"pop-soft","duration":0.6,"provenance":{"provider":"heygen","prompt":"pop-soft"}}
+{"id":"sfx_010","type":"sfx","path":"assets/sfx/pop-confirm.mp3","source":"search","description":"pop-confirm","duration":0.6,"provenance":{"provider":"heygen","prompt":"pop-confirm"}}
+{"id":"sfx_011","type":"sfx","path":"assets/sfx/riser-short.mp3","source":"search","description":"riser-short","duration":5,"provenance":{"provider":"heygen","prompt":"riser-short"}}
+{"id":"sfx_012","type":"sfx","path":"assets/sfx/impact-soft.mp3","source":"search","description":"impact-soft","duration":2.8,"provenance":{"provider":"heygen","prompt":"impact-soft"}}

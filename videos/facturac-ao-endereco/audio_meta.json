@@ -1,0 +1,208 @@
+{
+  "bgm": {
+    "path": "assets/bgm/track.mp3",
+    "volume": 0.9,
+    "query": "bright upbeat electronic pop, playful plucks and claps, bouncy bass, optimistic tech launch energy, no vocals",
+    "duration_s": 24
+  },
+  "bgm_pending": false,
+  "voices": [],
+  "sfx": [
+    {
+      "frame": 1,
+      "file": "assets/sfx/whoosh-soft.mp3",
+      "offset_s": 0,
+      "duration_s": 1.58,
+      "volume": 0.25
+    },
+    {
+      "frame": 1,
+      "file": "assets/sfx/keyboard-typing.mp3",
+      "offset_s": 1.525,
+      "duration_s": 1.45,
+      "volume": 0.55
+    },
+    {
+      "frame": 1,
+      "file": "assets/sfx/keyboard-key.mp3",
+      "offset_s": 3.588,
+      "duration_s": 0.35,
+      "volume": 0.5
+    },
+    {
+      "frame": 1,
+      "file": "assets/sfx/error-buzz.mp3",
+      "offset_s": 3.658,
+      "duration_s": 1.25,
+      "volume": 0.32
+    },
+    {
+      "frame": 2,
+      "file": "assets/sfx/keyboard-key.mp3",
+      "offset_s": 0.15,
+      "duration_s": 0.35,
+      "volume": 0.4
+    },
+    {
+      "frame": 2,
+      "file": "assets/sfx/keyboard-key.mp3",
+      "offset_s": 1.241,
+      "duration_s": 0.35,
+      "volume": 0.4
+    },
+    {
+      "frame": 2,
+      "file": "assets/sfx/keyboard-key.mp3",
+      "offset_s": 2.578,
+      "duration_s": 0.35,
+      "volume": 0.4
+    },
+    {
+      "frame": 2,
+      "file": "assets/sfx/whoosh-up.mp3",
+      "offset_s": 0.485,
+      "duration_s": 1.58,
+      "volume": 0.42
+    },
+    {
+      "frame": 2,
+      "file": "assets/sfx/whoosh-soft.mp3",
+      "offset_s": 1.477,
+      "duration_s": 1.58,
+      "volume": 0.3
+    },
+    {
+      "frame": 2,
+      "file": "assets/sfx/drop-thud.mp3",
+      "offset_s": 2.387,
+      "duration_s": 0.792,
+      "volume": 0.3
+    },
+    {
+      "frame": 2,
+      "file": "assets/sfx/whoosh-soft.mp3",
+      "offset_s": 3.263,
+      "duration_s": 1.58,
+      "volume": 0.3
+    },
+    {
+      "frame": 2,
+      "file": "assets/sfx/pop-confirm.mp3",
+      "offset_s": 4.335,
+      "duration_s": 0.576,
+      "volume": 0.55
+    },
+    {
+      "frame": 2,
+      "file": "assets/sfx/impact-soft.mp3",
+      "offset_s": 3.795,
+      "duration_s": 2.76,
+      "volume": 0.3
+    },
+    {
+      "frame": 2,
+      "file": "assets/sfx/keyboard-key.mp3",
+      "offset_s": 5.306,
+      "duration_s": 0.35,
+      "volume": 0.45
+    },
+    {
+      "frame": 2,
+      "file": "assets/sfx/success-chime.mp3",
+      "offset_s": 5.426,
+      "duration_s": 3.4,
+      "volume": 0.34
+    },
+    {
+      "frame": 2,
+      "file": "assets/sfx/whoosh-soft.mp3",
+      "offset_s": 6.883,
+      "duration_s": 1.58,
+      "volume": 0.2
+    },
+    {
+      "frame": 3,
+      "file": "assets/sfx/whoosh-soft.mp3",
+      "offset_s": 0.4,
+      "duration_s": 1.58,
+      "volume": 0.24
+    },
+    {
+      "frame": 3,
+      "file": "assets/sfx/pop-soft.mp3",
+      "offset_s": 2.152,
+      "duration_s": 0.576,
+      "volume": 0.42
+    },
+    {
+      "frame": 3,
+      "file": "assets/sfx/pop-soft.mp3",
+      "offset_s": 3.243,
+      "duration_s": 0.576,
+      "volume": 0.42
+    },
+    {
+      "frame": 3,
+      "file": "assets/sfx/pop-confirm.mp3",
+      "offset_s": 4.334,
+      "duration_s": 0.576,
+      "volume": 0.5
+    },
+    {
+      "frame": 3,
+      "file": "assets/sfx/pop-soft.mp3",
+      "offset_s": 2.472,
+      "duration_s": 0.576,
+      "volume": 0.2
+    },
+    {
+      "frame": 3,
+      "file": "assets/sfx/pop-soft.mp3",
+      "offset_s": 3.563,
+      "duration_s": 0.576,
+      "volume": 0.2
+    },
+    {
+      "frame": 3,
+      "file": "assets/sfx/pop-soft.mp3",
+      "offset_s": 4.654,
+      "duration_s": 0.576,
+      "volume": 0.2
+    },
+    {
+      "frame": 4,
+      "file": "assets/sfx/whoosh-soft.mp3",
+      "offset_s": 0,
+      "duration_s": 1.58,
+      "volume": 0.3
+    },
+    {
+      "frame": 4,
+      "file": "assets/sfx/pop-soft.mp3",
+      "offset_s": 1.059,
+      "duration_s": 0.576,
+      "volume": 0.42
+    },
+    {
+      "frame": 4,
+      "file": "assets/sfx/riser-short.mp3",
+      "offset_s": 0.19,
+      "duration_s": 4.246,
+      "volume": 0.24
+    },
+    {
+      "frame": 4,
+      "file": "assets/sfx/pop-confirm.mp3",
+      "offset_s": 2.15,
+      "duration_s": 0.576,
+      "volume": 0.5
+    },
+    {
+      "frame": 4,
+      "file": "assets/sfx/impact-soft.mp3",
+      "offset_s": 1.61,
+      "duration_s": 2.76,
+      "volume": 0.3
+    }
+  ]
+}

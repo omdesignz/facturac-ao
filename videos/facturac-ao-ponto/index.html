@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js" integrity="sha384-sG0Hv1tP1lZCk9KQmrIbY/XNwi+OY84GQqhMscbnsoBFqAz8KNCil1kvfL3Hbbk2" crossorigin="anonymous"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: #000;
+      }
+      #root {
+        position: relative;
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: #fafaf9;
+      }
+      .scene {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="17.2"
+      data-width="1080"
+      data-height="1920"
+    >
+      <div
+        id="el-01-a-palavra"
+        class="scene"
+        data-composition-id="01-a-palavra"
+        data-composition-src="compositions/frames/01-a-palavra.html"
+        data-start="0"
+        data-duration="3.053"
+        data-track-index="1"
+      ></div>
+
+      <div
+        id="el-02-a-licao"
+        class="scene"
+        data-composition-id="02-a-licao"
+        data-composition-src="compositions/frames/02-a-licao.html"
+        data-start="3.053"
+        data-duration="7.837"
+        data-track-index="1"
+      ></div>
+
+      <div
+        id="el-03-assinatura"
+        class="scene"
+        data-composition-id="03-assinatura"
+        data-composition-src="compositions/frames/03-assinatura.html"
+        data-start="10.89"
+        data-duration="2.61"
+        data-track-index="1"
+      ></div>
+
+      <div
+        id="el-04-brevemente"
+        class="scene"
+        data-composition-id="04-brevemente"
+        data-composition-src="compositions/frames/04-brevemente.html"
+        data-start="13.5"
+        data-duration="3.7"
+        data-track-index="1"
+      ></div>
+
+      <!-- BGM -->
+      <audio
+        id="el-bgm"
+        src="assets/bgm/track.mp3"
+        data-start="0"
+        data-duration="17.2"
+        data-track-index="11"
+        data-volume="0.9"
+      ></audio>
+
+      <!-- SFX -->
+      <audio
+        id="el-sfx-0"
+        src="assets/sfx/whoosh-soft.mp3"
+        data-start="0"
+        data-duration="1.58"
+        data-track-index="20"
+        data-volume="0.22"
+      ></audio>
+      <audio
+        id="el-sfx-1"
+        src="assets/sfx/pop-soft.mp3"
+        data-start="0.411"
+        data-duration="0.576"
+        data-track-index="21"
+        data-volume="0.16"
+      ></audio>
+      <audio
+        id="el-sfx-2"
+        src="assets/sfx/pop-soft.mp3"
+        data-start="0.672"
+        data-duration="0.576"
+        data-track-index="22"
+        data-volume="0.16"
+      ></audio>
+      <audio
+        id="el-sfx-3"
+        src="assets/sfx/pop-soft.mp3"
+        data-start="0.933"
+        data-duration="0.576"
+        data-track-index="23"
+        data-volume="0.16"
+      ></audio>
+      <audio
+        id="el-sfx-4"
+        src="assets/sfx/pop-soft.mp3"
+        data-start="1.195"
+        data-duration="0.576"
+        data-track-index="24"
+        data-volume="0.16"
+      ></audio>
+      <audio
+        id="el-sfx-5"
+        src="assets/sfx/pop-soft.mp3"
+        data-start="1.456"
+        data-duration="0.576"
+        data-track-index="25"
+        data-volume="0.16"
+      ></audio>
+      <audio
+        id="el-sfx-6"
+        src="assets/sfx/pop-soft.mp3"
+        data-start="1.717"
+        data-duration="0.576"
+        data-track-index="26"
+        data-volume="0.16"
+      ></audio>
+      <audio
+        id="el-sfx-7"
+        src="assets/sfx/pop-soft.mp3"
+        data-start="1.978"
+        data-duration="0.576"
+        data-track-index="27"
+        data-volume="0.16"
+      ></audio>
+      <audio
+        id="el-sfx-8"
+        src="assets/sfx/pop-soft.mp3"
+        data-start="2.24"
+        data-duration="0.576"
+        data-track-index="28"
+        data-volume="0.16"
+      ></audio>
+      <audio
+        id="el-sfx-9"
+        src="assets/sfx/pop-soft.mp3"
+        data-start="2.501"
+        data-duration="0.576"
+        data-track-index="29"
+        data-volume="0.16"
+      ></audio>
+      <audio
+        id="el-sfx-10"
+        src="assets/sfx/pop-soft.mp3"
+        data-start="2.762"
+        data-duration="0.576"
+        data-track-index="30"
+        data-volume="0.2"
+      ></audio>
+      <audio
+        id="el-sfx-11"
+        src="assets/sfx/pop-confirm.mp3"
+        data-start="2.802"
+        data-duration="0.576"
+        data-track-index="31"
+        data-volume="0.3"
+      ></audio>
+      <audio
+        id="el-sfx-12"
+        src="assets/sfx/whoosh-up.mp3"
+        data-start="3.698"
+        data-duration="1.58"
+        data-track-index="32"
+        data-volume="0.42"
+      ></audio>
+      <audio
+        id="el-sfx-13"
+        src="assets/sfx/whoosh-soft.mp3"
+        data-start="5.366"
+        data-duration="1.58"
+        data-track-index="33"
+        data-volume="0.3"
+      ></audio>
+      <audio
+        id="el-sfx-14"
+        src="assets/sfx/drop-thud.mp3"
+        data-start="6.256"
+        data-duration="0.792"
+        data-track-index="34"
+        data-volume="0.34"
+      ></audio>
+      <audio
+        id="el-sfx-15"
+        src="assets/sfx/pop-soft.mp3"
+        data-start="7.203"
+        data-duration="0.576"
+        data-track-index="35"
+        data-volume="0.42"
+      ></audio>
+      <audio
+        id="el-sfx-16"
+        src="assets/sfx/pop-soft.mp3"
+        data-start="7.726"
+        data-duration="0.576"
+        data-track-index="36"
+        data-volume="0.42"
+      ></audio>
+      <audio
+        id="el-sfx-17"
+        src="assets/sfx/pop-confirm.mp3"
+        data-start="8.248"
+        data-duration="0.576"
+        data-track-index="37"
+        data-volume="0.55"
+      ></audio>
+      <audio
+        id="el-sfx-18"
+        src="assets/sfx/impact-soft.mp3"
+        data-start="7.708"
+        data-duration="3.41"
+        data-track-index="38"
+        data-volume="0.32"
+      ></audio>
+      <audio
+        id="el-sfx-19"
+        src="assets/sfx/pop-soft.mp3"
+        data-start="10.215"
+        data-duration="0.576"
+        data-track-index="39"
+        data-volume="0.3"
+      ></audio>
+      <audio
+        id="el-sfx-20"
+        src="assets/sfx/pop-soft.mp3"
+        data-start="11.376"
+        data-duration="0.576"
+        data-track-index="40"
+        data-volume="0.4"
+      ></audio>
+      <audio
+        id="el-sfx-21"
+        src="assets/sfx/pop-soft.mp3"
+        data-start="11.927"
+        data-duration="0.576"
+        data-track-index="41"
+        data-volume="0.4"
+      ></audio>
+      <audio
+        id="el-sfx-22"
+        src="assets/sfx/pop-confirm.mp3"
+        data-start="12.337"
+        data-duration="0.576"
+        data-track-index="42"
+        data-volume="0.4"
+      ></audio>
+      <audio
+        id="el-sfx-23"
+        src="assets/sfx/whoosh-soft.mp3"
+        data-start="13.5"
+        data-duration="1.58"
+        data-track-index="43"
+        data-volume="0.2"
+      ></audio>
+      <audio
+        id="el-sfx-24"
+        src="assets/sfx/pop-soft.mp3"
+        data-start="13.995"
+        data-duration="0.576"
+        data-track-index="44"
+        data-volume="0.38"
+      ></audio>
+      <audio
+        id="el-sfx-25"
+        src="assets/sfx/riser-short.mp3"
+        data-start="13.603"
+        data-duration="3.597"
+        data-track-index="45"
+        data-volume="0.26"
+      ></audio>
+      <audio
+        id="el-sfx-26"
+        src="assets/sfx/pop-confirm.mp3"
+        data-start="15.563"
+        data-duration="0.576"
+        data-track-index="46"
+        data-volume="0.5"
+      ></audio>
+      <audio
+        id="el-sfx-27"
+        src="assets/sfx/impact-soft.mp3"
+        data-start="15.023"
+        data-duration="2.177"
+        data-track-index="47"
+        data-volume="0.3"
+      ></audio>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = gsap.timeline({ paused: true });
+    </script>
+  </body>
+</html>
