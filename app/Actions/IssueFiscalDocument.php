@@ -15,13 +15,13 @@ use App\Fiscal\Calculation\CalculatedFiscalLine;
 use App\Fiscal\Calculation\FiscalCalculator;
 use App\Fiscal\Calculation\FiscalReceiptCalculator;
 use App\Fiscal\Documents\FiscalDocumentNumber;
+use App\Fiscal\Documents\FiscalDocumentPrints;
 use App\Fiscal\Documents\V2_0\FiscalDocumentPayloadBuilder;
 use App\FiscalDocumentEventType;
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
 use App\FiscalSeriesContingency;
 use App\FiscalSeriesStatus;
-use App\Jobs\ArchiveFiscalDocumentPdf;
 use App\Jobs\SubmitAgtDocument;
 use App\Models\AgtConnection;
 use App\Models\AgtSubmission;
@@ -47,6 +47,7 @@ final readonly class IssueFiscalDocument
         private JwsSigner $jwsSigner,
         private CanonicalJson $canonicalJson,
         private FiscalReceiptCalculator $receiptCalculator,
+        private FiscalDocumentPrints $prints,
     ) {}
 
     public function execute(
@@ -163,6 +164,11 @@ final readonly class IssueFiscalDocument
             // stops matching the shelf.
             $this->applyStockMovements->execute($document, $issuer);
 
+            // How the document prints is frozen with it: issuer details, logo
+            // and layout as they stand at this moment, and the fingerprint of
+            // everything it shows. Every later PDF is drawn from this.
+            $this->prints->record($document);
+
             $series->forceFill([
                 'status' => $sequence >= $series->last_authorized_number
                     ? FiscalSeriesStatus::Closed
@@ -222,8 +228,6 @@ final readonly class IssueFiscalDocument
         }, 5);
 
         SubmitAgtDocument::dispatch($submission->id)->afterCommit();
-        // The as-issued PDF, kept before anything about the sheet can change.
-        ArchiveFiscalDocumentPdf::dispatch($draft->id)->afterCommit();
 
         $this->sendToCustomerIfConfigured($draft->fresh(), $issuer);
 

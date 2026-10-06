@@ -65,12 +65,18 @@ return [
 
     'print' => [
         /*
-         * Where each issued document's PDF is kept, as issued. Private, and
-         * part of the backup: these are records, not a cache that can be
-         * rebuilt, because a re-render may not match what the customer got.
+         * PDFs are rendered on demand, never stored. Each document is drawn
+         * with the layout version it was issued under, and a layout version
+         * is frozen once used: a redesign is a new version for new documents,
+         * never an edit to one that documents already depend on.
          */
-        'archive_disk' => env('FISCAL_ARCHIVE_DISK', 'local'),
-        'archive_directory' => 'fiscal-documents',
+        'layout' => 'v1',
+        'layouts' => [
+            'v1' => ['margin_top' => 34],
+        ],
+        // Repeat requests for the same document share one render for this long.
+        'cache_seconds' => (int) env('FISCAL_PDF_CACHE_SECONDS', 600),
+        'cache_store' => env('FISCAL_PDF_CACHE_STORE'),
         'paper' => 'A4',
         'logo_max_width_mm' => 45,
         'logo_max_height_mm' => 18,

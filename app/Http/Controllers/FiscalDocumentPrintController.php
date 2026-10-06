@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Fiscal\Documents\FiscalDocumentArchive;
 use App\Fiscal\Documents\FiscalDocumentPdf;
 use App\Fiscal\Documents\FiscalDocumentPresenter;
+use App\Fiscal\Documents\FiscalDocumentPrints;
 use App\Models\FiscalDocument;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -25,7 +25,7 @@ class FiscalDocumentPrintController extends Controller
     public function __construct(
         private FiscalDocumentPresenter $presenter,
         private FiscalDocumentPdf $pdf,
-        private FiscalDocumentArchive $archive,
+        private FiscalDocumentPrints $prints,
     ) {}
 
     public function __invoke(Request $request, FiscalDocument $fiscalDocument): Response
@@ -40,7 +40,9 @@ class FiscalDocumentPrintController extends Controller
         );
 
         return Inertia::render('Documents/Print', [
-            'document' => $this->presenter->forPrint($fiscalDocument),
+            // The same frozen issuer and checks as the PDF, so the page and
+            // the file can never show two different documents.
+            'document' => $this->presenter->forPrint($fiscalDocument, $this->prints->verified($fiscalDocument)),
             // The signed link is the one that goes to the customer; only
             // someone already inside the company may hand it out.
             'shareUrl' => $request->hasValidSignature()
@@ -66,8 +68,9 @@ class FiscalDocumentPrintController extends Controller
             403,
         );
 
-        // The copy kept when the document was issued, never a fresh render.
-        $bytes = $this->archive->pdf($fiscalDocument);
+        // Rendered now, from the document as issued: frozen layout, issuer
+        // and logo, after its fingerprint is checked.
+        $bytes = $this->prints->pdf($fiscalDocument);
 
         return response($bytes, 200, [
             'Content-Type' => 'application/pdf',
@@ -75,10 +78,9 @@ class FiscalDocumentPrintController extends Controller
             // Inline so it opens in the viewer; the viewer's own save button
             // is a better download than forcing one.
             'Content-Disposition' => 'inline; filename="'.$this->pdf->filename($fiscalDocument).'"',
-            // The bytes never change, so the hash is a true entity tag; private
-            // because the document is personal data behind a check.
-            'ETag' => '"'.$fiscalDocument->archivedPdf()->value('sha256').'"',
-            'Cache-Control' => 'private, max-age=0, must-revalidate',
+            // Private: the document is personal data behind a check. No
+            // store, because each response is a fresh render of it.
+            'Cache-Control' => 'private, no-store',
             'X-Content-Type-Options' => 'nosniff',
         ]);
     }

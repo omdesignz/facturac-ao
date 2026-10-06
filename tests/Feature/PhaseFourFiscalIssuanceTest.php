@@ -13,7 +13,6 @@ use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
 use App\FiscalSeriesContingency;
 use App\FiscalSeriesStatus;
-use App\Jobs\ArchiveFiscalDocumentPdf;
 use App\Jobs\PollAgtSubmissionStatus;
 use App\Jobs\SubmitAgtDocument;
 use App\Models\AgtConnection;
@@ -625,7 +624,7 @@ test('the issue dialog previews the number exactly as the series will compose it
         ->toContain('Confirmar emissão');
 });
 
-test('issuing queues the as-issued PDF to be archived once the issue commits', function () {
+test('issuing freezes how the document prints in the same transaction', function () {
     $company = phaseFourState();
     Queue::fake();
 
@@ -636,8 +635,10 @@ test('issuing queues the as-issued PDF to be archived once the issue commits', f
         $company['draft']->revision,
     );
 
-    Queue::assertPushed(
-        ArchiveFiscalDocumentPdf::class,
-        fn (ArchiveFiscalDocumentPdf $job): bool => $job->fiscalDocumentId === $company['draft']->id,
-    );
+    $record = $company['draft']->fresh()->printRecord;
+
+    expect($record)->not->toBeNull()
+        ->and($record->layout_version)->toBe(config('fiscal.print.layout'))
+        ->and($record->issuer['tax_identification_number'])->toBe($company['draft']->legalEntity->tax_identification_number)
+        ->and($record->source_sha256)->toHaveLength(64);
 });

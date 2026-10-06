@@ -3,8 +3,8 @@
 use App\Actions\SaveFiscalDocumentDraft;
 use App\Fiscal\Agt\Support\CanonicalNumber;
 use App\Fiscal\Calculation\FiscalCalculator;
-use App\Fiscal\Documents\FiscalDocumentPdf;
 use App\Fiscal\Documents\FiscalDocumentPresenter;
+use App\Fiscal\Documents\FiscalDocumentPrints;
 use App\Fiscal\Documents\V2_0\FiscalDocumentPayloadBuilder;
 use App\FiscalDocumentType;
 use App\Models\Customer;
@@ -249,7 +249,7 @@ test('the PDF renders with both a withholding and a foreign currency', function 
         'exchange_rate_micro' => 1_050_750_000,
     ])->saveQuietly();
 
-    $pdf = app(FiscalDocumentPdf::class)->render(
+    $pdf = app(FiscalDocumentPrints::class)->pdf(
         withhold($document->fresh(), WithholdingType::CaptiveVat, 5_000),
     );
 

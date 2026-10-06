@@ -6,6 +6,7 @@ use App\Fiscal\Calculation\FiscalCalculator;
 use App\FiscalTaxType;
 use App\Models\FiscalDocument;
 use App\Models\FiscalDocumentLine;
+use App\Models\FiscalDocumentPrint;
 use App\Models\FiscalDocumentSettlement;
 use App\Models\PlatformSetting;
 use Illuminate\Support\Facades\URL;
@@ -34,9 +35,13 @@ class FiscalDocumentPresenter
     public const LINK_DAYS = 90;
 
     /**
+     * The printed document. With a print record, the issuer block and the
+     * support line come from what was frozen at issue, so a company that has
+     * since moved or renamed still prints its old documents as they were.
+     *
      * @return array<string, mixed>
      */
-    public function forPrint(FiscalDocument $document): array
+    public function forPrint(FiscalDocument $document, ?FiscalDocumentPrint $print = null): array
     {
         $document->loadMissing([
             'lines.taxes',
@@ -70,15 +75,17 @@ class FiscalDocumentPresenter
             'notes' => $document->notes,
             'payment_method_label' => $document->payment_method?->label(),
 
-            'company' => [
-                'legal_name' => $document->legalEntity->legal_name,
-                'trade_name' => $document->legalEntity->trade_name,
-                'tax_identification_number' => $document->legalEntity->tax_identification_number,
-                'establishment' => $document->establishment->name,
-                'address_line' => $document->establishment->address_line,
-                'municipality' => $document->establishment->municipality,
-                'province_code' => $document->establishment->province_code,
-            ],
+            'company' => $print instanceof FiscalDocumentPrint
+                ? array_diff_key($print->issuer, ['support_email' => true])
+                : [
+                    'legal_name' => $document->legalEntity->legal_name,
+                    'trade_name' => $document->legalEntity->trade_name,
+                    'tax_identification_number' => $document->legalEntity->tax_identification_number,
+                    'establishment' => $document->establishment->name,
+                    'address_line' => $document->establishment->address_line,
+                    'municipality' => $document->establishment->municipality,
+                    'province_code' => $document->establishment->province_code,
+                ],
 
             'customer' => [
                 'name' => $document->customer_name,
@@ -155,7 +162,9 @@ class FiscalDocumentPresenter
                 'qr_data_uri' => $this->qrDataUri($document),
             ],
 
-            'support_email' => PlatformSetting::get('support_email'),
+            'support_email' => $print instanceof FiscalDocumentPrint
+                ? $print->issuer['support_email']
+                : PlatformSetting::get('support_email'),
         ];
     }
 

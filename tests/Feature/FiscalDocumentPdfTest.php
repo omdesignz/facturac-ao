@@ -1,24 +1,30 @@
 <?php
 
-use App\Fiscal\Documents\ArchivedPdfCompromised;
-use App\Fiscal\Documents\FiscalDocumentArchive;
 use App\Fiscal\Documents\FiscalDocumentPdf;
 use App\Fiscal\Documents\FiscalDocumentPresenter;
+use App\Fiscal\Documents\FiscalDocumentPrints;
 use App\Fiscal\Documents\PrintFormat;
+use App\Fiscal\Documents\PrintRecordMismatch;
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
-use App\Jobs\ArchiveFiscalDocumentPdf;
-use App\Models\ArchivedPdf;
 use App\Models\Establishment;
 use App\Models\FiscalDocument;
+use App\Models\FiscalDocumentPrint;
 use App\Models\LegalEntity;
 use App\Models\User;
 use App\Notifications\FiscalDocumentIssued;
-use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
+
+/**
+ * The fingerprint of the v1 layout files. Documents issued under v1 are
+ * re-rendered with exactly these files; see the frozen-layout test.
+ */
+const FROZEN_V1_LAYOUT = 'c590bc229e456e4ce1843557bde3bf825d711c28dac0e53231b4c6b75692ff69';
 
 /**
  * @return array{owner: User, legalEntity: LegalEntity, establishment: Establishment}
@@ -150,7 +156,7 @@ function embeddedImages(string $pdf): array
 
 test('an issued document renders as a PDF', function () {
     $fixture = pdfFixture();
-    $pdf = app(FiscalDocumentPdf::class)->render(documentWithLines($fixture));
+    $pdf = app(FiscalDocumentPrints::class)->pdf(documentWithLines($fixture));
 
     expect($pdf)->toStartWith('%PDF-')
         ->and(strlen($pdf))->toBeGreaterThan(5_000)
@@ -161,7 +167,7 @@ test('line items flow onto further pages rather than being cut off', function ()
     $fixture = pdfFixture();
 
     // The reason for a PDF engine rather than a print stylesheet.
-    $pdf = app(FiscalDocumentPdf::class)->render(documentWithLines($fixture, lines: 60));
+    $pdf = app(FiscalDocumentPrints::class)->pdf(documentWithLines($fixture, lines: 60));
 
     expect(pageCount($pdf))->toBeGreaterThan(1);
 });
@@ -178,7 +184,7 @@ test('the filename is the document number, safe for a filesystem', function () {
 
 test('the verification QR is the 350 × 350 PNG, drawn square at 30 mm', function (int $lines) {
     $fixture = pdfFixture();
-    $pdf = app(FiscalDocumentPdf::class)->render(documentWithLines($fixture, $lines));
+    $pdf = app(FiscalDocumentPrints::class)->pdf(documentWithLines($fixture, $lines));
 
     $qrImages = array_values(array_filter(
         embeddedImages($pdf),
@@ -203,7 +209,7 @@ test('the verification QR is the 350 × 350 PNG, drawn square at 30 mm', functio
 
 test('a receipt carries the same square QR', function () {
     $fixture = pdfFixture();
-    $pdf = app(FiscalDocumentPdf::class)->render(
+    $pdf = app(FiscalDocumentPrints::class)->pdf(
         documentWithLines($fixture, lines: 1, type: FiscalDocumentType::Receipt),
     );
 
@@ -213,7 +219,7 @@ test('a receipt carries the same square QR', function () {
 
 test('the PDF says what made it and keeps its scratch files off the private disk', function () {
     $fixture = pdfFixture();
-    $pdf = app(FiscalDocumentPdf::class)->render(documentWithLines($fixture));
+    $pdf = app(FiscalDocumentPrints::class)->pdf(documentWithLines($fixture));
 
     // mPDF writes metadata as UTF-16 text strings.
     $creator = "\xFE\xFF".mb_convert_encoding((string) config('app.name'), 'UTF-16BE', 'UTF-8');
@@ -226,7 +232,7 @@ test('figures print the Angolan way, not as machine decimals', function () {
     $fixture = pdfFixture();
     $document = documentWithLines($fixture, lines: 1);
 
-    $html = view('documents.pdf.invoice', [
+    $html = view('documents.pdf.v1.invoice', [
         'document' => app(FiscalDocumentPresenter::class)->forPrint($document),
         'settlements' => [],
         'logo' => null,
@@ -247,7 +253,7 @@ test('a receipt uses its own sheet', function () {
 
     $receipt = documentWithLines($fixture, lines: 1, type: FiscalDocumentType::Receipt);
 
-    expect(app(FiscalDocumentPdf::class)->render($receipt))->toStartWith('%PDF-');
+    expect(app(FiscalDocumentPrints::class)->pdf($receipt))->toStartWith('%PDF-');
 });
 
 test('a draft has no PDF to serve', function () {
@@ -365,11 +371,12 @@ test('the logo is embedded in the PDF rather than linked', function () {
         'logo' => UploadedFile::fake()->image('marca.png', 600, 200),
     ]);
 
-    $document = documentWithLines($fixture);
-    $withLogo = app(FiscalDocumentPdf::class)->render($document->fresh());
+    $withLogo = app(FiscalDocumentPrints::class)->pdf(documentWithLines($fixture));
 
+    // A document issued once the logo is gone prints without one; the first
+    // keeps its own, frozen at issue.
     $fixture['legalEntity']->forceFill(['logo_path' => null])->save();
-    $withoutLogo = app(FiscalDocumentPdf::class)->render($document->fresh());
+    $withoutLogo = app(FiscalDocumentPrints::class)->pdf(documentWithLines($fixture));
 
     // A document that renders differently depending on whether a disk is
     // reachable is not one you can rely on, so the image travels inside it.
@@ -405,101 +412,139 @@ test('the email still carries the link as well as the file', function () {
     expect($mail->actionUrl)->toContain('/documentos/');
 });
 
-// ---------------------------------------------------------------- archive
+// ------------------------------------------------------------ print records
 
-/** The disk issued PDFs are archived to, faked for every test in TestCase. */
-function archiveDisk(): Filesystem
-{
-    return Storage::disk((string) config('fiscal.print.archive_disk'));
-}
-
-test('the first request keeps the PDF and later ones serve those exact bytes', function () {
+test('a document prints from a record frozen on first use, not from today\'s profile', function () {
     $fixture = pdfFixture();
     $document = documentWithLines($fixture);
-    $archive = app(FiscalDocumentArchive::class);
+    $prints = app(FiscalDocumentPrints::class);
+    $issuedName = $fixture['legalEntity']->legal_name;
 
-    $first = $archive->pdf($document);
+    $record = $prints->record($document);
 
-    // A later change to the company would show in a fresh render. The
-    // archived copy must not move.
+    // The company renames and moves after issuing.
     $fixture['legalEntity']->forceFill(['legal_name' => 'Nome Novo, Lda.'])->saveQuietly();
-    $second = $archive->pdf($document->fresh());
+    $fixture['establishment']->forceFill(['address_line' => 'Rua Nova, 1'])->saveQuietly();
 
-    $record = ArchivedPdf::query()->sole();
+    $printed = app(FiscalDocumentPresenter::class)->forPrint($document->fresh(), $prints->verified($document->fresh()));
 
-    expect($second)->toBe($first)
-        ->and($record->fiscal_document_id)->toBe($document->id)
-        ->and($record->sha256)->toBe(hash('sha256', $first))
-        ->and($record->byte_size)->toBe(strlen($first))
-        ->and($record->renderer)->toStartWith('mPDF ')
-        ->and($record->path)->toStartWith("fiscal-documents/{$document->workspace_id}/{$document->legal_entity_id}/")
-        ->and(archiveDisk()->get($record->path))->toBe($first);
+    expect($record->layout_version)->toBe('v1')
+        ->and($record->source_sha256)->toHaveLength(64)
+        ->and($printed['company']['legal_name'])->toBe($issuedName)
+        ->and($printed['company']['address_line'])->not->toBe('Rua Nova, 1')
+        ->and(FiscalDocumentPrint::query()->count())->toBe(1);
 });
 
-test('storing twice keeps one record and one file', function () {
+test('recording twice keeps one print record', function () {
     $fixture = pdfFixture();
     $document = documentWithLines($fixture);
-    $archive = app(FiscalDocumentArchive::class);
+    $prints = app(FiscalDocumentPrints::class);
 
-    $first = $archive->store($document);
-    $second = $archive->store($document->fresh());
-
-    expect($second->is($first))->toBeTrue()
-        ->and(ArchivedPdf::query()->count())->toBe(1)
-        ->and(archiveDisk()->allFiles('fiscal-documents'))->toHaveCount(1);
+    expect($prints->record($document)->is($prints->record($document->fresh())))->toBeTrue()
+        ->and(FiscalDocumentPrint::query()->count())->toBe(1);
 });
 
-test('the PDF route serves the archived copy with its hash as the entity tag', function () {
+test('a document whose stored values changed after issue is refused, not printed', function () {
     $fixture = pdfFixture();
     $document = documentWithLines($fixture);
-    $stored = app(FiscalDocumentArchive::class)->pdf($document);
+    $prints = app(FiscalDocumentPrints::class);
+    $prints->record($document);
+
+    // Past the model guards, the way only a direct database edit could.
+    DB::table('fiscal_document_lines')
+        ->where('fiscal_document_id', $document->id)
+        ->where('line_number', 1)
+        ->update(['product_description' => 'Alterado depois da emissão']);
+
+    expect(fn () => $prints->pdf($document->fresh()))->toThrow(PrintRecordMismatch::class);
+
+    $this->actingAs($fixture['owner'])
+        ->get(route('documents.pdf', $document))
+        ->assertServerError();
+});
+
+test('a later AGT result or a resend does not disturb the fingerprint', function () {
+    $fixture = pdfFixture();
+    $document = documentWithLines($fixture);
+    $prints = app(FiscalDocumentPrints::class);
+    $prints->record($document);
+
+    DB::table('fiscal_documents')->where('id', $document->id)->update([
+        'agt_document_status' => 'I',
+        'sent_to_customer_at' => now(),
+        'send_count' => 3,
+        'updated_at' => now()->addDay(),
+    ]);
+
+    expect($prints->pdf($document->fresh()))->toStartWith('%PDF-');
+});
+
+test('the PDF route renders on demand and is never cached by the browser', function () {
+    $fixture = pdfFixture();
+    $document = documentWithLines($fixture);
 
     $response = $this->actingAs($fixture['owner'])
         ->get(route('documents.pdf', $document))
         ->assertOk()
         ->assertHeader('Content-Type', 'application/pdf')
-        ->assertHeader('ETag', '"'.hash('sha256', $stored).'"')
         ->assertHeader('X-Content-Type-Options', 'nosniff');
 
-    expect($response->getContent())->toBe($stored);
+    expect($response->headers->get('Cache-Control'))->toContain('no-store')
+        ->and($response->getContent())->toStartWith('%PDF-')
+        ->and($document->printRecord()->exists())->toBeTrue();
 });
 
-test('an archived copy that no longer matches its hash is refused, never re-rendered', function () {
+test('repeat requests within the cache window share one render', function () {
     $fixture = pdfFixture();
     $document = documentWithLines($fixture);
-    $record = app(FiscalDocumentArchive::class)->store($document);
+    config(['fiscal.print.cache_seconds' => 600]);
+    $prints = app(FiscalDocumentPrints::class);
 
-    archiveDisk()->put($record->path, '%PDF-1.4 altered');
-
-    $this->withoutExceptionHandling();
-
-    expect(fn () => app(FiscalDocumentArchive::class)->pdf($document->fresh()))
-        ->toThrow(ArchivedPdfCompromised::class)
-        ->and(ArchivedPdf::query()->sole()->sha256)->toBe($record->sha256);
+    expect($prints->pdf($document))->toBe($prints->pdf($document->fresh()));
 });
 
-test('a missing archived file is refused rather than replaced', function () {
+test('an old logo stays on disk while an issued document still prints it', function () {
+    Storage::fake('local');
     $fixture = pdfFixture();
-    $document = documentWithLines($fixture);
-    $record = app(FiscalDocumentArchive::class)->store($document);
-
-    archiveDisk()->delete($record->path);
 
     $this->actingAs($fixture['owner'])
-        ->get(route('documents.pdf', $document))
-        ->assertServerError();
+        ->post(route('company.logo.store'), ['logo' => UploadedFile::fake()->image('antigo.png', 300, 120)]);
+    $oldLogo = $fixture['legalEntity']->fresh()->logo_path;
 
-    expect(archiveDisk()->exists($record->path))->toBeFalse();
+    $document = documentWithLines($fixture);
+    $record = app(FiscalDocumentPrints::class)->record($document);
+
+    $this->actingAs($fixture['owner'])
+        ->post(route('company.logo.store'), ['logo' => UploadedFile::fake()->image('novo.png', 300, 120)]);
+
+    expect($record->logo_path)->toBe($oldLogo)
+        ->and(Storage::disk('local')->exists($oldLogo))->toBeTrue()
+        ->and($fixture['legalEntity']->fresh()->logo_path)->not->toBe($oldLogo)
+        ->and(app(FiscalDocumentPrints::class)->pdf($document->fresh()))->toStartWith('%PDF-');
 });
 
-test('an archived PDF record can be neither changed nor deleted', function () {
-    $record = ArchivedPdf::factory()->create();
+test('a missing logo that a document was issued with is refused', function () {
+    Storage::fake('local');
+    $fixture = pdfFixture();
 
-    expect(fn () => $record->update(['sha256' => str_repeat('0', 64)]))->toThrow(DomainException::class)
+    $this->actingAs($fixture['owner'])
+        ->post(route('company.logo.store'), ['logo' => UploadedFile::fake()->image('logo.png', 300, 120)]);
+
+    $document = documentWithLines($fixture);
+    $record = app(FiscalDocumentPrints::class)->record($document);
+    Storage::disk('local')->delete((string) $record->logo_path);
+
+    app(FiscalDocumentPrints::class)->pdf($document->fresh());
+})->throws(PrintRecordMismatch::class);
+
+test('a print record can be neither changed nor deleted', function () {
+    $record = FiscalDocumentPrint::factory()->create();
+
+    expect(fn () => $record->update(['layout_version' => 'v2']))->toThrow(DomainException::class)
         ->and(fn () => $record->delete())->toThrow(DomainException::class);
 });
 
-test('a draft has nothing to archive', function () {
+test('a draft has nothing to print', function () {
     $fixture = pdfFixture();
     $draft = FiscalDocument::factory()->create([
         'workspace_id' => $fixture['legalEntity']->workspace_id,
@@ -509,42 +554,34 @@ test('a draft has nothing to archive', function () {
         'document_no' => null,
     ]);
 
-    app(FiscalDocumentArchive::class)->store($draft);
+    app(FiscalDocumentPrints::class)->record($draft);
 })->throws(LogicException::class);
 
-test('the archive job keeps the PDF of the document it was queued for', function () {
+test('the backfill freezes a print record for every issued document without one', function () {
     $fixture = pdfFixture();
-    $document = documentWithLines($fixture);
-
-    (new ArchiveFiscalDocumentPdf($document->id))->handle(app(FiscalDocumentArchive::class));
-
-    expect($document->archivedPdf()->exists())->toBeTrue();
-});
-
-test('the backfill archives every issued document that has no PDF yet', function () {
-    $fixture = pdfFixture();
-    $archived = documentWithLines($fixture, lines: 1);
-    app(FiscalDocumentArchive::class)->store($archived);
+    app(FiscalDocumentPrints::class)->record(documentWithLines($fixture, lines: 1));
     documentWithLines($fixture, lines: 1);
     documentWithLines($fixture, lines: 1);
 
-    $this->artisan('fiscal:archive-pdfs', ['--dry-run' => true])
-        ->expectsOutputToContain('2 documento(s) sem PDF arquivado.')
+    $this->artisan('fiscal:record-prints', ['--dry-run' => true])
+        ->expectsOutputToContain('2 documento(s) sem registo de impressão.')
         ->assertSuccessful();
 
-    expect(ArchivedPdf::query()->count())->toBe(1);
+    expect(FiscalDocumentPrint::query()->count())->toBe(1);
 
-    $this->artisan('fiscal:archive-pdfs')->assertSuccessful();
+    $this->artisan('fiscal:record-prints')->assertSuccessful();
 
-    expect(ArchivedPdf::query()->count())->toBe(3);
+    expect(FiscalDocumentPrint::query()->count())->toBe(3);
 });
 
-test('the emailed attachment is byte for byte the archived copy', function () {
-    $fixture = pdfFixture();
-    $document = documentWithLines($fixture);
-    $stored = app(FiscalDocumentArchive::class)->pdf($document);
+test('a used layout version is frozen: changing it means adding a new version', function () {
+    // Documents issued under v1 are re-rendered with these exact files for as
+    // long as they are kept. A fix or redesign goes in documents/pdf/v2 and
+    // config('fiscal.print.layout') moves to it; v1 itself never changes.
+    $files = collect(File::files(resource_path('views/documents/pdf/v1')))
+        ->sortBy(fn ($file): string => $file->getFilename())
+        ->map(fn ($file): string => $file->getFilename().':'.hash_file('sha256', $file->getPathname()))
+        ->implode("\n");
 
-    $mail = FiscalDocumentIssued::fromModel($document)->toMail((object) ['email' => 'cliente@exemplo.ao']);
-
-    expect($mail->rawAttachments[0]['data'])->toBe($stored);
+    expect(hash('sha256', $files))->toBe(FROZEN_V1_LAYOUT);
 });

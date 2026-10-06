@@ -56,8 +56,9 @@ return [
 
     'include' => [
         'private/imports',
-        // Issued documents as the customer received them; not derivable.
-        'private/fiscal-documents',
+        // Logos are what issued documents print; an old one is kept for as
+        // long as any document still shows it.
+        'private/logos',
     ],
 
 ];

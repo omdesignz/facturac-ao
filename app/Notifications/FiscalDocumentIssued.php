@@ -2,9 +2,9 @@
 
 namespace App\Notifications;
 
-use App\Fiscal\Documents\FiscalDocumentArchive;
 use App\Fiscal\Documents\FiscalDocumentPdf;
 use App\Fiscal\Documents\FiscalDocumentPresenter;
+use App\Fiscal\Documents\FiscalDocumentPrints;
 use App\Models\FiscalDocument;
 use App\Models\PlatformSetting;
 use Illuminate\Bus\Queueable;
@@ -44,14 +44,13 @@ class FiscalDocumentIssued extends Notification implements ShouldQueue
      * The document itself, so the customer has a copy that does not depend on
      * a link, a session, or this application still being here in five years.
      *
-     * Read from the archive when the mail is built rather than carried
-     * through the queue: a PDF in a serialised job is a hundred kilobytes of
-     * payload per retry. The archived copy, so the attachment is byte for
-     * byte the document the company sees.
+     * Rendered when the mail is built rather than carried through the queue:
+     * a PDF in a serialised job is a hundred kilobytes of payload per retry.
+     * Through the print record, so the attachment is the document as issued.
      */
     private function pdf(): string
     {
-        return app(FiscalDocumentArchive::class)->pdf(
+        return app(FiscalDocumentPrints::class)->pdf(
             FiscalDocument::query()->where('public_id', $this->documentPublicId)->firstOrFail(),
         );
     }

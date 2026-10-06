@@ -75,8 +75,12 @@ class PdfSheet
      */
     public function logo(LegalEntity $legalEntity): ?string
     {
-        $path = $legalEntity->logo_path;
+        return $this->logoFromPath($legalEntity->logo_path);
+    }
 
+    /** A stored logo file, by path, as a data URI. */
+    public function logoFromPath(?string $path): ?string
+    {
         if ($path === null || ! Storage::disk('local')->exists($path)) {
             return null;
         }

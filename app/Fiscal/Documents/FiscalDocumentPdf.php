@@ -4,6 +4,7 @@ namespace App\Fiscal\Documents;
 
 use App\FiscalDocumentType;
 use App\Models\FiscalDocument;
+use App\Models\FiscalDocumentPrint;
 
 /**
  * The document as a PDF, laid out the way the AGT publishes it.
@@ -21,20 +22,25 @@ class FiscalDocumentPdf
         private PdfSheet $sheet,
     ) {}
 
-    /** The finished PDF as a string, ready to attach or stream. */
-    public function render(FiscalDocument $document): string
+    /**
+     * The finished PDF as a string, ready to attach or stream, drawn from the
+     * print record: its layout version, its frozen issuer and its logo.
+     * Callers go through FiscalDocumentPrints, which checks the record first.
+     */
+    public function render(FiscalDocument $document, FiscalDocumentPrint $print): string
     {
         return $this->sheet->render(
-            $this->template($document),
+            $this->template($document, $print->layout_version),
             [
-                'document' => $this->presenter->forPrint($document),
+                'document' => $this->presenter->forPrint($document, $print),
                 'settlements' => $this->presenter->settlements($document),
-                'logo' => $this->sheet->logo($document->legalEntity),
+                'logo' => $this->sheet->logoFromPath($print->logo_path),
             ],
             [
                 'title' => (string) $document->document_no,
-                'author' => $document->legalEntity->legal_name,
+                'author' => $print->issuer['legal_name'],
                 'subject' => $document->document_type->label(),
+                'margin_top' => (int) config("fiscal.print.layouts.{$print->layout_version}.margin_top", 34),
             ],
         );
     }
@@ -52,12 +58,17 @@ class FiscalDocumentPdf
      *
      * @return view-string
      */
-    private function template(FiscalDocument $document): string
+    private function template(FiscalDocument $document, string $layoutVersion): string
     {
-        return in_array($document->document_type, [
+        $sheet = in_array($document->document_type, [
             FiscalDocumentType::Receipt,
         ], true)
-            ? 'documents.pdf.receipt'
-            : 'documents.pdf.invoice';
+            ? 'receipt'
+            : 'invoice';
+
+        /** @var view-string $view */
+        $view = "documents.pdf.{$layoutVersion}.{$sheet}";
+
+        return $view;
     }
 }

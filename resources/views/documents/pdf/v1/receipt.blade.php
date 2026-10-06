@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>{{ $document['document_no'] }}</title>
-    @include('documents.pdf._styles')
+    @include('documents.pdf.v1._styles')
 </head>
 <body>
 
@@ -50,7 +50,7 @@
     </table>
 </htmlpagefooter>
 
-@include('documents.pdf._parties')
+@include('documents.pdf.v1._parties')
 
 <div class="right bold" style="margin-top: 8pt;">Documento de Cobrança</div>
 
@@ -161,7 +161,7 @@
          page with the QR that verifies it. --}}
     <tr>
         <td colspan="2" style="padding-top: 18pt;">
-            @include('documents.pdf._authenticity', ['qrImage' => $document['authenticity']['qr_data_uri']])
+            @include('documents.pdf.v1._authenticity', ['qrImage' => $document['authenticity']['qr_data_uri']])
         </td>
     </tr>
 </table>

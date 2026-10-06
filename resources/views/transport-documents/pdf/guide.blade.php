@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>{{ $document['document_no'] }}</title>
-    @include('documents.pdf._styles')
+    @include('documents.pdf.v1._styles')
     <style>
         .route-box { border: 0.6pt solid #777; padding: 6pt 8pt; vertical-align: top; }
     </style>

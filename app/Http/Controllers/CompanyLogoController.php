@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Fiscal\Documents\FiscalDocumentPrints;
 use App\Models\LegalEntity;
 use App\Models\Workspace;
 use Illuminate\Http\RedirectResponse;
@@ -21,6 +22,8 @@ class CompanyLogoController extends Controller
 {
     /** Where logos live, relative to the local disk. */
     public const DIRECTORY = 'logos';
+
+    public function __construct(private FiscalDocumentPrints $prints) {}
 
     public function store(Request $request): RedirectResponse
     {
@@ -83,9 +86,14 @@ class CompanyLogoController extends Controller
         return Storage::disk('local')->response($legalEntity->logo_path);
     }
 
+    /**
+     * Let go of the current logo. The file is deleted only if no issued
+     * document prints it: those documents are re-rendered on demand, and an
+     * invoice must keep showing the logo it was issued with.
+     */
     private function forget(LegalEntity $legalEntity): void
     {
-        if ($legalEntity->logo_path !== null) {
+        if ($legalEntity->logo_path !== null && ! $this->prints->logoInUse($legalEntity, $legalEntity->logo_path)) {
             Storage::disk('local')->delete($legalEntity->logo_path);
         }
     }

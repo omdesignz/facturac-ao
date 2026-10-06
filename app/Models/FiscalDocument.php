@@ -175,13 +175,14 @@ class FiscalDocument extends Model
     }
 
     /**
-     * The PDF exactly as it was issued, once it has been rendered.
+     * How the document prints: the frozen layout, issuer and logo, and the
+     * fingerprint of what it shows. Made when the document is issued.
      *
-     * @return HasOne<ArchivedPdf, $this>
+     * @return HasOne<FiscalDocumentPrint, $this>
      */
-    public function archivedPdf(): HasOne
+    public function printRecord(): HasOne
     {
-        return $this->hasOne(ArchivedPdf::class);
+        return $this->hasOne(FiscalDocumentPrint::class);
     }
 
     /** @return BelongsTo<Establishment, $this> */
