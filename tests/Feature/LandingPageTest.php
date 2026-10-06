@@ -1,5 +1,6 @@
 <?php
 
+use App\DataImportType;
 use App\LegalDocumentType;
 use App\Models\LegalDocument;
 use App\Models\SubscriptionPlan;
@@ -144,4 +145,16 @@ test('the legal pages the footer points at open without an account', function ()
     foreach (LegalDocumentType::cases() as $type) {
         $this->get('/'.$type->slug())->assertOk();
     }
+});
+
+test('the migration copy promises only what the import accepts', function () {
+    $page = (string) file_get_contents(resource_path('js/pages/Landing.vue'));
+
+    // Customers and catalogue items are what an import can bring in. If that
+    // list grows, the page can say so; until then it must not promise debts.
+    expect(array_map(fn (DataImportType $type): string => $type->value, DataImportType::cases()))
+        ->toBe(['customers', 'catalogue_items'])
+        ->and($page)->toContain('Clientes e artigos mudam')
+        ->toContain('Clientes e artigos ficam prontos para facturar')
+        ->not->toContain('artigos e dívidas');
 });

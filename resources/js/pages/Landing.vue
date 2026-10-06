@@ -436,7 +436,7 @@ const switchingSteps: { title: string; detail: string }[] = [
     },
     {
         title: 'Confirme',
-        detail: 'Clientes, artigos e dívidas ficam prontos para facturar. Nada é gravado sem a sua confirmação.',
+        detail: 'Clientes e artigos ficam prontos para facturar. Nada é gravado sem a sua confirmação.',
     },
 ];
 
@@ -1175,8 +1175,8 @@ const questions: { question: string; answer: string }[] = [
                             ><span class="sr-only">Migração</span>
                         </h2>
                         <p class="max-w-sm text-lg/7 text-accent-950">
-                            Traga o que já tem. Clientes, artigos e dívidas
-                            mudam consigo, e vê tudo antes de gravar.
+                            Traga o que já tem. Clientes e artigos mudam
+                            consigo, e vê tudo antes de gravar.
                         </p>
                     </div>
                     <ol class="mt-10 grid gap-4 md:grid-cols-3">
