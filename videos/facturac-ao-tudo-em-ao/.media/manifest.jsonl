@@ -1,0 +1,8 @@
+{"id":"bgm_001","type":"bgm","path":"assets/bgm/track.mp3","source":"search","description":"upbeat confident afro-house, bright marimba and plucks, claps and shakers, building energy, joyful and driving, no vocals","duration":30,"provenance":{"provider":"heygen","prompt":"upbeat confident afro-house, bright marimba and plucks, claps and shakers, building energy, joyful and driving, no vocals"}}
+{"id":"sfx_001","type":"sfx","path":"assets/sfx/pop-soft.mp3","source":"search","description":"pop-soft","duration":0.6,"provenance":{"provider":"heygen","prompt":"pop-soft"}}
+{"id":"sfx_002","type":"sfx","path":"assets/sfx/whoosh-up.mp3","source":"search","description":"whoosh-up","duration":1.6,"provenance":{"provider":"heygen","prompt":"whoosh-up"}}
+{"id":"sfx_003","type":"sfx","path":"assets/sfx/pop-confirm.mp3","source":"search","description":"pop-confirm","duration":0.6,"provenance":{"provider":"heygen","prompt":"pop-confirm"}}
+{"id":"sfx_004","type":"sfx","path":"assets/sfx/drop-thud.mp3","source":"search","description":"drop-thud","duration":0.8,"provenance":{"provider":"heygen","prompt":"drop-thud"}}
+{"id":"sfx_005","type":"sfx","path":"assets/sfx/whoosh-soft.mp3","source":"search","description":"whoosh-soft","duration":1.6,"provenance":{"provider":"heygen","prompt":"whoosh-soft"}}
+{"id":"sfx_006","type":"sfx","path":"assets/sfx/riser-short.mp3","source":"search","description":"riser-short","duration":5,"provenance":{"provider":"heygen","prompt":"riser-short"}}
+{"id":"sfx_007","type":"sfx","path":"assets/sfx/impact-soft.mp3","source":"search","description":"impact-soft","duration":2.8,"provenance":{"provider":"heygen","prompt":"impact-soft"}}
