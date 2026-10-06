@@ -241,7 +241,7 @@ def frame1():
     js.append(f'tl.set("#{fid}-progress", {{ scaleX: 0, transformOrigin: "0% 50%" }}, 0);')
     js.append(f'tl.set(".{fid}-under, #{fid}-toast", {{ opacity: 0 }}, 0);')
     # The phone rises and settles, the question appears over it.
-    js.append(f'tl.fromTo("#{fid}-cam", {{ y: 900, rotation: 4, scale: 1 }}, {{ y: 0, rotation: 0, duration: 0.75, ease: "back.out(1.4)", transformOrigin: "540px {BAR_CY}px" }}, 0);')
+    js.append(f'tl.fromTo("#{fid}-cam", {{ y: 900, rotation: 4, scale: 1 }}, {{ y: 0, rotation: 0, scale: 1, duration: 0.75, ease: "back.out(1.4)", transformOrigin: "540px {BAR_CY}px" }}, 0);')
     for j, wid in enumerate(qids):
         js.append(f'tl.fromTo("#{wid}", {{ opacity: 0, y: 24 }}, {{ opacity: 1, y: 0, duration: 0.32, ease: "power3.out" }}, {r(0.15 + j * 0.07)});')
     # Push in on the bar.
@@ -479,7 +479,7 @@ def frame3():
         if i > 0:
             js.append(f'tl.set("#{fid}-pill{i - 1}", {{ opacity: 0 }}, {r(t)});')
         js.append(f'tl.fromTo("#{fid}-sw{i}", {{ opacity: 0, y: 30, scale: 1.25 }}, {{ opacity: 1, y: 0, scale: 1, duration: 0.3, ease: "power4.out", transformOrigin: "50% 60%" }}, {r(t)});')
-        js.append(f'tl.fromTo("#{fid}-sdot{i}", {{ y: -200, opacity: 1 }}, {{ y: 0, duration: 0.2, ease: "power2.in", immediateRender: false }}, {r(t + 0.12)});')
+        js.append(f'tl.fromTo("#{fid}-sdot{i}", {{ y: -200, opacity: 1 }}, {{ y: 0, opacity: 1, duration: 0.2, ease: "power2.in", immediateRender: false }}, {r(t + 0.12)});')
         js.append(f'tl.set("#{fid}-sdot{i}", {{ opacity: 0 }}, 0);')
     js.append(f'tl.fromTo("#{fid}-glow", {{ opacity: 0, scale: 0.6 }}, {{ opacity: 1, scale: 1.25, duration: 0.5, ease: "power2.out", immediateRender: false }}, {r(L(31) + 0.05)});')
     js.append(f'tl.to("#{fid}-glow", {{ opacity: 0.35, scale: 1, duration: 1.2, ease: "power2.inOut" }}, {r(L(31) + 0.55)});')
@@ -534,7 +534,7 @@ def frame4():
         js.append(f'tl.fromTo("#{gid}", {{ y: -120, opacity: 0, rotation: {(-1) ** j * 6} , transformOrigin: "50% 50%" }}, {{ y: 0, opacity: 1, rotation: 0, duration: 0.42, ease: "back.out(2.4)" }}, {r(0.3 + j * 0.035)});')
     t = L(37)
     js.append(f'tl.set("#{fid}-bre-dot", {{ opacity: 0 }}, 0);')
-    js.append(f'tl.fromTo("#{fid}-bre-dot", {{ y: -620, opacity: 1 }}, {{ y: 0, duration: 0.34, ease: "power2.in", immediateRender: false }}, {r(t - 0.34)});')
+    js.append(f'tl.fromTo("#{fid}-bre-dot", {{ y: -620, opacity: 1 }}, {{ y: 0, opacity: 1, duration: 0.34, ease: "power2.in", immediateRender: false }}, {r(t - 0.34)});')
     js.append(f'tl.to("#{fid}-bre-dot", {{ scaleX: 1.5, scaleY: 0.6, duration: 0.05, transformOrigin: "50% 100%" }}, {r(t)});')
     js.append(f'tl.to("#{fid}-bre-dot", {{ scaleX: 1, scaleY: 1, duration: 0.3, ease: "back.out(3)" }}, {r(t + 0.052)});')
     t2 = L(38)
@@ -543,7 +543,7 @@ def frame4():
         js.append(f'tl.fromTo("#{fid}-wm-g{j}", {{ y: 60, opacity: 0 }}, {{ y: 0, opacity: 1, duration: 0.3, ease: "back.out(2)" }}, {r(t2 + 0.2 + j * 0.035)});')
     t3 = L(39)
     js.append(f'tl.set("#{fid}-wm-dot", {{ opacity: 0 }}, 0);')
-    js.append(f'tl.fromTo("#{fid}-wm-dot", {{ y: -260, opacity: 1 }}, {{ y: 0, duration: 0.3, ease: "power2.in", immediateRender: false }}, {r(t3 - 0.3)});')
+    js.append(f'tl.fromTo("#{fid}-wm-dot", {{ y: -260, opacity: 1 }}, {{ y: 0, opacity: 1, duration: 0.3, ease: "power2.in", immediateRender: false }}, {r(t3 - 0.3)});')
     js.append(f'tl.to("#{fid}-wm-dot", {{ scaleX: 1.5, scaleY: 0.6, duration: 0.05, transformOrigin: "50% 100%" }}, {r(t3)});')
     js.append(f'tl.to("#{fid}-wm-dot", {{ scaleX: 1, scaleY: 1, duration: 0.3, ease: "back.out(3)" }}, {r(t3 + 0.052)});')
     js.append(f'tl.fromTo("#{fid}-sub", {{ opacity: 0, y: 14 }}, {{ opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }}, {r(t3 + 0.2)});')

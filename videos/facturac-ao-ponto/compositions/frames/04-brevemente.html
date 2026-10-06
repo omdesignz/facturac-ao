@@ -65,7 +65,7 @@
       tl.fromTo("#frame-04-brevemente-bre-g8", { y: -120, opacity: 0, rotation: 6 , transformOrigin: "50% 50%" }, { y: 0, opacity: 1, rotation: 0, duration: 0.42, ease: "back.out(2.4)" }, 0.3);
       tl.fromTo("#frame-04-brevemente-bre-g9", { y: -120, opacity: 0, rotation: -6 , transformOrigin: "50% 50%" }, { y: 0, opacity: 1, rotation: 0, duration: 0.42, ease: "back.out(2.4)" }, 0.335);
       tl.set("#frame-04-brevemente-bre-dot, #frame-04-brevemente-wm-dot", { opacity: 0 }, 0);
-      tl.fromTo("#frame-04-brevemente-bre-dot", { y: -620, opacity: 1 }, { y: 0, duration: 0.34, ease: "power2.in", immediateRender: false }, 0.185);
+      tl.fromTo("#frame-04-brevemente-bre-dot", { y: -620, opacity: 1 }, { y: 0, opacity: 1, duration: 0.34, ease: "power2.in", immediateRender: false }, 0.185);
       tl.to("#frame-04-brevemente-bre-dot", { scaleX: 1.5, scaleY: 0.6, duration: 0.05, transformOrigin: "50% 100%" }, 0.525);
       tl.to("#frame-04-brevemente-bre-dot", { scaleX: 1, scaleY: 1, duration: 0.3, ease: "back.out(3)" }, 0.577);
       tl.fromTo("#frame-04-brevemente-wm-g0", { y: 90, opacity: 0 }, { y: 0, opacity: 1, duration: 0.36, ease: "back.out(2)" }, 1.048);
@@ -78,7 +78,8 @@
       tl.fromTo("#frame-04-brevemente-wm-g7", { y: 90, opacity: 0 }, { y: 0, opacity: 1, duration: 0.36, ease: "back.out(2)" }, 1.363);
       tl.fromTo("#frame-04-brevemente-wm-g8", { y: 90, opacity: 0 }, { y: 0, opacity: 1, duration: 0.36, ease: "back.out(2)" }, 1.408);
       tl.fromTo("#frame-04-brevemente-wm-g9", { y: 90, opacity: 0 }, { y: 0, opacity: 1, duration: 0.36, ease: "back.out(2)" }, 1.453);
-      tl.fromTo("#frame-04-brevemente-wm-dot", { x: 260, y: -240, opacity: 1 }, { x: 0, duration: 0.5, ease: "none", immediateRender: false }, 1.593);
+      tl.set("#frame-04-brevemente-wm-dot", { x: 260, y: -240, opacity: 1 }, 1.593);
+      tl.to("#frame-04-brevemente-wm-dot", { x: 0, duration: 0.5, ease: "none" }, 1.593);
       tl.to("#frame-04-brevemente-wm-dot", { y: -150, duration: 0.25, ease: "power2.out" }, 1.593);
       tl.to("#frame-04-brevemente-wm-dot", { y: 0, duration: 0.25, ease: "power2.in" }, 1.843);
       tl.to("#frame-04-brevemente-wm-dot", { scaleX: 1.5, scaleY: 0.6, duration: 0.05, transformOrigin: "50% 100%" }, 2.093);

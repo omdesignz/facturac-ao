@@ -259,7 +259,7 @@ def frame2():
     for i in range(4):  # motion-blur streak: lagging ghosts of the tilde
         lag = 0.035 * (i + 1)
         js.append(f'tl.fromTo("#{fid}-ghost{i}", {{ opacity: 0, x: 0, y: -26, rotation: -14, scale: 1.12, transformOrigin: "50% 60%" }}, '
-                  f'{{ opacity: {r(0.34 - i * 0.07, 2)}, duration: 0.05 }}, {r(L(7) + lag)});')
+                  f'{{ opacity: {r(0.34 - i * 0.07, 2)}, x: 0, y: -26, rotation: -14, scale: 1.12, duration: 0.05 }}, {r(L(7) + lag)});')
         js.append(f'tl.to("#{fid}-ghost{i}", {{ x: 560, y: -900, rotation: 420, scale: 0.55, opacity: 0, duration: 0.57, ease: "power2.in" }}, {r(L(7) + lag + 0.052)});')
     js.append(f'tl.to("#{fid}-word-g8", {{ y: -18, duration: 0.12, ease: "power2.out" }}, {r(L(7) + 0.04)});')
     js.append(f'tl.to("#{fid}-word-g8", {{ y: 0, duration: 0.5, ease: "bounce.out" }}, {r(L(7) + 0.16)});')
@@ -341,7 +341,7 @@ def frame3():
                       f'{{ y: 0, opacity: 1, scaleY: 1, duration: 0.32, ease: "back.out(2.2)" }}, {r(t + j * 0.028)});')
         drop = t + len(ids) * 0.028 + 0.1
         js.append(f'tl.set("#{fid}-dot{i}", {{ opacity: 0 }}, 0);')
-        js.append(f'tl.fromTo("#{fid}-dot{i}", {{ y: -260, opacity: 1 }}, {{ y: 0, duration: 0.22, ease: "power2.in", immediateRender: false }}, {r(drop)});')
+        js.append(f'tl.fromTo("#{fid}-dot{i}", {{ y: -260, opacity: 1 }}, {{ y: 0, opacity: 1, duration: 0.22, ease: "power2.in", immediateRender: false }}, {r(drop)});')
         js.append(f'tl.to("#{fid}-dot{i}", {{ scaleX: 1.45, scaleY: 0.62, duration: 0.05, transformOrigin: "50% 100%" }}, {r(drop + 0.221)});')
         js.append(f'tl.to("#{fid}-dot{i}", {{ scaleX: 1, scaleY: 1, duration: 0.26, ease: "back.out(3)" }}, {r(drop + 0.272)});')
     css = f"""
@@ -415,14 +415,15 @@ def frame4():
                   f'{{ y: 0, opacity: 1, rotation: 0, duration: 0.42, ease: "back.out(2.4)" }}, {r(0.02 + j * 0.035)});')
     t = L(26)
     js.append(f'tl.set("#{fid}-bre-dot, #{fid}-wm-dot", {{ opacity: 0 }}, 0);')
-    js.append(f'tl.fromTo("#{fid}-bre-dot", {{ y: -620, opacity: 1 }}, {{ y: 0, duration: 0.34, ease: "power2.in", immediateRender: false }}, {r(t - 0.34)});')
+    js.append(f'tl.fromTo("#{fid}-bre-dot", {{ y: -620, opacity: 1 }}, {{ y: 0, opacity: 1, duration: 0.34, ease: "power2.in", immediateRender: false }}, {r(t - 0.34)});')
     js.append(f'tl.to("#{fid}-bre-dot", {{ scaleX: 1.5, scaleY: 0.6, duration: 0.05, transformOrigin: "50% 100%" }}, {r(t)});')
     js.append(f'tl.to("#{fid}-bre-dot", {{ scaleX: 1, scaleY: 1, duration: 0.3, ease: "back.out(3)" }}, {r(t + 0.052)});')
     t2 = L(27)
     for j, gid in enumerate(ids2):
         js.append(f'tl.fromTo("#{gid}", {{ y: 90, opacity: 0 }}, {{ y: 0, opacity: 1, duration: 0.36, ease: "back.out(2)" }}, {r(t2 + j * 0.045)});')
     t3 = L(29)
-    js.append(f'tl.fromTo("#{fid}-wm-dot", {{ x: 260, y: -240, opacity: 1 }}, {{ x: 0, duration: 0.5, ease: "none", immediateRender: false }}, {r(t3 - 0.5)});')
+    js.append(f'tl.set("#{fid}-wm-dot", {{ x: 260, y: -240, opacity: 1 }}, {r(t3 - 0.5)});')
+    js.append(f'tl.to("#{fid}-wm-dot", {{ x: 0, duration: 0.5, ease: "none" }}, {r(t3 - 0.5)});')
     js.append(f'tl.to("#{fid}-wm-dot", {{ y: -150, duration: 0.25, ease: "power2.out" }}, {r(t3 - 0.5)});')
     js.append(f'tl.to("#{fid}-wm-dot", {{ y: 0, duration: 0.25, ease: "power2.in" }}, {r(t3 - 0.25)});')
     js.append(f'tl.to("#{fid}-wm-dot", {{ scaleX: 1.5, scaleY: 0.6, duration: 0.05, transformOrigin: "50% 100%" }}, {r(t3)});')
