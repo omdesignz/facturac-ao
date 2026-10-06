@@ -32,7 +32,7 @@ class AgtConnectionFactory extends Factory
                 return $legalEntity->workspace_id;
             },
             'environment' => AgtEnvironment::Homologation,
-            'schema_version' => '1.2',
+            'schema_version' => '2.0',
             'basic_auth_username' => fake()->userName(),
             'basic_auth_password' => fake()->password(16, 32),
             'product_id' => (string) config('app.name'),

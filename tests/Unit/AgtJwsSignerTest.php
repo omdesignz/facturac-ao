@@ -81,7 +81,7 @@ test('it creates a canonical compact RS256 JWS that verifies with the matching p
             ->and($jws)->not->toContain('=')
             ->and(json_decode(decodeAgtJwsSegment($segments[0]), true))->toBe([
                 'alg' => 'RS256',
-                'typ' => 'JOSE',
+                'typ' => 'JWT',
             ])
             ->and(decodeAgtJwsSegment($segments[1]))
             ->toBe('{"alpha":{"alpha":1,"zeta":2},"zeta":"last"}')

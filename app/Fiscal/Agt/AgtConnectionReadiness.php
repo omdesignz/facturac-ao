@@ -31,6 +31,12 @@ final readonly class AgtConnectionReadiness
             && filled($connection->software_validation_number);
         $items = [
             [
+                'key' => 'schema',
+                'label' => 'Contrato AGT 2.0',
+                'detail' => 'Configuração guardada no contrato actualmente aceite pela AGT.',
+                'done' => $connection?->schema_version === '2.0',
+            ],
+            [
                 'key' => 'company',
                 'label' => 'Identidade fiscal',
                 'detail' => 'Perfil legal concluído e NIF disponível.',

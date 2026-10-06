@@ -102,7 +102,8 @@ class ReceivablesQuery
     public function withBalances(Builder $query): Builder
     {
         return $query
-            ->withSum('settledBy as settled_minor', 'amount_minor')
+            ->withSum(['settledBy as settled_minor' => fn (Builder $settlements) => $settlements->whereHas('receipt', fn (Builder $receipt) => $receipt->whereNot('status', FiscalDocumentStatus::Draft)),
+            ], 'amount_minor')
             ->withSum(
                 ['adjustments as credited_minor' => fn (Builder $nested) => self::issued($nested)
                     ->where('document_type', FiscalDocumentType::CreditNote)],

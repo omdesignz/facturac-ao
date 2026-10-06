@@ -38,7 +38,7 @@ class IndexFiscalDocumentsRequest extends FormRequest
                 'nullable',
                 Rule::in(array_map(
                     fn (FiscalDocumentType $type): string => $type->value,
-                    FiscalDocumentType::issuable(),
+                    FiscalDocumentType::cases(),
                 )),
             ],
             'establishment' => [

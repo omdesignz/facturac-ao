@@ -5,7 +5,7 @@ use App\Fiscal\Agt\Support\CanonicalNumber;
 use App\Fiscal\Calculation\FiscalCalculator;
 use App\Fiscal\Documents\FiscalDocumentPdf;
 use App\Fiscal\Documents\FiscalDocumentPresenter;
-use App\Fiscal\Documents\V1_2\FiscalDocumentPayloadBuilder;
+use App\Fiscal\Documents\V2_0\FiscalDocumentPayloadBuilder;
 use App\FiscalDocumentType;
 use App\Models\Customer;
 use App\Models\FiscalDocument;
@@ -267,7 +267,7 @@ function readyForAgt(FiscalDocument $document): FiscalDocument
     return $document->fresh();
 }
 
-test('the AGT payload is given kwanzas and told the original currency', function () {
+test('the AGT 2 payload keeps document currency totals and declares the kwanza equivalent', function () {
     $fixture = pdfFixture();
     $document = documentWithLines($fixture);
     $document->forceFill([
@@ -278,6 +278,8 @@ test('the AGT payload is given kwanzas and told the original currency', function
     $payload = app(FiscalDocumentPayloadBuilder::class)->document(readyForAgt($document));
 
     expect((string) $payload['documentTotals']['grossTotal'])
+        ->toBe((string) CanonicalNumber::fromMinorUnits($document->gross_total_minor))
+        ->and((string) $payload['documentTotals']['currency']['currencyAmount'])
         ->toBe((string) CanonicalNumber::fromMinorUnits(
             app(FiscalCalculator::class)->convertedAmount(
                 $document->gross_total_minor,
@@ -289,17 +291,12 @@ test('the AGT payload is given kwanzas and told the original currency', function
         ->and($payload)->not->toHaveKey('currency');
 });
 
-test('a kwanza document is sent exactly as it was before', function () {
+test('a schema 2 kwanza document carries unconverted totals without a currency block', function () {
     $fixture = pdfFixture();
     $document = readyForAgt(documentWithLines($fixture));
 
     $payload = app(FiscalDocumentPayloadBuilder::class)->document($document);
 
-    /*
-     * The conversion is the identity at a rate of one, and the currency block
-     * is left off entirely. Every document issued so far must produce the same
-     * bytes it did before foreign currency existed, or its signature moves.
-     */
     expect((string) $payload['documentTotals']['grossTotal'])
         ->toBe((string) CanonicalNumber::fromMinorUnits($document->gross_total_minor))
         ->and($payload['documentTotals'])->not->toHaveKey('currency')

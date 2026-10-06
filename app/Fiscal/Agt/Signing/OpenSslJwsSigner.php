@@ -21,11 +21,11 @@ final readonly class OpenSslJwsSigner implements JwsSigner
     {
         $resolvedKey = $this->keyResolver->resolve($keyReference);
         $configuredHeader = config('agt.signing.jws_header', [
-            'typ' => 'JOSE',
+            'typ' => 'JWT',
             'alg' => 'RS256',
         ]);
         $header = is_array($configuredHeader) ? $configuredHeader : [];
-        $header['typ'] = 'JOSE';
+        $header['typ'] = 'JWT';
         $header['alg'] = 'RS256';
 
         $protectedHeader = $this->base64Url($this->canonicalJson->encode($header));

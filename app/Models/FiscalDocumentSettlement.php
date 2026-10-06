@@ -16,6 +16,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $settled_document_id
  * @property string $settled_document_no
  * @property int $amount_minor
+ * @property int|null $net_amount_minor
+ * @property int|null $tax_amount_minor
+ * @property list<array{type: string, base_minor: int, rate_basis_points: int, amount_minor: int}>|null $withholding_allocations
  */
 #[Fillable([
     'workspace_id',
@@ -24,6 +27,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'settled_document_id',
     'settled_document_no',
     'amount_minor',
+    'net_amount_minor',
+    'tax_amount_minor',
+    'withholding_allocations',
 ])]
 class FiscalDocumentSettlement extends Model
 {
@@ -42,6 +48,11 @@ class FiscalDocumentSettlement extends Model
     /** @return array<string, string> */
     protected function casts(): array
     {
-        return ['amount_minor' => 'integer'];
+        return [
+            'amount_minor' => 'integer',
+            'net_amount_minor' => 'integer',
+            'tax_amount_minor' => 'integer',
+            'withholding_allocations' => 'array',
+        ];
     }
 }

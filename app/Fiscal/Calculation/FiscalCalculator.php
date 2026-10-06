@@ -2,26 +2,28 @@
 
 namespace App\Fiscal\Calculation;
 
+use App\FiscalDocumentType;
 use InvalidArgumentException;
 
+/**
+ * @phpstan-type FiscalLineProfile array{
+ *     operation_type: string,
+ *     product_code: string,
+ *     product_description: string,
+ *     quantity: string,
+ *     unit_of_measure: string,
+ *     unit_price: string,
+ *     discount_percentage: string,
+ *     tax_type: string,
+ *     tax_code: string|null,
+ *     tax_percentage: string,
+ *     tax_exemption_code: string|null
+ * }
+ */
 final class FiscalCalculator
 {
-    /**
-     * @param  list<array{
-     *     operation_type: string,
-     *     product_code: string,
-     *     product_description: string,
-     *     quantity: string,
-     *     unit_of_measure: string,
-     *     unit_price: string,
-     *     discount_percentage: string,
-     *     tax_type: string,
-     *     tax_code: string|null,
-     *     tax_percentage: string,
-     *     tax_exemption_code: string|null
-     * }>  $lines
-     */
-    public function calculate(array $lines): CalculatedFiscalDocument
+    /** @param list<FiscalLineProfile> $lines */
+    public function calculate(array $lines, ?FiscalDocumentType $documentType = null): CalculatedFiscalDocument
     {
         if ($lines === []) {
             throw new InvalidArgumentException('A fiscal document requires at least one line.');
@@ -55,17 +57,19 @@ final class FiscalCalculator
                 throw new InvalidArgumentException('The discount percentage cannot exceed 100.');
             }
 
-            $baseAmountMinor = $this->roundHalfUpProduct(
+            $baseAmountMinor = $this->lineAmount(
                 [$unitPriceBaseMinor, $quantityUnits],
                 10_000,
+                $documentType,
             );
             $unitPriceMicros = $this->checkedMultiply(
                 $unitPriceBaseMinor,
                 10_000 - $discountRateBasisPoints,
             );
-            $netAmountMinor = $this->roundHalfUpProduct(
+            $netAmountMinor = $this->lineAmount(
                 [$unitPriceBaseMinor, 10_000 - $discountRateBasisPoints, $quantityUnits],
                 100_000_000,
+                $documentType,
             );
             $settlementAmountMinor = $baseAmountMinor - $netAmountMinor;
             $taxAmountMinor = $this->ceilProduct(
@@ -173,6 +177,31 @@ final class FiscalCalculator
         }
 
         return $this->roundHalfUpProduct([$minor, $exchangeRateMicro], 1_000_000);
+    }
+
+    public function apportionedAmount(int $baseMinor, int $paidMinor, int $grossMinor): int
+    {
+        if ($baseMinor < 0 || $paidMinor < 0 || $grossMinor <= 0 || $paidMinor > $grossMinor) {
+            throw new InvalidArgumentException('The receipt allocation is outside the source document balance.');
+        }
+
+        return $this->roundHalfUpProduct([$baseMinor, $paidMinor], $grossMinor);
+    }
+
+    /** @param list<int> $factors */
+    private function lineAmount(array $factors, int $denominator, ?FiscalDocumentType $documentType): int
+    {
+        if ($documentType === null) {
+            return $this->roundHalfUpProduct($factors, $denominator);
+        }
+
+        if ($documentType->reducesReceivable()) {
+            return $this->ceilProduct($factors, $denominator);
+        }
+
+        [$numerator, $reducedDenominator] = $this->reducedProduct($factors, $denominator);
+
+        return intdiv($numerator, $reducedDenominator);
     }
 
     /** @param list<int> $factors */

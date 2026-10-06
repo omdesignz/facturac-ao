@@ -384,7 +384,7 @@ test('series synchronization applies the AGT contract without ever rewinding the
         return $request->url() === 'https://sifphml.minfin.gov.ao/sigt/fe/v1/listarSeries'
             && is_array($payload)
             && $payload['taxRegistrationNumber'] === '5000000001'
-            && $payload['seriesYear'] === now('Africa/Luanda')->format('Y')
+            && $payload['seriesYear'] === (int) now('Africa/Luanda')->format('Y')
             && substr_count((string) $payload['jwsSignature'], '.') === 2;
     });
 });
@@ -461,15 +461,15 @@ test('a protected series request uses the AGT contract and imports the authoriza
         $payload = json_decode($request->body(), true);
 
         return is_array($payload)
-            && $payload['schemaVersion'] === '1.2'
+            && $payload['schemaVersion'] === '2.0'
             && $payload['taxRegistrationNumber'] === '5000000001'
-            && $payload['seriesYear'] === (string) $year
+            && $payload['seriesYear'] === $year
             && $payload['documentType'] === 'FR'
             && $payload['establishmentNumber'] === 'AO-LAD-001'
             && $payload['seriesContingencyIndicator'] === 'N'
             && decodePhaseFourJwsPayload((string) $payload['jwsSignature']) == [
                 'taxRegistrationNumber' => '5000000001',
-                'seriesYear' => (string) $year,
+                'seriesYear' => $year,
                 'documentType' => 'FR',
                 'establishmentNumber' => 'AO-LAD-001',
                 'seriesContingencyIndicator' => 'N',

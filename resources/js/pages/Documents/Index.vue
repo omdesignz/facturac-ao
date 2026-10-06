@@ -217,8 +217,8 @@ const newDocumentTypes = [
         detail: 'Operações agregadas com data por linha',
     },
     {
-        value: 'RC',
-        label: 'Recibo emitido',
+        value: 'RG',
+        label: 'Recibo',
         detail: 'Liquida facturas anteriores',
     },
     {
@@ -338,7 +338,7 @@ function query(): Record<string, string> {
 function applyFilters(): void {
     if (['FT', 'FR', 'GF'].includes(type.value)) {
         family.value = 'invoice';
-    } else if (type.value === 'RC') {
+    } else if (['RC', 'RG'].includes(type.value)) {
         family.value = 'receipt';
     } else if (['NC', 'ND'].includes(type.value)) {
         family.value = 'adjustment';

@@ -24,6 +24,8 @@ use Throwable;
  * because issuing files the document with the AGT and cannot be undone. A
  * profile that issues automatically and hits a problem falls back to leaving
  * the draft rather than losing the month's billing entirely.
+ *
+ * @phpstan-import-type FiscalLineProfile from FiscalCalculator
  */
 class ConvertRecurringProfile
 {
@@ -36,7 +38,7 @@ class ConvertRecurringProfile
     public function execute(RecurringInvoice $profile, CarbonImmutable $runOn): FiscalDocument
     {
         $customer = $profile->customer;
-        $calculation = $this->calculator->calculate($this->lineProfiles($profile));
+        $calculation = $this->calculator->calculate($this->lineProfiles($profile), $profile->document_type);
 
         $document = FiscalDocument::query()->create([
             'workspace_id' => $profile->workspace_id,
@@ -61,7 +63,7 @@ class ConvertRecurringProfile
             'tax_payable_minor' => $calculation->taxPayableMinor,
             'gross_total_minor' => $calculation->grossTotalMinor,
             'revision' => 1,
-            'payload_schema_version' => (string) config('agt.schema_version', '1.2'),
+            'payload_schema_version' => '2.0',
             'calculation_sha256' => hash(
                 'sha256',
                 $this->canonicalJson->encode($calculation->fingerprintData()),
@@ -79,10 +81,10 @@ class ConvertRecurringProfile
         return $document->refresh();
     }
 
-    /** @return list<array<string, string|null>> */
+    /** @return list<FiscalLineProfile> */
     private function lineProfiles(RecurringInvoice $profile): array
     {
-        return array_values(array_map(function (array $line, int $index): array {
+        return array_map(function (array $line, int $index): array {
             $treatment = SupportedTaxTreatment::fromLegacyComponents(
                 $line['tax_type'] ?? 'IVA',
                 $line['tax_code'] ?? null,
@@ -128,7 +130,7 @@ class ConvertRecurringProfile
                 'tax_percentage' => $tax['percentage'],
                 'tax_exemption_code' => $tax['exemption_code'],
             ];
-        }, $profile->lines, array_keys($profile->lines)));
+        }, $profile->lines, array_keys($profile->lines));
     }
 
     private function saveLine(

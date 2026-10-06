@@ -38,10 +38,11 @@ final readonly class SaveAgtConnection
                     'workspace_id' => $legalEntity->workspace_id,
                     'legal_entity_id' => $legalEntity->id,
                     'environment' => AgtEnvironment::Homologation,
-                    'schema_version' => (string) config('agt.schema_version', '1.2'),
+                    'schema_version' => '2.0',
                 ]);
 
             $connection->fill([
+                'schema_version' => '2.0',
                 'product_id' => $profile['product_id'],
                 'product_version' => $profile['product_version'],
                 'software_validation_number' => $profile['software_validation_number'],

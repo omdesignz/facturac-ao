@@ -365,7 +365,7 @@ const included: { group: string; items: string[] }[] = [
         group: 'Documentos',
         items: [
             'Facturas (FT) e facturas-recibo (FR)',
-            'Recibos (RC) que liquidam várias facturas',
+            'Recibos (RG) que liquidam várias facturas',
             'Notas de crédito e de débito (NC, ND)',
             'Orçamentos que se convertem em factura',
             'Facturação periódica automática',
@@ -387,7 +387,7 @@ const included: { group: string; items: string[] }[] = [
 
 /** The four facts a buyer checks first, set as a strip under the hero. */
 const proofFacts: { term: string; value: string }[] = [
-    { term: 'FT · FR · RC', value: 'Facturas, facturas-recibo e recibos' },
+    { term: 'FT · FR · RG', value: 'Facturas, facturas-recibo e recibos' },
     { term: 'NC · ND', value: 'Correcções ligadas ao original' },
     { term: 'SAF-T (AO)', value: 'O ficheiro do período, a pedido' },
     { term: 'Sem rede?', value: 'Continua a facturar e envia depois' },

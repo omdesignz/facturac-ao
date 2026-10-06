@@ -152,7 +152,7 @@ class AgtConnectionController extends Controller
                 'environment' => $environment->value,
                 'environment_label' => $environment->label(),
                 'endpoint_host' => parse_url($environment->baseUrl(), PHP_URL_HOST),
-                'schema_version' => (string) config('agt.schema_version', '1.2'),
+                'schema_version' => (string) config('agt.schema_version', '2.0'),
                 'status' => 'draft',
                 'status_label' => 'Configuração incompleta',
                 'has_basic_credentials' => false,

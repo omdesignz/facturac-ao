@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\Fiscal\Agt\Support\CanonicalJson;
 use App\Fiscal\Calculation\CalculatedFiscalLine;
 use App\Fiscal\Calculation\FiscalCalculator;
+use App\Fiscal\Calculation\FiscalReceiptCalculator;
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
 use App\Models\Customer;
@@ -24,6 +25,7 @@ final readonly class SaveFiscalDocumentDraft
     public function __construct(
         private FiscalCalculator $calculator,
         private CanonicalJson $canonicalJson,
+        private FiscalReceiptCalculator $receiptCalculator,
     ) {}
 
     /**
@@ -76,7 +78,7 @@ final readonly class SaveFiscalDocumentDraft
                 'status' => FiscalDocumentStatus::Draft,
                 'agt_document_status' => 'N',
                 'revision' => 0,
-                'payload_schema_version' => (string) config('agt.schema_version', '1.2'),
+                'payload_schema_version' => '2.0',
             ]);
             $document->ensureMutable();
 
@@ -94,7 +96,7 @@ final readonly class SaveFiscalDocumentDraft
             // A standalone receipt carries no goods of its own: its totals are
             // whatever it pays off, so the line calculator does not apply.
             $calculation = $type->requiresLines()
-                ? $this->calculator->calculate($profile['lines'])
+                ? $this->calculator->calculate($profile['lines'], $type)
                 : null;
             $totals = $calculation !== null
                 ? [
@@ -123,6 +125,7 @@ final readonly class SaveFiscalDocumentDraft
                 'customer_id' => $customer['id'],
                 'updated_by_user_id' => $user->id,
                 'document_type' => $profile['document_type'],
+                'payload_schema_version' => '2.0',
                 'document_date' => $profile['document_date'],
                 'due_date' => $profile['due_date'],
                 'currency_code' => $profile['currency_code'],
@@ -164,7 +167,25 @@ final readonly class SaveFiscalDocumentDraft
             }
 
             $this->syncSettlements($document, $settlements);
-            $withholdings = $this->syncWithholdings($document, $profile);
+            $receiptCalculation = $calculation === null
+                ? $this->receiptCalculator->calculate($document->unsetRelation('settlements'))
+                : null;
+
+            if ($receiptCalculation !== null) {
+                foreach ($document->settlements->values() as $index => $settlement) {
+                    $settlement->fill($receiptCalculation['allocations'][$index])->save();
+                }
+
+                $document->fill([
+                    'net_total_minor' => $receiptCalculation['net_total_minor'],
+                    'tax_payable_minor' => $receiptCalculation['tax_payable_minor'],
+                    'gross_total_minor' => $receiptCalculation['gross_total_minor'],
+                    'payment_amount_minor' => $receiptCalculation['gross_total_minor'],
+                    'calculation_sha256' => hash('sha256', $this->canonicalJson->encode($receiptCalculation)),
+                ])->save();
+            }
+
+            $withholdings = $this->syncWithholdings($document, $profile, $receiptCalculation['withholdings'] ?? null);
 
             activity('fiscal-document')
                 ->causedBy($user)
@@ -275,14 +296,31 @@ final readonly class SaveFiscalDocumentDraft
      * document rather than accepted from the request.
      *
      * @param  array<string, mixed>  $profile
+     * @param  list<array{type: string, base_minor: int, rate_basis_points: int, amount_minor: int}>|null  $allocations
      */
-    private function syncWithholdings(FiscalDocument $document, array $profile): int
+    private function syncWithholdings(FiscalDocument $document, array $profile, ?array $allocations = null): int
     {
         FiscalDocumentWithholding::query()
             ->where('fiscal_document_id', $document->id)
             ->delete();
 
         $requested = $profile['withholdings'] ?? [];
+
+        if ($allocations !== null) {
+            foreach ($allocations as $allocation) {
+                FiscalDocumentWithholding::query()->create([
+                    'workspace_id' => $document->workspace_id,
+                    'legal_entity_id' => $document->legal_entity_id,
+                    'fiscal_document_id' => $document->id,
+                    'withholding_type' => $allocation['type'],
+                    'base_minor' => $allocation['base_minor'],
+                    'rate_basis_points' => $allocation['rate_basis_points'],
+                    'amount_minor' => $allocation['amount_minor'],
+                ]);
+            }
+
+            return count($allocations);
+        }
 
         foreach ($requested as $withholding) {
             $type = WithholdingType::from($withholding['type']);

@@ -112,7 +112,7 @@ enum FiscalDocumentType: string
             self::Invoice,
             self::InvoiceReceipt,
             self::GenericInvoice,
-            self::IssuedReceipt,
+            self::Receipt,
             self::CreditNote,
             self::DebitNote,
         ];

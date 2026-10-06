@@ -247,7 +247,7 @@ test('a successful list-series probe records evidence and advances the company t
             return $request->url() === 'https://sifphml.minfin.gov.ao/sigt/fe/v1/listarSeries'
                 && $request->hasHeader('Authorization', 'Basic '.base64_encode('agt-hml-user:agt-hml-password'))
                 && is_array($payload)
-                && $payload['schemaVersion'] === '1.2'
+                && $payload['schemaVersion'] === '2.0'
                 && $payload['taxRegistrationNumber'] === '5000000001'
                 && $payload['establishmentNumber'] === 'EST-AGT-001'
                 && substr_count((string) $payload['jwsSignature'], '.') === 2

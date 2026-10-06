@@ -2,13 +2,14 @@
 
 return [
     'default_environment' => env('AGT_DEFAULT_ENVIRONMENT', 'homologation'),
-    'schema_version' => env('AGT_SCHEMA_VERSION', '1.2'),
+    'schema_version' => env('AGT_SCHEMA_VERSION', '2.0'),
 
     'software' => [
         'product_name' => env('AGT_SOFTWARE_PRODUCT_NAME', 'facturac.ao'),
         'company_name' => env('AGT_SOFTWARE_COMPANY_NAME', 'VAP SOLUÇÕES, LDA'),
         // This is the producer company's NIF, never the representative's NIF.
         'company_tax_id' => env('AGT_SOFTWARE_COMPANY_TAX_ID'),
+        'signature_version' => (int) env('AGT_SOFTWARE_SIGNATURE_VERSION', 1),
     ],
 
     'homologation_fixture' => [
@@ -72,7 +73,7 @@ return [
         'key_directory' => env('AGT_SIGNING_KEY_DIRECTORY', storage_path('app/private/agt-keys')),
         'minimum_rsa_bits' => 2048,
         'jws_header' => [
-            'typ' => 'JOSE',
+            'typ' => 'JWT',
             'alg' => 'RS256',
         ],
     ],

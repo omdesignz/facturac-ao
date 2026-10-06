@@ -9,14 +9,16 @@ use App\Exceptions\FiscalFinalizationBlocked;
 use App\Fiscal\Agt\Contracts\JwsSigner;
 use App\Fiscal\Agt\Support\CanonicalJson;
 use App\Fiscal\Agt\Support\CanonicalNumber;
-use App\Fiscal\Agt\V1_2\AgtRequestPayloadBuilder;
+use App\Fiscal\Agt\V2_0\AgtRequestPayloadBuilder;
 use App\Fiscal\Calculation\CalculatedFiscalDocument;
 use App\Fiscal\Calculation\CalculatedFiscalLine;
 use App\Fiscal\Calculation\FiscalCalculator;
+use App\Fiscal\Calculation\FiscalReceiptCalculator;
 use App\Fiscal\Documents\FiscalDocumentNumber;
-use App\Fiscal\Documents\V1_2\FiscalDocumentPayloadBuilder;
+use App\Fiscal\Documents\V2_0\FiscalDocumentPayloadBuilder;
 use App\FiscalDocumentEventType;
 use App\FiscalDocumentStatus;
+use App\FiscalDocumentType;
 use App\FiscalSeriesContingency;
 use App\FiscalSeriesStatus;
 use App\Jobs\SubmitAgtDocument;
@@ -43,6 +45,7 @@ final readonly class IssueFiscalDocument
         private AgtRequestPayloadBuilder $requestPayloadBuilder,
         private JwsSigner $jwsSigner,
         private CanonicalJson $canonicalJson,
+        private FiscalReceiptCalculator $receiptCalculator,
     ) {}
 
     public function execute(
@@ -296,8 +299,26 @@ final readonly class IssueFiscalDocument
         FiscalSeries $series,
         AgtConnection $connection,
     ): void {
-        if ($document->lines->isEmpty() || $document->gross_total_minor <= 0) {
+        if ($document->payload_schema_version !== '2.0' || $connection->schema_version !== '2.0') {
+            throw FiscalFinalizationBlocked::because(
+                'A AGT exige o contrato 2.0. Guarde novamente o rascunho e verifique a ligação AGT.',
+            );
+        }
+
+        if (! in_array($document->document_type, FiscalDocumentType::issuable(), true)) {
+            throw FiscalFinalizationBlocked::because('Este tipo de documento não está disponível para emissão no contrato 2.0.');
+        }
+
+        if (($document->document_type->requiresLines() && $document->lines->isEmpty())
+            || $document->gross_total_minor <= 0) {
             throw FiscalFinalizationBlocked::because('A factura deve ter pelo menos uma linha e total positivo.');
+        }
+
+        if (mb_strlen($document->customer_name) > 200
+            || ($document->adjustment_reason !== null && mb_strlen($document->adjustment_reason) > 60)
+            || $document->lines->contains(fn (FiscalDocumentLine $line): bool => mb_strlen($line->product_description) > 200 || mb_strlen($line->unit_of_measure) > 20
+            )) {
+            throw FiscalFinalizationBlocked::because('Um campo excede os limites do contrato 2.0. Revise o rascunho.');
         }
 
         if ($series->document_type !== $document->document_type) {
@@ -342,6 +363,12 @@ final readonly class IssueFiscalDocument
 
     private function assertCalculationIntegrity(FiscalDocument $document): void
     {
+        if ($document->document_type->settlesOtherDocuments()) {
+            $this->assertReceiptIntegrity($document);
+
+            return;
+        }
+
         try {
             $calculationProfiles = [];
 
@@ -349,7 +376,7 @@ final readonly class IssueFiscalDocument
                 $calculationProfiles[] = $this->calculationProfile($line);
             }
 
-            $calculation = $this->calculator->calculate($calculationProfiles);
+            $calculation = $this->calculator->calculate($calculationProfiles, $document->document_type);
             $fingerprint = hash(
                 'sha256',
                 $this->canonicalJson->encode($calculation->fingerprintData()),
@@ -366,6 +393,57 @@ final readonly class IssueFiscalDocument
             throw FiscalFinalizationBlocked::because(
                 'A verificação independente dos valores falhou. Guarde novamente o rascunho.',
             );
+        }
+    }
+
+    private function assertReceiptIntegrity(FiscalDocument $document): void
+    {
+        $document->loadMissing('settlements');
+        FiscalDocument::query()
+            ->where('workspace_id', $document->workspace_id)
+            ->where('legal_entity_id', $document->legal_entity_id)
+            ->whereIn('id', $document->settlements->pluck('settled_document_id'))
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+        $document->load(['settlements.settledDocument', 'withholdings']);
+
+        if ($document->settlements->contains(fn ($settlement): bool => $settlement->settledDocument->status !== FiscalDocumentStatus::Valid
+        )) {
+            throw FiscalFinalizationBlocked::because('A AGT deve validar os documentos de origem antes da emissão do recibo.');
+        }
+
+        try {
+            $calculation = $this->receiptCalculator->calculate($document);
+            $fingerprint = hash('sha256', $this->canonicalJson->encode($calculation));
+            $allocations = $document->settlements->map(fn ($settlement): array => [
+                'settled_document_id' => $settlement->settled_document_id,
+                'settled_document_no' => $settlement->settled_document_no,
+                'amount_minor' => $settlement->amount_minor,
+                'net_amount_minor' => $settlement->net_amount_minor,
+                'tax_amount_minor' => $settlement->tax_amount_minor,
+                'withholding_allocations' => $settlement->withholding_allocations,
+            ])->values()->all();
+            $withholdings = $document->withholdings->sortBy(fn ($entry): string => $entry->withholding_type->value)
+                ->map(fn ($entry): array => [
+                    'type' => $entry->withholding_type->value,
+                    'base_minor' => $entry->base_minor,
+                    'rate_basis_points' => $entry->rate_basis_points,
+                    'amount_minor' => $entry->amount_minor,
+                ])->values()->all();
+        } catch (Throwable) {
+            throw FiscalFinalizationBlocked::because('O saldo dos documentos de origem mudou. Guarde novamente o recibo.');
+        }
+
+        if (! hash_equals($document->calculation_sha256, $fingerprint)
+            || $document->lines->isNotEmpty()
+            || $allocations !== $calculation['allocations']
+            || $withholdings !== $calculation['withholdings']
+            || $document->net_total_minor !== $calculation['net_total_minor']
+            || $document->tax_payable_minor !== $calculation['tax_payable_minor']
+            || $document->gross_total_minor !== $calculation['gross_total_minor']
+            || $document->payment_amount_minor !== $calculation['gross_total_minor']) {
+            throw FiscalFinalizationBlocked::because('A verificação dos valores do recibo falhou. Guarde novamente o rascunho.');
         }
     }
 

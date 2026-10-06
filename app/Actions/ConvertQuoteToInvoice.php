@@ -25,6 +25,8 @@ use Illuminate\Support\Str;
  * content and files it with the AGT — irreversible steps that should happen
  * when someone deliberately presses issue, not as a side effect of a customer
  * saying yes to a price.
+ *
+ * @phpstan-import-type FiscalLineProfile from FiscalCalculator
  */
 class ConvertQuoteToInvoice
 {
@@ -44,7 +46,7 @@ class ConvertQuoteToInvoice
 
             $customer = $quote->customer;
             $issuedOn = now('Africa/Luanda')->startOfDay();
-            $calculation = $this->calculator->calculate($this->lineProfiles($quote));
+            $calculation = $this->calculator->calculate($this->lineProfiles($quote), FiscalDocumentType::Invoice);
 
             $document = FiscalDocument::query()->create([
                 'workspace_id' => $quote->workspace_id,
@@ -75,7 +77,7 @@ class ConvertQuoteToInvoice
                 'tax_payable_minor' => $calculation->taxPayableMinor,
                 'gross_total_minor' => $calculation->grossTotalMinor,
                 'revision' => 1,
-                'payload_schema_version' => (string) config('agt.schema_version', '1.2'),
+                'payload_schema_version' => '2.0',
                 'calculation_sha256' => hash(
                     'sha256',
                     $this->canonicalJson->encode($calculation->fingerprintData()),
@@ -173,10 +175,10 @@ class ConvertQuoteToInvoice
             : Str::limit($derived, 60, '');
     }
 
-    /** @return list<array<string, string|null>> */
+    /** @return list<FiscalLineProfile> */
     private function lineProfiles(Quote $quote): array
     {
-        return $quote->lines->map(function (QuoteLine $line): array {
+        return array_values($quote->lines->map(function (QuoteLine $line): array {
             $treatment = SupportedTaxTreatment::fromLegacyComponents(
                 $line->tax_type,
                 $line->tax_code,
@@ -210,7 +212,7 @@ class ConvertQuoteToInvoice
                 'tax_percentage' => $tax['percentage'],
                 'tax_exemption_code' => $tax['exemption_code'],
             ];
-        })->values()->all();
+        })->all());
     }
 
     private function saveLine(

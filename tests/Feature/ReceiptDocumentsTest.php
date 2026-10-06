@@ -1,6 +1,6 @@
 <?php
 
-use App\Fiscal\Documents\V1_2\FiscalDocumentPayloadBuilder;
+use App\Fiscal\Documents\V2_0\FiscalDocumentPayloadBuilder;
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
 use App\Models\Establishment;
@@ -34,6 +34,10 @@ function receiptCompany(int $invoiceGrossMinor = 100000): array
         'document_type' => FiscalDocumentType::Invoice,
         'document_no' => 'FT TESTE/1',
         'gross_total_minor' => $invoiceGrossMinor,
+        'net_total_minor' => $invoiceGrossMinor,
+        'tax_payable_minor' => 0,
+        'customer_tax_identification_number' => '5411111111',
+        'status' => FiscalDocumentStatus::Valid,
     ]);
 
     return compact('user', 'establishment', 'invoice') + ['legal_entity' => $legalEntity];
@@ -45,7 +49,7 @@ function receiptCompany(int $invoiceGrossMinor = 100000): array
 function receiptPayload(array $company, array $overrides = []): array
 {
     return array_replace([
-        'document_type' => FiscalDocumentType::IssuedReceipt->value,
+        'document_type' => FiscalDocumentType::Receipt->value,
         'document_date' => now('Africa/Luanda')->toDateString(),
         'due_date' => null,
         'currency_code' => 'AOA',
@@ -75,13 +79,13 @@ test('receipts are issuable and carry the right shape', function () {
     );
 
     expect($values)->toContain('FR')
-        ->and($values)->toContain('RC')
+        ->and($values)->toContain('RG')
         // FR invoices and is paid in one document, so it still carries lines.
         ->and(FiscalDocumentType::InvoiceReceipt->requiresLines())->toBeTrue()
         ->and(FiscalDocumentType::InvoiceReceipt->settlesOtherDocuments())->toBeFalse()
-        // RC only settles earlier invoices.
-        ->and(FiscalDocumentType::IssuedReceipt->requiresLines())->toBeFalse()
-        ->and(FiscalDocumentType::IssuedReceipt->settlesOtherDocuments())->toBeTrue();
+        // RG only settles earlier invoices.
+        ->and(FiscalDocumentType::Receipt->requiresLines())->toBeFalse()
+        ->and(FiscalDocumentType::Receipt->settlesOtherDocuments())->toBeTrue();
 });
 
 test('a receipt settles an invoice and takes its total from the settlement', function () {
@@ -93,7 +97,7 @@ test('a receipt settles an invoice and takes its total from the settlement', fun
         ->assertSessionHasNoErrors();
 
     $receipt = FiscalDocument::query()
-        ->where('document_type', FiscalDocumentType::IssuedReceipt)
+        ->where('document_type', FiscalDocumentType::Receipt)
         ->firstOrFail();
 
     expect($receipt->payment_method)->toBe(PaymentMethod::BankTransfer)
@@ -127,8 +131,10 @@ test('the outstanding balance accounts for earlier receipts', function () {
         'establishment_id' => $company['establishment']->id,
         'created_by_user_id' => $company['user']->id,
         'updated_by_user_id' => $company['user']->id,
-        'document_type' => FiscalDocumentType::IssuedReceipt,
         'document_no' => 'RC TESTE/1',
+        'document_type' => FiscalDocumentType::IssuedReceipt,
+        'payload_schema_version' => '1.2',
+        'status' => FiscalDocumentStatus::Issued,
     ]);
     FiscalDocumentSettlement::query()->create([
         'workspace_id' => $company['legal_entity']->workspace_id,
@@ -264,8 +270,8 @@ test('the AGT payload carries a payment receipt with its source documents', func
         'establishment_id' => $company['establishment']->id,
         'created_by_user_id' => $company['user']->id,
         'updated_by_user_id' => $company['user']->id,
-        'document_type' => FiscalDocumentType::IssuedReceipt,
-        'document_no' => 'RC TESTE/9',
+        'document_type' => FiscalDocumentType::Receipt,
+        'document_no' => 'RG TESTE/9',
         'payment_method' => PaymentMethod::Cash,
         'payment_amount_minor' => 100000,
         'payment_date' => now('Africa/Luanda')->toDateString(),
@@ -279,6 +285,9 @@ test('the AGT payload carries a payment receipt with its source documents', func
         'settled_document_id' => $company['invoice']->id,
         'settled_document_no' => 'FT TESTE/1',
         'amount_minor' => 100000,
+        'net_amount_minor' => 100000,
+        'tax_amount_minor' => 0,
+        'withholding_allocations' => [],
     ]);
 
     $payload = app(FiscalDocumentPayloadBuilder::class)->document($receipt->fresh());
@@ -287,9 +296,9 @@ test('the AGT payload carries a payment receipt with its source documents', func
         ->and($payload)->not->toHaveKey('paymentMethod')
         ->and($payload['paymentReceipt']['sourceDocuments'])->toHaveCount(1)
         ->and($payload['paymentReceipt']['sourceDocuments'][0])->toMatchArray([
-            'lineNo' => '1',
+            'lineNo' => 1,
             'sourceDocumentID' => [
-                'originatingON' => 'FT TESTE/1',
+                'OriginatingON' => 'FT TESTE/1',
                 'documentDate' => $company['invoice']->document_date->toDateString(),
             ],
         ])
@@ -306,8 +315,8 @@ test('a receipt without payment details never reaches the AGT', function () {
         'establishment_id' => $company['establishment']->id,
         'created_by_user_id' => $company['user']->id,
         'updated_by_user_id' => $company['user']->id,
-        'document_type' => FiscalDocumentType::IssuedReceipt,
-        'document_no' => 'RC TESTE/8',
+        'document_type' => FiscalDocumentType::Receipt,
+        'document_no' => 'RG TESTE/8',
         'payment_method' => null,
         'status' => FiscalDocumentStatus::Issued,
         'system_entry_at' => now(),
@@ -321,10 +330,11 @@ test('the create screen opens as a receipt and offers payment methods', function
     $company = receiptCompany();
 
     $this->actingAs($company['user'])
-        ->get(route('invoices.create', ['type' => 'RC']))
+        ->get(route('invoices.create', ['type' => 'RG']))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->where('document.document_type', 'RC')
+            ->where('document.document_type', 'RG')
+            ->has('document.lines', 0)
             ->has('paymentMethods', 10)
             ->where('adjustableDocuments.0.outstanding_minor', 100000)
         );

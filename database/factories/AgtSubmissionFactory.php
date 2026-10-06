@@ -16,7 +16,7 @@ class AgtSubmissionFactory extends Factory
     /** @return array<string, mixed> */
     public function definition(): array
     {
-        $requestBody = '{"documents":[],"numberOfEntries":1,"schemaVersion":"1.2"}';
+        $requestBody = '{"documents":[],"numberOfEntries":1,"schemaVersion":"2.0"}';
 
         return [
             'fiscal_document_id' => FiscalDocument::factory()->issued(),
@@ -32,7 +32,7 @@ class AgtSubmissionFactory extends Factory
             },
             'submission_uuid' => (string) Str::uuid(),
             'operation' => AgtSubmissionOperation::RegisterInvoice,
-            'schema_version' => '1.2',
+            'schema_version' => '2.0',
             'status' => AgtSubmissionStatus::Pending,
             'request_id' => null,
             'request_body' => $requestBody,

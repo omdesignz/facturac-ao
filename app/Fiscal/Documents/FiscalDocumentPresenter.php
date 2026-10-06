@@ -6,6 +6,7 @@ use App\Fiscal\Calculation\FiscalCalculator;
 use App\FiscalTaxType;
 use App\Models\FiscalDocument;
 use App\Models\FiscalDocumentLine;
+use App\Models\FiscalDocumentSettlement;
 use App\Models\PlatformSetting;
 use Illuminate\Support\Facades\URL;
 
@@ -187,8 +188,9 @@ class FiscalDocumentPresenter
     /**
      * The documents a receipt pays off, which is what its table lists.
      *
-     * An RC has no goods on it — the columns are the invoices it settles, with
-     * the tax that was on each.
+     * RG receipts have no goods lines. New receipt rows use their frozen
+     * allocations; historical receipts without snapshots retain their source
+     * document presentation.
      *
      * @return list<array<string, mixed>>
      */
@@ -196,22 +198,57 @@ class FiscalDocumentPresenter
     {
         $rows = [];
 
-        foreach ($document->settlements()->with('settledDocument')->get() as $settlement) {
+        foreach ($document->settlements()->with('settledDocument.lines.taxes')->get() as $settlement) {
             $settled = $settlement->settledDocument;
+            $hasAllocation = $settlement->net_amount_minor !== null && $settlement->tax_amount_minor !== null;
+            $factor = $hasAllocation && $settled->document_type->reducesReceivable() ? -1 : 1;
 
-            // The foreign key restricts on delete, so a settlement always has
-            // the document it paid off.
             $rows[] = [
                 'document_no' => $settlement->settled_document_no,
                 'document_type_label' => $settled->document_type->label(),
-                'net_minor' => $settled->net_total_minor,
-                'taxes_by_type' => $this->documentTaxesByType($settled),
-                'discount_minor' => $this->discountTotal($settled),
-                'total_minor' => $settlement->amount_minor,
+                'net_minor' => $factor * ($settlement->net_amount_minor ?? $settled->net_total_minor),
+                'taxes_by_type' => $hasAllocation
+                    ? $this->settlementTaxesByType($settlement, $factor)
+                    : $this->documentTaxesByType($settled),
+                'discount_minor' => $hasAllocation ? 0 : $this->discountTotal($settled),
+                'total_minor' => $factor * $settlement->amount_minor,
             ];
         }
 
         return $rows;
+    }
+
+    /**
+     * Split the frozen tax amount across the source's immutable tax types.
+     * Cumulative rounding keeps the displayed columns equal to that amount.
+     * Source discounts are already deducted from the frozen net allocation.
+     *
+     * @return array<string, int>
+     */
+    private function settlementTaxesByType(FiscalDocumentSettlement $settlement, int $factor): array
+    {
+        $source = $settlement->settledDocument;
+        $columns = $this->emptyTaxColumns();
+
+        if ($source->tax_payable_minor <= 0 || $settlement->tax_amount_minor === null) {
+            return $columns;
+        }
+
+        $sourceTaxCumulative = 0;
+        $allocatedBefore = 0;
+
+        foreach ($this->documentTaxesByType($source) as $type => $amount) {
+            $sourceTaxCumulative += $amount;
+            $allocated = $this->calculator->apportionedAmount(
+                $settlement->tax_amount_minor,
+                $sourceTaxCumulative,
+                $source->tax_payable_minor,
+            );
+            $columns[$type] = $factor * ($allocated - $allocatedBefore);
+            $allocatedBefore = $allocated;
+        }
+
+        return $columns;
     }
 
     /**
@@ -349,14 +386,7 @@ class FiscalDocumentPresenter
      */
     private function discountTotal(FiscalDocument $document): int
     {
-        $total = 0;
-
-        foreach ($document->lines as $line) {
-            $gross = intdiv($line->quantity_units * $line->unit_price_base_minor, 1000);
-            $total += max(0, $gross - $line->net_amount_minor);
-        }
-
-        return $total;
+        return (int) $document->lines->sum('settlement_amount_minor');
     }
 
     /** Scaled integers back to the decimal string a person reads. */

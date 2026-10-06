@@ -6,6 +6,7 @@ use App\Actions\ResolveCustomerPrices;
 use App\Actions\SaveFiscalDocumentDraft;
 use App\Fiscal\Agt\Support\CanonicalNumber;
 use App\Fiscal\SupportedTaxTreatment;
+use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
 use App\FiscalOperationType;
 use App\FiscalSeriesContingency;
@@ -142,11 +143,15 @@ class FiscalDocumentController extends Controller
             ->get();
         $adjustable = $legalEntity->fiscalDocuments()
             ->with('customer')
-            ->withSum('settledBy as settled_minor', 'amount_minor')
+            ->withSum(['settledBy as settled_minor' => fn ($query) => $query->whereHas('receipt', fn ($receipt) => $receipt->where('status', '!=', FiscalDocumentStatus::Draft)),
+            ], 'amount_minor')
             ->whereNotNull('document_no')
             ->whereIn('document_type', [
                 FiscalDocumentType::Invoice,
                 FiscalDocumentType::InvoiceReceipt,
+                FiscalDocumentType::GenericInvoice,
+                FiscalDocumentType::DebitNote,
+                FiscalDocumentType::CreditNote,
             ])
             ->latest('document_date')
             ->limit(200)
@@ -157,7 +162,7 @@ class FiscalDocumentController extends Controller
             ->where('contingency_indicator', FiscalSeriesContingency::Normal)
             ->where('invoicing_method', 'FESF')
             ->whereColumn('next_number', '<=', 'last_authorized_number')
-            ->whereHas('agtConnection', fn ($query) => $query->where('status', 'verified'))
+            ->whereHas('agtConnection', fn ($query) => $query->where('status', 'verified')->where('schema_version', '2.0'))
             ->orderByDesc('series_year')
             ->orderBy('series_code')
             ->get();
@@ -262,6 +267,10 @@ class FiscalDocumentController extends Controller
                 'document_date' => $issued->document_date->toDateString(),
                 'customer_name' => $issued->customer_name,
                 'customer_public_id' => $issued->customer?->public_id,
+                'currency_code' => $issued->currency_code,
+                'settleable' => ! $issued->document_type->isReceipt()
+                    && $issued->status === FiscalDocumentStatus::Valid
+                    && ! $issued->document_type->reducesReceivable(),
                 'gross_total_minor' => $issued->gross_total_minor,
                 'outstanding_minor' => max(
                     0,
@@ -277,7 +286,7 @@ class FiscalDocumentController extends Controller
             ],
             'guardrails' => [
                 'draft_only' => true,
-                'schema_version' => (string) config('agt.schema_version', '1.2'),
+                'schema_version' => (string) config('agt.schema_version', '2.0'),
                 'number_assigned' => false,
                 'mfa_enabled' => request()->user()?->hasEnabledTwoFactorAuthentication() === true,
             ],
@@ -302,6 +311,7 @@ class FiscalDocumentController extends Controller
                 'currency_code' => 'AOA',
                 'exchange_rate' => '1',
                 'withholdings' => [],
+                'withholding_total' => '0',
                 'establishment_public_id' => $defaultEstablishmentPublicId,
                 'customer_public_id' => null,
                 'customer' => [
@@ -317,7 +327,7 @@ class FiscalDocumentController extends Controller
                 'payment_method' => PaymentMethod::Cash->value,
                 'payment_date' => now('Africa/Luanda')->toDateString(),
                 'settlements' => [],
-                'lines' => [$this->emptyLine()],
+                'lines' => $requestedType->requiresLines() ? [$this->emptyLine()] : [],
                 'totals' => $this->totalsProps(0, 0, 0, 0),
             ];
         }
@@ -333,6 +343,7 @@ class FiscalDocumentController extends Controller
             'currency_code' => $document->currency_code,
             'exchange_rate' => number_format($document->exchange_rate_micro / 1_000_000, 6, '.', ''),
             'withholdings' => $this->withholdingProps($document),
+            'withholding_total' => (string) CanonicalNumber::fromMinorUnits((int) $document->withholdings->sum('amount_minor')),
             'establishment_public_id' => $document->establishment->public_id,
             'customer_public_id' => $document->customer?->public_id,
             'references_document_public_id' => $document->referencesDocument?->public_id,

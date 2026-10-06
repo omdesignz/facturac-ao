@@ -141,7 +141,7 @@ final class FiscalDocumentRegister
                         'value' => $type->value,
                         'label' => "{$type->value} · {$type->label()}",
                     ],
-                    FiscalDocumentType::issuable(),
+                    FiscalDocumentType::cases(),
                 ),
                 'establishments' => array_values($legalEntity->establishments()
                     ->orderByDesc('is_head_office')
@@ -302,11 +302,12 @@ final class FiscalDocumentRegister
         return array_values(array_map(
             fn (FiscalDocumentType $type): string => $type->value,
             array_filter(
-                FiscalDocumentType::issuable(),
+                FiscalDocumentType::cases(),
                 fn (FiscalDocumentType $type): bool => match ($family) {
                     'receipt' => $type->isReceipt(),
                     'adjustment' => $type->isAdjustment(),
                     'invoice' => ! $type->isReceipt() && ! $type->isAdjustment(),
+                    default => false,
                 },
             ),
         ));

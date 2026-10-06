@@ -32,6 +32,7 @@ import PageHeader from '@/components/PageHeader.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { roundFiscalLineAmount } from '@/lib/fiscal-rounding';
 import { show as agtConnection } from '@/routes/agt/connection';
 import { issue, store, update } from '@/routes/invoices';
 import { security } from '@/routes/settings';
@@ -75,6 +76,8 @@ interface AdjustableDocument {
     document_date: string;
     customer_name: string;
     customer_public_id: string | null;
+    currency_code: string;
+    settleable: boolean;
     gross_total_minor: number;
     outstanding_minor: number;
 }
@@ -155,6 +158,7 @@ interface DraftDocument {
     currency_code: string;
     exchange_rate: string;
     withholdings: WithholdingRow[];
+    withholding_total: string;
     establishment_public_id: string | null;
     customer_public_id: string | null;
     customer: {
@@ -280,6 +284,8 @@ const settleableOptions = computed<ListboxOption[]>(() => {
     return props.adjustableDocuments
         .filter(
             (issued) =>
+                issued.settleable &&
+                issued.currency_code === form.currency_code &&
                 issued.outstanding_minor > 0 &&
                 !taken.has(issued.public_id) &&
                 (form.customer_public_id === '' ||
@@ -293,11 +299,10 @@ const settleableOptions = computed<ListboxOption[]>(() => {
 });
 
 const settlementTotal = computed(() =>
-    form.settlements.reduce((total, row) => {
-        const amount = Number.parseFloat(row.amount.replace(',', '.'));
-
-        return total + (Number.isFinite(amount) ? Math.round(amount * 100) : 0);
-    }, 0),
+    form.settlements.reduce(
+        (total, row) => total + (parseScaled(row.amount, 2) ?? 0n),
+        0n,
+    ),
 );
 
 function addSettlement(): void {
@@ -316,6 +321,8 @@ function removeSettlement(index: number): void {
 const outstandingForCustomer = computed(() =>
     props.adjustableDocuments.filter(
         (issued) =>
+            issued.settleable &&
+            issued.currency_code === form.currency_code &&
             issued.outstanding_minor > 0 &&
             form.customer_public_id !== '' &&
             issued.customer_public_id === form.customer_public_id,
@@ -707,10 +714,15 @@ function calculateLine(line: EditableLine): LineCalculation {
     );
     const taxRate = parseScaled(treatment?.percentage ?? '0', 2) ?? 0n;
     const boundedDiscount = discount > 10_000n ? 10_000n : discount;
-    const base = roundHalfUp(unitPrice * quantity, 10_000n);
-    const net = roundHalfUp(
+    const base = roundFiscalLineAmount(
+        unitPrice * quantity,
+        10_000n,
+        form.document_type,
+    );
+    const net = roundFiscalLineAmount(
         unitPrice * (10_000n - boundedDiscount) * quantity,
         100_000_000n,
+        form.document_type,
     );
     const settlement = base - net;
     const tax = roundUp(net * taxRate, 10_000n);
@@ -725,8 +737,24 @@ function calculateLine(line: EditableLine): LineCalculation {
 }
 
 const lineCalculations = computed(() => form.lines.map(calculateLine));
-const totals = computed(() =>
-    lineCalculations.value.reduce(
+const hasSavedReceiptTotals = computed(
+    () => props.document.public_id !== null && !form.isDirty,
+);
+const totals = computed(() => {
+    if (settlesOtherDocuments.value) {
+        return {
+            settlement: 0n,
+            net: hasSavedReceiptTotals.value
+                ? (parseScaled(props.document.totals.net, 2) ?? 0n)
+                : 0n,
+            tax: hasSavedReceiptTotals.value
+                ? (parseScaled(props.document.totals.tax, 2) ?? 0n)
+                : 0n,
+            gross: settlementTotal.value,
+        };
+    }
+
+    return lineCalculations.value.reduce(
         (total, line) => ({
             settlement: total.settlement + line.settlement,
             net: total.net + line.net,
@@ -734,8 +762,8 @@ const totals = computed(() =>
             gross: total.gross + line.gross,
         }),
         { settlement: 0n, net: 0n, tax: 0n, gross: 0n },
-    ),
-);
+    );
+});
 
 const currencyOptions = computed<ListboxOption[]>(() =>
     props.currencies.map((code) => ({ value: code, label: code })),
@@ -769,7 +797,14 @@ const withholdingPreview = computed(() =>
     }),
 );
 const withholdingTotal = computed(() =>
-    withholdingPreview.value.reduce((total, row) => total + row.amount, 0n),
+    settlesOtherDocuments.value
+        ? hasSavedReceiptTotals.value
+            ? (parseScaled(props.document.withholding_total, 2) ?? 0n)
+            : 0n
+        : withholdingPreview.value.reduce(
+              (total, row) => total + row.amount,
+              0n,
+          ),
 );
 const grossInKwanzas = computed(() =>
     roundHalfUp(
@@ -926,31 +961,34 @@ function submit(): void {
         ...data,
         due_date: data.due_date || null,
         customer_public_id: data.customer_public_id || null,
-        lines: data.lines.map((line) => {
-            const treatment =
-                props.taxTreatments.find(
-                    (option) => option.value === line.tax_treatment,
-                ) ?? props.taxTreatments[0];
+        withholdings: requiresLines.value ? data.withholdings : [],
+        lines: requiresLines.value
+            ? data.lines.map((line) => {
+                  const treatment =
+                      props.taxTreatments.find(
+                          (option) => option.value === line.tax_treatment,
+                      ) ?? props.taxTreatments[0];
 
-            return {
-                operation_type: line.operation_type,
-                operation_date: requiresLineOperationDate.value
-                    ? line.operation_date
-                    : null,
-                product_code: line.product_code,
-                product_description: line.product_description,
-                quantity: line.quantity,
-                unit_of_measure: line.unit_of_measure,
-                unit_price: line.unit_price,
-                discount_percentage: line.discount_percentage,
-                tax: {
-                    type: treatment?.type ?? 'IVA',
-                    code: treatment?.code ?? 'NOR',
-                    percentage: treatment?.percentage ?? '14',
-                    exemption_code: treatment?.exemption_code ?? null,
-                },
-            };
-        }),
+                  return {
+                      operation_type: line.operation_type,
+                      operation_date: requiresLineOperationDate.value
+                          ? line.operation_date
+                          : null,
+                      product_code: line.product_code,
+                      product_description: line.product_description,
+                      quantity: line.quantity,
+                      unit_of_measure: line.unit_of_measure,
+                      unit_price: line.unit_price,
+                      discount_percentage: line.discount_percentage,
+                      tax: {
+                          type: treatment?.type ?? 'IVA',
+                          code: treatment?.code ?? 'NOR',
+                          percentage: treatment?.percentage ?? '14',
+                          exemption_code: treatment?.exemption_code ?? null,
+                      },
+                  };
+              })
+            : [],
     })).submit(
         props.document.public_id === null
             ? store()
@@ -2512,6 +2550,10 @@ function confirmIssue(): void {
                             </div>
                             <dl class="space-y-3 px-5 py-5 text-sm">
                                 <div
+                                    v-if="
+                                        !settlesOtherDocuments ||
+                                        hasSavedReceiptTotals
+                                    "
                                     class="flex items-center justify-between gap-4"
                                 >
                                     <dt class="text-brand-100/65">Subtotal</dt>
@@ -2520,6 +2562,7 @@ function confirmIssue(): void {
                                     </dd>
                                 </div>
                                 <div
+                                    v-if="requiresLines"
                                     class="flex items-center justify-between gap-4"
                                 >
                                     <dt class="text-brand-100/65">Descontos</dt>
@@ -2528,6 +2571,10 @@ function confirmIssue(): void {
                                     </dd>
                                 </div>
                                 <div
+                                    v-if="
+                                        !settlesOtherDocuments ||
+                                        hasSavedReceiptTotals
+                                    "
                                     class="flex items-center justify-between gap-4"
                                 >
                                     <dt class="text-brand-100/65">Impostos</dt>
@@ -2539,9 +2586,11 @@ function confirmIssue(): void {
                                     class="mt-4 flex items-end justify-between gap-4 border-t border-white/10 pt-4"
                                 >
                                     <dt>
-                                        <span class="block font-semibold"
-                                            >Total a pagar</span
-                                        >
+                                        <span class="block font-semibold">{{
+                                            settlesOtherDocuments
+                                                ? 'Total do recibo'
+                                                : 'Total a pagar'
+                                        }}</span>
                                         <span
                                             class="mt-0.5 block text-xs text-brand-100/55"
                                             >Pré-visualização</span
@@ -2582,6 +2631,16 @@ function confirmIssue(): void {
                                     </dd>
                                 </div>
                             </dl>
+                            <p
+                                v-if="
+                                    settlesOtherDocuments &&
+                                    !hasSavedReceiptTotals
+                                "
+                                class="px-5 pb-5 text-xs text-brand-100/65"
+                            >
+                                Guarde o recibo para calcular a repartição do
+                                IVA e das retenções dos documentos de origem.
+                            </p>
                             <div
                                 class="bg-white/[0.06] px-5 py-4 text-xs/5 text-brand-100/65"
                             >

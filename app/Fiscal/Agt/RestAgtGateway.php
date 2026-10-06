@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Fiscal\Agt\V1_2;
+namespace App\Fiscal\Agt;
 
 use App\AgtOperation;
 use App\Fiscal\Agt\Contracts\AgtGateway;
@@ -12,7 +12,9 @@ use App\Fiscal\Agt\Data\AgtSeriesData;
 use App\Fiscal\Agt\Data\AgtSeriesListResult;
 use App\Fiscal\Agt\Data\AgtSeriesRequestResult;
 use App\Fiscal\Agt\Exceptions\SigningKeyUnavailable;
+use App\Fiscal\Agt\Exceptions\UnsupportedAgtSchema;
 use App\Fiscal\Agt\Support\CanonicalJson;
+use App\Fiscal\Agt\V2_0\AgtRequestPayloadBuilder;
 use App\FiscalDocumentType;
 use App\FiscalSeriesContingency;
 use App\FiscalSeriesStatus;
@@ -64,6 +66,8 @@ final readonly class RestAgtGateway implements AgtGateway
             $response = $this->post($connection, $endpointPath, $encodedBody);
 
             return $this->seriesResult($response, $endpointPath, $requestHash, $startedAt);
+        } catch (UnsupportedAgtSchema $exception) {
+            return $this->failedSeriesResult($endpointPath, $requestHash, $startedAt, $exception->getMessage(), 'AGT_SCHEMA_UNSUPPORTED', 0);
         } catch (SigningKeyUnavailable $exception) {
             return $this->failedSeriesResult(
                 $endpointPath,
@@ -120,6 +124,8 @@ final readonly class RestAgtGateway implements AgtGateway
             $response = $this->post($connection, $endpointPath, $encodedBody);
 
             return $this->seriesRequestResult($response, $endpointPath, $requestHash, $startedAt);
+        } catch (UnsupportedAgtSchema $exception) {
+            return $this->failedSeriesRequestResult($endpointPath, $requestHash, $startedAt, $exception->getMessage(), 'AGT_SCHEMA_UNSUPPORTED', 0);
         } catch (SigningKeyUnavailable $exception) {
             return $this->failedSeriesRequestResult(
                 $endpointPath,
@@ -160,8 +166,8 @@ final readonly class RestAgtGateway implements AgtGateway
             $responseBody = $response->body();
             $payload = $this->payload($response);
             $requestId = $this->requestId($payload['requestID'] ?? null);
-            $errorCodes = $this->errorCodes($payload['errorList'] ?? null);
-            $accepted = $response->successful() && $requestId !== null;
+            $errorCodes = $this->responseErrors($payload, 'errorList');
+            $accepted = $response->successful() && $requestId !== null && $errorCodes === [];
 
             return new AgtRegistrationResult(
                 accepted: $accepted,
@@ -178,6 +184,8 @@ final readonly class RestAgtGateway implements AgtGateway
                     : $this->safeResponseMessage($response, $errorCodes, 'registo da factura'),
                 durationMs: $this->durationMs($startedAt),
             );
+        } catch (UnsupportedAgtSchema $exception) {
+            return $this->failedRegistrationResult($endpointPath, $requestHash, $startedAt, $exception->getMessage(), 'AGT_SCHEMA_UNSUPPORTED', false);
         } catch (ConnectionException) {
             return $this->failedRegistrationResult(
                 $endpointPath,
@@ -221,7 +229,7 @@ final readonly class RestAgtGateway implements AgtGateway
             $responseBody = $response->body();
             $payload = $this->payload($response);
             $resultCode = $this->normalizedCode($payload['resultCode'] ?? null);
-            $requestErrorCodes = $this->errorCodes($payload['requestErrorList'] ?? null);
+            $requestErrorCodes = $this->responseErrors($payload, 'requestErrorList');
             $documents = $this->documentStatuses($payload['documentStatusList'] ?? null);
             $successful = $response->successful()
                 && in_array($resultCode, ['0', '1', '2', '7', '8', '9'], true)
@@ -229,7 +237,9 @@ final readonly class RestAgtGateway implements AgtGateway
 
             return new AgtInvoiceStatusResult(
                 successful: $successful,
-                retryable: $this->isRetryable($response),
+                retryable: $this->isRetryable($response)
+                    || ($response->status() === 422 && $requestErrorCodes !== []
+                        && array_diff($requestErrorCodes, ['E96', 'E97']) === []),
                 endpoint: $endpointPath,
                 httpStatus: $response->status(),
                 requestBody: $encodedBody,
@@ -244,6 +254,8 @@ final readonly class RestAgtGateway implements AgtGateway
                     : $this->safeResponseMessage($response, $requestErrorCodes, 'consulta do estado'),
                 durationMs: $this->durationMs($startedAt),
             );
+        } catch (UnsupportedAgtSchema $exception) {
+            return $this->failedStatusResult($endpointPath, $encodedBody, $startedAt, $exception->getMessage(), 'AGT_SCHEMA_UNSUPPORTED', false);
         } catch (SigningKeyUnavailable $exception) {
             return $this->failedStatusResult(
                 $endpointPath,
@@ -276,6 +288,11 @@ final readonly class RestAgtGateway implements AgtGateway
 
     private function post(AgtConnection $connection, string $endpointPath, string $body): Response
     {
+        UnsupportedAgtSchema::assertSupported($connection->schema_version);
+        $payload = json_decode($body, true);
+        $schemaVersion = is_array($payload) ? ($payload['schemaVersion'] ?? null) : null;
+        UnsupportedAgtSchema::assertSupported(is_string($schemaVersion) ? $schemaVersion : '');
+
         return Http::withBasicAuth(
             (string) $connection->basic_auth_username,
             (string) $connection->basic_auth_password,
@@ -296,7 +313,7 @@ final readonly class RestAgtGateway implements AgtGateway
         $responseBody = $response->body();
         $payload = $this->payload($response);
         $resultCode = $this->normalizedCode($payload['resultCode'] ?? null);
-        $errorCodes = $this->errorCodes($payload['errorList'] ?? null);
+        $errorCodes = $this->responseErrors($payload, 'errorList');
         $rawSeries = data_get($payload, 'seriesInfo')
             ?? data_get($payload, 'seriresInfo')
             ?? data_get($payload, 'seriesListResult.seriesInfo');
@@ -336,7 +353,7 @@ final readonly class RestAgtGateway implements AgtGateway
         $responseBody = $response->body();
         $payload = $this->payload($response);
         $resultCode = $this->normalizedCode($payload['resultCode'] ?? null);
-        $errorCodes = $this->errorCodes($payload['errorList'] ?? null);
+        $errorCodes = $this->responseErrors($payload, 'errorList');
         $rawSeries = data_get($payload, 'seriesFEResult');
         $seriesCode = is_array($rawSeries) ? $this->seriesCode($rawSeries['seriesCode'] ?? null) : null;
         $authorizedQuantity = is_array($rawSeries)
@@ -502,6 +519,19 @@ final readonly class RestAgtGateway implements AgtGateway
         }
 
         return array_values(array_unique($codes));
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return list<string>
+     */
+    private function responseErrors(array $payload, string $listField): array
+    {
+        return array_values(array_unique([
+            ...$this->errorCodes($payload[$listField] ?? null),
+            ...$this->errorCodes($payload['errorEntry'] ?? null),
+            ...$this->errorCodes($payload),
+        ]));
     }
 
     private function normalizedCode(mixed $code): ?string

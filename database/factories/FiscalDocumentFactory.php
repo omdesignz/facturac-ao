@@ -55,7 +55,7 @@ class FiscalDocumentFactory extends Factory
             'tax_payable_minor' => 0,
             'gross_total_minor' => 0,
             'revision' => 1,
-            'payload_schema_version' => '1.2',
+            'payload_schema_version' => '2.0',
             'calculation_sha256' => hash('sha256', 'empty-fiscal-draft'),
             'system_entry_at' => null,
             'frozen_at' => null,

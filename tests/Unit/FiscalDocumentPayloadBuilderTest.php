@@ -42,6 +42,7 @@ function issuedPayloadFixture(): FiscalDocument
         'net_total_minor' => 9_000,
         'tax_payable_minor' => 1_260,
         'gross_total_minor' => 10_260,
+        'payload_schema_version' => '1.2',
     ]);
     $line = FiscalDocumentLine::factory()->create([
         'workspace_id' => $workspace->id,

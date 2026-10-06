@@ -1,6 +1,6 @@
 <?php
 
-use App\Fiscal\Documents\V1_2\FiscalDocumentPayloadBuilder;
+use App\Fiscal\Documents\V2_0\FiscalDocumentPayloadBuilder;
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
 use App\Models\Establishment;

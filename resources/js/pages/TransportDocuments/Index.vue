@@ -194,7 +194,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                 <PageHeader
                     eyebrow="Documentos · Guias e transporte"
                     title="Guias e transporte"
-                    description="Prepare guias de remessa, transporte, activos próprios e devoluções. Depois de emitidas, ficam imutáveis e seguem no SAF-T (AO). Na API v1.2 actual, estes tipos não pertencem ao endpoint de facturas; são declarados em MovementOfGoods."
+                    description="Prepare guias de remessa, transporte, activos próprios e devoluções. Depois de emitidas, ficam imutáveis e seguem no SAF-T (AO). Na API 2.0, estes tipos não pertencem ao endpoint de facturas; são declarados em MovementOfGoods."
                 >
                     <template #actions>
                         <Link

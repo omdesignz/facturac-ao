@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
 use App\FiscalOperationType;
 use App\Models\FiscalDocument;
@@ -93,7 +94,7 @@ class StoreFiscalDocumentRequest extends FormRequest
                 'nullable',
                 'string',
                 'min:5',
-                'max:200',
+                'max:60',
             ],
             'document_date' => ['required', 'date_format:Y-m-d', 'before_or_equal:today'],
             'due_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:document_date'],
@@ -144,7 +145,7 @@ class StoreFiscalDocumentRequest extends FormRequest
                 ),
             ],
             'customer' => ['required', 'array:name,tax_identification_number,country_code,address_line'],
-            'customer.name' => ['required', 'string', 'min:2', 'max:255'],
+            'customer.name' => ['required', 'string', 'min:2', 'max:200'],
             'customer.tax_identification_number' => [
                 'required',
                 'string',
@@ -170,9 +171,9 @@ class StoreFiscalDocumentRequest extends FormRequest
                 'before_or_equal:document_date',
             ],
             'lines.*.product_code' => ['required', 'string', 'max:60'],
-            'lines.*.product_description' => ['required', 'string', 'min:2', 'max:255'],
+            'lines.*.product_description' => ['required', 'string', 'min:2', 'max:200'],
             'lines.*.quantity' => ['required', 'string', 'max:20', 'regex:/\A(?:0|[1-9]\d*)(?:\.\d{1,4})?\z/', 'not_in:0,0.0,0.00,0.000,0.0000'],
-            'lines.*.unit_of_measure' => ['required', 'string', 'max:32'],
+            'lines.*.unit_of_measure' => ['required', 'string', 'max:20'],
             'lines.*.unit_price' => ['required', 'string', 'max:18', 'regex:/\A(?:0|[1-9]\d*)(?:\.\d{1,2})?\z/'],
             'lines.*.discount_percentage' => ['required', 'string', 'max:6', 'regex:/\A(?:100(?:\.0{1,2})?|(?:0|[1-9]\d?)(?:\.\d{1,2})?)\z/'],
             'lines.*.tax' => ['required', 'array:type,code,percentage,exemption_code'],
@@ -315,10 +316,13 @@ class StoreFiscalDocumentRequest extends FormRequest
 
         $current = $this->route('fiscalDocument');
         $currentId = $current instanceof FiscalDocument ? $current->id : null;
+        $legalEntity = $this->currentLegalEntity();
 
         foreach ($this->settlementProfile() as $index => $settlement) {
             $invoice = FiscalDocument::query()
                 ->where('public_id', $settlement['document_public_id'])
+                ->where('workspace_id', $legalEntity->workspace_id ?? 0)
+                ->where('legal_entity_id', $legalEntity->id ?? 0)
                 ->first();
 
             if (! $invoice instanceof FiscalDocument) {
@@ -327,6 +331,7 @@ class StoreFiscalDocumentRequest extends FormRequest
 
             $alreadySettled = (int) FiscalDocumentSettlement::query()
                 ->where('settled_document_id', $invoice->id)
+                ->whereHas('receipt', fn ($query) => $query->where('status', '!=', FiscalDocumentStatus::Draft))
                 ->when($currentId !== null, fn ($query) => $query->where('fiscal_document_id', '!=', $currentId))
                 ->sum('amount_minor');
             $outstanding = $invoice->gross_total_minor - $alreadySettled;

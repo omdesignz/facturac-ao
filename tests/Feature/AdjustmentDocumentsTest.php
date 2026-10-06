@@ -1,6 +1,6 @@
 <?php
 
-use App\Fiscal\Documents\V1_2\FiscalDocumentPayloadBuilder;
+use App\Fiscal\Documents\V2_0\FiscalDocumentPayloadBuilder;
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
 use App\Models\Establishment;
@@ -223,8 +223,8 @@ test('the AGT payload carries the corrected document and reason', function () {
         'reference' => 'FT TESTE/1',
         'reason' => 'Devolução parcial',
     ])
-        ->and($payload['lines'][0])->toHaveKey('creditAmount')
-        ->and($payload['lines'][0])->not->toHaveKey('debitAmount')
+        ->and($payload['lines'][0])->toHaveKey('debitAmount')
+        ->and($payload['lines'][0])->not->toHaveKey('creditAmount')
         ->and($payload['documentType'])->toBe('NC');
 });
 
