@@ -60,7 +60,7 @@ class GlobalSearchController extends Controller
      */
     private function documents(LegalEntity $legalEntity, string $pattern): array
     {
-        return FiscalDocument::query()
+        return array_values(FiscalDocument::query()
             ->where('workspace_id', $legalEntity->workspace_id)
             ->where('legal_entity_id', $legalEntity->id)
             ->where(function ($matching) use ($pattern): void {
@@ -93,8 +93,7 @@ class GlobalSearchController extends Controller
                         : $document->status->label(),
                 ];
             })
-            ->values()
-            ->all();
+            ->all());
     }
 
     /**
@@ -102,7 +101,7 @@ class GlobalSearchController extends Controller
      */
     private function customers(LegalEntity $legalEntity, string $pattern): array
     {
-        return $legalEntity->customers()
+        return array_values($legalEntity->customers()
             ->where(function ($matching) use ($pattern): void {
                 $matching
                     ->where('name', 'like', $pattern)
@@ -119,8 +118,7 @@ class GlobalSearchController extends Controller
                 'tax_identification_number' => $customer->tax_identification_number,
                 'is_active' => $customer->is_active,
             ])
-            ->values()
-            ->all();
+            ->all());
     }
 
     private function legalEntity(Request $request): ?LegalEntity

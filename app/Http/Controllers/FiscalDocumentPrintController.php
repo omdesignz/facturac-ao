@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Fiscal\Documents\FiscalDocumentArchive;
 use App\Fiscal\Documents\FiscalDocumentPdf;
 use App\Fiscal\Documents\FiscalDocumentPresenter;
 use App\Models\FiscalDocument;
@@ -24,6 +25,7 @@ class FiscalDocumentPrintController extends Controller
     public function __construct(
         private FiscalDocumentPresenter $presenter,
         private FiscalDocumentPdf $pdf,
+        private FiscalDocumentArchive $archive,
     ) {}
 
     public function __invoke(Request $request, FiscalDocument $fiscalDocument): Response
@@ -64,11 +66,20 @@ class FiscalDocumentPrintController extends Controller
             403,
         );
 
-        return response($this->pdf->render($fiscalDocument), 200, [
+        // The copy kept when the document was issued, never a fresh render.
+        $bytes = $this->archive->pdf($fiscalDocument);
+
+        return response($bytes, 200, [
             'Content-Type' => 'application/pdf',
+            'Content-Length' => (string) strlen($bytes),
             // Inline so it opens in the viewer; the viewer's own save button
             // is a better download than forcing one.
             'Content-Disposition' => 'inline; filename="'.$this->pdf->filename($fiscalDocument).'"',
+            // The bytes never change, so the hash is a true entity tag; private
+            // because the document is personal data behind a check.
+            'ETag' => '"'.$fiscalDocument->archivedPdf()->value('sha256').'"',
+            'Cache-Control' => 'private, max-age=0, must-revalidate',
+            'X-Content-Type-Options' => 'nosniff',
         ]);
     }
 

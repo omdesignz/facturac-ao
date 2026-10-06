@@ -5,7 +5,7 @@ namespace App\Fiscal\Documents;
 use App\Models\LegalEntity;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
-use Mccarlosen\LaravelMpdf\Facades\LaravelMpdf;
+use Mpdf\Mpdf;
 
 /**
  * What every printed fiscal sheet shares: the engine settings, the logo, and
@@ -24,6 +24,7 @@ class PdfSheet
     /**
      * Render a Blade sheet to PDF bytes.
      *
+     * @param  view-string  $view
      * @param  array<string, mixed>  $data
      * @param  array{title: string, author: string, subject: string, margin_top?: int, watermark?: string|null}  $metadata
      */
@@ -31,23 +32,38 @@ class PdfSheet
     {
         $this->ensureMemory();
 
-        $pdf = LaravelMpdf::loadView(
-            $view,
-            [
-                ...$data,
-                // Passed in rather than done in the template: a sheet formats
-                // figures in a dozen places and they must not drift apart.
-                'money' => fn (int $minor): string => $this->format->money($minor),
-                'number' => fn (string $value, int $minimumDecimals = 0): string => $this->format->decimal($value, $minimumDecimals),
-                'percent' => fn (string $value): string => $this->format->percent($value),
-            ],
-            [],
-            $this->configuration($metadata),
-        );
+        $html = view($view, [
+            ...$data,
+            // Passed in rather than done in the template: a sheet formats
+            // figures in a dozen places and they must not drift apart.
+            'money' => fn (int $minor): string => $this->format->money($minor),
+            'number' => fn (string $value, int $minimumDecimals = 0): string => $this->format->decimal($value, $minimumDecimals),
+            'percent' => fn (string $value): string => $this->format->percent($value),
+        ])->render();
 
-        $pdf->getMpdf()->SetCreator((string) config('app.name'));
+        $mpdf = new Mpdf($this->configuration($metadata['margin_top'] ?? 34));
+        $mpdf->SetTitle($metadata['title']);
+        $mpdf->SetAuthor($metadata['author']);
+        $mpdf->SetSubject($metadata['subject']);
+        $mpdf->SetCreator((string) config('app.name'));
+        $mpdf->SetDisplayMode('fullpage');
 
-        return $pdf->output();
+        /*
+         * A cancelled document is stamped on every page by the engine itself.
+         * A positioned CSS block would only land on the first, and mPDF does
+         * not honour the transform it would need.
+         */
+        $watermark = $metadata['watermark'] ?? null;
+
+        if ($watermark !== null) {
+            $mpdf->SetWatermarkText($watermark, 0.1);
+            $mpdf->watermark_font = 'dejavusans';
+            $mpdf->showWatermarkText = true;
+        }
+
+        $mpdf->WriteHTML($html);
+
+        return $mpdf->OutputBinaryData();
     }
 
     /**
@@ -72,10 +88,11 @@ class PdfSheet
     }
 
     /**
-     * @param  array{title: string, author: string, subject: string, margin_top?: int, watermark?: string|null}  $metadata
+     * The engine settings every sheet is rendered with.
+     *
      * @return array<string, mixed>
      */
-    private function configuration(array $metadata): array
+    private function configuration(int $marginTop): array
     {
         return [
             'format' => (string) config('fiscal.print.paper', 'A4'),
@@ -85,15 +102,12 @@ class PdfSheet
              * margin has to be as tall as the header or the body prints over
              * it. Measured against the header block in the templates.
              */
-            'margin_top' => $metadata['margin_top'] ?? 34,
+            'margin_top' => $marginTop,
             'margin_bottom' => 18,
             'margin_left' => 10,
             'margin_right' => 10,
             'margin_header' => 8,
             'margin_footer' => 9,
-            'title' => $metadata['title'],
-            'author' => $metadata['author'],
-            'subject' => $metadata['subject'],
             // Angolan documents carry accented Portuguese throughout; the
             // default core fonts do not cover it.
             'mode' => 'utf-8',
@@ -107,16 +121,7 @@ class PdfSheet
             'shrink_tables_to_fit' => 1,
             // Font metrics and image scratch files. Kept out of storage/app,
             // which is the private disk holding customers' files.
-            'temp_dir' => $this->temporaryDirectory(),
-            /*
-             * A cancelled document is stamped on every page by the engine
-             * itself. A positioned CSS block would only land on the first,
-             * and mPDF does not honour the transform it would need.
-             */
-            'watermark' => $metadata['watermark'] ?? '',
-            'show_watermark' => ($metadata['watermark'] ?? null) !== null,
-            'watermark_font' => 'dejavusans',
-            'watermark_text_alpha' => 0.1,
+            'tempDir' => $this->temporaryDirectory(),
         ];
     }
 

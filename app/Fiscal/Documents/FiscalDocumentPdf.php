@@ -49,6 +49,8 @@ class FiscalDocumentPdf
     /**
      * Receipts carry settled documents where an invoice carries line items, so
      * they are a different sheet rather than the same one with a branch in it.
+     *
+     * @return view-string
      */
     private function template(FiscalDocument $document): string
     {

@@ -56,6 +56,8 @@ return [
 
     'include' => [
         'private/imports',
+        // Issued documents as the customer received them; not derivable.
+        'private/fiscal-documents',
     ],
 
 ];

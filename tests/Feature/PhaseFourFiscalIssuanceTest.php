@@ -13,6 +13,7 @@ use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
 use App\FiscalSeriesContingency;
 use App\FiscalSeriesStatus;
+use App\Jobs\ArchiveFiscalDocumentPdf;
 use App\Jobs\PollAgtSubmissionStatus;
 use App\Jobs\SubmitAgtDocument;
 use App\Models\AgtConnection;
@@ -622,4 +623,21 @@ test('the issue dialog previews the number exactly as the series will compose it
         ->toContain('Depois · Emitido')
         ->toContain('Fica no histórico com o seu nome, a')
         ->toContain('Confirmar emissão');
+});
+
+test('issuing queues the as-issued PDF to be archived once the issue commits', function () {
+    $company = phaseFourState();
+    Queue::fake();
+
+    app(IssueFiscalDocument::class)->execute(
+        $company['draft'],
+        $company['user'],
+        $company['series']->public_id,
+        $company['draft']->revision,
+    );
+
+    Queue::assertPushed(
+        ArchiveFiscalDocumentPdf::class,
+        fn (ArchiveFiscalDocumentPdf $job): bool => $job->fiscalDocumentId === $company['draft']->id,
+    );
 });

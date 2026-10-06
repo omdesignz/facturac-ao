@@ -64,6 +64,13 @@ return [
     */
 
     'print' => [
+        /*
+         * Where each issued document's PDF is kept, as issued. Private, and
+         * part of the backup: these are records, not a cache that can be
+         * rebuilt, because a re-render may not match what the customer got.
+         */
+        'archive_disk' => env('FISCAL_ARCHIVE_DISK', 'local'),
+        'archive_directory' => 'fiscal-documents',
         'paper' => 'A4',
         'logo_max_width_mm' => 45,
         'logo_max_height_mm' => 18,

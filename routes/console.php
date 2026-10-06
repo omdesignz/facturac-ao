@@ -28,6 +28,14 @@ Schedule::command('billing:generate-recurring-invoices')
     ->timezone('Africa/Luanda')
     ->withoutOverlapping();
 
+// Safety net for any archive job that gave up, run before the backup so
+// every issued document's PDF is in that night's copy.
+Schedule::command('fiscal:archive-pdfs')
+    ->dailyAt('02:30')
+    ->timezone('Africa/Luanda')
+    ->withoutOverlapping()
+    ->onOneServer();
+
 // Before the day's work starts, so the copy is of a quiet database.
 Schedule::command('backup:run')
     ->dailyAt('03:00')

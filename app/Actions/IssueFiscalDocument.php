@@ -21,6 +21,7 @@ use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
 use App\FiscalSeriesContingency;
 use App\FiscalSeriesStatus;
+use App\Jobs\ArchiveFiscalDocumentPdf;
 use App\Jobs\SubmitAgtDocument;
 use App\Models\AgtConnection;
 use App\Models\AgtSubmission;
@@ -221,6 +222,8 @@ final readonly class IssueFiscalDocument
         }, 5);
 
         SubmitAgtDocument::dispatch($submission->id)->afterCommit();
+        // The as-issued PDF, kept before anything about the sheet can change.
+        ArchiveFiscalDocumentPdf::dispatch($draft->id)->afterCommit();
 
         $this->sendToCustomerIfConfigured($draft->fresh(), $issuer);
 

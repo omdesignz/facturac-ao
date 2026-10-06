@@ -1,15 +1,20 @@
 <?php
 
+use App\Fiscal\Documents\ArchivedPdfCompromised;
+use App\Fiscal\Documents\FiscalDocumentArchive;
 use App\Fiscal\Documents\FiscalDocumentPdf;
 use App\Fiscal\Documents\FiscalDocumentPresenter;
 use App\Fiscal\Documents\PrintFormat;
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
+use App\Jobs\ArchiveFiscalDocumentPdf;
+use App\Models\ArchivedPdf;
 use App\Models\Establishment;
 use App\Models\FiscalDocument;
 use App\Models\LegalEntity;
 use App\Models\User;
 use App\Notifications\FiscalDocumentIssued;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
@@ -398,4 +403,148 @@ test('the email still carries the link as well as the file', function () {
         ->toMail((object) ['email' => 'cliente@exemplo.ao']);
 
     expect($mail->actionUrl)->toContain('/documentos/');
+});
+
+// ---------------------------------------------------------------- archive
+
+/** The disk issued PDFs are archived to, faked for every test in TestCase. */
+function archiveDisk(): Filesystem
+{
+    return Storage::disk((string) config('fiscal.print.archive_disk'));
+}
+
+test('the first request keeps the PDF and later ones serve those exact bytes', function () {
+    $fixture = pdfFixture();
+    $document = documentWithLines($fixture);
+    $archive = app(FiscalDocumentArchive::class);
+
+    $first = $archive->pdf($document);
+
+    // A later change to the company would show in a fresh render. The
+    // archived copy must not move.
+    $fixture['legalEntity']->forceFill(['legal_name' => 'Nome Novo, Lda.'])->saveQuietly();
+    $second = $archive->pdf($document->fresh());
+
+    $record = ArchivedPdf::query()->sole();
+
+    expect($second)->toBe($first)
+        ->and($record->fiscal_document_id)->toBe($document->id)
+        ->and($record->sha256)->toBe(hash('sha256', $first))
+        ->and($record->byte_size)->toBe(strlen($first))
+        ->and($record->renderer)->toStartWith('mPDF ')
+        ->and($record->path)->toStartWith("fiscal-documents/{$document->workspace_id}/{$document->legal_entity_id}/")
+        ->and(archiveDisk()->get($record->path))->toBe($first);
+});
+
+test('storing twice keeps one record and one file', function () {
+    $fixture = pdfFixture();
+    $document = documentWithLines($fixture);
+    $archive = app(FiscalDocumentArchive::class);
+
+    $first = $archive->store($document);
+    $second = $archive->store($document->fresh());
+
+    expect($second->is($first))->toBeTrue()
+        ->and(ArchivedPdf::query()->count())->toBe(1)
+        ->and(archiveDisk()->allFiles('fiscal-documents'))->toHaveCount(1);
+});
+
+test('the PDF route serves the archived copy with its hash as the entity tag', function () {
+    $fixture = pdfFixture();
+    $document = documentWithLines($fixture);
+    $stored = app(FiscalDocumentArchive::class)->pdf($document);
+
+    $response = $this->actingAs($fixture['owner'])
+        ->get(route('documents.pdf', $document))
+        ->assertOk()
+        ->assertHeader('Content-Type', 'application/pdf')
+        ->assertHeader('ETag', '"'.hash('sha256', $stored).'"')
+        ->assertHeader('X-Content-Type-Options', 'nosniff');
+
+    expect($response->getContent())->toBe($stored);
+});
+
+test('an archived copy that no longer matches its hash is refused, never re-rendered', function () {
+    $fixture = pdfFixture();
+    $document = documentWithLines($fixture);
+    $record = app(FiscalDocumentArchive::class)->store($document);
+
+    archiveDisk()->put($record->path, '%PDF-1.4 altered');
+
+    $this->withoutExceptionHandling();
+
+    expect(fn () => app(FiscalDocumentArchive::class)->pdf($document->fresh()))
+        ->toThrow(ArchivedPdfCompromised::class)
+        ->and(ArchivedPdf::query()->sole()->sha256)->toBe($record->sha256);
+});
+
+test('a missing archived file is refused rather than replaced', function () {
+    $fixture = pdfFixture();
+    $document = documentWithLines($fixture);
+    $record = app(FiscalDocumentArchive::class)->store($document);
+
+    archiveDisk()->delete($record->path);
+
+    $this->actingAs($fixture['owner'])
+        ->get(route('documents.pdf', $document))
+        ->assertServerError();
+
+    expect(archiveDisk()->exists($record->path))->toBeFalse();
+});
+
+test('an archived PDF record can be neither changed nor deleted', function () {
+    $record = ArchivedPdf::factory()->create();
+
+    expect(fn () => $record->update(['sha256' => str_repeat('0', 64)]))->toThrow(DomainException::class)
+        ->and(fn () => $record->delete())->toThrow(DomainException::class);
+});
+
+test('a draft has nothing to archive', function () {
+    $fixture = pdfFixture();
+    $draft = FiscalDocument::factory()->create([
+        'workspace_id' => $fixture['legalEntity']->workspace_id,
+        'legal_entity_id' => $fixture['legalEntity']->id,
+        'establishment_id' => $fixture['establishment']->id,
+        'status' => FiscalDocumentStatus::Draft,
+        'document_no' => null,
+    ]);
+
+    app(FiscalDocumentArchive::class)->store($draft);
+})->throws(LogicException::class);
+
+test('the archive job keeps the PDF of the document it was queued for', function () {
+    $fixture = pdfFixture();
+    $document = documentWithLines($fixture);
+
+    (new ArchiveFiscalDocumentPdf($document->id))->handle(app(FiscalDocumentArchive::class));
+
+    expect($document->archivedPdf()->exists())->toBeTrue();
+});
+
+test('the backfill archives every issued document that has no PDF yet', function () {
+    $fixture = pdfFixture();
+    $archived = documentWithLines($fixture, lines: 1);
+    app(FiscalDocumentArchive::class)->store($archived);
+    documentWithLines($fixture, lines: 1);
+    documentWithLines($fixture, lines: 1);
+
+    $this->artisan('fiscal:archive-pdfs', ['--dry-run' => true])
+        ->expectsOutputToContain('2 documento(s) sem PDF arquivado.')
+        ->assertSuccessful();
+
+    expect(ArchivedPdf::query()->count())->toBe(1);
+
+    $this->artisan('fiscal:archive-pdfs')->assertSuccessful();
+
+    expect(ArchivedPdf::query()->count())->toBe(3);
+});
+
+test('the emailed attachment is byte for byte the archived copy', function () {
+    $fixture = pdfFixture();
+    $document = documentWithLines($fixture);
+    $stored = app(FiscalDocumentArchive::class)->pdf($document);
+
+    $mail = FiscalDocumentIssued::fromModel($document)->toMail((object) ['email' => 'cliente@exemplo.ao']);
+
+    expect($mail->rawAttachments[0]['data'])->toBe($stored);
 });

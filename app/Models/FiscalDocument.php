@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * @property int $id
@@ -171,6 +172,16 @@ class FiscalDocument extends Model
     public function legalEntity(): BelongsTo
     {
         return $this->belongsTo(LegalEntity::class);
+    }
+
+    /**
+     * The PDF exactly as it was issued, once it has been rendered.
+     *
+     * @return HasOne<ArchivedPdf, $this>
+     */
+    public function archivedPdf(): HasOne
+    {
+        return $this->hasOne(ArchivedPdf::class);
     }
 
     /** @return BelongsTo<Establishment, $this> */
