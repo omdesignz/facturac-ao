@@ -1,5 +1,6 @@
 <?php
 
+use App\Fiscal\Documents\FiscalDocumentNumber;
 use App\Fiscal\Documents\FiscalDocumentPdf;
 use App\Fiscal\Documents\FiscalDocumentPresenter;
 use App\Fiscal\Documents\FiscalDocumentPrints;
@@ -102,7 +103,7 @@ function documentWithLines(array $fixture, int $lines = 3, FiscalDocumentType $t
 
     $document->forceFill([
         'status' => FiscalDocumentStatus::Valid,
-        'document_no' => 'FT 2026/'.fake()->unique()->numberBetween(1000, 9999),
+        'document_no' => app(FiscalDocumentNumber::class)->compose($type, '2026', fake()->unique()->numberBetween(1000, 9999)),
         'agt_document_status' => 'V',
         'software_validation_number' => '123/AGT/2026',
         'document_payload_sha256' => hash('sha256', 'exemplo'),

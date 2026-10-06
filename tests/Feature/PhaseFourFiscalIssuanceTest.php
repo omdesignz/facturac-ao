@@ -642,3 +642,13 @@ test('issuing freezes how the document prints in the same transaction', function
         ->and($record->issuer['tax_identification_number'])->toBe($company['draft']->legalEntity->tax_identification_number)
         ->and($record->source_sha256)->toHaveLength(64);
 });
+
+test('every document number starts with its own type code, not the invoice\'s', function (FiscalDocumentType $type, string $expected) {
+    expect(app(FiscalDocumentNumber::class)->compose($type, '2026SEDE', 7))->toBe($expected);
+})->with([
+    'invoice' => [FiscalDocumentType::Invoice, 'FT 2026SEDE/7'],
+    'invoice-receipt' => [FiscalDocumentType::InvoiceReceipt, 'FR 2026SEDE/7'],
+    'receipt' => [FiscalDocumentType::Receipt, 'RG 2026SEDE/7'],
+    'credit note' => [FiscalDocumentType::CreditNote, 'NC 2026SEDE/7'],
+    'debit note' => [FiscalDocumentType::DebitNote, 'ND 2026SEDE/7'],
+]);

@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Fiscal\Documents\FiscalDocumentNumber;
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
 use App\Models\Establishment;
@@ -65,9 +66,19 @@ class FiscalDocumentFactory extends Factory
 
     public function issued(): static
     {
-        return $this->state(fn (): array => [
+        return $this->state(fn (array $attributes): array => [
             'status' => FiscalDocumentStatus::Issued,
-            'document_no' => 'FT TESTE/1',
+            // Prefixed with the document's own type code, as a real number
+            // is: a credit note is "NC TESTE/1", never "FT".
+            'document_no' => app(FiscalDocumentNumber::class)->compose(
+                FiscalDocumentType::from(
+                    $attributes['document_type'] instanceof FiscalDocumentType
+                        ? $attributes['document_type']->value
+                        : (string) $attributes['document_type'],
+                ),
+                'TESTE',
+                1,
+            ),
             'system_entry_at' => now(),
             'frozen_at' => now(),
             'issued_at' => now(),
