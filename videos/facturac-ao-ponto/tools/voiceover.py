@@ -1,25 +1,35 @@
 #!/usr/bin/env python3
 """Lays the ElevenLabs narration over the finished film, as separate files.
 
-The take is one ElevenLabs generation (voice "Clara - Clear and Dynamic",
-European Portuguese, eleven_multilingual_v2) with a pause after every line, so
-the lines can be cut apart on silence and each one placed on its own cue. The
-picture and the original mix are not touched: renders/video.mp4 stays as it is,
-and the voiced cut is written next to it.
+The narration is one continuous read of the whole script (voice "Clara - Clear
+and Dynamic", European Portuguese, eleven_v4), so the delivery carries from line
+to line the way a voice artist's does. It is never generated a line at a time:
+lines recorded in isolation each start cold and end on a full stop, and laid
+side by side they sound like a machine reading captions.
 
-  split   find the speech runs in assets/vo/take.mp3; there must be exactly one
-          per cue, or the take does not match the script and nothing is written.
-  place   trim each run with a short lead-in and tail, and delay it so its
-          first syllable lands on the cue.
-  level   highpass and compress the voice, then lift it to VOICE_LUFS; bring the
-          original mix to BED_LUFS so all three films sit the same under the voice.
-  duck    sidechain the bed off the voice, so music and effects dip while a
-          line plays and come back between lines.
+The read is only ever cut in its own pauses. Each phrase keeps its place in the
+performance and the pauses inside it; what changes is how long the film waits
+between phrases, so that each one lands on its picture.
+
+  split   find the speech runs in assets/vo/read.mp3. PHRASES says how many
+          runs each phrase spans; the total must match the read or nothing is
+          written.
+  place   start each phrase so the word the picture is cut to lands on its cue.
+          A phrase never starts before the one ahead of it has finished.
+  level   highpass and gently compress the voice, then lift it to VOICE_LUFS;
+          bring the original mix to BED_LUFS so all three films sit the same
+          under the voice.
+  duck    ride the bed down under each spoken passage and back up after it, on
+          a drawn envelope that starts before the first word and bridges the
+          short gaps, so the music moves in phrases instead of pumping per word.
+
+The picture and the original mix are not touched: renders/video.mp4 stays as it
+is, and the voiced cut is written next to it.
 
 Outputs:
   assets/vo/voice.wav           the placed, levelled voice stem
-  renders/video-voz.mp4         master (true peak under -1 dBTP)
-  renders/video-voz-social.mp4  loudness-normalised for phones
+  renders/video-voz.mp4         master (peak under -1 dBFS)
+  renders/video-voz-social.mp4  lifted to -14 LUFS for phones
 """
 
 import re
@@ -27,29 +37,37 @@ import subprocess
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent.parent
-TAKE = HERE / "assets/vo/take.mp3"
+READ = HERE / "assets/vo/read.mp3"
 VIDEO = HERE / "renders/video.mp4"
 STEM = HERE / "assets/vo/voice.wav"
 MASTER = HERE / "renders/video-voz.mp4"
 SOCIAL = HERE / "renders/video-voz-social.mp4"
 
-# (global second the line starts, what is said). Order matches the take.
-CUES = [
-    (0.95, "Facturação."),
-    (3.053, "Tire o til."),
-    (4.62, "Tire a cedilha."),
-    (6.188, "Ponha um ponto."),
-    (8.80, "É só isso!"),
-    (10.89, "Emitida, validada, paga."),
-    (13.5, "Brevemente."),
-    (14.95, "facturac ponto A O."),
+# (cue, lead, runs, what is said). The cue is the global second of the picture
+# event; lead is how far into the phrase the word cut to that event starts, so
+# the phrase begins at cue - lead. runs is how many speech runs of the read the
+# phrase spans. Order matches the read.
+PHRASES = [
+    (2.0, 1.089, 2, "Todos os dias: facturação."),
+    (3.053, 0.0, 1, "Tire o til."),
+    (4.621, 0.0, 1, "Tire a cedilha."),
+    (6.188, 0.0, 1, "Ponha um ponto."),
+    (8.8, 0.0, 1, "É só isso."),
+    (10.89, 0.1, 2, "Emitida, validada, paga."),
+    (13.52, 0.0, 1, "Brevemente:"),
+    (14.55, 0.0, 2, "facturac ponto á ó."),
 ]
 
 VOICE_LUFS = -16.0
 BED_LUFS = -19.0
-LEAD = 0.04
-TAIL = 0.14
-SOCIAL_CHAIN = "loudnorm=I=-14:TP=-1.5:LRA=11,alimiter=limit=0.8:attack=3:release=60:level=disabled"
+DUCK_DB = -6.5
+DUCK_ATTACK = 0.22
+DUCK_RELEASE = 0.55
+DUCK_BRIDGE = 1.5
+MIN_GAP = 0.1
+HEAD = 0.03
+TAIL = 0.12
+SOCIAL_LUFS = -14.0
 
 
 def run(args: list[str]) -> str:
@@ -75,7 +93,7 @@ def loudness(path: Path) -> tuple[float, float]:
 
 
 def speech_runs(path: Path) -> list[tuple[float, float]]:
-    out = run(["ffmpeg", "-nostats", "-i", str(path), "-af", "silencedetect=noise=-38dB:d=0.35", "-f", "null", "-"])
+    out = run(["ffmpeg", "-nostats", "-i", str(path), "-af", "silencedetect=noise=-40dB:d=0.12", "-f", "null", "-"])
     starts = [float(x) for x in re.findall(r"silence_start: (-?[\d.]+)", out)]
     ends = [float(x) for x in re.findall(r"silence_end: ([\d.]+)", out)]
     total = duration(path)
@@ -91,60 +109,126 @@ def speech_runs(path: Path) -> list[tuple[float, float]]:
     return runs
 
 
-def place_voice(runs: list[tuple[float, float]], length: float, gain_db: float) -> None:
+def place(runs: list[tuple[float, float]]) -> list[dict]:
+    """Where each phrase is cut from the read and where it starts in the film."""
+    placed, index, previous_end = [], 0, 0.0
+    for cue, lead, count, text in PHRASES:
+        source_start, source_end = runs[index][0], runs[index + count - 1][1]
+        index += count
+        wanted = cue - lead
+        start = max(wanted, previous_end + MIN_GAP, 0.0)
+        previous_end = start + (source_end - source_start)
+        placed.append({
+            "text": text,
+            "source": (source_start, source_end),
+            "start": start,
+            "end": previous_end,
+            "late": start - wanted,
+            "word": start + lead,
+        })
+
+    return placed
+
+
+def write_stem(placed: list[dict], total: float, length: float, gain_db: float) -> None:
     parts, labels = [], []
-    for index, ((start, end), (cue, _)) in enumerate(zip(runs, CUES)):
-        begin = max(0.0, start - LEAD)
-        stop = end + TAIL
-        delay = int(round((cue - (start - begin)) * 1000))
+    for index, phrase in enumerate(placed):
+        source_start, source_end = phrase["source"]
+        before = placed[index - 1]["source"][1] if index else 0.0
+        after = placed[index + 1]["source"][0] if index + 1 < len(placed) else total
+        head = min(HEAD, (source_start - before) / 2)
+        tail = min(TAIL, (after - source_end) / 2)
+        begin, stop = source_start - head, source_end + tail
+        delay = max(0, int(round((phrase["start"] - head) * 1000)))
+        fade_out = max(0.02, tail)
         parts.append(
             f"[s{index}]atrim=start={begin:.3f}:end={stop:.3f},asetpts=PTS-STARTPTS,"
-            f"afade=t=in:d=0.02,afade=t=out:st={stop - begin - 0.08:.3f}:d=0.08,"
-            f"adelay={delay}|{delay}[v{index}]"
+            f"afade=t=in:d={max(0.008, head):.3f},afade=t=out:st={stop - begin - fade_out:.3f}:d={fade_out:.3f},"
+            f"adelay={delay}:all=1[v{index}]"
         )
         labels.append(f"[v{index}]")
 
-    split = f"[0:a]asplit={len(runs)}" + "".join(f"[s{i}]" for i in range(len(runs)))
+    split = f"[0:a]aresample=48000,asplit={len(placed)}" + "".join(f"[s{i}]" for i in range(len(placed)))
     graph = split + ";" + ";".join(parts) + (
         f";{''.join(labels)}amix=inputs={len(labels)}:normalize=0,"
-        "highpass=f=90,acompressor=threshold=-20dB:ratio=3:attack=5:release=120:makeup=2,"
+        "highpass=f=80,acompressor=threshold=-22dB:ratio=2.5:attack=8:release=160:makeup=1.5,"
         f"volume={gain_db:.2f}dB,apad,atrim=0:{length:.3f}[out]"
     )
-    run(["ffmpeg", "-y", "-i", str(TAKE), "-filter_complex", graph, "-map", "[out]",
+    run(["ffmpeg", "-y", "-i", str(READ), "-filter_complex", graph, "-map", "[out]",
          "-ac", "2", "-ar", "48000", str(STEM)])
 
 
+def duck_spans(placed: list[dict]) -> list[tuple[float, float]]:
+    """Spoken passages: phrases joined across gaps too short to bring the music back in."""
+    spans: list[tuple[float, float]] = []
+    for phrase in placed:
+        if spans and phrase["start"] - spans[-1][1] < DUCK_BRIDGE:
+            spans[-1] = (spans[-1][0], phrase["end"])
+        else:
+            spans.append((phrase["start"], phrase["end"]))
+
+    return spans
+
+
+def duck_envelope(spans: list[tuple[float, float]]) -> str:
+    """A volume expression that is 1 between passages and DUCK_DB under them."""
+    depth = 1 - 10 ** (DUCK_DB / 20)
+    terms = [
+        f"clip((t-{start - DUCK_ATTACK:.3f})/{DUCK_ATTACK},0,1)*clip(({end + DUCK_RELEASE:.3f}-t)/{DUCK_RELEASE},0,1)"
+        for start, end in spans
+    ]
+    peak = terms[0]
+    for term in terms[1:]:
+        peak = f"max({peak},{term})"
+
+    return f"1-{depth:.4f}*{peak}"
+
+
 def main() -> int:
-    runs = speech_runs(TAKE)
-    if len(runs) != len(CUES):
-        print(f"take has {len(runs)} speech runs, script has {len(CUES)} lines: {runs}")
+    runs = speech_runs(READ)
+    expected = sum(count for _, _, count, _ in PHRASES)
+    if len(runs) != expected:
+        print(f"read has {len(runs)} speech runs, script spans {expected}:")
+        for start, end in runs:
+            print(f"  {start:7.3f} {end:7.3f}  {end - start:.2f}s")
         return 1
 
     length = duration(VIDEO)
-    place_voice(runs, length, 0.0)
+    total = duration(READ)
+    placed = place(runs)
+    if placed[-1]["end"] > length:
+        print(f"narration runs to {placed[-1]['end']:.2f}s, film is {length:.2f}s")
+        return 1
+
+    write_stem(placed, total, length, 0.0)
     voice_lufs, _ = loudness(STEM)
-    place_voice(runs, length, VOICE_LUFS - voice_lufs)
+    write_stem(placed, total, length, VOICE_LUFS - voice_lufs)
 
     bed_lufs, _ = loudness(VIDEO)
-    bed_gain = BED_LUFS - bed_lufs
+    spans = duck_spans(placed)
     mix = (
-        f"[0:a]volume={bed_gain:.2f}dB[bed];"
-        "[1:a]asplit=2[key][voice];"
-        "[bed][key]sidechaincompress=threshold=0.025:ratio=5:attack=20:release=320:makeup=1[ducked];"
-        "[ducked][voice]amix=inputs=2:normalize=0[mix]"
+        f"[0:a]volume={BED_LUFS - bed_lufs:.2f}dB,asetnsamples=n=256,"
+        f"volume='{duck_envelope(spans)}':eval=frame[bed];"
+        "[bed][1:a]amix=inputs=2:normalize=0[mix]"
     )
-    master = mix + ";[mix]alimiter=limit=0.85:attack=3:release=60:level=disabled[a]"
-    social = mix + f";[mix]{SOCIAL_CHAIN}[a]"
+    limiter = "alimiter=limit={limit}:attack=3:release=60:level=disabled"
 
-    for target, graph in ((MASTER, master), (SOCIAL, social)):
-        run(["ffmpeg", "-y", "-i", str(VIDEO), "-i", str(STEM), "-filter_complex", graph,
-             "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
-             "-ar", "48000", "-movflags", "+faststart", str(target)])
-        integrated, peak = loudness(target)
-        print(f"{target.name}: {integrated} LUFS, peak {peak} dBFS")
+    def encode(target: Path, tail: str) -> tuple[float, float]:
+        run(["ffmpeg", "-y", "-i", str(VIDEO), "-i", str(STEM), "-filter_complex", f"{mix};[mix]{tail}[a]",
+             "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "256k",
+             "-ar", "48000", "-t", f"{length:.3f}", "-movflags", "+faststart", str(target)])
+        return loudness(target)
 
-    for (start, end), (cue, text) in zip(runs, CUES):
-        print(f"{cue:6.2f}s  {end - start:4.2f}s  {text}")
+    master_lufs, master_peak = encode(MASTER, limiter.format(limit=0.85))
+    print(f"{MASTER.name}: {master_lufs} LUFS, peak {master_peak} dBFS")
+    lift = SOCIAL_LUFS - master_lufs
+    social_lufs, social_peak = encode(SOCIAL, f"volume={lift:.2f}dB," + limiter.format(limit=0.8))
+    print(f"{SOCIAL.name}: {social_lufs} LUFS, peak {social_peak} dBFS")
+
+    for phrase in placed:
+        late = f"  +{phrase['late']:.2f}s late" if phrase["late"] > 0.005 else ""
+        print(f"{phrase['start']:6.2f} to {phrase['end']:5.2f}  cue word at {phrase['word']:5.2f}  {phrase['text']}{late}")
+    print("music ducked over " + ", ".join(f"{start:.2f}-{end:.2f}" for start, end in spans))
 
     return 0
 
