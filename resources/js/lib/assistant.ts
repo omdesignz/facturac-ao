@@ -339,3 +339,36 @@ export function assistantFailure(
 
     return code === null ? fallback : (failureMessages[code] ?? fallback);
 }
+
+/** The question field holds 2000 characters; the counter appears near the end. */
+export const QUESTION_MAX_LENGTH = 2000;
+export const QUESTION_COUNT_FROM = 1800;
+
+/** Whether the character counter should be on screen for this much text. */
+export function shouldShowQuestionCount(length: number): boolean {
+    return length > QUESTION_COUNT_FROM;
+}
+
+/**
+ * The one short sentence a screen reader hears about the reference picker.
+ * Empty while the list is closed, so nothing is read out of context.
+ */
+export function pickerAnnouncement(
+    listOpen: boolean,
+    searching: boolean,
+    count: number,
+): string {
+    if (!listOpen) {
+        return '';
+    }
+
+    if (searching) {
+        return 'A procurar…';
+    }
+
+    if (count === 0) {
+        return 'Nenhum resultado';
+    }
+
+    return count === 1 ? '1 resultado' : `${count} resultados`;
+}

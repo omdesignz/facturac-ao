@@ -9,8 +9,9 @@ import {
     Search,
     UserRoundX,
     Users,
+    X,
 } from '@lucide/vue';
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import FormError from '@/components/FormError.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
@@ -18,7 +19,8 @@ import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { confirmAction } from '@/lib/confirm';
-import { destroy, show, store, update } from '@/routes/customers';
+import { destroy, index, show, store, update } from '@/routes/customers';
+import { index as importsIndex } from '@/routes/imports';
 import { index as priceListsIndex } from '@/routes/price-lists';
 import type { SelectOption } from '@/types/select';
 
@@ -82,22 +84,53 @@ const search = ref(props.filters.search);
 const dialogOpen = ref(false);
 const editing = ref<Customer | null>(null);
 
+const searchInput = ref<HTMLInputElement | null>(null);
+const searching = ref(false);
+
 let searchTimer: ReturnType<typeof setTimeout> | undefined;
 
 watch(search, (value) => {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(() => {
         router.get(
-            '/customers',
+            index.url(),
             { search: value || undefined },
             {
                 preserveState: true,
+                preserveScroll: true,
                 replace: true,
                 only: ['customers', 'filters'],
+                onStart: () => {
+                    searching.value = true;
+                },
+                onFinish: () => {
+                    searching.value = false;
+                },
             },
         );
     }, 300);
 });
+
+/**
+ * A pending search must not fire after the user has gone elsewhere, either
+ * because this page is already gone or because a click on another page has
+ * started a visit that is still on its way.
+ */
+const stopWatchingVisits = router.on('before', (event) => {
+    if (event.detail.visit.url.pathname !== index.url()) {
+        clearTimeout(searchTimer);
+    }
+});
+
+onBeforeUnmount(() => {
+    clearTimeout(searchTimer);
+    stopWatchingVisits();
+});
+
+function clearSearch(): void {
+    search.value = '';
+    searchInput.value?.focus();
+}
 
 const form = useForm({
     name: '',
@@ -227,19 +260,34 @@ async function deactivate(customer: Customer): Promise<void> {
                     description="Quem factura com mais frequência. Guarde uma vez e escolha na factura, sem voltar a escrever o NIF."
                 >
                     <template #actions>
-                        <label class="relative w-full sm:w-72">
-                            <span class="sr-only">Procurar clientes</span>
-                            <Search
-                                class="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-zinc-400"
-                                aria-hidden="true"
-                            />
-                            <input
-                                v-model="search"
-                                type="search"
-                                placeholder="Nome, NIF ou email"
-                                class="h-10 w-full rounded-full bg-zinc-900/[0.045] pr-4 pl-10 text-sm text-zinc-950 outline-none placeholder:text-zinc-400 focus:bg-white focus:ring-2 focus:ring-brand-950 dark:bg-white/[0.06] dark:text-white dark:focus:bg-zinc-900 dark:focus:ring-zinc-200"
-                            />
-                        </label>
+                        <div class="relative w-full sm:w-72">
+                            <label>
+                                <span class="sr-only">Procurar clientes</span>
+                                <Search
+                                    class="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-zinc-400"
+                                    aria-hidden="true"
+                                />
+                                <input
+                                    ref="searchInput"
+                                    v-model="search"
+                                    type="search"
+                                    autocomplete="off"
+                                    spellcheck="false"
+                                    enterkeyhint="search"
+                                    placeholder="Nome, NIF ou email"
+                                    class="h-10 w-full [appearance:none] rounded-full bg-zinc-900/[0.045] pr-10 pl-10 text-sm text-zinc-950 outline-hidden placeholder:text-zinc-500 focus:bg-white focus:ring-2 focus:ring-brand-950 dark:bg-white/[0.06] dark:text-white dark:placeholder:text-zinc-400 dark:focus:bg-zinc-900 dark:focus:ring-zinc-200 [&::-webkit-search-cancel-button]:hidden"
+                                />
+                            </label>
+                            <button
+                                v-if="search"
+                                type="button"
+                                class="absolute top-1/2 right-0 icon-button -translate-y-1/2 rounded-full text-zinc-500 focus-ring transition hover:text-zinc-900 dark:hover:text-white"
+                                @click="clearSearch"
+                            >
+                                <span class="sr-only">Limpar procura</span>
+                                <X class="size-4" aria-hidden="true" />
+                            </button>
+                        </div>
                         <button
                             v-if="canManage"
                             type="button"
@@ -258,6 +306,7 @@ async function deactivate(customer: Customer): Promise<void> {
                     <div
                         v-if="customers.data.length === 0"
                         class="px-6 py-16 text-center"
+                        :role="filters.search ? 'status' : undefined"
                     >
                         <Users
                             class="mx-auto size-8 text-zinc-300 dark:text-zinc-600"
@@ -281,29 +330,69 @@ async function deactivate(customer: Customer): Promise<void> {
                                     : 'Pode adicionar um agora ou importar a sua lista a partir do Excel.'
                             }}
                         </p>
+                        <div
+                            class="mt-6 flex flex-wrap items-center justify-center gap-2.5"
+                        >
+                            <button
+                                v-if="filters.search"
+                                type="button"
+                                class="inline-flex h-10 items-center justify-center rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
+                                @click="clearSearch"
+                            >
+                                Limpar procura
+                            </button>
+                            <template v-else>
+                                <button
+                                    v-if="canManage"
+                                    type="button"
+                                    class="inline-flex h-10 items-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300"
+                                    @click="openCreate"
+                                >
+                                    <Plus class="size-4" aria-hidden="true" />
+                                    Novo cliente
+                                </button>
+                                <Link
+                                    :href="importsIndex.url()"
+                                    class="inline-flex h-10 items-center justify-center rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
+                                >
+                                    Importar
+                                </Link>
+                            </template>
+                        </div>
                     </div>
 
-                    <div v-else class="overflow-x-auto">
+                    <div
+                        v-else
+                        class="relative overflow-x-auto overscroll-x-contain"
+                        :aria-busy="searching"
+                        :class="searching ? 'opacity-60' : ''"
+                    >
                         <table class="min-w-full text-sm">
                             <thead>
                                 <tr
                                     class="border-b border-zinc-900/[0.07] text-left dark:border-white/10"
                                 >
-                                    <th class="px-4 py-3 eyebrow text-zinc-500">
+                                    <th
+                                        class="px-3 py-3 eyebrow text-zinc-500 sm:px-4"
+                                    >
                                         Cliente
                                     </th>
-                                    <th class="px-4 py-3 eyebrow text-zinc-500">
+                                    <th
+                                        class="hidden px-3 py-3 eyebrow text-zinc-500 sm:table-cell sm:px-4"
+                                    >
                                         NIF
                                     </th>
                                     <th
-                                        class="hidden px-4 py-3 eyebrow text-zinc-500 lg:table-cell"
+                                        class="hidden px-3 py-3 eyebrow text-zinc-500 sm:px-4 lg:table-cell"
                                     >
                                         Contacto
                                     </th>
-                                    <th class="px-4 py-3 eyebrow text-zinc-500">
+                                    <th
+                                        class="hidden px-3 py-3 eyebrow text-zinc-500 sm:px-4 md:table-cell"
+                                    >
                                         Estado
                                     </th>
-                                    <th class="px-4 py-3">
+                                    <th class="px-3 py-3 sm:px-4">
                                         <span class="sr-only">Acções</span>
                                     </th>
                                 </tr>
@@ -314,30 +403,50 @@ async function deactivate(customer: Customer): Promise<void> {
                                 <tr
                                     v-for="customer in customers.data"
                                     :key="customer.public_id"
-                                    class="transition hover:bg-zinc-900/[0.025] dark:hover:bg-white/[0.03]"
+                                    class="hover:bg-zinc-900/[0.025] dark:hover:bg-white/[0.03]"
                                 >
-                                    <td class="px-4 py-3">
+                                    <td class="px-3 py-3 sm:px-4">
                                         <Link
                                             :href="show.url(customer.public_id)"
-                                            class="rounded font-semibold text-zinc-900 underline-offset-4 focus-ring hover:underline dark:text-white"
+                                            class="rounded font-semibold [overflow-wrap:anywhere] text-zinc-900 underline-offset-4 focus-ring hover:underline dark:text-white"
                                         >
                                             {{ customer.name }}
                                         </Link>
                                         <p
+                                            class="mt-0.5 font-mono numeric text-xs text-zinc-500 sm:hidden dark:text-zinc-400"
+                                        >
+                                            {{
+                                                customer.tax_identification_number
+                                            }}
+                                        </p>
+                                        <p
                                             v-if="customer.address_line"
-                                            class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400"
+                                            class="mt-0.5 max-w-[16rem] text-xs [overflow-wrap:anywhere] text-zinc-500 dark:text-zinc-400"
                                         >
                                             {{ customer.address_line }} ·
                                             {{ customer.country_code }}
                                         </p>
+                                        <StatusBadge
+                                            class="mt-1.5 md:hidden"
+                                            :label="
+                                                customer.is_active
+                                                    ? 'Activo'
+                                                    : 'Inactivo'
+                                            "
+                                            :tone="
+                                                customer.is_active
+                                                    ? 'success'
+                                                    : 'neutral'
+                                            "
+                                        />
                                     </td>
                                     <td
-                                        class="px-4 py-3 font-mono numeric text-zinc-700 dark:text-zinc-300"
+                                        class="hidden px-3 py-3 font-mono numeric text-zinc-700 sm:table-cell sm:px-4 dark:text-zinc-300"
                                     >
                                         {{ customer.tax_identification_number }}
                                     </td>
                                     <td
-                                        class="hidden px-4 py-3 text-zinc-600 lg:table-cell dark:text-zinc-400"
+                                        class="hidden px-3 py-3 text-zinc-600 sm:px-4 lg:table-cell dark:text-zinc-400"
                                     >
                                         <span
                                             v-if="customer.email"
@@ -364,11 +473,13 @@ async function deactivate(customer: Customer): Promise<void> {
                                                 !customer.email &&
                                                 !customer.phone
                                             "
-                                            class="text-xs text-zinc-400"
+                                            class="text-xs text-zinc-500 dark:text-zinc-400"
                                             >—</span
                                         >
                                     </td>
-                                    <td class="px-4 py-3">
+                                    <td
+                                        class="hidden px-3 py-3 sm:px-4 md:table-cell"
+                                    >
                                         <StatusBadge
                                             :label="
                                                 customer.is_active
@@ -382,7 +493,7 @@ async function deactivate(customer: Customer): Promise<void> {
                                             "
                                         />
                                     </td>
-                                    <td class="px-4 py-3 text-right">
+                                    <td class="px-3 py-3 text-right sm:px-4">
                                         <div
                                             v-if="canManage"
                                             class="flex justify-end gap-1"
@@ -439,21 +550,32 @@ async function deactivate(customer: Customer): Promise<void> {
                             v-if="customers.links.length > 3"
                             class="flex flex-wrap gap-1"
                         >
-                            <component
-                                :is="link.url ? 'button' : 'span'"
+                            <template
                                 v-for="link in customers.links"
                                 :key="link.label"
-                                :class="[
-                                    link.active
-                                        ? 'bg-brand-950 text-white dark:bg-zinc-100 dark:text-brand-950'
-                                        : link.url
-                                          ? 'text-zinc-600 hover:bg-zinc-900/[0.05] dark:text-zinc-300 dark:hover:bg-white/5'
-                                          : 'text-zinc-300 dark:text-zinc-600',
-                                    'inline-flex h-8 min-w-8 items-center justify-center rounded-full px-2.5 text-xs font-semibold',
-                                ]"
-                                @click="link.url && router.get(link.url)"
-                                >{{ pageLabel(link.label) }}</component
                             >
+                                <Link
+                                    v-if="link.url"
+                                    :href="link.url"
+                                    preserve-scroll
+                                    :aria-current="
+                                        link.active ? 'page' : undefined
+                                    "
+                                    class="inline-flex h-9 min-w-9 items-center justify-center rounded-full px-2.5 text-xs font-semibold focus-ring transition"
+                                    :class="
+                                        link.active
+                                            ? 'bg-brand-950 text-white dark:bg-zinc-100 dark:text-brand-950'
+                                            : 'text-zinc-600 hover:bg-zinc-900/[0.05] dark:text-zinc-300 dark:hover:bg-white/5'
+                                    "
+                                    >{{ pageLabel(link.label) }}</Link
+                                >
+                                <span
+                                    v-else
+                                    aria-disabled="true"
+                                    class="inline-flex h-9 min-w-9 items-center justify-center rounded-full px-2.5 text-xs font-semibold text-zinc-300 dark:text-zinc-600"
+                                    >{{ pageLabel(link.label) }}</span
+                                >
+                            </template>
                         </div>
                     </nav>
                 </div>
@@ -480,9 +602,21 @@ async function deactivate(customer: Customer): Promise<void> {
                             v-model="form.name"
                             type="text"
                             required
-                            class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                            autocomplete="off"
+                            class="mt-2 block form-input"
+                            :aria-invalid="
+                                form.errors.name ? 'true' : undefined
+                            "
+                            :aria-describedby="
+                                form.errors.name
+                                    ? 'customer-name-error'
+                                    : undefined
+                            "
                         />
-                        <FormError :message="form.errors.name" />
+                        <FormError
+                            id="customer-name-error"
+                            :message="form.errors.name"
+                        />
                     </div>
 
                     <div>
@@ -496,9 +630,23 @@ async function deactivate(customer: Customer): Promise<void> {
                             v-model="form.tax_identification_number"
                             type="text"
                             required
-                            class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 font-mono text-sm text-zinc-900 uppercase outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                            autocomplete="off"
+                            autocapitalize="characters"
+                            spellcheck="false"
+                            class="mt-2 block form-input font-mono uppercase"
+                            :aria-invalid="
+                                form.errors.tax_identification_number
+                                    ? 'true'
+                                    : undefined
+                            "
+                            :aria-describedby="
+                                form.errors.tax_identification_number
+                                    ? 'customer-nif-error'
+                                    : undefined
+                            "
                         />
                         <FormError
+                            id="customer-nif-error"
                             :message="form.errors.tax_identification_number"
                         />
                     </div>
@@ -514,8 +662,17 @@ async function deactivate(customer: Customer): Promise<void> {
                             v-model="form.country_code"
                             class="mt-2"
                             :options="countryOptions"
+                            :invalid="!!form.errors.country_code"
+                            :describedby="
+                                form.errors.country_code
+                                    ? 'customer-country-error'
+                                    : undefined
+                            "
                         />
-                        <FormError :message="form.errors.country_code" />
+                        <FormError
+                            id="customer-country-error"
+                            :message="form.errors.country_code"
+                        />
                     </div>
 
                     <div class="sm:col-span-2">
@@ -523,15 +680,29 @@ async function deactivate(customer: Customer): Promise<void> {
                             for="customer-address"
                             class="block text-sm font-medium text-zinc-900 dark:text-white"
                             >Morada
-                            <span class="text-zinc-400">(opcional)</span></label
+                            <span class="text-zinc-500 dark:text-zinc-400"
+                                >(opcional)</span
+                            ></label
                         >
                         <input
                             id="customer-address"
                             v-model="form.address_line"
                             type="text"
-                            class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                            autocomplete="off"
+                            class="mt-2 block form-input"
+                            :aria-invalid="
+                                form.errors.address_line ? 'true' : undefined
+                            "
+                            :aria-describedby="
+                                form.errors.address_line
+                                    ? 'customer-address-error'
+                                    : undefined
+                            "
                         />
-                        <FormError :message="form.errors.address_line" />
+                        <FormError
+                            id="customer-address-error"
+                            :message="form.errors.address_line"
+                        />
                     </div>
 
                     <div>
@@ -539,15 +710,31 @@ async function deactivate(customer: Customer): Promise<void> {
                             for="customer-email"
                             class="block text-sm font-medium text-zinc-900 dark:text-white"
                             >Email
-                            <span class="text-zinc-400">(opcional)</span></label
+                            <span class="text-zinc-500 dark:text-zinc-400"
+                                >(opcional)</span
+                            ></label
                         >
                         <input
                             id="customer-email"
                             v-model="form.email"
                             type="email"
-                            class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                            autocomplete="off"
+                            autocapitalize="none"
+                            spellcheck="false"
+                            class="mt-2 block form-input"
+                            :aria-invalid="
+                                form.errors.email ? 'true' : undefined
+                            "
+                            :aria-describedby="
+                                form.errors.email
+                                    ? 'customer-email-error'
+                                    : undefined
+                            "
                         />
-                        <FormError :message="form.errors.email" />
+                        <FormError
+                            id="customer-email-error"
+                            :message="form.errors.email"
+                        />
                     </div>
 
                     <div>
@@ -555,15 +742,29 @@ async function deactivate(customer: Customer): Promise<void> {
                             for="customer-phone"
                             class="block text-sm font-medium text-zinc-900 dark:text-white"
                             >Telefone
-                            <span class="text-zinc-400">(opcional)</span></label
+                            <span class="text-zinc-500 dark:text-zinc-400"
+                                >(opcional)</span
+                            ></label
                         >
                         <input
                             id="customer-phone"
                             v-model="form.phone"
                             type="tel"
-                            class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                            autocomplete="off"
+                            class="mt-2 block form-input"
+                            :aria-invalid="
+                                form.errors.phone ? 'true' : undefined
+                            "
+                            :aria-describedby="
+                                form.errors.phone
+                                    ? 'customer-phone-error'
+                                    : undefined
+                            "
                         />
-                        <FormError :message="form.errors.phone" />
+                        <FormError
+                            id="customer-phone-error"
+                            :message="form.errors.phone"
+                        />
                     </div>
                 </div>
 
@@ -593,7 +794,17 @@ async function deactivate(customer: Customer): Promise<void> {
                                     type="number"
                                     min="0"
                                     max="365"
-                                    class="w-24 rounded-xl border-0 bg-white px-3 py-2.5 numeric text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring ring-inset dark:bg-white/5 dark:text-white dark:ring-white/10"
+                                    class="form-input w-24! numeric"
+                                    :aria-invalid="
+                                        form.errors.payment_terms_days
+                                            ? 'true'
+                                            : undefined
+                                    "
+                                    :aria-describedby="
+                                        form.errors.payment_terms_days
+                                            ? 'customer-terms-error'
+                                            : undefined
+                                    "
                                 />
                                 <span
                                     class="text-sm text-zinc-500 dark:text-zinc-400"
@@ -606,6 +817,7 @@ async function deactivate(customer: Customer): Promise<void> {
                                 Zero significa pronto pagamento.
                             </p>
                             <FormError
+                                id="customer-terms-error"
                                 :message="form.errors.payment_terms_days"
                             />
                         </div>
@@ -616,7 +828,9 @@ async function deactivate(customer: Customer): Promise<void> {
                                 class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
                             >
                                 Limite de crédito
-                                <span class="text-zinc-400">(opcional)</span>
+                                <span class="text-zinc-500 dark:text-zinc-400"
+                                    >(opcional)</span
+                                >
                             </label>
                             <input
                                 id="customer-limit"
@@ -624,7 +838,17 @@ async function deactivate(customer: Customer): Promise<void> {
                                 type="text"
                                 inputmode="decimal"
                                 placeholder="Sem limite"
-                                class="mt-2 w-full rounded-xl border-0 bg-white px-3 py-2.5 numeric text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring ring-inset dark:bg-white/5 dark:text-white dark:ring-white/10"
+                                class="mt-2 block form-input numeric"
+                                :aria-invalid="
+                                    form.errors.credit_limit
+                                        ? 'true'
+                                        : undefined
+                                "
+                                :aria-describedby="
+                                    form.errors.credit_limit
+                                        ? 'customer-limit-error'
+                                        : undefined
+                                "
                             />
                             <p
                                 class="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400"
@@ -632,20 +856,31 @@ async function deactivate(customer: Customer): Promise<void> {
                                 Avisamos quando a dívida se aproximar deste
                                 valor.
                             </p>
-                            <FormError :message="form.errors.credit_limit" />
+                            <FormError
+                                id="customer-limit-error"
+                                :message="form.errors.credit_limit"
+                            />
                         </div>
 
                         <div class="sm:col-span-2">
                             <label
+                                for="customer-price-list"
                                 class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
                             >
                                 Tabela de preços
                             </label>
                             <div class="mt-2">
                                 <SelectInput
+                                    id="customer-price-list"
                                     v-model="form.price_list"
                                     :options="priceListOptions"
                                     placeholder="Preço do catálogo"
+                                    :invalid="!!form.errors.price_list"
+                                    :describedby="
+                                        form.errors.price_list
+                                            ? 'customer-price-list-error'
+                                            : undefined
+                                    "
                                 />
                             </div>
                             <p
@@ -666,11 +901,15 @@ async function deactivate(customer: Customer): Promise<void> {
                                     sempre mais que a tabela.
                                 </template>
                             </p>
-                            <FormError :message="form.errors.price_list" />
+                            <FormError
+                                id="customer-price-list-error"
+                                :message="form.errors.price_list"
+                            />
                         </div>
 
                         <div class="sm:col-span-2">
                             <label
+                                for="customer-withholding"
                                 class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
                             >
                                 Retenção habitual
@@ -679,9 +918,16 @@ async function deactivate(customer: Customer): Promise<void> {
                                 class="mt-2 grid gap-3 sm:grid-cols-[minmax(0,1fr)_8rem]"
                             >
                                 <SelectInput
+                                    id="customer-withholding"
                                     v-model="form.withholding_type"
                                     :options="withholdingTypeOptions"
                                     placeholder="Não retém"
+                                    :invalid="!!form.errors.withholding_type"
+                                    :describedby="
+                                        form.errors.withholding_type
+                                            ? 'customer-withholding-error'
+                                            : undefined
+                                    "
                                 />
                                 <input
                                     v-model="form.withholding_rate"
@@ -690,7 +936,17 @@ async function deactivate(customer: Customer): Promise<void> {
                                     :disabled="form.withholding_type === ''"
                                     placeholder="%"
                                     aria-label="Taxa de retenção em percentagem"
-                                    class="block w-full rounded-xl bg-white px-3 py-2.5 text-right numeric text-sm text-zinc-900 focus-ring outline-1 -outline-offset-1 outline-zinc-300 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white/5 dark:text-white dark:outline-white/10"
+                                    class="block form-input text-right numeric"
+                                    :aria-invalid="
+                                        form.errors.withholding_rate
+                                            ? 'true'
+                                            : undefined
+                                    "
+                                    :aria-describedby="
+                                        form.errors.withholding_rate
+                                            ? 'customer-withholding-rate-error'
+                                            : undefined
+                                    "
                                 />
                             </div>
                             <p
@@ -702,9 +958,11 @@ async function deactivate(customer: Customer): Promise<void> {
                                 documento.
                             </p>
                             <FormError
+                                id="customer-withholding-error"
                                 :message="form.errors.withholding_type"
                             />
                             <FormError
+                                id="customer-withholding-rate-error"
                                 :message="form.errors.withholding_rate"
                             />
                         </div>

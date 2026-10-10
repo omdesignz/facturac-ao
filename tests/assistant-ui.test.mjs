@@ -561,3 +561,61 @@ test('failures fall back to the HTTP status, then to unavailable, and to the fal
     assert.equal(assistantFailure(new Error('offline'), fallback), fallback);
     assert.ok(assistantFailure(undefined).includes('páginas habituais'));
 });
+
+const { pickerAnnouncement, shouldShowQuestionCount, QUESTION_MAX_LENGTH } =
+    await import('../resources/js/lib/assistant.ts');
+
+test('picker announcement is one short sentence and silent while the list is closed', () => {
+    assert.equal(pickerAnnouncement(false, true, 3), '');
+    assert.equal(pickerAnnouncement(true, true, 3), 'A procurar…');
+    assert.equal(pickerAnnouncement(true, false, 0), 'Nenhum resultado');
+    assert.equal(pickerAnnouncement(true, false, 1), '1 resultado');
+    assert.equal(pickerAnnouncement(true, false, 4), '4 resultados');
+});
+
+test('question counter appears only past 1800 of 2000 characters', () => {
+    assert.equal(QUESTION_MAX_LENGTH, 2000);
+    assert.equal(shouldShowQuestionCount(0), false);
+    assert.equal(shouldShowQuestionCount(1800), false);
+    assert.equal(shouldShowQuestionCount(1801), true);
+    assert.equal(shouldShowQuestionCount(2000), true);
+});
+
+test('acknowledged page grows its question field, keeps one quiet status region and starts with no cancel or skeleton', async () => {
+    const provider = {
+        policy: 'p7-question-v1',
+        notice_url: null,
+        available: true,
+        acknowledged: true,
+    };
+    const html = await renderToString(
+        createSSRApp(AssistantPage, { context, provider }),
+    );
+
+    assert.match(html, /<textarea[^>]*enterkeyhint="enter"/);
+    assert.match(html, /<textarea[^>]*field-sizing-content/);
+    assert.ok(/<p class="sr-only" role="status"><\/p>/.test(html));
+    assert.ok(!html.includes('Cancelar'));
+    assert.ok(!html.includes('delayed-show'));
+    assert.ok(!html.includes('aria-live'));
+});
+
+test('page cancels a question without an error, keeps the generation guard and sends with Cmd/Ctrl+Enter only', async () => {
+    const source = await readFile(
+        'resources/js/pages/Assistant/Index.vue',
+        'utf8',
+    );
+    const cancel = source.slice(
+        source.indexOf('function cancelQuestion'),
+        source.indexOf('watch(\n    () => [contextKey'),
+    );
+
+    assert.ok(cancel.includes('generation++'));
+    assert.ok(cancel.includes('http.cancel()'));
+    assert.ok(cancel.includes("error.value = ''"));
+    assert.ok(!cancel.includes('assistantFailure'));
+    assert.ok(source.includes('@keydown.meta.enter.prevent'));
+    assert.ok(source.includes('@keydown.ctrl.enter.prevent'));
+    assert.ok(!source.includes('@keydown.enter.prevent="submit'));
+    assert.ok(source.includes('if (generation === submitted)'));
+});

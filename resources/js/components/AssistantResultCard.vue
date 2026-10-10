@@ -33,7 +33,7 @@ const headline = computed(() => assistantHeadline(props.result));
             </p>
             <details class="mt-4 text-sm">
                 <summary
-                    class="cursor-pointer rounded text-zinc-600 focus-ring dark:text-zinc-400"
+                    class="-my-2 cursor-pointer rounded py-2 text-zinc-600 focus-ring select-none dark:text-zinc-400"
                 >
                     Ver detalhe
                 </summary>

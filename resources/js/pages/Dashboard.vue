@@ -266,16 +266,22 @@ function formatTime(value: string | null): string {
     }).format(new Date(value));
 }
 
+/**
+ * A date-only value is a day on the calendar, not a moment: it is read as
+ * midnight UTC and printed in UTC so no browser timezone can move the day.
+ */
 function formatShortDate(value: string | null): string {
-    if (value === null) {
+    const day = value?.slice(0, 10) ?? '';
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) {
         return '—';
     }
 
     return new Intl.DateTimeFormat('pt-AO', {
         day: 'numeric',
         month: 'short',
-        timeZone: TIMEZONE,
-    }).format(new Date(`${value}T12:00:00`));
+        timeZone: 'UTC',
+    }).format(new Date(`${day}T00:00:00Z`));
 }
 
 const lastWeekday = computed(() => {
@@ -492,12 +498,6 @@ const reviewStatement = computed(() => {
 <template>
     <AppLayout>
         <Head title="Painel" />
-        <p>
-            Valores limitados à moeda da empresa. Saldos e recebimentos
-            representam o estado actual das facturas seleccionadas, não um saldo
-            histórico nem o movimento bancário do período.
-        </p>
-
         <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
             <div class="mx-auto max-w-[100rem]">
                 <!-- -------------------------------------------------- header -->
@@ -563,9 +563,9 @@ const reviewStatement = computed(() => {
                 <!-- ---------------------------------------------------- KPIs -->
                 <dl
                     v-if="kpis"
-                    class="mt-8 grid grid-cols-2 gap-y-6 md:grid-cols-3 xl:grid-cols-5"
+                    class="mt-8 grid grid-cols-1 gap-y-6 min-[30rem]:grid-cols-2 md:grid-cols-3 xl:grid-cols-5"
                 >
-                    <div class="pr-5">
+                    <div class="@container min-w-0 pr-5">
                         <dt
                             class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                         >
@@ -573,10 +573,10 @@ const reviewStatement = computed(() => {
                         </dt>
                         <dd class="mt-3 flex flex-wrap items-center gap-2.5">
                             <span
-                                class="numeric text-[2rem] leading-none font-normal tracking-[-0.035em] text-zinc-950 dark:text-white"
+                                class="min-w-0 numeric text-[clamp(1.5rem,13cqi,2rem)] leading-none font-normal tracking-[-0.035em] [overflow-wrap:anywhere] text-zinc-950 dark:text-white"
                                 >{{ formatAmount(kpis.billed_today_minor)
                                 }}<span
-                                    class="ml-1 text-sm tracking-normal text-zinc-400"
+                                    class="ml-1 text-sm tracking-normal text-zinc-500 dark:text-zinc-400"
                                     >{{ currencyLabel() }}</span
                                 ></span
                             >
@@ -604,7 +604,7 @@ const reviewStatement = computed(() => {
                     </div>
 
                     <div
-                        class="pr-5 xl:border-l xl:border-zinc-900/10 xl:pl-5 dark:xl:border-white/10"
+                        class="@container min-w-0 pr-5 xl:border-l xl:border-zinc-900/10 xl:pl-5 dark:xl:border-white/10"
                     >
                         <dt
                             class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
@@ -612,7 +612,7 @@ const reviewStatement = computed(() => {
                             Emitidos hoje
                         </dt>
                         <dd
-                            class="mt-3 numeric text-[2rem] leading-none font-normal tracking-[-0.035em] text-zinc-950 dark:text-white"
+                            class="mt-3 numeric text-[clamp(1.5rem,13cqi,2rem)] leading-none font-normal tracking-[-0.035em] text-zinc-950 dark:text-white"
                         >
                             {{ kpis.issued_today }}
                         </dd>
@@ -632,7 +632,7 @@ const reviewStatement = computed(() => {
                     </div>
 
                     <div
-                        class="pr-5 xl:border-l xl:border-zinc-900/10 xl:pl-5 dark:xl:border-white/10"
+                        class="@container min-w-0 pr-5 xl:border-l xl:border-zinc-900/10 xl:pl-5 dark:xl:border-white/10"
                     >
                         <dt
                             class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
@@ -641,7 +641,7 @@ const reviewStatement = computed(() => {
                         </dt>
                         <dd class="mt-3 flex flex-wrap items-center gap-2.5">
                             <span
-                                class="numeric text-[2rem] leading-none font-normal tracking-[-0.035em] text-zinc-950 dark:text-white"
+                                class="numeric text-[clamp(1.5rem,13cqi,2rem)] leading-none font-normal tracking-[-0.035em] text-zinc-950 dark:text-white"
                                 >{{ kpis.valid_today }}</span
                             >
                             <span
@@ -665,82 +665,114 @@ const reviewStatement = computed(() => {
                         </dd>
                     </div>
 
-                    <Link
-                        :href="
-                            documentsIndex.url({
-                                query: { status: 'attention' },
-                            })
-                        "
-                        class="block rounded-lg pr-5 focus-ring xl:border-l xl:border-zinc-900/10 xl:pl-5 dark:xl:border-white/10"
+                    <!--
+                        The two cells below are links. The anchor sits in the
+                        term and stretches over the whole cell, so the group
+                        stays a valid dt/dd pair and the cell shows hover,
+                        press and focus as one piece.
+                    -->
+                    <div
+                        class="@container min-w-0 pr-5 xl:border-l xl:border-zinc-900/10 xl:pl-5 dark:xl:border-white/10"
                     >
-                        <dt
-                            class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                        <div
+                            class="relative -m-2 rounded-lg p-2 hover:bg-zinc-900/[0.04] active:bg-zinc-900/[0.07] has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-brand-600 dark:hover:bg-white/[0.06] dark:active:bg-white/10 dark:has-[a:focus-visible]:outline-brand-300"
                         >
-                            Requer atenção
-                        </dt>
-                        <dd class="mt-3 flex flex-wrap items-center gap-2.5">
-                            <span
-                                class="numeric text-[2rem] leading-none font-normal tracking-[-0.035em] text-zinc-950 dark:text-white"
-                                >{{ kpis.attention_count }}</span
+                            <dt
+                                class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                             >
-                            <span
-                                v-if="kpis.attention_count > 0"
-                                class="rounded-full bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-700 dark:bg-rose-400/10 dark:text-rose-300"
-                                >a corrigir</span
+                                <Link
+                                    :href="
+                                        documentsIndex.url({
+                                            query: { status: 'attention' },
+                                        })
+                                    "
+                                    class="outline-2 outline-transparent after:absolute after:inset-0 after:rounded-lg after:content-['']"
+                                    >Requer atenção</Link
+                                >
+                            </dt>
+                            <dd
+                                class="mt-3 flex flex-wrap items-center gap-2.5"
                             >
-                        </dd>
-                        <dd
-                            class="mt-2.5 text-[0.8125rem] text-zinc-500 dark:text-zinc-400"
-                        >
-                            inválidos ou em contingência
-                        </dd>
-                    </Link>
+                                <span
+                                    class="numeric text-[clamp(1.5rem,13cqi,2rem)] leading-none font-normal tracking-[-0.035em] text-zinc-950 dark:text-white"
+                                    >{{ kpis.attention_count }}</span
+                                >
+                                <span
+                                    v-if="kpis.attention_count > 0"
+                                    class="rounded-full bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-700 dark:bg-rose-400/10 dark:text-rose-300"
+                                    >a corrigir</span
+                                >
+                            </dd>
+                            <dd
+                                class="mt-2.5 text-[0.8125rem] text-zinc-500 dark:text-zinc-400"
+                            >
+                                inválidos ou em contingência
+                            </dd>
+                        </div>
+                    </div>
 
-                    <Link
-                        :href="debtsIndex.url()"
-                        class="block rounded-lg pr-5 focus-ring xl:border-l xl:border-zinc-900/10 xl:pl-5 dark:xl:border-white/10"
+                    <div
+                        class="@container min-w-0 pr-5 xl:border-l xl:border-zinc-900/10 xl:pl-5 dark:xl:border-white/10"
                     >
-                        <dt
-                            class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                        <div
+                            class="relative -m-2 rounded-lg p-2 hover:bg-zinc-900/[0.04] active:bg-zinc-900/[0.07] has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-brand-600 dark:hover:bg-white/[0.06] dark:active:bg-white/10 dark:has-[a:focus-visible]:outline-brand-300"
                         >
-                            Por receber
-                        </dt>
-                        <dd class="mt-3 flex flex-wrap items-center gap-2.5">
-                            <span
-                                class="numeric text-[2rem] leading-none font-normal tracking-[-0.035em] text-zinc-950 dark:text-white"
-                                >{{ formatAmount(kpis.outstanding_minor)
-                                }}<span
-                                    class="ml-1 text-sm tracking-normal text-zinc-400"
-                                    >{{ currencyLabel() }}</span
-                                ></span
+                            <dt
+                                class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                             >
-                            <span
-                                v-if="kpis.overdue_count > 0"
-                                class="rounded-full bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-700 dark:bg-rose-400/10 dark:text-rose-300"
-                                >{{
-                                    plural(
-                                        kpis.overdue_count,
-                                        'vencida',
-                                        'vencidas',
-                                    )
-                                }}</span
+                                <Link
+                                    :href="debtsIndex.url()"
+                                    class="outline-2 outline-transparent after:absolute after:inset-0 after:rounded-lg after:content-['']"
+                                    >Por receber</Link
+                                >
+                            </dt>
+                            <dd
+                                class="mt-3 flex flex-wrap items-center gap-2.5"
                             >
-                        </dd>
-                        <dd
-                            class="mt-2.5 text-[0.8125rem] text-zinc-500 dark:text-zinc-400"
-                        >
-                            {{
-                                kpis.overdue_minor > 0
-                                    ? `${formatAmount(kpis.overdue_minor)} ${currencyLabel()} já vencidos`
-                                    : 'nada vencido'
-                            }}
-                        </dd>
-                    </Link>
+                                <span
+                                    class="min-w-0 numeric text-[clamp(1.5rem,13cqi,2rem)] leading-none font-normal tracking-[-0.035em] [overflow-wrap:anywhere] text-zinc-950 dark:text-white"
+                                    >{{ formatAmount(kpis.outstanding_minor)
+                                    }}<span
+                                        class="ml-1 text-sm tracking-normal text-zinc-500 dark:text-zinc-400"
+                                        >{{ currencyLabel() }}</span
+                                    ></span
+                                >
+                                <span
+                                    v-if="kpis.overdue_count > 0"
+                                    class="rounded-full bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-700 dark:bg-rose-400/10 dark:text-rose-300"
+                                    >{{
+                                        plural(
+                                            kpis.overdue_count,
+                                            'vencida',
+                                            'vencidas',
+                                        )
+                                    }}</span
+                                >
+                            </dd>
+                            <dd
+                                class="mt-2.5 text-[0.8125rem] text-zinc-500 dark:text-zinc-400"
+                            >
+                                {{
+                                    kpis.overdue_minor > 0
+                                        ? `${formatAmount(kpis.overdue_minor)} ${currencyLabel()} já vencidos`
+                                        : 'nada vencido'
+                                }}
+                            </dd>
+                        </div>
+                    </div>
                 </dl>
+
+                <p
+                    class="mt-8 max-w-3xl text-xs/5 text-zinc-500 dark:text-zinc-400"
+                >
+                    Valores limitados à moeda da empresa. Saldos e recebimentos
+                    representam o estado actual das facturas seleccionadas, não
+                    um saldo histórico nem o movimento bancário do período.
+                </p>
 
                 <!-- --------------------------------------- focus and review -->
                 <div
-                    class="mt-8 grid gap-5 xl:grid-cols-[minmax(0,1fr)_27.5rem]"
+                    class="mt-8 grid grid-cols-[minmax(0,1fr)] gap-5 xl:grid-cols-[minmax(0,1fr)_27.5rem]"
                 >
                     <!-- Setup: the checklist leads until the company can invoice. -->
                     <section
@@ -762,9 +794,14 @@ const reviewStatement = computed(() => {
                         </h2>
                         <div
                             class="mt-5 h-1.5 overflow-hidden rounded-full bg-zinc-900/[0.07] dark:bg-white/10"
+                            role="progressbar"
+                            aria-label="Passos concluídos"
+                            aria-valuemin="0"
+                            :aria-valuemax="readiness.length"
+                            :aria-valuenow="readinessDone"
                         >
                             <div
-                                class="h-full rounded-full bg-brand-950 transition-all dark:bg-zinc-100"
+                                class="h-full rounded-full bg-brand-950 transition-[width] duration-200 ease-out dark:bg-zinc-100"
                                 :style="{
                                     width: `${(readinessDone / readiness.length) * 100}%`,
                                 }"
@@ -799,6 +836,11 @@ const reviewStatement = computed(() => {
                                     <span class="min-w-0 flex-1">
                                         <span
                                             class="block text-sm font-semibold text-zinc-950 dark:text-white"
+                                            ><span class="sr-only">{{
+                                                item.done
+                                                    ? 'Concluído: '
+                                                    : 'Por fazer: '
+                                            }}</span
                                             >{{ item.label }}</span
                                         >
                                         <span
@@ -925,7 +967,9 @@ const reviewStatement = computed(() => {
                                 </p>
                             </div>
 
-                            <dl class="flex shrink-0 gap-9 lg:text-right">
+                            <dl
+                                class="flex flex-wrap gap-x-9 gap-y-5 lg:shrink-0 lg:text-right"
+                            >
                                 <div>
                                     <dt
                                         class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
@@ -940,7 +984,7 @@ const reviewStatement = computed(() => {
                                                 focus.gross_total_minor,
                                             )
                                         }}<span
-                                            class="ml-1 text-[0.8125rem] tracking-normal text-zinc-400"
+                                            class="ml-1 text-[0.8125rem] tracking-normal text-zinc-500 dark:text-zinc-400"
                                             >{{
                                                 currencyLabel(
                                                     focus.currency_code,
@@ -1080,7 +1124,7 @@ const reviewStatement = computed(() => {
                             </p>
                             <p
                                 v-if="focus.agt_error_codes.length > 0"
-                                class="mt-2 font-mono text-xs text-zinc-400"
+                                class="mt-2 font-mono text-xs text-zinc-500 dark:text-zinc-400"
                             >
                                 {{ focus.agt_error_codes.join(' · ') }}
                             </p>
@@ -1088,7 +1132,7 @@ const reviewStatement = computed(() => {
 
                         <!-- Lifecycle track: every stage the record has really reached. -->
                         <DocumentLifecycle
-                            class="mt-auto pt-10"
+                            class="mt-auto min-w-0 pt-10"
                             :steps="focus.steps"
                         />
                         <div class="mt-4 flex flex-wrap gap-2.5">
@@ -1173,7 +1217,7 @@ const reviewStatement = computed(() => {
                                     <li
                                         v-for="cause in reviewCauses"
                                         :key="cause.label"
-                                        class="grid h-8 grid-cols-[1.75rem_minmax(0,1fr)_5.75rem] items-center gap-2 text-[0.8125rem] text-zinc-800 dark:text-zinc-200"
+                                        class="grid min-h-8 grid-cols-[1.75rem_minmax(0,1fr)] items-center gap-2 py-1 text-[0.8125rem] text-zinc-800 sm:grid-cols-[1.75rem_minmax(0,1fr)_5.75rem] dark:text-zinc-200"
                                     >
                                         <span
                                             class="numeric font-semibold text-accent-700 dark:text-accent-300"
@@ -1184,11 +1228,9 @@ const reviewStatement = computed(() => {
                                                 )
                                             }}</span
                                         >
-                                        <span class="truncate">{{
-                                            cause.label
-                                        }}</span>
+                                        <span>{{ cause.label }}</span>
                                         <span
-                                            class="relative h-[3px] rounded-full bg-accent-700/15 dark:bg-accent-300/15"
+                                            class="relative hidden h-[3px] rounded-full bg-accent-700/15 sm:block dark:bg-accent-300/15"
                                             aria-hidden="true"
                                         >
                                             <span
@@ -1213,18 +1255,18 @@ const reviewStatement = computed(() => {
                                     >
                                         <Link
                                             :href="action.href"
-                                            class="group flex h-11 items-center gap-2.5 rounded-[0.875rem] bg-white px-3.5 text-[0.8125rem] font-semibold text-zinc-950 shadow-[0_1px_2px_rgb(23_23_22/0.04),0_6px_16px_-8px_rgb(23_23_22/0.12)] focus-ring transition hover:bg-zinc-50 dark:bg-zinc-900 dark:text-white dark:ring-1 dark:ring-white/10 dark:hover:bg-zinc-800"
+                                            class="group flex min-h-11 items-center gap-2.5 rounded-[0.875rem] bg-white px-3.5 py-2 text-[0.8125rem] font-semibold text-zinc-950 shadow-[0_1px_2px_rgb(23_23_22/0.04),0_6px_16px_-8px_rgb(23_23_22/0.12)] focus-ring transition hover:bg-zinc-50 dark:bg-zinc-900 dark:text-white dark:ring-1 dark:ring-white/10 dark:hover:bg-zinc-800"
                                         >
                                             <component
                                                 :is="action.icon"
                                                 class="size-4 shrink-0 text-accent-700 dark:text-accent-300"
                                                 aria-hidden="true"
                                             />
-                                            <span class="truncate">{{
+                                            <span class="min-w-0">{{
                                                 action.label
                                             }}</span>
                                             <span
-                                                class="truncate font-normal text-zinc-500 dark:text-zinc-400"
+                                                class="shrink-0 font-normal text-zinc-500 dark:text-zinc-400"
                                                 >{{ action.hint }}</span
                                             >
                                             <ChevronRight
@@ -1303,21 +1345,21 @@ const reviewStatement = computed(() => {
                 <Deferred v-if="kpis" data="collections">
                     <template #fallback>
                         <div
-                            class="mt-5 grid gap-5 lg:grid-cols-[22.5rem_minmax(0,1fr)]"
+                            class="mt-5 grid delayed-show grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[22.5rem_minmax(0,1fr)]"
                             aria-hidden="true"
                         >
                             <div
-                                class="h-72 animate-pulse rounded-3xl bg-zinc-900/[0.04] motion-reduce:animate-none dark:bg-white/[0.04]"
+                                class="min-h-[26rem] animate-pulse rounded-3xl bg-zinc-900/[0.04] motion-reduce:animate-none dark:bg-white/[0.04]"
                             />
                             <div
-                                class="h-72 animate-pulse rounded-3xl bg-zinc-900/[0.04] motion-reduce:animate-none dark:bg-white/[0.04]"
+                                class="min-h-[26rem] animate-pulse rounded-3xl bg-zinc-900/[0.04] motion-reduce:animate-none dark:bg-white/[0.04]"
                             />
                         </div>
                     </template>
 
                     <div
                         v-if="collections && collections.customer_count > 0"
-                        class="mt-5 grid gap-5 lg:grid-cols-[22.5rem_minmax(0,1fr)]"
+                        class="mt-5 grid animate-[fade-in_150ms_var(--ease-out)_both] grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[22.5rem_minmax(0,1fr)]"
                     >
                         <section
                             class="rounded-3xl bg-zinc-900/[0.04] p-6 dark:bg-white/[0.04]"
@@ -1345,7 +1387,7 @@ const reviewStatement = computed(() => {
                                 </div>
                                 <Link
                                     :href="debtsIndex.url()"
-                                    class="inline-flex items-center gap-1 rounded text-[0.8125rem] font-semibold text-accent-700 focus-ring dark:text-accent-300"
+                                    class="-m-2 inline-flex items-center gap-1 rounded p-2 text-[0.8125rem] font-semibold text-accent-700 focus-ring dark:text-accent-300"
                                 >
                                     Dívidas
                                     <ArrowRight
@@ -1359,7 +1401,7 @@ const reviewStatement = computed(() => {
                             >
                                 {{ formatAmount(collections.outstanding_minor)
                                 }}<span
-                                    class="ml-1 text-sm tracking-normal text-zinc-400"
+                                    class="ml-1 text-sm tracking-normal text-zinc-500 dark:text-zinc-400"
                                     >{{ currencyLabel() }}</span
                                 >
                             </p>
@@ -1426,14 +1468,17 @@ const reviewStatement = computed(() => {
                                     </p>
                                 </div>
                             </div>
-                            <ul role="list" class="mt-4">
+                            <ul
+                                role="list"
+                                class="mt-4 grid grid-cols-[minmax(0,1fr)] sm:grid-cols-[minmax(0,14rem)_minmax(0,1fr)_minmax(7rem,auto)] sm:gap-x-3"
+                            >
                                 <li
                                     v-for="customer in collections.customers"
                                     :key="
                                         customer.customer_public_id ??
                                         customer.name
                                     "
-                                    class="grid grid-cols-1 items-center gap-3 border-t border-zinc-900/[0.06] py-3.5 sm:grid-cols-[minmax(0,14rem)_minmax(0,1fr)_auto] dark:border-white/10"
+                                    class="grid grid-cols-1 items-center gap-3 border-t border-zinc-900/[0.06] py-3.5 sm:col-span-3 sm:grid-cols-subgrid dark:border-white/10"
                                 >
                                     <div class="min-w-0">
                                         <component
@@ -1517,7 +1562,7 @@ const reviewStatement = computed(() => {
                                             )
                                         }}
                                         <span
-                                            class="font-normal text-zinc-400"
+                                            class="font-normal text-zinc-500 dark:text-zinc-400"
                                             >{{ currencyLabel() }}</span
                                         >
                                     </p>
@@ -1525,6 +1570,12 @@ const reviewStatement = computed(() => {
                             </ul>
                         </section>
                     </div>
+                    <p
+                        v-else-if="collections"
+                        class="mt-5 animate-[fade-in_150ms_var(--ease-out)_both] rounded-3xl bg-zinc-900/[0.04] p-6 text-sm text-zinc-500 dark:bg-white/[0.04] dark:text-zinc-400"
+                    >
+                        Nenhum cliente em dívida neste momento.
+                    </p>
                 </Deferred>
             </div>
         </div>

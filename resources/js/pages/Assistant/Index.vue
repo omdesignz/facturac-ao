@@ -11,6 +11,9 @@ import {
     assistantFailure,
     assistantReason,
     contextKey,
+    pickerAnnouncement,
+    QUESTION_MAX_LENGTH,
+    shouldShowQuestionCount,
 } from '@/lib/assistant';
 import type { AssistantContext, AssistantResponse } from '@/lib/assistant';
 import { search } from '@/routes';
@@ -47,8 +50,15 @@ const SEARCH_DEBOUNCE_MS = 200;
 
 const primaryButton =
     'inline-flex h-10 items-center justify-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white';
+/**
+ * The acknowledgement button carries three lines of wording, so it grows with
+ * its text and trades the pill for a radius that still looks right when tall.
+ */
+const primaryButtonMultiline = `${primaryButton
+    .replace('h-10', 'min-h-10 py-2')
+    .replace('rounded-full', 'rounded-3xl')} text-left`;
 const outlineButton =
-    'inline-flex h-10 items-center justify-center rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5';
+    'inline-flex min-h-10 items-center justify-center rounded-full px-[1.125rem] py-2 text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5';
 const wellClasses = 'rounded-2xl bg-zinc-900/[0.04] p-5 dark:bg-white/[0.05]';
 
 const props = defineProps<{
@@ -70,6 +80,11 @@ const acknowledgementHttp = useHttp<
 >({ policy: '', acknowledged: false });
 const answer = ref<AssistantResponse | null>(null);
 const error = ref('');
+const asking = ref(false);
+const status = ref('');
+const answerRegion = ref<HTMLElement | null>(null);
+const answerHeading = ref<HTMLElement | null>(null);
+const listDismissed = ref(false);
 const questionField = ref<HTMLTextAreaElement | null>(null);
 const referenceField = ref<HTMLInputElement | null>(null);
 const references = ref<Reference[]>([]);
@@ -104,8 +119,12 @@ const isSearching = computed(
         trimmedQuery.value.length >= MIN_SEARCH_LENGTH &&
         answeredQuery.value !== trimmedQuery.value,
 );
+/**
+ * Earlier matches stay on screen (dimmed) while the next search runs, so the
+ * list does not blank on every keystroke.
+ */
 const visibleCandidates = computed(() =>
-    answeredQuery.value === trimmedQuery.value && canAddReference.value
+    canAddReference.value
         ? candidates.value.filter(
               (candidate) =>
                   !references.value.some(
@@ -119,11 +138,22 @@ const visibleCandidates = computed(() =>
 const listOpen = computed(
     () =>
         pickerFocused.value &&
+        !listDismissed.value &&
         canAddReference.value &&
         trimmedQuery.value.length >= MIN_SEARCH_LENGTH,
 );
 const canAsk = computed(
     () => providerState.value.available && providerState.value.acknowledged,
+);
+const pickerStatus = computed(() =>
+    pickerAnnouncement(
+        listOpen.value,
+        isSearching.value,
+        visibleCandidates.value.length,
+    ),
+);
+const showQuestionCount = computed(() =>
+    shouldShowQuestionCount(http.question.length),
 );
 
 function cancelSearch(): void {
@@ -148,6 +178,23 @@ function clear(): void {
     documentPrompt.value = false;
     answer.value = null;
     error.value = '';
+    asking.value = false;
+    status.value = '';
+}
+/**
+ * Stops the question in flight. The generation moves on first, so the late
+ * response (or its cancellation) can neither show an error nor put an answer
+ * back; the page is ready to ask again at once.
+ */
+function cancelQuestion(): void {
+    generation++;
+    http.cancel();
+    asking.value = false;
+    answer.value = null;
+    error.value = '';
+    status.value = 'Pedido cancelado.';
+
+    void nextTick(() => questionField.value?.focus());
 }
 watch(
     () => [contextKey(props.context), props.provider],
@@ -165,6 +212,7 @@ onBeforeUnmount(() => {
 watch(trimmedQuery, (term) => {
     cancelSearch();
     activeCandidate.value = -1;
+    listDismissed.value = false;
 
     if (term.length < MIN_SEARCH_LENGTH) {
         candidates.value = [];
@@ -247,11 +295,29 @@ function addReference(candidate: Candidate | undefined): void {
     referenceQuery.value = '';
     documentPrompt.value = false;
 
-    void nextTick(() => referenceField.value?.focus());
+    // With both references chosen the picker disappears, so focus moves on to
+    // the question, which is the next thing to fill in.
+    void nextTick(() =>
+        (canAddReference.value ? referenceField : questionField).value?.focus(),
+    );
 }
 function removeReference(reference: Reference): void {
     references.value = references.value.filter((item) => item !== reference);
-    void nextTick(() => referenceField.value?.focus());
+
+    // Raising the picker on a phone would also raise the keyboard.
+    if (window.matchMedia('(pointer: fine)').matches) {
+        void nextTick(() => referenceField.value?.focus());
+    }
+}
+/** First Escape closes the list; a second one clears what was typed. */
+function escapePicker(): void {
+    if (listOpen.value) {
+        listDismissed.value = true;
+
+        return;
+    }
+
+    referenceQuery.value = '';
 }
 function moveCandidate(step: number): void {
     const total = visibleCandidates.value.length;
@@ -260,7 +326,16 @@ function moveCandidate(step: number): void {
         return;
     }
 
+    listDismissed.value = false;
     activeCandidate.value = (activeCandidate.value + step + total) % total;
+
+    void nextTick(() =>
+        document
+            .getElementById(
+                `assistant-reference-option-${activeCandidate.value}`,
+            )
+            ?.scrollIntoView({ block: 'nearest' }),
+    );
 }
 /** Enter in the picker never sends the question; it only picks a match. */
 function chooseActiveCandidate(event: KeyboardEvent): void {
@@ -335,17 +410,14 @@ async function setAcknowledgement(acknowledged: boolean): Promise<void> {
     }
 }
 async function submit(): Promise<void> {
-    if (
-        http.processing ||
-        acknowledgementHttp.processing ||
-        !providerState.value.available ||
-        !providerState.value.acknowledged
-    ) {
+    if (asking.value || acknowledgementHttp.processing || !canAsk.value) {
         return;
     }
 
     answer.value = null;
     error.value = '';
+    status.value = 'A consultar…';
+    asking.value = true;
     const submitted = ++generation;
     const expected = { ...props.context };
     http.request_nonce = crypto.randomUUID();
@@ -371,17 +443,42 @@ async function submit(): Promise<void> {
                 submitted,
             )
         ) {
+            asking.value = false;
             answer.value = response;
+            status.value = 'Resposta pronta';
+
+            await nextTick();
+            revealAnswer();
         }
     } catch (failure) {
         if (generation === submitted) {
             error.value = assistantFailure(failure);
+            status.value = '';
+        }
+    } finally {
+        if (generation === submitted) {
+            asking.value = false;
         }
     }
 }
+/** Brings the answer into view and hands it to keyboard and screen-reader focus. */
+function revealAnswer(): void {
+    const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)')
+        .matches;
+
+    answerRegion.value?.scrollIntoView({
+        block: 'nearest',
+        behavior: smooth ? 'smooth' : 'auto',
+    });
+    answerHeading.value?.focus({ preventScroll: true });
+}
+/** Cmd/Ctrl+Enter sends; plain Enter stays a newline. */
+function submitFromKeyboard(event: KeyboardEvent): void {
+    (event.target as HTMLTextAreaElement).form?.requestSubmit();
+}
 
 const suggestionClasses =
-    'inline-flex h-9 items-center rounded-full bg-zinc-900/[0.04] px-3.5 text-sm text-zinc-700 focus-ring transition hover:bg-zinc-900/[0.07] hover:text-zinc-950 dark:bg-white/[0.06] dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-white';
+    'inline-flex min-h-9 items-center rounded-full bg-zinc-900/[0.04] px-3.5 py-1.5 text-left text-sm text-zinc-700 focus-ring transition hover:bg-zinc-900/[0.07] hover:text-zinc-950 dark:bg-white/[0.06] dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-white';
 </script>
 <template>
     <AppLayout>
@@ -420,10 +517,7 @@ const suggestionClasses =
                     <button
                         type="button"
                         :disabled="acknowledgementHttp.processing"
-                        :class="[
-                            primaryButton,
-                            'h-auto min-h-10 py-2 text-left',
-                        ]"
+                        :class="primaryButtonMultiline"
                         @click="setAcknowledgement(true)"
                     >
                         Compreendo como funciona o processamento externo de
@@ -436,7 +530,7 @@ const suggestionClasses =
                     :class="wellClasses"
                 >
                     <summary
-                        class="cursor-pointer rounded font-semibold text-zinc-950 focus-ring dark:text-white"
+                        class="-my-2 cursor-pointer rounded py-2 font-semibold text-zinc-950 focus-ring select-none dark:text-white"
                     >
                         Como funciona
                     </summary>
@@ -459,12 +553,29 @@ const suggestionClasses =
                             id="assistant-question"
                             ref="questionField"
                             v-model="http.question"
-                            maxlength="2000"
+                            :maxlength="QUESTION_MAX_LENGTH"
                             required
                             rows="3"
+                            enterkeyhint="enter"
+                            autocomplete="off"
+                            :aria-describedby="
+                                showQuestionCount
+                                    ? 'assistant-question-count'
+                                    : undefined
+                            "
                             placeholder="Por exemplo: Quanto facturei este mês?"
-                            class="form-input"
+                            class="field-sizing-content max-h-[12lh] min-h-[3lh] form-input resize-none"
+                            @keydown.meta.enter.prevent="submitFromKeyboard"
+                            @keydown.ctrl.enter.prevent="submitFromKeyboard"
                         />
+                        <p
+                            v-if="showQuestionCount"
+                            id="assistant-question-count"
+                            class="text-right numeric text-xs text-zinc-500 dark:text-zinc-400"
+                        >
+                            {{ http.question.length }} de
+                            {{ QUESTION_MAX_LENGTH }}
+                        </p>
                         <ul
                             role="list"
                             aria-label="Perguntas sugeridas"
@@ -513,7 +624,7 @@ const suggestionClasses =
                                         suggestionClasses,
                                         hasDocumentReference
                                             ? ''
-                                            : 'text-zinc-400 hover:text-zinc-500 dark:text-zinc-500',
+                                            : 'text-zinc-500 hover:text-zinc-500 dark:text-zinc-400 dark:hover:text-zinc-400',
                                     ]"
                                     @click="suggestDocumentStatus"
                                 >
@@ -523,6 +634,7 @@ const suggestionClasses =
                         </ul>
                         <p
                             v-if="documentPrompt && !hasDocumentReference"
+                            role="status"
                             class="text-sm text-zinc-600 dark:text-zinc-400"
                         >
                             {{
@@ -575,7 +687,7 @@ const suggestionClasses =
                                 }}</span>
                                 <button
                                     type="button"
-                                    class="grid size-6 shrink-0 place-items-center rounded-full text-zinc-500 focus-ring transition hover:bg-zinc-900/10 hover:text-zinc-950 dark:hover:bg-white/10 dark:hover:text-white"
+                                    class="relative grid size-6 shrink-0 place-items-center rounded-full text-zinc-500 focus-ring transition after:absolute after:-inset-2 after:content-[''] hover:bg-zinc-900/10 hover:text-zinc-950 dark:hover:bg-white/10 dark:hover:text-white"
                                     @click="removeReference(reference)"
                                 >
                                     <span class="sr-only"
@@ -610,27 +722,28 @@ const suggestionClasses =
                                 @keydown.down.prevent="moveCandidate(1)"
                                 @keydown.up.prevent="moveCandidate(-1)"
                                 @keydown.enter="chooseActiveCandidate"
-                                @keydown.esc="referenceQuery = ''"
+                                @keydown.esc.prevent="escapePicker"
                             />
+                            <p class="sr-only" role="status">
+                                {{ pickerStatus }}
+                            </p>
                             <div
                                 v-show="listOpen"
                                 class="absolute inset-x-0 top-full z-20 mt-2 menu-panel p-1.5"
                             >
                                 <p
                                     v-if="isSearching"
-                                    class="flex items-center gap-2 px-2.5 py-2 text-sm text-zinc-500"
-                                    role="status"
+                                    class="flex items-center gap-2 px-2.5 py-2 text-sm text-zinc-500 dark:text-zinc-400"
                                 >
                                     <LoaderCircle
-                                        class="size-4 animate-spin"
+                                        class="size-4 animate-spin-delayed"
                                         aria-hidden="true"
                                     />
                                     A procurar…
                                 </p>
                                 <p
                                     v-else-if="visibleCandidates.length === 0"
-                                    class="px-2.5 py-2 text-sm text-zinc-500"
-                                    role="status"
+                                    class="px-2.5 py-2 text-sm text-zinc-500 dark:text-zinc-400"
                                 >
                                     Nenhum cliente ou documento encontrado.
                                 </p>
@@ -638,6 +751,8 @@ const suggestionClasses =
                                     id="assistant-reference-options"
                                     role="listbox"
                                     aria-label="Resultados da pesquisa"
+                                    class="max-h-[min(18rem,40dvh)] overflow-y-auto overscroll-contain"
+                                    :class="isSearching ? 'opacity-60' : ''"
                                 >
                                     <li
                                         v-for="(
@@ -687,20 +802,28 @@ const suggestionClasses =
                     <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
                         <button
                             type="submit"
-                            :disabled="
-                                http.processing ||
-                                acknowledgementHttp.processing ||
-                                !providerState.available ||
-                                !providerState.acknowledged
+                            :disabled="!canAsk"
+                            :aria-disabled="
+                                asking || acknowledgementHttp.processing
+                                    ? 'true'
+                                    : undefined
                             "
                             :class="primaryButton"
                         >
                             <LoaderCircle
-                                v-if="http.processing"
+                                v-if="asking"
                                 class="size-4 animate-spin"
                                 aria-hidden="true"
                             />
-                            {{ http.processing ? 'A consultar…' : 'Consultar' }}
+                            {{ asking ? 'A consultar…' : 'Consultar' }}
+                        </button>
+                        <button
+                            v-if="asking"
+                            type="button"
+                            :class="outlineButton"
+                            @click="cancelQuestion"
+                        >
+                            Cancelar
                         </button>
                         <p
                             v-if="!canAsk"
@@ -723,47 +846,77 @@ const suggestionClasses =
                     {{ error }}
                 </p>
 
-                <div aria-live="polite" :aria-busy="http.processing">
-                    <section v-if="answer" class="space-y-3">
-                        <p
-                            v-if="answer.outcome !== 'answered'"
-                            :class="[wellClasses, 'text-sm/6']"
-                        >
-                            {{ assistantReason(answer.reason) }}
-                        </p>
-                        <AssistantResultCard
-                            v-for="result in answer.results"
-                            :key="result.result_id"
-                            :result="result"
-                            :context="answer.context"
+                <p class="sr-only" role="status">{{ status }}</p>
+
+                <div :aria-busy="asking || http.processing">
+                    <div v-if="asking" class="delayed-show" aria-hidden="true">
+                        <div
+                            :class="[
+                                wellClasses,
+                                'h-28 animate-pulse motion-reduce:animate-none',
+                            ]"
                         />
-                        <p class="text-xs text-zinc-500 dark:text-zinc-400">
-                            Cada fonte representa uma consulta própria.
-                        </p>
-                        <details class="text-sm">
-                            <summary
-                                class="cursor-pointer rounded text-zinc-600 focus-ring dark:text-zinc-400"
+                    </div>
+                    <Transition
+                        enter-active-class="transition duration-200 ease-out motion-reduce:transition-none"
+                        enter-from-class="translate-y-1 opacity-0"
+                        enter-to-class="translate-y-0 opacity-100"
+                    >
+                        <section
+                            v-if="answer"
+                            ref="answerRegion"
+                            class="scroll-mt-20 space-y-3"
+                        >
+                            <h2
+                                ref="answerHeading"
+                                tabindex="-1"
+                                class="sr-only"
                             >
-                                Detalhes técnicos
-                            </summary>
-                            <dl
-                                class="mt-3 grid gap-x-4 gap-y-1 font-mono text-xs break-all text-zinc-600 sm:grid-cols-[auto_1fr] dark:text-zinc-400"
+                                Resposta
+                            </h2>
+                            <p
+                                v-if="answer.outcome !== 'answered'"
+                                :class="[wellClasses, 'text-sm/6']"
                             >
-                                <dt>Pedido</dt>
-                                <dd>{{ answer.request_id }}</dd>
-                                <dt>Empresa</dt>
-                                <dd>
-                                    {{ answer.context.workspace_public_id }}
-                                </dd>
-                                <dt>Entidade</dt>
-                                <dd>
-                                    {{ answer.context.legal_entity_public_id }}
-                                </dd>
-                                <dt>Ambiente</dt>
-                                <dd>{{ answer.context.environment }}</dd>
-                            </dl>
-                        </details>
-                    </section>
+                                {{ assistantReason(answer.reason) }}
+                            </p>
+                            <AssistantResultCard
+                                v-for="result in answer.results"
+                                :key="result.result_id"
+                                :result="result"
+                                :context="answer.context"
+                            />
+                            <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                                Cada fonte representa uma consulta própria.
+                            </p>
+                            <details class="text-sm">
+                                <summary
+                                    class="-my-2 cursor-pointer rounded py-2 text-zinc-600 focus-ring select-none dark:text-zinc-400"
+                                >
+                                    Detalhes técnicos
+                                </summary>
+                                <dl
+                                    class="mt-3 grid gap-x-4 gap-y-1 font-mono text-xs break-all text-zinc-600 sm:grid-cols-[auto_1fr] dark:text-zinc-400"
+                                >
+                                    <dt>Pedido</dt>
+                                    <dd>{{ answer.request_id }}</dd>
+                                    <dt>Empresa</dt>
+                                    <dd>
+                                        {{ answer.context.workspace_public_id }}
+                                    </dd>
+                                    <dt>Entidade</dt>
+                                    <dd>
+                                        {{
+                                            answer.context
+                                                .legal_entity_public_id
+                                        }}
+                                    </dd>
+                                    <dt>Ambiente</dt>
+                                    <dd>{{ answer.context.environment }}</dd>
+                                </dl>
+                            </details>
+                        </section>
+                    </Transition>
                 </div>
 
                 <div v-if="providerState.acknowledged">

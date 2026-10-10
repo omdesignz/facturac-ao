@@ -135,8 +135,14 @@ const compactFormatter = new Intl.NumberFormat('pt-AO', {
     maximumFractionDigits: 1,
 });
 
+/** The number alone, for table cells whose column header names the currency. */
+function amount(minor: number): string {
+    return moneyFormatter.format(minor / 100);
+}
+
+/** Amount and currency stay on one line: a non-breaking space joins them. */
 function money(minor: number): string {
-    return `${moneyFormatter.format(minor / 100)} ${props.currencyCode}`;
+    return `${amount(minor)}\u00a0${props.currencyCode}`;
 }
 
 /** Whole kwanzas for the figures row; the centimos are on each document. */
@@ -147,13 +153,43 @@ function wholeAmount(minor: number): string {
 }
 
 function compactMoney(minor: number): string {
-    return `${compactFormatter.format(minor / 100)} ${props.currencyCode}`;
+    return `${compactFormatter.format(minor / 100)}\u00a0${props.currencyCode}`;
 }
 
-const dateFormatter = new Intl.DateTimeFormat('pt-PT', { dateStyle: 'medium' });
+/** The business keeps its own calendar, whatever the browser's clock says. */
+const BUSINESS_TIMEZONE = 'Africa/Luanda';
 
+const calendarDayFormatter = new Intl.DateTimeFormat('pt-AO', {
+    dateStyle: 'medium',
+    timeZone: 'UTC',
+});
+
+const instantFormatter = new Intl.DateTimeFormat('pt-AO', {
+    dateStyle: 'medium',
+    timeZone: BUSINESS_TIMEZONE,
+});
+
+/**
+ * Formats a date-only value (a document date, a due date).
+ *
+ * Such a value is a day on the calendar, not a moment. The server sends it as
+ * `2026-05-01` or as an ISO string whose first ten characters are that same
+ * day, so only those ten characters are read and printed through UTC, which has
+ * no offset to move the day. The result is identical in every timezone.
+ */
 function formatDate(value: string | null): string {
-    return value ? dateFormatter.format(new Date(value)) : '—';
+    const day = value?.slice(0, 10) ?? '';
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) {
+        return '—';
+    }
+
+    return calendarDayFormatter.format(new Date(`${day}T00:00:00Z`));
+}
+
+/** Formats a real moment (account created, document sent) in business time. */
+function formatInstant(value: string | null): string {
+    return value ? instantFormatter.format(new Date(value)) : '—';
 }
 
 /** Owing more than was agreed is worth saying plainly, not burying in a figure. */
@@ -281,13 +317,8 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
 <template>
     <AppLayout>
         <Head :title="customer.name" />
-        <p>
-            Valores e documentos limitados à moeda da empresa; saldos actuais,
-            sem conversão cambial.
-        </p>
-
         <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-            <div class="mx-auto max-w-6xl space-y-6">
+            <div class="mx-auto max-w-6xl min-w-0 space-y-6">
                 <Link
                     :href="customersIndex.url()"
                     class="inline-flex items-center gap-2 rounded-lg text-sm font-medium text-zinc-600 focus-ring transition hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white"
@@ -359,6 +390,11 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                     </template>
                 </PageHeader>
 
+                <p class="max-w-3xl text-xs/5 text-zinc-500 dark:text-zinc-400">
+                    Valores e documentos limitados à moeda da empresa; saldos
+                    actuais, sem conversão cambial.
+                </p>
+
                 <section
                     aria-label="Contactos e condições"
                     class="flex flex-wrap gap-x-6 gap-y-2 border-y border-zinc-900/[0.07] py-3.5 text-sm dark:border-white/10"
@@ -366,47 +402,50 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                     <a
                         v-if="customer.email"
                         :href="`mailto:${customer.email}`"
-                        class="inline-flex items-center gap-2 rounded text-zinc-700 focus-ring hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-white"
+                        class="inline-flex min-w-0 items-center gap-2 rounded [overflow-wrap:anywhere] text-zinc-700 focus-ring hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-white"
                     >
-                        <Mail class="size-4 text-zinc-400" aria-hidden="true" />
+                        <Mail
+                            class="size-4 shrink-0 text-zinc-400"
+                            aria-hidden="true"
+                        />
                         {{ customer.email }}
                     </a>
                     <a
                         v-if="customer.phone"
                         :href="`tel:${customer.phone}`"
-                        class="inline-flex items-center gap-2 rounded text-zinc-700 focus-ring hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-white"
+                        class="inline-flex min-w-0 items-center gap-2 rounded [overflow-wrap:anywhere] text-zinc-700 focus-ring hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-white"
                     >
                         <Phone
-                            class="size-4 text-zinc-400"
+                            class="size-4 shrink-0 text-zinc-400"
                             aria-hidden="true"
                         />
                         {{ customer.phone }}
                     </a>
                     <span
                         v-if="customer.address_line"
-                        class="inline-flex items-center gap-2 text-zinc-700 dark:text-zinc-300"
+                        class="inline-flex min-w-0 items-center gap-2 [overflow-wrap:anywhere] text-zinc-700 dark:text-zinc-300"
                     >
                         <MapPin
-                            class="size-4 text-zinc-400"
+                            class="size-4 shrink-0 text-zinc-400"
                             aria-hidden="true"
                         />
                         {{ customer.address_line }}
                     </span>
                     <span
-                        class="inline-flex items-center gap-2 text-zinc-500 dark:text-zinc-400"
+                        class="inline-flex min-w-0 items-center gap-2 [overflow-wrap:anywhere] text-zinc-500 dark:text-zinc-400"
                     >
                         <Clock
-                            class="size-4 text-zinc-400"
+                            class="size-4 shrink-0 text-zinc-400"
                             aria-hidden="true"
                         />
-                        Cliente desde {{ formatDate(customer.created_at) }}
+                        Cliente desde {{ formatInstant(customer.created_at) }}
                     </span>
 
                     <span
-                        class="inline-flex items-center gap-2 text-zinc-700 dark:text-zinc-300"
+                        class="inline-flex min-w-0 items-center gap-2 [overflow-wrap:anywhere] text-zinc-700 dark:text-zinc-300"
                     >
                         <CalendarClock
-                            class="size-4 text-zinc-400"
+                            class="size-4 shrink-0 text-zinc-400"
                             aria-hidden="true"
                         />
                         {{
@@ -422,11 +461,11 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                             overLimit
                                 ? 'text-rose-700 dark:text-rose-400'
                                 : 'text-zinc-700 dark:text-zinc-300',
-                            'inline-flex items-center gap-2',
+                            'inline-flex min-w-0 items-center gap-2 [overflow-wrap:anywhere]',
                         ]"
                     >
                         <Gauge
-                            class="size-4 text-zinc-400"
+                            class="size-4 shrink-0 text-zinc-400"
                             aria-hidden="true"
                         />
                         Limite {{ money(customer.credit_limit_minor) }}
@@ -434,9 +473,12 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
 
                     <span
                         v-if="customer.auto_send_documents"
-                        class="inline-flex items-center gap-2 text-zinc-700 dark:text-zinc-300"
+                        class="inline-flex min-w-0 items-center gap-2 [overflow-wrap:anywhere] text-zinc-700 dark:text-zinc-300"
                     >
-                        <Send class="size-4 text-zinc-400" aria-hidden="true" />
+                        <Send
+                            class="size-4 shrink-0 text-zinc-400"
+                            aria-hidden="true"
+                        />
                         Documentos enviados por email
                     </span>
                 </section>
@@ -515,7 +557,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
 
                 <section
                     v-if="statement.length > 0"
-                    class="viz overflow-hidden rounded-2xl surface"
+                    class="viz min-w-0 overflow-hidden rounded-2xl surface"
                 >
                     <header
                         class="border-b border-zinc-100 p-5 dark:border-white/10"
@@ -533,27 +575,31 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                         </p>
                     </header>
 
-                    <div class="overflow-x-auto">
+                    <div class="relative overflow-x-auto overscroll-x-contain">
                         <table class="min-w-full text-left text-sm">
                             <thead
                                 class="border-b border-zinc-100 dark:border-white/10"
                             >
                                 <tr>
-                                    <th class="px-5 py-3 eyebrow text-zinc-500">
+                                    <th
+                                        class="px-3 py-3 eyebrow text-zinc-500 sm:px-5"
+                                    >
                                         Documento
                                     </th>
-                                    <th class="px-5 py-3 eyebrow text-zinc-500">
+                                    <th
+                                        class="px-3 py-3 eyebrow text-zinc-500 sm:px-5"
+                                    >
                                         Data
                                     </th>
                                     <th
-                                        class="px-5 py-3 text-right eyebrow text-zinc-500"
+                                        class="px-3 py-3 text-right eyebrow whitespace-nowrap text-zinc-500 sm:px-5"
                                     >
-                                        Movimento
+                                        Movimento ({{ currencyCode }})
                                     </th>
                                     <th
-                                        class="px-5 py-3 text-right eyebrow text-zinc-500"
+                                        class="px-3 py-3 text-right eyebrow whitespace-nowrap text-zinc-500 sm:px-5"
                                     >
-                                        Saldo
+                                        Saldo ({{ currencyCode }})
                                     </th>
                                 </tr>
                             </thead>
@@ -564,7 +610,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                     v-for="entry in statement"
                                     :key="entry.public_id"
                                 >
-                                    <td class="px-5 py-3">
+                                    <td class="px-3 py-3 sm:px-5">
                                         <p
                                             class="numeric font-medium text-zinc-950 dark:text-white"
                                         >
@@ -577,7 +623,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                         </p>
                                     </td>
                                     <td
-                                        class="px-5 py-3 whitespace-nowrap text-zinc-600 dark:text-zinc-400"
+                                        class="px-3 py-3 whitespace-nowrap text-zinc-600 sm:px-5 dark:text-zinc-400"
                                     >
                                         {{ formatDate(entry.document_date) }}
                                         <p
@@ -589,7 +635,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                         </p>
                                     </td>
                                     <td
-                                        class="px-5 py-3 text-right numeric whitespace-nowrap"
+                                        class="px-3 py-3 text-right numeric whitespace-nowrap sm:px-5"
                                         :class="
                                             entry.movement_minor < 0
                                                 ? 'text-emerald-700 dark:text-emerald-400'
@@ -598,15 +644,15 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                     >
                                         {{ entry.movement_minor < 0 ? '−' : '+'
                                         }}{{
-                                            money(
+                                            amount(
                                                 Math.abs(entry.movement_minor),
                                             )
                                         }}
                                     </td>
                                     <td
-                                        class="px-5 py-3 text-right numeric font-medium whitespace-nowrap text-zinc-950 dark:text-white"
+                                        class="px-3 py-3 text-right numeric font-medium whitespace-nowrap text-zinc-950 sm:px-5 dark:text-white"
                                     >
-                                        {{ money(entry.balance_minor) }}
+                                        {{ amount(entry.balance_minor) }}
                                     </td>
                                 </tr>
                             </tbody>
@@ -614,7 +660,9 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                     </div>
                 </section>
 
-                <section class="viz overflow-hidden rounded-2xl surface">
+                <section
+                    class="viz min-w-0 overflow-hidden rounded-2xl surface"
+                >
                     <header
                         class="border-b border-zinc-100 p-5 dark:border-white/10"
                     >
@@ -688,7 +736,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                         price.list_price_minor !==
                                         price.unit_price_minor
                                     "
-                                    class="block numeric text-xs text-zinc-400 line-through dark:text-zinc-500"
+                                    class="block numeric text-xs text-zinc-500 line-through dark:text-zinc-400"
                                     >{{ money(price.list_price_minor) }}</span
                                 >
                             </p>
@@ -699,7 +747,9 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                 :title="`Remover o preço acordado de ${price.item}`"
                                 @click="removePrice(price.id, price.item)"
                             >
-                                <span class="sr-only">Remover</span>
+                                <span class="sr-only"
+                                    >Remover preço de {{ price.item }}</span
+                                >
                                 <Trash2 class="size-4" aria-hidden="true" />
                             </button>
                         </li>
@@ -715,21 +765,30 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
 
                     <form
                         v-if="catalogueOptions.length > 0"
-                        class="flex flex-col gap-3 border-t border-zinc-100 p-4 sm:flex-row sm:items-end dark:border-white/10"
+                        class="flex flex-col gap-3 border-t border-zinc-100 p-4 sm:flex-row sm:items-start dark:border-white/10"
                         @submit.prevent="addPrice"
                     >
                         <div class="min-w-0 flex-1">
                             <label
+                                for="agreed-catalogue"
                                 class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
                                 >Artigo</label
                             >
                             <div class="mt-2">
                                 <SelectInput
+                                    id="agreed-catalogue"
                                     v-model="priceForm.catalogue_item"
                                     :options="catalogueOptions"
+                                    :invalid="!!priceForm.errors.catalogue_item"
+                                    :describedby="
+                                        priceForm.errors.catalogue_item
+                                            ? 'agreed-catalogue-error'
+                                            : undefined
+                                    "
                                 />
                             </div>
                             <FormError
+                                id="agreed-catalogue-error"
                                 :message="priceForm.errors.catalogue_item"
                             />
                         </div>
@@ -746,15 +805,28 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                 type="text"
                                 inputmode="decimal"
                                 placeholder="0,00"
+                                :aria-invalid="
+                                    priceForm.errors.unit_price
+                                        ? 'true'
+                                        : undefined
+                                "
+                                :aria-describedby="
+                                    priceForm.errors.unit_price
+                                        ? 'agreed-price-error'
+                                        : undefined
+                                "
                                 class="mt-2 w-full rounded-xl border-0 bg-white px-3 py-2.5 numeric text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring ring-inset dark:bg-white/5 dark:text-white dark:ring-white/10"
                             />
-                            <FormError :message="priceForm.errors.unit_price" />
+                            <FormError
+                                id="agreed-price-error"
+                                :message="priceForm.errors.unit_price"
+                            />
                         </div>
 
                         <button
                             type="submit"
                             :disabled="priceForm.processing"
-                            class="inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
+                            class="inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 sm:mt-7 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                         >
                             <LoaderCircle
                                 v-if="priceForm.processing"
@@ -781,7 +853,9 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                     />
                 </ChartFrame>
 
-                <section class="viz overflow-hidden rounded-2xl surface">
+                <section
+                    class="viz min-w-0 overflow-hidden rounded-2xl surface"
+                >
                     <header
                         class="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-100 p-5 dark:border-white/10"
                     >
@@ -819,37 +893,46 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                         Ainda não há documentos emitidos a este cliente.
                     </div>
 
-                    <div v-else class="overflow-x-auto">
+                    <div
+                        v-else
+                        class="relative overflow-x-auto overscroll-x-contain"
+                    >
                         <table class="min-w-full text-left text-sm">
                             <thead
                                 class="border-b border-zinc-100 dark:border-white/10"
                             >
                                 <tr>
-                                    <th class="px-5 py-3 eyebrow text-zinc-500">
+                                    <th
+                                        class="px-3 py-3 eyebrow text-zinc-500 sm:px-5"
+                                    >
                                         Documento
                                     </th>
-                                    <th class="px-5 py-3 eyebrow text-zinc-500">
+                                    <th
+                                        class="px-3 py-3 eyebrow text-zinc-500 sm:px-5"
+                                    >
                                         Data
                                     </th>
-                                    <th class="px-5 py-3 eyebrow text-zinc-500">
+                                    <th
+                                        class="px-3 py-3 eyebrow text-zinc-500 sm:px-5"
+                                    >
                                         Estado fiscal
                                     </th>
                                     <th
-                                        class="px-5 py-3 text-right eyebrow text-zinc-500"
+                                        class="px-3 py-3 text-right eyebrow whitespace-nowrap text-zinc-500 sm:px-5"
                                     >
-                                        Total
+                                        Total ({{ currencyCode }})
                                     </th>
                                     <th
-                                        class="hidden px-5 py-3 text-right eyebrow text-zinc-500 sm:table-cell"
+                                        class="hidden px-3 py-3 text-right eyebrow whitespace-nowrap text-zinc-500 sm:table-cell sm:px-5"
                                     >
-                                        Pago
+                                        Pago ({{ currencyCode }})
                                     </th>
                                     <th
-                                        class="px-5 py-3 text-right eyebrow text-zinc-500"
+                                        class="px-3 py-3 text-right eyebrow whitespace-nowrap text-zinc-500 sm:px-5"
                                     >
-                                        Em dívida
+                                        Em dívida ({{ currencyCode }})
                                     </th>
-                                    <th class="px-5 py-3">
+                                    <th class="px-3 py-3 sm:px-5">
                                         <span class="sr-only">Enviar</span>
                                     </th>
                                 </tr>
@@ -861,7 +944,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                     v-for="document in documents.data"
                                     :key="document.public_id"
                                 >
-                                    <td class="px-5 py-3">
+                                    <td class="px-3 py-3 sm:px-5">
                                         <a
                                             v-if="document.can_send"
                                             :href="
@@ -893,7 +976,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                         </p>
                                     </td>
                                     <td
-                                        class="px-5 py-3 whitespace-nowrap text-zinc-600 dark:text-zinc-400"
+                                        class="px-3 py-3 whitespace-nowrap text-zinc-600 sm:px-5 dark:text-zinc-400"
                                     >
                                         {{ formatDate(document.document_date) }}
                                         <p
@@ -901,7 +984,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                             :class="[
                                                 document.overdue
                                                     ? 'text-rose-700 dark:text-rose-400'
-                                                    : 'text-zinc-400 dark:text-zinc-500',
+                                                    : 'text-zinc-500 dark:text-zinc-400',
                                                 'text-xs',
                                             ]"
                                         >
@@ -909,7 +992,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                             {{ formatDate(document.due_date) }}
                                         </p>
                                     </td>
-                                    <td class="px-5 py-3">
+                                    <td class="px-3 py-3 sm:px-5">
                                         <StatusBadge
                                             :tone="
                                                 statusTone[document.status] ??
@@ -919,7 +1002,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                         />
                                     </td>
                                     <td
-                                        class="px-5 py-3 text-right numeric whitespace-nowrap"
+                                        class="px-3 py-3 text-right numeric whitespace-nowrap sm:px-5"
                                         :class="
                                             document.is_credit
                                                 ? 'text-zinc-500 dark:text-zinc-400'
@@ -928,37 +1011,37 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                     >
                                         {{ document.is_credit ? '−' : ''
                                         }}{{
-                                            money(document.gross_total_minor)
+                                            amount(document.gross_total_minor)
                                         }}
                                     </td>
                                     <td
-                                        class="hidden px-5 py-3 text-right numeric whitespace-nowrap text-zinc-600 sm:table-cell dark:text-zinc-400"
+                                        class="hidden px-3 py-3 text-right numeric whitespace-nowrap text-zinc-600 sm:table-cell sm:px-5 dark:text-zinc-400"
                                     >
                                         {{
                                             document.is_billable
-                                                ? money(document.paid_minor)
+                                                ? amount(document.paid_minor)
                                                 : '—'
                                         }}
                                     </td>
                                     <td
-                                        class="px-5 py-3 text-right numeric whitespace-nowrap"
+                                        class="px-3 py-3 text-right numeric whitespace-nowrap sm:px-5"
                                         :class="
                                             document.overdue
                                                 ? 'font-medium text-rose-700 dark:text-rose-400'
                                                 : document.outstanding_minor > 0
                                                   ? 'text-amber-700 dark:text-amber-400'
-                                                  : 'text-zinc-400 dark:text-zinc-500'
+                                                  : 'text-zinc-500 dark:text-zinc-400'
                                         "
                                     >
                                         {{
                                             document.is_billable
-                                                ? money(
+                                                ? amount(
                                                       document.outstanding_minor,
                                                   )
                                                 : '—'
                                         }}
                                     </td>
-                                    <td class="px-5 py-3 text-right">
+                                    <td class="px-3 py-3 text-right sm:px-5">
                                         <button
                                             v-if="document.can_send"
                                             type="button"
@@ -966,12 +1049,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                                 sendingDocument ===
                                                 document.public_id
                                             "
-                                            class="inline-flex h-8 items-center justify-center gap-1.5 rounded-full px-3 text-xs font-semibold text-zinc-600 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 disabled:opacity-50 dark:text-zinc-300 dark:ring-white/15 dark:hover:bg-white/5"
-                                            :title="
-                                                document.sent_at
-                                                    ? `Último envio a ${formatDate(document.sent_at)} · ${document.send_count}×`
-                                                    : 'Ainda não foi enviado'
-                                            "
+                                            class="inline-flex h-9 items-center justify-center gap-1.5 rounded-full px-3 text-xs font-semibold text-zinc-600 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 disabled:opacity-50 dark:text-zinc-300 dark:ring-white/15 dark:hover:bg-white/5"
                                             @click="
                                                 sendDocument(
                                                     document.public_id,
@@ -984,7 +1062,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                                     sendingDocument ===
                                                     document.public_id
                                                 "
-                                                class="size-3.5 animate-spin"
+                                                class="size-3.5 animate-spin-delayed"
                                                 aria-hidden="true"
                                             />
                                             <Send
@@ -998,6 +1076,19 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                                     : 'Enviar'
                                             }}
                                         </button>
+                                        <p
+                                            v-if="
+                                                document.can_send &&
+                                                document.sent_at
+                                            "
+                                            class="mt-1 ml-auto max-w-40 text-xs text-zinc-500 dark:text-zinc-400"
+                                        >
+                                            Último envio a
+                                            {{
+                                                formatInstant(document.sent_at)
+                                            }}
+                                            · {{ document.send_count }}×
+                                        </p>
                                     </td>
                                 </tr>
                             </tbody>
@@ -1017,23 +1108,32 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                             class="flex flex-wrap gap-1"
                             aria-label="Paginação"
                         >
-                            <Link
+                            <template
                                 v-for="link in documents.links"
                                 :key="link.label"
-                                :href="link.url ?? '#'"
-                                preserve-scroll
-                                :class="[
-                                    link.active
-                                        ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950'
-                                        : 'text-zinc-600 ring-1 ring-zinc-200 dark:text-zinc-400 dark:ring-white/10',
-                                    link.url === null
-                                        ? 'pointer-events-none opacity-40'
-                                        : '',
-                                    'rounded-lg px-3 py-1.5 text-sm focus-ring',
-                                ]"
                             >
-                                <span v-text="decodeEntities(link.label)" />
-                            </Link>
+                                <Link
+                                    v-if="link.url"
+                                    :href="link.url"
+                                    preserve-scroll
+                                    :aria-current="
+                                        link.active ? 'page' : undefined
+                                    "
+                                    class="inline-flex h-9 min-w-9 items-center justify-center rounded-full px-2.5 text-xs font-semibold focus-ring transition"
+                                    :class="
+                                        link.active
+                                            ? 'bg-brand-950 text-white dark:bg-zinc-100 dark:text-brand-950'
+                                            : 'text-zinc-600 hover:bg-zinc-900/[0.05] dark:text-zinc-300 dark:hover:bg-white/5'
+                                    "
+                                    >{{ decodeEntities(link.label) }}</Link
+                                >
+                                <span
+                                    v-else
+                                    aria-disabled="true"
+                                    class="inline-flex h-9 min-w-9 items-center justify-center rounded-full px-2.5 text-xs font-semibold text-zinc-300 dark:text-zinc-600"
+                                    >{{ decodeEntities(link.label) }}</span
+                                >
+                            </template>
                         </nav>
                     </div>
                 </section>
