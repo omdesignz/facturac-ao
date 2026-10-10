@@ -1,0 +1,955 @@
+{
+  "schema_version": 1,
+  "phase": "7B.3c-2",
+  "date": "2026-10-09",
+  "kind": "independent pre-execution DDL review of migration package revision 2",
+  "reviewer_independence": "The reviewer did not write the design, the package or the first review, and did not read or reuse the package author's scratch material.",
+  "artifacts": {
+    "report": "docs/phase-7b-3c-2-migration-ddl-review-r2.md",
+    "reviewed_package": "docs/phase-7b-3c-2-migration-review-package.md",
+    "reviewed_package_sha256": "4c143bebda57956f2118dc446d19e3b6bee27b26b2a7c6c38b0c0ea0f4f7ba97",
+    "reviewed_package_evidence": "docs/phase-7b-3c-2-migration-review-evidence.json",
+    "reviewed_package_evidence_sha256": "6be44a368fa1f3538a4e6be6de50cf0aa047f8dc5429a09d003fc3a15e8cf9f3",
+    "first_review_sha256": "be02bde86936822184bd6ea0dda4403c5345ceb574f24fc204d73f997985e8d2",
+    "design_sha256": "bb5dfe36ec33aabccb80e814f46da7724ebb13d8c794d302a3c35d861a4d77fb",
+    "frozen_schema_sha256": "e5de679739cb30018e7e23b5c875c22de62f41da1c003112cc61456f4ba1928b"
+  },
+  "baseline": {
+    "source_inventory_files": 802,
+    "source_inventory_drift_before": 0,
+    "source_inventory_drift_after": 0,
+    "frozen_hashes_exact_before": "14/14",
+    "frozen_hashes_exact_after": "14/14",
+    "dependency_config_hashes_exact": "7/7",
+    "package_sha256_equals_report_sha256_in_its_evidence": true,
+    "git_head": "4e772851f14b9c33119068ac8b920be6fbfb41dc",
+    "git_status_lines_at_start": 394,
+    "git_status_changed_by_review_other_than_two_deliverables": false
+  },
+  "recomputed_identities": {
+    "frozen_fragments": [
+      {
+        "lines": "379-434",
+        "sha256": "96d35ca9da155749513706097aec7e40f49539c49a3dd31138b5d59d30a036dd",
+        "bytes": 7256,
+        "verbatim_in_I1_up": true,
+        "verbatim_in_I1_down": true,
+        "equals_package": true
+      },
+      {
+        "lines": "336-345",
+        "sha256": "285345b2c8621b8cbe263ea0455abbadebb56eb40a8b644b5b0aba8e008b7361",
+        "bytes": 887,
+        "verbatim_in_I1_up": true,
+        "verbatim_in_I1_down": true,
+        "equals_package": true
+      },
+      {
+        "lines": "378-435",
+        "sha256": "763e7c4e492d94e0a0d0a7030e2d55e00d68fb0da3cddc21f9e9f8d94bde4acd",
+        "bytes": 7387,
+        "verbatim_in_I1_down": true,
+        "equals_package": true
+      },
+      {
+        "lines": "335-346",
+        "sha256": "24f7ef372cf06cfa30c0f8cdccf853e73a75ed6be9490730646ff7037e66c9f2",
+        "bytes": 1002,
+        "verbatim_in_I1_down": true,
+        "equals_package": true
+      },
+      {
+        "lines": "462-464",
+        "sha256": "8fc5c1c2dbec297777753cbec0348e9864a4d4a78875a8a17c0b5e8b576e4c71",
+        "bytes": 338,
+        "verbatim_in_I1_up": true,
+        "verbatim_in_I1_down": true,
+        "equals_package": true
+      }
+    ],
+    "listing_sha256_without_final_newline": {
+      "I1_up": "d56daa0c527cacab02099c0a01c7606f782f99c69b63360a8f113ca3a2b02d79",
+      "I2_up": "48268c0af718a7f9a8580d4deb7d6614b330b65782da9b2a9012660e7c771b64",
+      "I1_down": "be38814f04bb5c98c4b3920a8274453deb9f7f16bd808d4759d46e57b3c0d84b"
+    },
+    "listing_sha256_equal_package": true,
+    "successor_functions_equal_frozen_after_reversing_one_edit": {
+      "ai3c_metadata_guard": true,
+      "ai3c_credential_guard": true
+    },
+    "down_functions_equal_frozen": true,
+    "frozen_body_md5": {
+      "ai3c_metadata_guard": "575a44e857a1bbee79e2e936172bb640",
+      "ai3c_credential_guard": "f5b51587e2fad3f8742b5a494f6e6ff6",
+      "equal_to_live_3c1_catalog_prosrc": true
+    }
+  },
+  "environment": {
+    "label": "review rehearsal in a disposable database, not authorized execution",
+    "server": "PostgreSQL 18.6, private cluster created by initdb for this review",
+    "host": "127.0.0.1",
+    "port": 55488,
+    "encoding": "UTF8",
+    "locale": "C",
+    "database_prefix": "facturac_test_",
+    "databases_created": 42,
+    "deadlock_timeout": "1s",
+    "isolation": "read committed",
+    "client": "psql 18.6",
+    "php": "8.5.10 CLI (not the PHP 8.4 binary used by the checkpoint)",
+    "os": "macOS 27.0.1",
+    "cluster_stopped_afterwards": true,
+    "scratch_copy": {
+      "purpose": "running existing tests with two draft migration files present",
+      "draft_files_embed_listings_byte_for_byte": true,
+      "frozen_files_in_copy_byte_identical": true,
+      "deviations": [
+        "app/Fiscal/TenantAiKeyFile.php line 106: ancestor-directory permission check exempts exactly /private/tmp",
+        "app/Fiscal/TenantAiVerificationReceiptKeyFile.php line 113: same exemption",
+        "tests/Unit/PostgresAssistantProviderTest.php: two file names appended to its explicit list, only for the run labelled with_edit"
+      ],
+      "reason_for_exemption": "the mandated scratch directory is under world-writable /private/tmp; without the exemption 1 frozen upgrade test and 54 verifier, lifecycle and quota tests fail before any draft is added"
+    }
+  },
+  "rehearsals": [
+    {
+      "id": "structure",
+      "what": "I1 as one batch without an outer transaction; I2; down; repeated up/down; second application; migrator migrate and rollback steps",
+      "outcome": "all as the package states; catalog after down identical to the 3c-1 catalog by catalog query and pg_dump -s; second I1 refused before and after I2 with the catalog unchanged"
+    },
+    {
+      "id": "populated",
+      "what": "row digest of every table before I1, after I1, after I2, after down, over rows built by the frozen fixtures",
+      "outcome": "identical at all four points; unvalidated checks enforce new rows between I1 and I2"
+    },
+    {
+      "id": "matrix_shape",
+      "cases": 138,
+      "as_predicted": 138,
+      "accepted": 18
+    },
+    {
+      "id": "matrix_authority_use_approvals_receipt",
+      "cases": 85,
+      "as_predicted": 85,
+      "accepted": 34
+    },
+    {
+      "id": "differential_attempt_check",
+      "rows": 47502,
+      "non_inference_rows": 29187,
+      "accepted_by_both": 3592,
+      "refused_by_both": 25595,
+      "disagreements": 0,
+      "inference_rows": 18315,
+      "frozen_accepts_inference": 0,
+      "successor_accepts_inference": 4288,
+      "inference_accepted_from_legacy_or_probe_base": 0
+    },
+    {
+      "id": "differential_approval_check",
+      "rows": 576423,
+      "non_inference_rows": 304708,
+      "accepted_by_both": 42421,
+      "refused_by_both": 262287,
+      "disagreements": 0,
+      "inference_rows": 271715,
+      "frozen_accepts_inference": 0,
+      "successor_accepts_inference": 67874
+    },
+    {
+      "id": "receipt_binding",
+      "what": "the refusal branch the package did not exercise",
+      "cases": [
+        {
+          "mismatch": "account-mapping digest",
+          "observed": "ERROR: AI invocation receipt binding"
+        },
+        {
+          "mismatch": "another legal entity of the same workspace",
+          "observed": "ERROR: AI invocation receipt binding"
+        },
+        {
+          "mismatch": "settings select another customer profile",
+          "observed": "ERROR: AI invocation receipt binding"
+        },
+        {
+          "mismatch": "none (control)",
+          "observed": "accepted"
+        }
+      ]
+    },
+    {
+      "id": "rotation_and_after_use",
+      "lines": [
+        "== Rotation A: attempt admitted, then rotation commits",
+        "   rotation committed with the successor guards installed",
+        "   credentials: 1:replaced:gen 1:used null | 2:active:gen 2:used null",
+        "   refused:  send authorization for the attempt admitted before the rotation -> ERROR:  Customer inference unavailable",
+        "   refused:  same attempt, use written on the NEW active credential instead -> ERROR:  AI invocation authority changed",
+        "   accepted: not-sent finalization of that attempt",
+        "   refused:  new admission still naming the replaced credential -> ERROR:  AI invocation authority changed",
+        "   accepted: new admission bound to the promoted candidate and a fresh approval",
+        "   accepted: its send authorization and use write",
+        "   credentials: 1:replaced:used null | 2:active:used 2026-10-09 13:00:13+01",
+        "== Rotation B: send authorized and use recorded, then rotation commits",
+        "   accepted: send authorization before the rotation",
+        "   rotation committed; candidate inserted with a null use instant",
+        "   credentials: 1:replaced:used 2026-10-09 13:00:05+01 | 2:active:used null",
+        "   accepted: received finalization after the rotation",
+        "   refused:  send authorization of a second attempt admitted before the rotation -> ERROR:  Customer inference unavailable",
+        "   refused:  use write on the replaced credential -> ERROR:  Customer inference unavailable"
+      ],
+      "after_use": [
+        "creator_user_id cleared on a used credential: accepted",
+        "rewrap of a used active credential: accepted",
+        "send authorization of an attempt admitted before the rewrap: refused (AI invocation authority changed)",
+        "its not-sent finalization: accepted"
+      ]
+    },
+    {
+      "id": "races",
+      "runs": [
+        {
+          "race": "conforming writers: revoke holds the root first, send authorization second",
+          "sessions": {
+            "revoke": {
+              "seconds": 0.2,
+              "result": "committed"
+            },
+            "send": {
+              "seconds": 0.15,
+              "result": "ERROR:  Customer inference unavailable"
+            }
+          },
+          "final_state": "attempt1 send=null state=admitted ; credential state=revoked last_used=null ; connection disabled=false gen=2 ; settings mode=disabled",
+          "note": ""
+        },
+        {
+          "race": "conforming writers: send authorization holds the root first, revoke second",
+          "sessions": {
+            "send": {
+              "seconds": 0.22,
+              "result": "committed"
+            },
+            "revoke": {
+              "seconds": 0.18,
+              "result": "committed"
+            }
+          },
+          "final_state": "attempt1 send=2026-10-09 22:39:02.729796+01 state=admitted ; credential state=revoked last_used=2026-10-09 22:39:02.729796+01 ; connection disabled=false gen=2 ; settings mode=disabled",
+          "note": ""
+        },
+        {
+          "race": "conforming writers: send authorization holds the root for 0.6 s; revoke uses the 250 ms lock timeout",
+          "sessions": {
+            "revoke": {
+              "seconds": 0.28,
+              "result": "ERROR:  canceling statement due to lock timeout"
+            },
+            "send": {
+              "seconds": 0.65,
+              "result": "committed"
+            }
+          },
+          "final_state": "attempt1 send=2026-10-09 22:39:03.288678+01 state=admitted ; credential state=active last_used=2026-10-09 22:39:03.288678+01 ; connection disabled=false gen=1 ; settings mode=customer_managed",
+          "note": "bounded wait: the later writer fails closed on lock timeout"
+        },
+        {
+          "race": "sender takes no locks; connection disable in progress commits first",
+          "sessions": {
+            "disable": {
+              "seconds": 0.64,
+              "result": "committed"
+            },
+            "send": {
+              "seconds": 0.5,
+              "result": "ERROR:  AI invocation authority changed"
+            }
+          },
+          "final_state": "attempt1 send=null state=admitted ; credential state=active last_used=null ; connection disabled=true gen=1 ; settings mode=disabled",
+          "note": ""
+        },
+        {
+          "race": "sender takes no locks and is uncommitted; connection disable second",
+          "sessions": {
+            "send": {
+              "seconds": 0.65,
+              "result": "committed"
+            },
+            "disable": {
+              "seconds": 0.5,
+              "result": "committed"
+            }
+          },
+          "final_state": "attempt1 send=2026-10-09 22:39:05.201319+01 state=admitted ; credential state=active last_used=2026-10-09 22:39:05.201319+01 ; connection disabled=true gen=1 ; settings mode=disabled",
+          "note": ""
+        },
+        {
+          "race": "cycle, no lock timeouts: sender takes no locks, writes, then its deferred trigger asks for settings while a revoke holds settings and waits for the credential",
+          "sessions": {
+            "revoke": {
+              "seconds": 1.03,
+              "result": "ERROR:  deadlock detected"
+            },
+            "send": {
+              "seconds": 1.18,
+              "result": "committed"
+            }
+          },
+          "final_state": "attempt1 send=2026-10-09 22:39:06.211218+01 state=admitted ; credential state=active last_used=2026-10-09 22:39:06.211218+01 ; connection disabled=false gen=1 ; settings mode=customer_managed",
+          "note": "deadlock_timeout is the PostgreSQL default of 1 s"
+        },
+        {
+          "race": "same cycle with the 250 ms lock timeout both writers use",
+          "sessions": {
+            "revoke": {
+              "seconds": 0.31,
+              "result": "ERROR:  canceling statement due to lock timeout"
+            },
+            "send": {
+              "seconds": 0.41,
+              "result": "committed"
+            }
+          },
+          "final_state": "attempt1 send=2026-10-09 22:39:07.770132+01 state=admitted ; credential state=active last_used=2026-10-09 22:39:07.770132+01 ; connection disabled=false gen=1 ; settings mode=customer_managed",
+          "note": ""
+        },
+        {
+          "race": "cycle at admission, no lock timeouts: admission takes no locks, then its deferred trigger asks for settings while a revoke holds settings and waits for the credential",
+          "sessions": {
+            "revoke": {
+              "seconds": 1.04,
+              "result": "ERROR:  deadlock detected"
+            },
+            "admit": {
+              "seconds": 1.2,
+              "result": "committed"
+            }
+          },
+          "final_state": "attempt1 send=null state=admitted ; credential state=active last_used=null ; connection disabled=false gen=1 ; settings mode=customer_managed",
+          "note": ""
+        },
+        {
+          "race": "two conforming senders for one credential (clock read after the locks)",
+          "sessions": {
+            "send1": {
+              "seconds": 0.16,
+              "result": "committed"
+            },
+            "send2": {
+              "seconds": 0.14,
+              "result": "committed"
+            }
+          },
+          "final_state": "attempt1 send=2026-10-09 22:39:10.231996+01 state=admitted ; credential state=active last_used=2026-10-09 22:39:10.354217+01 ; connection disabled=false gen=1 ; settings mode=customer_managed",
+          "note": ""
+        },
+        {
+          "race": "two senders, instant read before the credential lock: the earlier instant commits second",
+          "sessions": {
+            "send1": {
+              "seconds": 0.05,
+              "result": "committed"
+            },
+            "send_early_clock": {
+              "seconds": 0.44,
+              "result": "ERROR:  Customer inference unavailable"
+            }
+          },
+          "final_state": "attempt1 send=2026-10-09 22:39:10.867423+01 state=admitted ; credential state=active last_used=2026-10-09 22:39:10.867423+01 ; connection disabled=false gen=1 ; settings mode=customer_managed",
+          "note": "implementation constraint: read the send instant only after the credential row lock is held"
+        },
+        {
+          "race": "two non-locking senders for one credential, overlapping",
+          "sessions": {
+            "send1": {
+              "seconds": 0.35,
+              "result": "committed"
+            },
+            "send2": {
+              "seconds": 0.3,
+              "result": "committed"
+            }
+          },
+          "final_state": "attempt1 send=2026-10-09 22:39:11.527201+01 state=admitted ; credential state=active last_used=2026-10-09 22:39:11.583596+01 ; connection disabled=false gen=1 ; settings mode=customer_managed",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "refusals_and_preconditions",
+      "lines": [
+        "== retained data: down and re-application",
+        "   down with intent attempts and an intent approval retained -> ERROR:  AI invocation downgrade refused: retained data ; catalog unchanged",
+        "   I1 again with the same data -> ERROR:  AI invocation migration precondition failed ; catalog unchanged",
+        "   down with only an intent approval retained -> ERROR:  AI invocation downgrade refused: retained data ; catalog unchanged",
+        "   I1 again on an installed, validated schema with probe data only -> ERROR:  AI invocation migration precondition failed ; catalog unchanged",
+        "== I1 preconditions on a clean 3c-1 schema",
+        "   approval check present but not validated -> ERROR:  AI invocation migration precondition failed ; catalog unchanged",
+        "   credential guard body differs by one space -> ERROR:  AI invocation migration precondition failed ; catalog unchanged",
+        "   3c-1 attempt integrity trigger missing -> ERROR:  AI invocation migration precondition failed ; catalog unchanged",
+        "   attempt check missing -> ERROR:  AI invocation migration precondition failed ; catalog unchanged"
+      ]
+    },
+    {
+      "id": "down_check_then_act",
+      "what": "down started while another transaction commits an inference approval after the down's own check",
+      "observed": "ERROR: check constraint ai3c_approval_shape_ck of relation assistant_provider_tenants is violated by some row; catalog unchanged"
+    },
+    {
+      "id": "out_of_order_reversal",
+      "observed": [
+        "3c-1 validation down: ok",
+        "3c-1 integrity down: ok",
+        "3c-1 metadata down: refused, cannot drop column purpose because trigger ainv1_intent_authority depends on it",
+        "contract_version and purpose present; both ainv1 triggers, functions and indexes present",
+        "legacy insert and legacy finalization commit; gateway insert refused by ai3c_stage_closed_4",
+        "I1 down directly: fails on missing ai3c_approval_shape_ck, catalog unchanged",
+        "recovery (integrity up, validation up, I1 down): catalog identical to clean 3c-1",
+        "correct-order round trip by direct calls: pg_dump -s identical to installed; catalog query differs only in physical column numbers"
+      ]
+    },
+    {
+      "id": "locks",
+      "held_at_end": {
+        "I1_up": {
+          "tenant_ai_credentials": [
+            "AccessShareLock",
+            "ShareRowExclusiveLock"
+          ],
+          "assistant_provider_tenants": [
+            "AccessExclusiveLock",
+            "AccessShareLock"
+          ],
+          "assistant_provider_attempts": [
+            "AccessExclusiveLock",
+            "AccessShareLock",
+            "ShareLock",
+            "ShareRowExclusiveLock"
+          ]
+        },
+        "I2_up": {
+          "assistant_provider_tenants": [
+            "ShareUpdateExclusiveLock"
+          ],
+          "assistant_provider_attempts": [
+            "ShareUpdateExclusiveLock"
+          ]
+        },
+        "I1_down": {
+          "tenant_ai_credentials": [
+            "AccessExclusiveLock",
+            "AccessShareLock"
+          ],
+          "assistant_provider_tenants": [
+            "AccessExclusiveLock",
+            "AccessShareLock",
+            "ShareUpdateExclusiveLock"
+          ],
+          "assistant_provider_attempts": [
+            "AccessExclusiveLock",
+            "AccessShareLock",
+            "ShareUpdateExclusiveLock"
+          ]
+        }
+      },
+      "lock_timeout_atomicity": [
+        "I1 up against ACCESS SHARE on attempts: lock timeout after 0.31 s, catalog unchanged",
+        "I1 up against ROW EXCLUSIVE on credentials: lock timeout, catalog unchanged",
+        "I2 against SHARE on approvals: lock timeout, both checks remain unvalidated",
+        "I2 against ROW EXCLUSIVE: not blocked",
+        "I1 down against ACCESS SHARE on attempts: lock timeout, catalog unchanged"
+      ]
+    },
+    {
+      "id": "index_use",
+      "rows": 60000,
+      "lines": [
+        "intent rows: 60000 synthetic (1200 admitted), one credential",
+        "USE CHECK PLAN (generic, as inside plpgsql):",
+        "Result (actual rows=1.00 loops=1)",
+        "  InitPlan 1",
+        "    ->  Index Scan using ainv1_intent_use_idx on assistant_provider_attempts a (actual rows=0.00 loops=1)",
+        "          Index Cond: ((credential_version_id = $1) AND (send_authorized_at = $5))",
+        "          Filter: ((connection_id = $2) AND (workspace_id = $3) AND (deployment_id = $4))",
+        "          Index Searches: 1",
+        "RECOVERY SCAN PLAN (design 9.5 shape):",
+        "Limit (actual rows=100.00 loops=1)",
+        "  ->  Index Only Scan using ainv1_intent_recovery_idx on assistant_provider_attempts (actual rows=100.00 loops=1)",
+        "        Index Cond: (admitted_at < '2026-10-11 01:00:00+01'::timestamp with time zone)",
+        "        Heap Fetches: 114",
+        "        Index Searches: 1"
+      ]
+    },
+    {
+      "id": "variant_fail_fast_reads",
+      "note": "NOT the package's listing; FOR SHARE NOWAIT installed in a separate disposable database only to see whether it removes the cycle",
+      "runs": [
+        {
+          "race": "VARIANT cycle interleaving at send, no lock timeouts",
+          "sessions": {
+            "send": {
+              "seconds": 0.71,
+              "result": "ERROR:  could not obtain lock on row in relation \"tenant_ai_settings\""
+            },
+            "revoke": {
+              "seconds": 0.57,
+              "result": "committed"
+            }
+          },
+          "final_state": "attempt1 send=null state=admitted ; credential state=revoked last_used=null ; connection disabled=false gen=2 ; settings mode=disabled",
+          "note": ""
+        },
+        {
+          "race": "VARIANT cycle interleaving at admission, no lock timeouts",
+          "sessions": {
+            "admit": {
+              "seconds": 0.57,
+              "result": "ERROR:  could not obtain lock on row in relation \"tenant_ai_settings\""
+            },
+            "revoke": {
+              "seconds": 0.51,
+              "result": "committed"
+            }
+          },
+          "final_state": "attempt1 send=null state=admitted ; credential state=revoked last_used=null ; connection disabled=false gen=2 ; settings mode=disabled",
+          "note": ""
+        },
+        {
+          "race": "VARIANT conforming sender then revoke",
+          "sessions": {
+            "send": {
+              "seconds": 0.31,
+              "result": "committed"
+            },
+            "revoke": {
+              "seconds": 0.26,
+              "result": "committed"
+            }
+          },
+          "final_state": "attempt1 send=2026-10-09 22:59:58.137047+01 state=admitted ; credential state=revoked last_used=2026-10-09 22:59:58.137047+01 ; connection disabled=false gen=2 ; settings mode=disabled",
+          "note": ""
+        },
+        {
+          "race": "VARIANT sender takes no locks, checked first and uncommitted; disable second",
+          "sessions": {
+            "send": {
+              "seconds": 0.45,
+              "result": "committed"
+            },
+            "disable": {
+              "seconds": 0.3,
+              "result": "committed"
+            }
+          },
+          "final_state": "attempt1 send=2026-10-09 22:59:59.182683+01 state=admitted ; credential state=active last_used=2026-10-09 22:59:59.182683+01 ; connection disabled=true gen=1 ; settings mode=disabled",
+          "note": ""
+        },
+        {
+          "race": "VARIANT two non-locking senders overlapping",
+          "sessions": {
+            "send1": {
+              "seconds": 0.35,
+              "result": "committed"
+            },
+            "send2": {
+              "seconds": 0.31,
+              "result": "committed"
+            }
+          },
+          "final_state": "attempt1 send=2026-10-09 23:00:00.131218+01 state=admitted ; credential state=active last_used=2026-10-09 23:00:00.183979+01 ; connection disabled=false gen=1 ; settings mode=customer_managed",
+          "note": ""
+        }
+      ]
+    }
+  ],
+  "existing_tests_in_scratch_copy": {
+    "without_drafts": {
+      "AiVerificationSchemaContractTest (frozen)": {
+        "result": "passed",
+        "tests": 2,
+        "passed": 1,
+        "skipped": 1,
+        "assertions": 17
+      },
+      "PostgresAiVerificationMigrationTest (frozen)": {
+        "result": "passed",
+        "tests": 166,
+        "passed": 166,
+        "assertions": 1698
+      },
+      "PostgresAiVerificationUpgradeTest (frozen)": {
+        "result": "passed",
+        "tests": 6,
+        "passed": 6,
+        "assertions": 88
+      },
+      "PostgresAiVerificationConcurrencyTest (frozen)": {
+        "result": "passed",
+        "tests": 1,
+        "passed": 1,
+        "assertions": 15
+      },
+      "PostgresTenantAiStorageTest": {
+        "result": "passed",
+        "tests": 6,
+        "passed": 6,
+        "assertions": 58
+      },
+      "Feature/TenantAiStorageTest on PostgreSQL": {
+        "result": "passed",
+        "tests": 49,
+        "passed": 49,
+        "assertions": 218
+      },
+      "PostgresAssistantProviderTest": {
+        "result": "passed",
+        "tests": 19,
+        "passed": 19,
+        "assertions": 275
+      },
+      "PostgresTenantAiLifecycleTest+VerifierTest+VerificationQuotaTest": {
+        "result": "passed",
+        "tests": 102,
+        "passed": 102,
+        "assertions": 1511
+      },
+      "three SQLite files that fail in the full run": {
+        "result": "failed",
+        "tests": 78,
+        "passed": 75,
+        "errors": 1,
+        "failed": 2,
+        "assertions": 383
+      }
+    },
+    "with_drafts": {
+      "AiVerificationSchemaContractTest (frozen)": {
+        "result": "passed",
+        "tests": 2,
+        "passed": 1,
+        "skipped": 1,
+        "assertions": 17
+      },
+      "PostgresAiVerificationMigrationTest (frozen)": {
+        "result": "passed",
+        "tests": 166,
+        "passed": 166,
+        "assertions": 1698
+      },
+      "PostgresAiVerificationUpgradeTest (frozen)": {
+        "result": "passed",
+        "tests": 6,
+        "passed": 6,
+        "assertions": 88
+      },
+      "PostgresAiVerificationConcurrencyTest (frozen)": {
+        "result": "passed",
+        "tests": 1,
+        "passed": 1,
+        "assertions": 15
+      },
+      "PostgresTenantAiStorageTest": {
+        "result": "passed",
+        "tests": 6,
+        "passed": 6,
+        "assertions": 58
+      },
+      "Feature/TenantAiStorageTest on PostgreSQL": {
+        "result": "passed",
+        "tests": 49,
+        "passed": 49,
+        "assertions": 218
+      },
+      "PostgresAssistantProviderTest (unmodified)": {
+        "result": "failed",
+        "tests": 19,
+        "passed": 18,
+        "errors": 1,
+        "assertions": 270
+      },
+      "PostgresAssistantProviderTest (with_edit)": {
+        "result": "passed",
+        "tests": 19,
+        "passed": 19,
+        "assertions": 275
+      },
+      "PostgresTenantAiLifecycleTest+VerifierTest+VerificationQuotaTest": {
+        "result": "passed",
+        "tests": 102,
+        "passed": 102,
+        "assertions": 1511
+      },
+      "PostgresAssistantTest": {
+        "result": "passed",
+        "tests": 33,
+        "passed": 33,
+        "assertions": 1165
+      },
+      "seven other tests/Unit/Postgres*.php files": {
+        "result": "passed",
+        "tests": 264,
+        "passed": 264,
+        "assertions": 7971
+      },
+      "whole default SQLite suite": {
+        "result": "failed",
+        "tests": 2967,
+        "passed": 2367,
+        "skipped": 597,
+        "errors": 1,
+        "failed": 2,
+        "assertions": 15671
+      }
+    },
+    "frozen_tests_fail_with_drafts": false,
+    "required_non_frozen_test_edit_correctly_identified": true,
+    "other_existing_test_broken_by_drafts": false,
+    "sqlite_non_passes_are_environmental_and_identical_without_drafts": [
+      "FiscalPreviewRoundingTest: node rejects --input-type=module",
+      "AiExecutionQuarantineTest: PHP 8.5 deprecation notice in captured output",
+      "TenantAiCustodyRemediationTest: storage/app/public missing in the scratch copy"
+    ]
+  },
+  "defects": [
+    {
+      "id": "D1",
+      "title": "The late FOR SHARE reads can complete a lock cycle; the package says they cannot",
+      "kind": "false statement in the package and missing expected result in MP-14; no listing change needed",
+      "package_locations": [
+        "section 3.6",
+        "section 5.2",
+        "section 12 answer 1",
+        "MP-14"
+      ],
+      "reproduction": "I1+I2 installed, one inference attempt admitted and committed. Session A takes no locks, writes the send mark and the use instant (or only inserts an attempt), sleeps 0.5 s, commits. Session B starts 0.15 s later and does what a revoke does: root, settings, connection, credentials FOR UPDATE.",
+      "observed": [
+        "no lock timeouts, send variant: B ERROR deadlock detected after 1.03 s; A commits",
+        "250 ms lock timeout in both, send variant: B canceled by lock timeout after 0.31 s; A commits",
+        "no lock timeouts, admission variant: B ERROR deadlock detected after 1.04 s; A commits"
+      ],
+      "bounded": "fail-safe: no send authorized after a committed lifecycle change; the aborted transaction can be the emergency revoke",
+      "requires": "a writer that did not take the root and canonical row locks; not observed, and by lock order not possible, when both writers take the root first"
+    },
+    {
+      "id": "D2",
+      "title": "Lock matrix omits the down and the preflight; the canonical-order sentence is inaccurate",
+      "kind": "documentation",
+      "observed": "I1 down holds AccessExclusiveLock on tenant_ai_credentials; I1 up first takes AccessShareLock on attempts, approvals, credentials in that order and upgrades later"
+    }
+  ],
+  "findings_not_defects": [
+    "N1 fail-fast variant removes the cycle (variant only)",
+    "N2 the use pair cannot be written once constraints are immediate; the frozen active fixture leaves its transaction immediate",
+    "N3 one send authorization per credential per transaction",
+    "N4 the send instant must be read after the credential lock",
+    "N5 nothing ties the instant to real time; a far-future instant blocks later use until rotation",
+    "N6 a second attempt can be authorized at an existing use instant without a credential write",
+    "N7 credential and approval expiry are not database rules",
+    "N8 a fifth file-name-selecting test exists (frozen contract test, SQLite case); unaffected",
+    "N9 receipt binding to one legal entity is by design section 5.2",
+    "N10 a revoked inference approval still blocks the down",
+    "N11 round trip differs in physical column numbers only",
+    "N12 ainv1_credential_use has no WHEN clause (optional)",
+    "N13 inference bounds hard-code the legacy envelope",
+    "N14 existing gateway queries filter on connection_probe"
+  ],
+  "required_changes": [
+    "Correct the statement about the late FOR SHARE reads in sections 3.6, 5.2 and 12 answer 1 and state the writer lock invariant; or adopt fail-fast reads and re-rehearse the changed listing.",
+    "Give MP-14 expected results for the variants without writer locks, naming the D1 interleavings for admission and send authorization.",
+    "Complete section 5.1 with the locks of the down and of the preflight and reword the canonical-order sentence."
+  ],
+  "listing_bytes_require_change": false,
+  "not_verified": [
+    "the authorized execution and any production-like populated database",
+    "any PHP inference writer (none exists); statements about the design's writer rest on the design text",
+    "the proposed tests MP-01 to MP-27 as tests",
+    "receipt MAC verification after I1+I2 (row bytes compared, verifier not run over them)",
+    "PHP 8.4 and the unpatched key-file ancestor check for the test runs",
+    "Feature tests other than TenantAiStorageTest on PostgreSQL",
+    "REPEATABLE READ and SERIALIZABLE",
+    "the package author's exact counts (53 cases, 3,688 rows, 1,819 objects); larger independent sets were used instead"
+  ],
+  "verified_by_reading_only": [
+    "every existing writer of settings, connection and credential rows takes the deployment root first",
+    "ai3c_check_attempt has no probe-only assumption affecting inference rows",
+    "N8, N9, N12, N13, N14"
+  ],
+  "provider_requests": 0,
+  "migrations_applied_to_project_or_shared_database": 0,
+  "repository_files_created": [
+    "docs/phase-7b-3c-2-migration-ddl-review-r2.md",
+    "docs/phase-7b-3c-2-migration-ddl-review-r2-evidence.json"
+  ],
+  "repository_files_edited": [],
+  "self_hash_notice": "This evidence file has no self hash; report_sha256 is the content hash of the report including sections 12 and 13; report_sha256_before_follow_up and report_sha256_after_first_follow_up are the earlier states.",
+  "report_sha256": "1d00bb07377bf7b5f7d75699925f5a9b4d66a938dcdb719c786bad3524fe0d76",
+  "final_decision_revision_2": "PHASE 7B.3c-2 MIGRATION PACKAGE — CHANGES REQUIRED",
+  "report_sha256_before_follow_up": "709c006e979d575f41b0c101683c4e1e55fa3a7516188d369ac7d7014c7f4844",
+  "follow_up_review_of_revision_3": {
+    "date": "2026-10-10",
+    "kind": "text and hash review only; no database started; nothing executed",
+    "reviewed_package_sha256": "4da1f707a5f0c3967bc70624144a9e05e165fdd232d5d69bc23631e7eac9a11b",
+    "reviewed_package_evidence_sha256": "e65ad8b0e15c66c430894f02a8ad0c3ef41d81edb0af838f5a5f9b3e763194c2",
+    "package_sha256_equals_report_sha256_in_its_evidence": true,
+    "baseline": {
+      "source_inventory_files": 802,
+      "source_inventory_drift": 0,
+      "frozen_hashes_exact": "14/14",
+      "dependency_config_hashes_exact": "7/7",
+      "git_head": "4e772851f14b9c33119068ac8b920be6fbfb41dc"
+    },
+    "listing_sha256_in_revision_3": {
+      "I1_up": "d56daa0c527cacab02099c0a01c7606f782f99c69b63360a8f113ca3a2b02d79",
+      "I2_up": "48268c0af718a7f9a8580d4deb7d6614b330b65782da9b2a9012660e7c771b64",
+      "I1_down": "be38814f04bb5c98c4b3920a8274453deb9f7f16bd808d4759d46e57b3c0d84b"
+    },
+    "listings_byte_identical_to_rehearsed": true,
+    "earlier_rehearsal_results_carry_over": true,
+    "method": "line-by-line diff of revision 3 against a retained copy of revision 2 (SHA-256 4c143bebda57956f2118dc446d19e3b6bee27b26b2a7c6c38b0c0ea0f4f7ba97); reading of the existing writers for lock timeouts",
+    "required_changes_of_revision_2": [
+      {
+        "item": 1,
+        "result": "closed in substance",
+        "note": "sections 3.6, 5.2 and 12 corrected and the invariant stated; one new wrong parenthetical inside section 3.6 (F1)"
+      },
+      {
+        "item": 2,
+        "result": "closed",
+        "note": "MP-14 has expected results with and without writer locks, for admission and send authorization"
+      },
+      {
+        "item": 3,
+        "result": "closed",
+        "note": "section 5.1 lists preflight and down locks consistent with observed pg_locks; section 3 sentence reworded; header comment left unchanged as allowed"
+      }
+    ],
+    "new_findings": [
+      {
+        "id": "F1",
+        "location": "section 3.6",
+        "statement": "lock timeout (250 ms, as every writer here sets)",
+        "finding": "not true of every writer: TenantAiLifecycle::transaction (used by disableWorkspace) and TenantAiStorage::configure set no lock timeout in their own code; no configuration default found",
+        "established_by": "reading"
+      },
+      {
+        "id": "F2",
+        "location": "section 11.3 first sentence",
+        "statement": "no access to the author's reasoning or scripts",
+        "finding": "the reviewer read the package, design and first review in full; only the author's scripts and scratch material were not read or reused",
+        "established_by": "the review's own section 2"
+      },
+      {
+        "id": "F3",
+        "location": "section 11.3",
+        "finding": "states more than the review established: differential described as agreement with the listings rather than between frozen and successor checks; 'No other existing test broke' unqualified; 'not verified' list omits items of the review's section 10",
+        "established_by": "comparison with this report"
+      }
+    ],
+    "accurate": [
+      "section 9.1 conditions represent N2 to N7 and the invariant correctly",
+      "the remainder of section 11.3",
+      "section 1 limits, the note under section 11.2, section 13, section 14"
+    ],
+    "corrections_to_own_record": [
+      "N7: credential and approval expiry were executed; profile validity at send time was established by reading",
+      "'either transaction can be aborted': only the revoke was observed aborted (3 runs); the sender being aborted and the disable variant are by reasoning"
+    ],
+    "required_changes": [
+      "Section 3.6: remove 'as every writer here sets' or replace it with an accurate statement of which writers set a lock timeout.",
+      "Section 11.3 first sentence: describe the reviewer accurately; drop 'no access to the author's reasoning'.",
+      "Section 11.3: state the differential result correctly, qualify 'No other existing test broke', and complete or mark as non-exhaustive the 'not verified' list."
+    ],
+    "listing_bytes_require_change": false,
+    "not_verified": [
+      "anything by execution in this follow-up",
+      "whether TenantAiLifecycle or TenantAiStorage are invoked under an outer wrapper that sets a session lock timeout",
+      "the author's generator and snapshot method",
+      "everything listed as not verified for revision 2"
+    ],
+    "repository_files_edited": [
+      "docs/phase-7b-3c-2-migration-ddl-review-r2.md",
+      "docs/phase-7b-3c-2-migration-ddl-review-r2-evidence.json"
+    ],
+    "decision": "PHASE 7B.3c-2 MIGRATION PACKAGE — CHANGES REQUIRED"
+  },
+  "final_decision": "PHASE 7B.3c-2 MIGRATION PACKAGE — APPROVED FOR BOUNDED EXECUTION",
+  "report_sha256_after_first_follow_up": "eeaac2130eb97f9632aac4be0873fdd0cf0b6c40258feaa4a2932d385f3f71ee",
+  "follow_up_review_of_revision_4": {
+    "date": "2026-10-10",
+    "kind": "text, code and hash review only; no database started; nothing executed",
+    "reviewed_package_sha256": "fd4154983a5a4cd5fd67a1fb4eefef1f5c3122e156fb8a932d49536ea168e320",
+    "reviewed_package_evidence_sha256": "8a8bb6f550487f78554dcc5f9010bc71dfa39bb658169aa9d1359135bd94b8e0",
+    "package_sha256_equals_report_sha256_in_its_evidence": true,
+    "baseline": {
+      "source_inventory_files": 802,
+      "source_inventory_drift": 0,
+      "frozen_hashes_exact": "14/14",
+      "dependency_config_hashes_exact": "7/7",
+      "git_head": "4e772851f14b9c33119068ac8b920be6fbfb41dc"
+    },
+    "listing_sha256_in_revision_4": {
+      "I1_up": "d56daa0c527cacab02099c0a01c7606f782f99c69b63360a8f113ca3a2b02d79",
+      "I2_up": "48268c0af718a7f9a8580d4deb7d6614b330b65782da9b2a9012660e7c771b64",
+      "I1_down": "be38814f04bb5c98c4b3920a8274453deb9f7f16bd808d4759d46e57b3c0d84b"
+    },
+    "listings_byte_identical_to_rehearsed": true,
+    "earlier_rehearsal_results_carry_over": true,
+    "method": "diff of revision 4 against the retained copy of revision 2, set against the revision 2 to 3 differences recorded in the first follow-up (revision 3 itself was not retained); each named writer checked against the code",
+    "corrections": [
+      {
+        "id": "F1",
+        "result": "closed",
+        "checked_against_code": {
+          "set_lock_timeout_via_limits": [
+            "TenantAiCredentialVerifier (4 call sites)",
+            "TenantAiVerificationAdmission::admit",
+            "TenantAiVerificationSecret",
+            "TenantAiVerificationContext",
+            "TenantAiActiveLifecycle::transaction",
+            "TenantAiVerificationRecovery (2 call sites)"
+          ],
+          "set_none_in_own_code": [
+            "TenantAiLifecycle::transaction (used by disableWorkspace)",
+            "TenantAiStorage::configure"
+          ]
+        }
+      },
+      {
+        "id": "F2",
+        "result": "closed"
+      },
+      {
+        "id": "F3",
+        "result": "closed"
+      }
+    ],
+    "required_changes_of_revision_2_remain_closed": true,
+    "other_changes_accurate": [
+      "section 3.6 record of which party was aborted",
+      "section 9.1 item 7",
+      "header, section 13, section 14",
+      "revision 4 evidence"
+    ],
+    "new_findings_wrong": [],
+    "remarks_not_defects": [
+      "DeleteUserAccount also sets no lock timeout in its own code (reading); the package's two names follow the first follow-up, which named only two; the sentence does not say only",
+      "limits sets min(250, remaining) ms, so 250 ms or less",
+      "the author's statement about its own model family cannot be verified by the reviewer"
+    ],
+    "not_verified": [
+      "anything by execution in this follow-up",
+      "a literal revision 3 to revision 4 diff (revision 3 not retained)",
+      "whether TenantAiLifecycle, TenantAiStorage or DeleteUserAccount run under an outer wrapper that sets a session lock timeout",
+      "the author's generator, snapshot method and statement about its model family",
+      "everything listed as not verified for revision 2, including any PHP inference writer"
+    ],
+    "repository_files_edited": [
+      "docs/phase-7b-3c-2-migration-ddl-review-r2.md",
+      "docs/phase-7b-3c-2-migration-ddl-review-r2-evidence.json"
+    ],
+    "approval_scope": "bounded implementation of design section 17 only, under package section 9.1 and the invariant of package section 3.6; not activation",
+    "decision": "PHASE 7B.3c-2 MIGRATION PACKAGE — APPROVED FOR BOUNDED EXECUTION"
+  }
+}

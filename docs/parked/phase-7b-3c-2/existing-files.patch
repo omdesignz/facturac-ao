@@ -1,0 +1,387 @@
+--- a/app/Console/Commands/RecoverAssistantProviderAttempts.php
++++ b/app/Console/Commands/RecoverAssistantProviderAttempts.php
+@@ -4,6 +4,7 @@
+ 
+ use App\Fiscal\AssistantExecutionGuard;
+ use App\Fiscal\AssistantProviderLedger;
++use App\Fiscal\TenantAiInvocationRecovery;
+ use Illuminate\Console\Command;
+ 
+ final class RecoverAssistantProviderAttempts extends Command
+@@ -12,10 +13,10 @@
+ 
+     protected $description = 'Classify at most 100 stale provider attempts without resending or releasing reservations';
+ 
+-    public function handle(AssistantProviderLedger $ledger): int
++    public function handle(AssistantProviderLedger $ledger, TenantAiInvocationRecovery $invocations): int
+     {
+         try {
+-            $count = AssistantExecutionGuard::database(fn (): int => $ledger->recover());
++            $count = AssistantExecutionGuard::database(fn (): int => $ledger->recover()) + $invocations->recover();
+             $this->info('Stale provider attempts inspected: '.$count);
+ 
+             return self::SUCCESS;
+--- a/app/Fiscal/AssistantIntentGateway.php
++++ b/app/Fiscal/AssistantIntentGateway.php
+@@ -40,17 +40,19 @@
+         return $json;
+     }
+ 
+-    public function execute(AssistantProviderInvocation $invocation, AssistantProviderPermit $permit, #[\SensitiveParameter] string $key): string
++    public function execute(AssistantProviderInvocation $invocation, AiSendAuthority|AssistantProviderPermit $authority, #[\SensitiveParameter] string $key): string
+     {
+-        $input = $permit->input;
+-        $body = $permit->body;
+-        $permissions = $permit->permissions;
++        if ($authority instanceof AssistantProviderPermit) {
++            $authority = new LegacyAiSendAuthority($invocation, $authority, $this->ledger);
++        }
++        $input = $authority->input();
++        $permissions = $authority->permissions();
+         $original = null;
+         $local = null;
+         try {
+-            $send = function (RequestInterface $request) use ($invocation, $input, $permit, $key, $permissions, &$original, &$local) {
++            $send = function (RequestInterface $request) use ($invocation, $input, $authority, $key, $permissions, &$original, &$local) {
+                 abort_unless($request->getMethod() === 'POST' && (string) $request->getUri() === AssistantProviderProfile::URL
+-                    && $permit->matchesBody((string) $request->getBody()), 503);
++                    && $authority->matchesBody((string) $request->getBody()), 503);
+                 abort_unless($request->getHeaderLine('x-api-key') === $key
+                     && $request->getHeaderLine('anthropic-version') === AssistantProviderProfile::API_VERSION
+                     && $request->getHeaderLine('Accept-Encoding') === 'identity'
+@@ -59,10 +61,9 @@
+                 abort_if(array_diff(array_map('strtolower', array_keys($request->getHeaders())),
+                     ['host', 'content-type', 'content-length', 'x-api-key', 'anthropic-version', 'accept', 'accept-encoding', 'user-agent']) !== [], 503);
+                 abort_if(array_diff($permissions, $invocation->permissions()) !== [], 503);
+-                $raw = $this->transport->exchange($invocation, $permit, $this->ledger, $key);
++                $raw = $this->transport->exchange($invocation, $authority, $key);
+                 $original = AssistantProviderResponse::fromJson($raw);
+-                $invocation->permissions();
+-                $this->ledger->gates($invocation);
++                $authority->gate();
+                 $local = $input->localPlan($original->plan, $invocation->permissions());
+ 
+                 return Create::promiseFor(new Response(200, ['Content-Type' => 'application/json'], $raw));
+@@ -73,16 +74,15 @@
+                 [new Message('user', $input->json())], [], $this->schema($input), new TextGenerationOptions(maxTokens: 1024),
+                 8, new StepContext(isFinalStep: true));
+             abort_unless($original instanceof AssistantProviderResponse && is_string($local), 503);
+-            $this->ledger->finalize($permit->attemptId, $original->usage, true, false, $invocation->context);
+-            $invocation->permissions();
+-            $this->ledger->gates($invocation);
++            $authority->finalize($original->usage, true, false, false);
++            $authority->gate();
+ 
+             return $local;
+         } catch (\Throwable $error) {
+             try {
+                 $usage = $original->usage ?? null;
+-                $notSent = ! $permit->transmissionStarted();
+-                $this->ledger->finalize($permit->attemptId, $usage, $original !== null, $usage === null && ! $notSent, $invocation->context, $notSent);
++                $notSent = ! $authority->transmissionStarted();
++                $authority->finalize($usage, $original !== null, $usage === null && ! $notSent, $notSent);
+             } catch (\Throwable) {
+                 // Unresolved admitted liability is retained for bounded recovery; never retry HTTP.
+             }
+--- a/app/Fiscal/AssistantInteraction.php
++++ b/app/Fiscal/AssistantInteraction.php
+@@ -40,10 +40,11 @@
+             $started = hrtime(true) / 1e9;
+             $planJson = $this->planner->plan(AssistantPlan::plannerInput($input, $context->execution->permissions), $invocation);
+             $guard->plannerFinished($started);
+-            $plan = AssistantPlan::fromJson($planJson, $input, $context->execution->permissions);
++            $plan = AssistantPlan::fromJson($planJson, $input, $context->execution->permissions, $invocation->tools());
+             $results = [];
+             foreach ($plan->calls as $call) {
+                 $invocation->verify();
++                $invocation->admits($call['tool']);
+                 $callId = (string) Str::uuid();
+                 try {
+                     $execution = $context->fresh(AssistantPlan::PERMISSIONS[$call['tool']]);
+@@ -65,6 +66,7 @@
+             $context->fresh();
+             foreach ($plan->calls as $call) {
+                 $context->fresh(AssistantPlan::PERMISSIONS[$call['tool']]);
++                $invocation->admits($call['tool']);
+             }
+             $invocation->verify();
+             $response = ['request_id' => $context->execution->correlationId, 'interaction_id' => $context->interactionId, 'context' => $context->publicContext(),
+@@ -76,6 +78,7 @@
+             $context->fresh();
+             foreach ($plan->calls as $call) {
+                 $context->fresh(AssistantPlan::PERMISSIONS[$call['tool']]);
++                $invocation->admits($call['tool']);
+             }
+             $invocation->verify();
+ 
+--- a/app/Fiscal/AssistantPlan.php
++++ b/app/Fiscal/AssistantPlan.php
+@@ -13,8 +13,10 @@
+     /** @param list<array{tool: string, arguments: array<string, string>}> $calls */
+     private function __construct(public string $decision, public ?string $reason, public array $calls) {}
+ 
+-    /** @param list<string> $permissions */
+-    public static function fromJson(#[\SensitiveParameter] string $json, AssistantInput $input, array $permissions): self
++    /** @param list<string> $permissions
++     * @param  list<string>|null  $tools  Tenant tool ceiling; null leaves the permission rule alone.
++     */
++    public static function fromJson(#[\SensitiveParameter] string $json, AssistantInput $input, array $permissions, ?array $tools = null): self
+     {
+         $data = AssistantJson::object($json, 4096, 503);
+         if (in_array($data['decision'] ?? null, ['clarify', 'unsupported'], true)) {
+@@ -33,7 +35,8 @@
+             $call = get_object_vars($raw);
+             AssistantJson::keys($call, ['tool', 'arguments'], 503);
+             abort_unless(is_string($call['tool']) && isset(self::PERMISSIONS[$call['tool']])
+-                && in_array(self::PERMISSIONS[$call['tool']], $permissions, true) && $call['arguments'] instanceof \stdClass, 503);
++                && in_array(self::PERMISSIONS[$call['tool']], $permissions, true)
++                && ($tools === null || in_array($call['tool'], $tools, true)) && $call['arguments'] instanceof \stdClass, 503);
+             $arguments = get_object_vars($call['arguments']);
+             if ($call['tool'] === 'searchCustomers') {
+                 AssistantJson::keys($arguments, ['q', 'status'], 503);
+@@ -70,13 +73,14 @@
+     }
+ 
+     /** @param list<string> $permissions
++     * @param  list<string>|null  $ceiling  Tenant tool ceiling; null leaves the permission rule alone.
+      * @return array{question: string, references: list<array{kind: string, public_id: string}>, current_month: string, schema_version: int, tools: array<string, array<string, mixed>>}
+      */
+-    public static function plannerInput(AssistantInput $input, array $permissions): array
++    public static function plannerInput(AssistantInput $input, array $permissions, ?array $ceiling = null): array
+     {
+         $tools = [];
+         foreach (self::PERMISSIONS as $tool => $permission) {
+-            if (in_array($permission, $permissions, true)) {
++            if (in_array($permission, $permissions, true) && ($ceiling === null || in_array($tool, $ceiling, true))) {
+                 $properties = match ($tool) {
+                     'searchCustomers' => ['q' => ['type' => 'string', 'minLength' => 2, 'maxLength' => 80], 'status' => ['enum' => ['active', 'inactive', 'all']]],
+                     'getMonthlyRecordedBilling' => ['month' => ['type' => 'string', 'pattern' => '^[2-9][0-9]{3}-(0[1-9]|1[0-2])$']],
+--- a/app/Fiscal/AssistantProviderInvocation.php
++++ b/app/Fiscal/AssistantProviderInvocation.php
+@@ -7,6 +7,10 @@
+ {
+     private ?AssistantProviderPermit $permit = null;
+ 
++    private ?AiSendAuthority $authority = null;
++
++    private ?AiToolCeiling $ceiling = null;
++
+     private function __construct(public readonly AssistantInteractionContext $context, public readonly AssistantInput $input,
+         public readonly AssistantExecutionGuard $guard, public readonly float $started) {}
+ 
+@@ -15,9 +19,15 @@
+         return new self($context, $input, $guard, hrtime(true) / 1e9);
+     }
+ 
+-    public function retain(AssistantProviderPermit $permit): void
++    public function retain(AssistantProviderPermit|AiSendAuthority $permit): void
+     {
+-        abort_if($this->permit !== null, 503);
++        abort_if($this->permit !== null || $this->authority !== null, 503);
++        if ($permit instanceof AiSendAuthority) {
++            $permit->recheck();
++            $this->authority = $permit;
++
++            return;
++        }
+         $permit->recheck($this, new AssistantProviderLedger);
+         $this->permit = $permit;
+     }
+@@ -26,8 +36,28 @@
+     {
+         $this->guard->check();
+         $this->permit?->recheck($this, new AssistantProviderLedger);
++        $this->authority?->recheck();
++        $this->ceiling?->recheck($this);
+     }
+ 
++    /** One ceiling per governed interaction, bound before any admission. */
++    public function restrict(AiToolCeiling $ceiling): void
++    {
++        abort_if($this->ceiling !== null || $this->permit !== null || $this->authority !== null, 503);
++        $this->ceiling = $ceiling;
++    }
++
++    /** @return list<string>|null Null only for a workspace without tenant AI settings. */
++    public function tools(): ?array
++    {
++        return $this->ceiling?->admitted();
++    }
++
++    public function admits(string $tool): void
++    {
++        abort_unless($this->ceiling === null || $this->ceiling->admits($tool), 503);
++    }
++
+     public function requireHttp(): void
+     {
+         abort_if(app()->runningInConsole() && ! app()->runningUnitTests(), 503);
+--- a/app/Fiscal/AssistantProviderPermit.php
++++ b/app/Fiscal/AssistantProviderPermit.php
+@@ -25,7 +25,7 @@
+     {
+         $invocation->requireHttp();
+         $permissions = $invocation->permissions();
+-        $input = ProviderIntentInput::fromInput($invocation->input, $permissions);
++        $input = ProviderIntentInput::fromInput($invocation->input, $permissions, $invocation->tools());
+         $body = $gateway->prepare($input);
+ 
+         return new self($invocation, $input, $body, $permissions, $ledger->reserve($invocation, $body), \Fiber::getCurrent());
+--- a/app/Fiscal/AssistantProviderTransport.php
++++ b/app/Fiscal/AssistantProviderTransport.php
+@@ -9,23 +9,22 @@
+ {
+     use ResolvesAnthropicAddress;
+ 
+-    final public function exchange(AssistantProviderInvocation $invocation, AssistantProviderPermit $permit,
+-        AssistantProviderLedger $ledger, #[\SensitiveParameter] string $key): string
++    final public function exchange(AssistantProviderInvocation $invocation, AiSendAuthority $authority, #[\SensitiveParameter] string $key): string
+     {
+         abort_unless(preg_match('/^[a-zA-Z0-9_-]{16,512}$/D', $key) === 1, 503);
+-        $permit->consume($invocation, $ledger);
++        $authority->consume();
+         $deadline = hrtime(true) / 1e9 + min(8, $invocation->remaining() - 0.05);
+         $buffer = new AssistantProviderResponseBuffer($deadline);
+-        $fresh = function () use ($invocation, $permit, $ledger, $deadline): void {
+-            $permit->recheck($invocation, $ledger);
++        $fresh = function () use ($authority, $deadline): void {
++            $authority->recheck();
+             abort_if(hrtime(true) / 1e9 >= $deadline, 503);
+         };
+         $fresh();
+-        $ready = function () use ($fresh, $permit, $invocation, $ledger): void {
++        $ready = function () use ($fresh, $authority): void {
+             $fresh();
+-            $permit->markTransmission($invocation, $ledger);
++            $authority->authorizeSend();
+         };
+-        $this->wire($permit->body, $key, $deadline, $buffer, $ready);
++        $this->wire($authority->body(), $key, $deadline, $buffer, $ready);
+         $invocation->remaining();
+ 
+         return $buffer->finish();
+--- a/app/Fiscal/LegacyAssistantAiGateway.php
++++ b/app/Fiscal/LegacyAssistantAiGateway.php
+@@ -14,7 +14,7 @@
+         $identity = AiModelIdentity::LegacyAnthropicIntent;
+         try {
+             $invocation = $request->invocation();
+-            $plan = $this->planner->plan(AssistantPlan::plannerInput($invocation->input, $invocation->context->execution->permissions), $invocation);
++            $plan = $this->planner->plan(AssistantPlan::plannerInput($invocation->input, $invocation->context->execution->permissions, $invocation->tools()), $invocation);
+ 
+             return AiInferenceResult::proposedPlan($identity, $plan);
+         } catch (\Throwable $error) {
+--- a/app/Fiscal/ProviderIntentInput.php
++++ b/app/Fiscal/ProviderIntentInput.php
+@@ -5,14 +5,18 @@
+ /** The only model-visible projection; it accepts no records or tool results. */
+ final readonly class ProviderIntentInput implements \JsonSerializable
+ {
+-    /** @param array<string, mixed> $payload */
+-    private function __construct(private array $payload, private AssistantInput $original) {}
++    /** @param array<string, mixed> $payload
++     * @param  list<string>|null  $ceiling
++     */
++    private function __construct(private array $payload, private AssistantInput $original, private ?array $ceiling = null) {}
+ 
+-    /** @param list<string> $permissions */
+-    public static function fromInput(AssistantInput $input, array $permissions): self
++    /** @param list<string> $permissions
++     * @param  list<string>|null  $ceiling  Tenant tool ceiling; null leaves the permission rule alone.
++     */
++    public static function fromInput(AssistantInput $input, array $permissions, ?array $ceiling = null): self
+     {
+         $question = $input->providerQuestion();
+-        $local = AssistantPlan::plannerInput($input, $permissions);
++        $local = AssistantPlan::plannerInput($input, $permissions, $ceiling);
+         $references = [];
+         foreach ($input->references as $index => $reference) {
+             $references[] = ['kind' => $reference['kind'], 'ref' => 'r'.($index + 1)];
+@@ -28,7 +32,7 @@
+         abort_if($tools === [], 503);
+ 
+         return new self(['schema_version' => 'intent-provider-v1', 'question' => $question,
+-            'references' => $references, 'current_month' => $local['current_month'], 'tools' => $tools], $input);
++            'references' => $references, 'current_month' => $local['current_month'], 'tools' => $tools], $input, $ceiling);
+     }
+ 
+     public function json(): string
+@@ -62,7 +66,7 @@
+             }
+         }
+         $translated = json_encode($data, JSON_THROW_ON_ERROR);
+-        AssistantPlan::fromJson($translated, $this->original, $permissions);
++        AssistantPlan::fromJson($translated, $this->original, $permissions, $this->ceiling);
+ 
+         return $translated;
+     }
+--- a/app/Providers/AppServiceProvider.php
++++ b/app/Providers/AppServiceProvider.php
+@@ -5,7 +5,7 @@
+ use App\Exceptions\AiExecutionDisabled;
+ use App\Fiscal\AssistantPlanner;
+ use App\Fiscal\GatewayAssistantPlanner;
+-use App\Fiscal\LegacyAssistantAiGateway;
++use App\Fiscal\RoutedAssistantAiGateway;
+ use App\Fiscal\UnavailableAssistantPlanner;
+ use App\Fiscal\VapAiGateway;
+ use App\Models\ImpersonationSession;
+@@ -40,12 +40,12 @@
+      */
+     public function register(): void
+     {
+-        $this->app->bind(VapAiGateway::class, LegacyAssistantAiGateway::class);
++        $this->app->bind(VapAiGateway::class, RoutedAssistantAiGateway::class);
+         Facade::clearResolvedInstance(AiManager::class);
+         $this->app->bind(AiManager::class, function (): never {
+             throw new AiExecutionDisabled;
+         });
+-        $this->app->bind(AssistantPlanner::class, fn ($app) => config('assistant.provider.enabled') === true
++        $this->app->bind(AssistantPlanner::class, fn ($app) => config('assistant.provider.enabled') === true || config('tenant_ai.inference.enabled') === true
+             ? $app->make(GatewayAssistantPlanner::class) : new UnavailableAssistantPlanner);
+     }
+ 
+--- a/config/tenant_ai.php
++++ b/config/tenant_ai.php
+@@ -15,4 +15,11 @@
+         'signing_key_id' => null,
+         'receipt_keys' => [],
+     ],
++    // Customer-managed inference: default closed. Profiles and account grants are deployment-reviewed, never tenant input.
++    'inference' => [
++        'enabled' => false,
++        'anthropic_egress_enabled' => false,
++        'profiles' => [],
++        'accounts' => [],
++    ],
+ ];
+--- a/tests/Feature/AiGatewayFacadeTest.php
++++ b/tests/Feature/AiGatewayFacadeTest.php
+@@ -12,6 +12,7 @@
+ use App\Fiscal\AssistantProviderTransport;
+ use App\Fiscal\GatewayAssistantPlanner;
+ use App\Fiscal\LegacyAssistantAiGateway;
++use App\Fiscal\RoutedAssistantAiGateway;
+ use App\Fiscal\UnavailableAssistantPlanner;
+ use App\Fiscal\VapAiGateway;
+ use Carbon\CarbonImmutable;
+@@ -58,7 +59,7 @@
+ });
+ 
+ test('gateway container seam preserves unavailable default and routes enabled planning through the gateway', function () {
+-    expect(app(VapAiGateway::class))->toBeInstanceOf(LegacyAssistantAiGateway::class)
++    expect(app(VapAiGateway::class))->toBeInstanceOf(RoutedAssistantAiGateway::class)
+         ->and(app(GatewayAssistantPlanner::class))->toBeInstanceOf(GatewayAssistantPlanner::class)
+         ->and(app(AssistantPlanner::class))->toBeInstanceOf(UnavailableAssistantPlanner::class);
+     config(['assistant.provider.enabled' => true]);
+--- a/tests/Unit/PostgresAssistantProviderTest.php
++++ b/tests/Unit/PostgresAssistantProviderTest.php
+@@ -281,6 +281,8 @@
+         '2026_10_09_020000_extend_ai_verification_metadata.php',
+         '2026_10_09_020100_install_ai_verification_integrity.php',
+         '2026_10_09_020200_validate_ai_verification_integrity.php',
++        '2026_10_10_010000_install_ai_verification_invocation_successor.php',
++        '2026_10_10_010100_validate_ai_verification_invocation_successor.php',
+     ]);
+     foreach (array_reverse($successors) as $successor) {
+         $successor->down();

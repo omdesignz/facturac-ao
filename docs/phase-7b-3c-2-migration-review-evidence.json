@@ -1,0 +1,336 @@
+{
+  "schema_version": 1,
+  "phase": "7B.3c-2",
+  "date": "2026-10-10",
+  "kind": "migration review package (pre-execution)",
+  "scope": "Concrete additive DDL for the invocation_authority_v1 successor. Review listings only; nothing executed.",
+  "artifacts": {
+    "report": "docs/phase-7b-3c-2-migration-review-package.md",
+    "design": "docs/phase-7b-3c-2-gateway-consumption-design.md",
+    "design_sha256": "bb5dfe36ec33aabccb80e814f46da7724ebb13d8c794d302a3c35d861a4d77fb"
+  },
+  "baseline": {
+    "source_inventory_files": 802,
+    "source_inventory_drift": 0,
+    "frozen_hashes_exact": "14/14",
+    "dependency_config_hashes_exact": "7/7",
+    "frozen_schema_source": "app/Fiscal/TenantAiVerificationSchema.php",
+    "frozen_schema_sha256": "e5de679739cb30018e7e23b5c875c22de62f41da1c003112cc61456f4ba1928b"
+  },
+  "execution": {
+    "migrations_applied_to_project_or_shared_database": 0,
+    "migration_files_created": false,
+    "runtime_code_written": false,
+    "tests_written_or_run": false,
+    "provider_requests": 0,
+    "rehearsed_in_disposable_database_only": true
+  },
+  "frozen_fragments": [
+    {
+      "fragment": "attempt check: header conjunct, legacy branch and connection_probe branch",
+      "frozen_lines": "379-434",
+      "sha256": "96d35ca9da155749513706097aec7e40f49539c49a3dd31138b5d59d30a036dd",
+      "bytes": 7256,
+      "reproduced_verbatim": true
+    },
+    {
+      "fragment": "approval check: legacy branch and connection_probe branch",
+      "frozen_lines": "336-345",
+      "sha256": "285345b2c8621b8cbe263ea0455abbadebb56eb40a8b644b5b0aba8e008b7361",
+      "bytes": 887,
+      "reproduced_verbatim": true
+    },
+    {
+      "fragment": "attempt check, whole frozen statement (restored by down)",
+      "frozen_lines": "378-435",
+      "sha256": "763e7c4e492d94e0a0d0a7030e2d55e00d68fb0da3cddc21f9e9f8d94bde4acd",
+      "bytes": 7387,
+      "reproduced_verbatim": true
+    },
+    {
+      "fragment": "approval check, whole frozen statement (restored by down)",
+      "frozen_lines": "335-346",
+      "sha256": "24f7ef372cf06cfa30c0f8cdccf853e73a75ed6be9490730646ff7037e66c9f2",
+      "bytes": 1002,
+      "reproduced_verbatim": true
+    },
+    {
+      "fragment": "gateway-attempt mutable list for non-intent purposes",
+      "frozen_lines": "462-464",
+      "sha256": "8fc5c1c2dbec297777753cbec0348e9864a4d4a78875a8a17c0b5e8b576e4c71",
+      "bytes": 338,
+      "reproduced_verbatim": true
+    }
+  ],
+  "frozen_function_bodies": {
+    "ai3c_metadata_guard_md5_of_body": "575a44e857a1bbee79e2e936172bb640",
+    "ai3c_credential_guard_md5_of_body": "f5b51587e2fad3f8742b5a494f6e6ff6",
+    "note": "MD5 of the text between the dollar quotes in the frozen listing, used as the I1 precondition. Computed from the listing; NOT compared with any live catalog."
+  },
+  "function_edit_identity": {
+    "ai3c_metadata_guard": "successor equals the frozen text after reversing the one stated edit",
+    "ai3c_credential_guard": "successor equals the frozen text after reversing the one stated edit"
+  },
+  "sql_listings": [
+    {
+      "id": "I1_up",
+      "sha256": "d56daa0c527cacab02099c0a01c7606f782f99c69b63360a8f113ca3a2b02d79",
+      "bytes": 24952,
+      "lines": 314
+    },
+    {
+      "id": "I2_up",
+      "sha256": "48268c0af718a7f9a8580d4deb7d6614b330b65782da9b2a9012660e7c771b64",
+      "bytes": 446,
+      "lines": 6
+    },
+    {
+      "id": "I1_down",
+      "sha256": "be38814f04bb5c98c4b3920a8274453deb9f7f16bd808d4759d46e57b3c0d84b",
+      "bytes": 14612,
+      "lines": 164
+    }
+  ],
+  "mechanical_checks": {
+    "I1_up": {
+      "parentheses_balanced": true,
+      "dollar_quotes_paired": true
+    },
+    "I2_up": {
+      "parentheses_balanced": true,
+      "dollar_quotes_paired": true
+    },
+    "I1_down": {
+      "parentheses_balanced": true,
+      "dollar_quotes_paired": true
+    },
+    "frozen_attempt_check": {
+      "parentheses_balanced": true,
+      "dollar_quotes_paired": true
+    },
+    "frozen_approval_check": {
+      "parentheses_balanced": true,
+      "dollar_quotes_paired": true
+    },
+    "new_attempt_check": {
+      "parentheses_balanced": true,
+      "dollar_quotes_paired": true
+    },
+    "new_approval_check": {
+      "parentheses_balanced": true,
+      "dollar_quotes_paired": true
+    }
+  },
+  "proposed_objects": {
+    "replaced_constraints": [
+      "assistant_provider_attempts_values",
+      "ai3c_approval_shape_ck"
+    ],
+    "replaced_functions": [
+      "ai3c_metadata_guard()",
+      "ai3c_credential_guard()"
+    ],
+    "new_functions": [
+      "ainv1_intent_constraint()",
+      "ainv1_credential_use_constraint()"
+    ],
+    "new_constraint_triggers": [
+      "ainv1_intent_authority",
+      "ainv1_credential_use"
+    ],
+    "new_indexes": [
+      "ainv1_intent_use_idx",
+      "ainv1_intent_recovery_idx"
+    ],
+    "new_tables": [],
+    "new_columns": [],
+    "data_changes": []
+  },
+  "design_corrections": [
+    "Intent admission bounds are the accepted legacy proxy (estimated_tokens 1024-8192, request_bytes 1-7168), not the wider bounds written in design section 12.1.",
+    "No partial unique index on interaction_id: the original table already declares interaction_id UNIQUE.",
+    "Two deferred constraint triggers are added so the database itself refuses an admission or send authorization against changed authority; the design listed only shape and guard changes.",
+    "The intent branch is a complete third branch with its own null rules, because the frozen gateway branch requires verifier and proposed-generation fields to be non-null.",
+    "Revision 2: migration file names contain _ai_verification_ so the frozen upgrade test excludes them from its historical boundary.",
+    "Revision 2: the attempt trigger carries a WHEN clause, so an out-of-order 3c-1 reversal refuses instead of orphaning the trigger.",
+    "Revision 3 (text only): the late FOR SHARE reads can complete a lock cycle for a writer that skipped the canonical locks; the writer-lock invariant is a stated condition."
+  ],
+  "proposed_test_status": "ALL NOT RUN",
+  "proposed_test_ids": [
+    "MP-01",
+    "MP-02",
+    "MP-03",
+    "MP-04",
+    "MP-05",
+    "MP-06",
+    "MP-07",
+    "MP-08",
+    "MP-09",
+    "MP-10",
+    "MP-11",
+    "MP-12",
+    "MP-13",
+    "MP-14",
+    "MP-15",
+    "MP-16",
+    "MP-17",
+    "MP-18",
+    "MP-19",
+    "MP-20",
+    "MP-21",
+    "MP-25",
+    "MP-26",
+    "MP-27",
+    "MP-22",
+    "MP-23",
+    "MP-24"
+  ],
+  "limitations": [
+    "The listings were rehearsed only in a disposable PostgreSQL database by the package author; that is not the authorized execution and not an independent review.",
+    "The frozen PostgreSQL suites were not run with the new migrations present, because that requires creating migration files.",
+    "The refusal branch 'AI invocation receipt binding' was not exercised; query plans were not assessed at realistic volume.",
+    "Lifecycle writes in the race rehearsals were SQL reproductions of what the PHP services write.",
+    "Baseline evidence remains the partitioned 3c-1 checkpoint; it is not one uninterrupted clean execution."
+  ],
+  "revision": 4,
+  "revision_reason": "Revision 2: changes required by docs/phase-7b-3c-2-migration-ddl-review.md. Revisions 3 and 4: text-only changes required by the independent review docs/phase-7b-3c-2-migration-ddl-review-r2.md and its follow-up; no listing changed since revision 2.",
+  "independent_review_of_revision_2": {
+    "report": "docs/phase-7b-3c-2-migration-ddl-review-r2.md",
+    "report_sha256": "eeaac2130eb97f9632aac4be0873fdd0cf0b6c40258feaa4a2932d385f3f71ee",
+    "verdict": "revision 2: CHANGES REQUIRED (three text-only changes); follow-up on revision 3: CHANGES REQUIRED (three sentence-level corrections)",
+    "listing_sha256_reviewed": {
+      "I1_up": "d56daa0c527cacab02099c0a01c7606f782f99c69b63360a8f113ca3a2b02d79",
+      "I2_up": "48268c0af718a7f9a8580d4deb7d6614b330b65782da9b2a9012660e7c771b64",
+      "I1_down": "be38814f04bb5c98c4b3920a8274453deb9f7f16bd808d4759d46e57b3c0d84b"
+    }
+  },
+  "rehearsal": {
+    "date": "2026-10-09",
+    "performed_by": "package author (not independent)",
+    "label": "review rehearsal in a disposable database, not authorized execution",
+    "environment": {
+      "server": "PostgreSQL 18.6, private throwaway cluster",
+      "host": "127.0.0.1",
+      "port": 55477,
+      "database_prefix": "facturac_test_phase7b3c2_ddl_r2_utf8",
+      "encoding": "UTF8",
+      "cluster_stopped_afterwards": true
+    },
+    "listing_sha256": {
+      "I1_up": "d56daa0c527cacab02099c0a01c7606f782f99c69b63360a8f113ca3a2b02d79",
+      "I2_up": "48268c0af718a7f9a8580d4deb7d6614b330b65782da9b2a9012660e7c771b64",
+      "I1_down": "be38814f04bb5c98c4b3920a8274453deb9f7f16bd808d4759d46e57b3c0d84b"
+    },
+    "rows": [
+      [
+        "Function-body MD5 preconditions versus the live 3c-1 catalog",
+        "both equal"
+      ],
+      [
+        "I1 applied in one transaction on the 3c-1 catalog",
+        "parses and installs cleanly"
+      ],
+      [
+        "I2",
+        "both checks validated; no ai3c_ constraint left unvalidated"
+      ],
+      [
+        "Catalog difference after I1+I2 among 1819 objects",
+        "16 changed lines: 2 replaced checks, 2 replaced functions and 8 new ainv1 entries; nothing else"
+      ],
+      [
+        "WHEN clause stored on ainv1_intent_authority",
+        "yes (trigger qualification present: gateway_v1 and assistant_intent)"
+      ],
+      [
+        "I1 down with no inference data",
+        "catalog byte-identical to the pre-I1 snapshot"
+      ],
+      [
+        "Up, down, up",
+        "identical catalog"
+      ],
+      [
+        "I1 and I2 over rows created at the 3c-1 boundary (acks=1 allocations=9 approvals=1 attempts=2 connections=1 controls=6 credentials=1 settings=1 windows=9 )",
+        "every row byte-identical; both checks validate"
+      ],
+      [
+        "I1 down over those rows",
+        "succeeds; rows byte-identical"
+      ],
+      [
+        "Frozen schema fixtures run after I1+I2",
+        "promoted active credential built; 3c-1 writes accepted by the successor guards"
+      ],
+      [
+        "Behaviour matrix against the real tables with every trigger active, each case rolled back",
+        "53 cases, 0 unexpected"
+      ],
+      [
+        "Down with inference data retained",
+        "refused (ERROR:  AI invocation downgrade refused: retained data); catalog unchanged"
+      ],
+      [
+        "I1 re-run with inference data retained",
+        "refused (ERROR:  AI invocation migration precondition failed); catalog unchanged"
+      ],
+      [
+        "Down while another session holds a conflicting lock",
+        "ERROR:  canceling statement due to lock timeout after 0.32s; catalog unchanged"
+      ],
+      [
+        "Race: revoke commits first, send authorization second",
+        "authorization refused (ERROR:  Customer inference unavailable); send mark absent, credential revoked, connection enabled"
+      ],
+      [
+        "Race: send authorization commits first, revoke second",
+        "revoke waited 1.04s; send mark kept, credential revoked, connection enabled; finalization then succeeded"
+      ],
+      [
+        "Race: connection disable commits first; sender holds no lock of its own on settings or connection",
+        "sender waited 1.03s, then refused (ERROR:  AI invocation authority changed); send mark absent, credential active, connection disabled"
+      ],
+      [
+        "Race: send authorization checked first and still uncommitted; disable second",
+        "disable waited 1.04s; send mark kept, credential active, connection disabled"
+      ],
+      [
+        "Out-of-order reversal: the three 3c-1 downs with the successor installed and no retained data",
+        "integrity down runs; metadata down REFUSES (cannot drop column purpose of table assistant_provider_attempts); gateway columns survive (2/2); legacy insert committed"
+      ],
+      [
+        "Recovery after an out-of-order reversal: re-apply the 3c-1 integrity and validation migrations, then run the I1 down",
+        "catalog byte-identical to the clean 3c-1 snapshot"
+      ],
+      [
+        "Correct-order round trip: I1 down, three 3c-1 downs, three 3c-1 ups, I1, I2",
+        "every step succeeds; catalog byte-identical to the installed snapshot"
+      ],
+      [
+        "Old versus new attempt check on trigger-free copies, 3688 rows (five valid base rows, every single-column mutation, every purpose flip combined with a second change)",
+        "2623 non-inference rows: accepted by both 699, refused by both 1924, disagreements 0; inference rows: old accepts 0, new accepts 200 and refuses 865; legacy or probe rows accepted as inference: 0"
+      ],
+      [
+        "File-name selection used by existing tests",
+        "both names contain _ai_verification_ (excluded from the frozen upgrade test's historical boundary), match the glob *_ai_verification_*.php, and sort after the three 3c-1 files"
+      ]
+    ],
+    "behaviour_matrix": {
+      "cases": 53,
+      "unexpected": 0
+    },
+    "check_differential": {
+      "rows": 3688,
+      "non_inference": 2623,
+      "accepted_by_both": 699,
+      "refused_by_both": 1924,
+      "disagreements": 0,
+      "new_accepts_inference": 200,
+      "new_refuses_inference": 865
+    },
+    "finding_during_rehearsal": "Running the I1 down directly after an out-of-order 3c-1 reversal fails; the package's first recovery wording was corrected to the rehearsed sequence."
+  },
+  "final_decision": "PHASE 7B.3c-2 MIGRATION PACKAGE — READY FOR PRE-EXECUTION REVIEW",
+  "self_hash_notice": "This evidence file has no self hash; report_sha256 is an external content hash.",
+  "report_sha256": "fd4154983a5a4cd5fd67a1fb4eefef1f5c3122e156fb8a932d49536ea168e320"
+}

@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "phase": "7B.3c-2",
+  "date": "2026-10-09",
+  "kind": "pre-execution DDL review with disposable-database rehearsal",
+  "independence": "NOT INDEPENDENT: performed in the same session by the author of the design and the package. An independent reviewer must still confirm.",
+  "reviewed": {
+    "package": "docs/phase-7b-3c-2-migration-review-package.md",
+    "package_sha256": "7103064b9e74a3eb676e81ed0ceb1e7c52c075a1c13083425c82c0b4785a4005",
+    "package_evidence_sha256": "7be1262814b4cea056b30bbcc50339f25c8dbbfa80fd964bbeddffa2f9006ac2",
+    "design_sha256": "bb5dfe36ec33aabccb80e814f46da7724ebb13d8c794d302a3c35d861a4d77fb"
+  },
+  "baseline": {
+    "source_inventory_files": 802,
+    "source_inventory_drift": 0,
+    "frozen_hashes_exact": "14/14",
+    "dependency_config_hashes_exact": "7/7"
+  },
+  "rehearsal_environment": {
+    "server": "PostgreSQL 18.6 (Homebrew), private throwaway cluster created for this review",
+    "host": "127.0.0.1",
+    "port": 55477,
+    "database_prefix": "facturac_test_phase7b3c2_ddl_review_utf8",
+    "encoding": "UTF8",
+    "cluster_stopped_after_review": true,
+    "project_or_shared_database_touched": false,
+    "label": "review rehearsal, not authorized execution"
+  },
+  "structure": {
+    "function_body_md5_preconditions_match_live_catalog": true,
+    "I1_installs_in_one_transaction": true,
+    "I2_validates_both_checks": true,
+    "catalog_objects_snapshotted": 1819,
+    "catalog_before_sha256": "ddafdc2a90e331b30983538e541f31427ab87d86bcb7a0d1312ec2830941eb4f",
+    "catalog_after_up_sha256": "a2c62951561676f0dce63aef522c0626e56a4abe819004f69330d0f746370e6a",
+    "catalog_after_down_equals_before": true,
+    "up_down_up_identical": true,
+    "populated_rows_identical_after_I1_I2": true,
+    "populated_rows_identical_after_down": true,
+    "down_refused_with_retained_inference_data": true,
+    "I1_rerun_refused_with_retained_inference_data": true,
+    "lock_timeout_seconds_observed": 0.31,
+    "catalog_unchanged_after_lock_timeout": true
+  },
+  "check_differential": {
+    "rows": 3688,
+    "non_intent_rows": 2623,
+    "accepted_by_both": 699,
+    "refused_by_both": 1924,
+    "disagreements": 0,
+    "intent_rows": 1065,
+    "old_accepts_intent": 0,
+    "new_accepts_intent": 200,
+    "new_refuses_intent": 865,
+    "legacy_or_probe_row_accepted_as_intent": 0
+  },
+  "behaviour_matrix": {
+    "cases": 53,
+    "as_specified": 53,
+    "unexpected": 0,
+    "each_case_rolled_back": true
+  },
+  "races": [
+    {
+      "order": "revoke first, send authorization second",
+      "result": "authorization refused (Customer inference unavailable); no send mark"
+    },
+    {
+      "order": "send authorization first, revoke second",
+      "result": "revoke waited 1.05s; send mark kept; use timestamp retained; finalization succeeded"
+    },
+    {
+      "order": "connection disable first; sender holds no lock on settings or connection",
+      "result": "sender waited 1.03s on FOR SHARE, then refused (AI invocation authority changed)"
+    },
+    {
+      "order": "send authorization checked first and uncommitted; disable second",
+      "result": "disable waited 1.05s; send mark kept"
+    }
+  ],
+  "defects": [
+    {
+      "id": "D1",
+      "severity": "required change",
+      "summary": "Proposed file names lack '_ai_verification_', so the frozen upgrade test selects I1 as historical.",
+      "reproduction": "frozen selection applied to an empty database, then I1: ERROR column \"contract_version\" does not exist"
+    },
+    {
+      "id": "D2",
+      "severity": "required change",
+      "summary": "Reversing the three 3c-1 migrations without first reversing the successor succeeds and leaves orphaned ainv1 triggers; legacy attempt inserts then fail.",
+      "reproduction": "three 3c-1 downs ok; leftover triggers ainv1_credential_use, ainv1_intent_authority; legacy insert: record \"new\" has no field \"contract_version\"",
+      "rehearsed_remedy": "WHEN (NEW.contract_version='gateway_v1' AND NEW.purpose='assistant_intent') on ainv1_intent_authority: 3c-1 metadata down refuses (cannot drop column purpose), legacy insert commits",
+      "remedy_not_rerun_against": [
+        "53-case matrix",
+        "four races"
+      ]
+    }
+  ],
+  "not_rehearsed": [
+    "frozen PostgreSQL suites with the new migrations present (would require creating migration files)",
+    "AI invocation receipt binding refusal branch",
+    "query plans at realistic volume",
+    "PHP lifecycle services (SQL reproductions were used)"
+  ],
+  "required_changes": [
+    "rename both migration files to contain _ai_verification_",
+    "add the WHEN clause to ainv1_intent_authority",
+    "correct package section 6, the file map and MP-21 for the four file-name-selecting tests, including the non-frozen explicit-list test edit",
+    "state the down-ordering rule and single-batch execution in package section 8",
+    "regenerate hashes and re-rehearse the revised listings"
+  ],
+  "answers_to_package_questions": {
+    "1": "keep FOR SHARE",
+    "2": "keep exact equality",
+    "3": "keep permanent not_observed",
+    "4": "keep settings equality",
+    "5": "keep refusal text",
+    "6": "no DDL needed"
+  },
+  "final_decision": "PHASE 7B.3c-2 MIGRATION PACKAGE — CHANGES REQUIRED",
+  "report_sha256": "be02bde86936822184bd6ea0dda4403c5345ceb574f24fc204d73f997985e8d2",
+  "self_hash_notice": "This evidence file has no self hash."
+}
