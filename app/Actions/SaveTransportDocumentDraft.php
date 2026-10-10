@@ -164,7 +164,7 @@ final class SaveTransportDocumentDraft
         $catalogueItems = $this->catalogueItems($legalEntity, $lines);
         $total = 0;
 
-        foreach (array_values($lines) as $index => $line) {
+        foreach ($lines as $index => $line) {
             $catalogueItem = $line['catalogue_item_public_id'] === null
                 ? null
                 : $catalogueItems->get($line['catalogue_item_public_id']);

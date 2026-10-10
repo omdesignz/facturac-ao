@@ -162,7 +162,7 @@ final class SaftExportSummary
                 'from' => $from->toDateString(),
                 'to' => $to->toDateString(),
                 'establishment' => $establishment?->public_id,
-                'scope_label' => $establishment?->name ?? 'Todos os estabelecimentos',
+                'scope_label' => $establishment->name ?? 'Todos os estabelecimentos',
             ],
             'counts' => [
                 'sales_invoices' => $invoices,

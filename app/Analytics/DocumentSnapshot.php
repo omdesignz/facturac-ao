@@ -193,7 +193,7 @@ class DocumentSnapshot
      */
     public function history(FiscalDocument $document): array
     {
-        return $document->events()
+        return array_values($document->events()
             ->with('actor:id,name')
             // The relation reads oldest first, as evidence is written; a
             // person reads what happened last first.
@@ -218,6 +218,6 @@ class DocumentSnapshot
                 'occurred_at' => $event->occurred_at->toIso8601String(),
             ])
             ->values()
-            ->all();
+            ->all());
     }
 }

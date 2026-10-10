@@ -431,7 +431,7 @@ class FiscalDocumentController extends Controller
             $tax->tax_code,
             (string) CanonicalNumber::fromBasisPoints($tax->tax_rate_basis_points),
             $tax->tax_exemption_code,
-        )?->value ?? SupportedTaxTreatment::NotSubject->value;
+        )->value ?? SupportedTaxTreatment::NotSubject->value;
     }
 
     /** @return array<string, string> */

@@ -71,7 +71,7 @@ class TransportDocumentController extends Controller
             ->with('success', 'Rascunho da guia guardado.');
     }
 
-    public function edit(Request $request, TransportDocument $transportDocument): Response
+    public function edit(Request $request, TransportDocument $transportDocument): Response|RedirectResponse
     {
         $this->assertCurrentLegalEntity($request, $transportDocument);
         Gate::authorize('view', $transportDocument);

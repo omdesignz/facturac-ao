@@ -24,8 +24,8 @@ class StoreTransportDocumentRequest extends FormRequest
     public function rules(): array
     {
         $legalEntity = $this->currentLegalEntity();
-        $workspaceId = $legalEntity?->workspace_id ?? 0;
-        $legalEntityId = $legalEntity?->id ?? 0;
+        $workspaceId = $legalEntity->workspace_id ?? 0;
+        $legalEntityId = $legalEntity->id ?? 0;
 
         return [
             'document_type' => ['required', Rule::enum(TransportDocumentType::class)],
@@ -168,7 +168,10 @@ class StoreTransportDocumentRequest extends FormRequest
             : null;
     }
 
-    /** @param array<string, mixed> $address */
+    /**
+     * @param  array<string, mixed>  $address
+     * @return array{address: string, city: string, province: string|null, country_code: string}
+     */
     private function addressProfile(array $address): array
     {
         return [

@@ -87,9 +87,9 @@ final readonly class IssueTransportDocument
                     $number,
                 ),
                 'issue_sequence' => $number,
-                'software_product_id' => $connection?->product_id
+                'software_product_id' => $connection->product_id
                     ?? $this->softwareProductId(),
-                'software_product_version' => $connection?->product_version
+                'software_product_version' => $connection->product_version
                     ?? (string) config('app.version', '1.0'),
                 'software_validation_number' => $connection?->software_validation_number,
                 'hash_control' => preg_match(

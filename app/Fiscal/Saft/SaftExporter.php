@@ -220,7 +220,7 @@ final class SaftExporter
         $this->write('AddressDetail', $this->required($address?->address_line));
         $this->write('City', $this->required($address?->municipality));
         if (filled($address?->province_code)) {
-            $this->write('Province', (string) $address?->province_code);
+            $this->write('Province', (string) $address->province_code);
         }
         $this->write('Country', (string) config('fiscal.saft.tax_country_region'));
         $this->writer->endElement();
@@ -230,7 +230,7 @@ final class SaftExporter
         $this->write('EndDate', $to->toDateString());
         $this->write('CurrencyCode', (string) config('fiscal.saft.currency_code'));
         $this->write('DateCreated', now('Africa/Luanda')->toDateString());
-        $this->write('TaxEntity', $establishment?->code ?? 'Global');
+        $this->write('TaxEntity', $establishment->code ?? 'Global');
         $this->write(
             'ProductCompanyTaxID',
             $this->required(config('agt.software.company_tax_id'), '0'),
@@ -678,8 +678,8 @@ final class SaftExporter
             default => 3,
         })->first();
         $taxType = $tax === null ? 'NS' : $this->saftTaxType($tax->tax_type->value);
-        $taxCode = $tax?->tax_code ?? ($taxType === 'NS' ? 'NS' : 'NOR');
-        $taxRate = $tax?->tax_rate_basis_points ?? 0;
+        $taxCode = $tax->tax_code ?? ($taxType === 'NS' ? 'NS' : 'NOR');
+        $taxRate = $tax->tax_rate_basis_points ?? 0;
         $this->writer->startElement('Tax');
         $this->write('TaxType', $taxType);
         $this->write('TaxCountryRegion', (string) config('fiscal.saft.tax_country_region'));
@@ -1023,10 +1023,10 @@ final class SaftExporter
     ): string {
         $number = $fiscalDocuments->first(
             fn (FiscalDocument $document): bool => filled($document->software_validation_number),
-        )?->software_validation_number
+        )->software_validation_number
             ?? $movements->first(
                 fn (TransportDocument $document): bool => filled($document->software_validation_number),
-            )?->software_validation_number
+            )->software_validation_number
             ?? $legalEntity->agtConnections()
                 ->whereNotNull('software_validation_number')
                 ->latest('id')
@@ -1053,12 +1053,12 @@ final class SaftExporter
 
     private function fiscalCustomerId(FiscalDocument $document): string
     {
-        return $document->customer?->public_id ?? 'F'.$document->public_id;
+        return $document->customer->public_id ?? 'F'.$document->public_id;
     }
 
     private function transportCustomerId(TransportDocument $document): string
     {
-        return $document->customer?->public_id ?? 'T'.$document->public_id;
+        return $document->customer->public_id ?? 'T'.$document->public_id;
     }
 
     private function transportSupplierId(TransportDocument $document): string
@@ -1071,7 +1071,7 @@ final class SaftExporter
 
     private function quoteCustomerId(Quote $quote): string
     {
-        return $quote->customer?->public_id ?? 'Q'.$quote->public_id;
+        return $quote->customer->public_id ?? 'Q'.$quote->public_id;
     }
 
     private function quoteProductCode(Quote $quote, QuoteLine $line): string

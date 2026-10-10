@@ -67,7 +67,7 @@ class ConvertQuoteToInvoice
                     : $customer->dueDateFor($issuedOn)->toDateString(),
                 'currency_code' => $quote->currency_code,
                 'customer_name' => $quote->customer_name,
-                'customer_tax_identification_number' => $customer?->tax_identification_number
+                'customer_tax_identification_number' => $customer->tax_identification_number
                     ?? $quote->customer_tax_identification_number,
                 'customer_country_code' => $quote->customer_country_code,
                 'customer_address' => $quote->customer_address,

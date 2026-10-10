@@ -75,7 +75,7 @@ final class FiscalDocumentPayloadBuilder
         }
 
         return [
-            'sourceDocuments' => $document->settlements
+            'sourceDocuments' => array_values($document->settlements
                 ->values()
                 ->map(function (FiscalDocumentSettlement $settlement, int $index): array {
                     $amountField = $settlement->settledDocument->document_type->reducesReceivable()
@@ -91,7 +91,7 @@ final class FiscalDocumentPayloadBuilder
                         $amountField => CanonicalNumber::fromMinorUnits($settlement->amount_minor),
                     ];
                 })
-                ->all(),
+                ->all()),
         ];
     }
 
