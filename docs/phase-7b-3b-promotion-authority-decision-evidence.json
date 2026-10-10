@@ -1,0 +1,172 @@
+{
+    "phase": "7B.3b",
+    "amendment": "PA1",
+    "date": "2026-10-09",
+    "task": "Design / promotion-authority resolution only",
+    "status": "AUTHORITY_MODEL_RESOLVED_BOUNDED_BELOW_ACTIVE_IMPLEMENTATION_MAY_RESUME",
+    "branch": "Option B — lifecycle below active",
+    "authority": {
+        "request_path": "/Users/Oz/.codex/attachments/8b3a0838-4059-4129-8bd9-5d4a7d22c76c/Pasted text.txt",
+        "request_sha256": "29977ccbee3092f5666f34c7dccd12acb399ecfc965a88d6831b4165c5c9df26",
+        "amended_contract": "docs/phase-7b-3-tenant-ai-control-plane-supplement.md",
+        "amended_contract_sha256": "10acd6e304916ccdbff3f365e883e6a3487973de6ba195065a6375cc0dd3cd4f",
+        "contract_before_sha256": "6f4c20cb8a1b4883ccf5c501536632102f1a52eb412f5888230c6070e9a8cc8e",
+        "accepted_3a_review": "Independent remediation re-review in preceding conversation; repository implementation evidence is historical handoff, not independent approval."
+    },
+    "decisions": {
+        "active_semantics": "PROVIDER-VERIFIED",
+        "promotion_authority": "DEFERRED",
+        "database_may_self_authorize_promotion": "NO",
+        "synthetic_promotion_authority_in_production": "UNREACHABLE",
+        "no_probe_guard": "PRESERVED",
+        "real_provider_verification_in_7b_3b": "NOT IMPLEMENTED",
+        "provider_verification_claims_from_synthetic_tests": "PROHIBITED",
+        "7b_3b_active_rotation": "DEFERRED",
+        "7b_3c_boundary": "CHANGED"
+    },
+    "scope_now_authorized_for_next_implementation": [
+        "pending candidate allocation and explicit pending replacement",
+        "freshly authorized exact-candidate revocation",
+        "emergency workspace/connection disablement",
+        "transactional terminal envelope destruction without decryption",
+        "canonical locks, CAS, metadata audit and independent-worker PostgreSQL tests"
+    ],
+    "deferred": [
+        "active promotion/rotation and positive active concurrency proofs",
+        "production/synthetic promotion issuer implementation",
+        "concrete authenticated verification evidence schema and guard-replacement review",
+        "production decryption/KEK rewrap maintenance",
+        "all section 6 accounting/reconciliation implementation"
+    ],
+    "future_authority_boundary": "Ephemeral typed authority referencing separately authenticated finalized exact-version evidence; no new persisted permit table. Concrete issuer/composition/provenance/deadline remain mandatory later review gates. Ordinary rows cannot mint authority.",
+    "validation": {
+        "custody": {
+            "command": "php artisan test --compact tests/Feature/TenantAiCustodyRemediationTest.php tests/Feature/TenantAiStorageTest.php > /private/tmp/7b3b-pa1-custody.log 2>&1",
+            "exit_code": 0,
+            "log_path": "/private/tmp/7b3b-pa1-custody.log",
+            "log_sha256": "cfe4e048ab209c37dcc2bdd86a641ba485adb3ebf5d46e0e7478b48b5028bbfa",
+            "result": {
+                "tool": "pest",
+                "result": "passed",
+                "tests": 84,
+                "passed": 84,
+                "assertions": 441,
+                "duration_ms": 2329
+            },
+            "meaning": "Unchanged accepted custody regression; not new lifecycle implementation evidence."
+        },
+        "format_write": {
+            "command": "./node_modules/.bin/prettier --write docs/phase-7b-3-tenant-ai-control-plane-supplement.md",
+            "exit_code": 0
+        },
+        "not_run": [
+            "PostgreSQL lifecycle/concurrency",
+            "complete SQLite",
+            "broad PostgreSQL integration",
+            "PHPStan",
+            "UI/types",
+            "PHP syntax/Pint",
+            "ESLint"
+        ],
+        "not_run_reason": "Documentation-only authority decision; no runtime or test change. Mandatory future implementation gates are retained.",
+        "document_checks": {
+            "command": "python3 - (inline SHA-256 inventory, exact PA1 inverse reconstruction, JSON and relative-link assertions)",
+            "exit_code": 0,
+            "log_path": "/private/tmp/7b3b-pa1-document-validation.json",
+            "log_sha256": "36207530be3e1ab8397b26e052d69b9224deeaf93bbc56618505f99b7692fdac",
+            "result": {
+                "changed_preexisting": [
+                    "docs/phase-7b-3-tenant-ai-control-plane-supplement.md"
+                ],
+                "new_files": [
+                    "docs/phase-7b-3b-promotion-authority-decision-evidence.json"
+                ],
+                "unchanged_preexisting": 2469,
+                "frozen_files_verified": 51,
+                "unrelated_contract_text_preserved": true,
+                "relative_links_resolved": 9,
+                "runtime_changes": 0
+            }
+        }
+    },
+    "preservation": {
+        "snapshot_path": "/private/tmp/7b3b-pa1-before.json",
+        "snapshot_sha256": "e94797efacbb4ba3e1e67a184891742d6f13a58b6cde126650bb801a9fd7f59d",
+        "snapshot_file_count": 2470,
+        "changed_preexisting_files": [
+            "docs/phase-7b-3-tenant-ai-control-plane-supplement.md"
+        ],
+        "unchanged_preexisting_files": 2469,
+        "frozen_sha256": {
+            "app/Fiscal/AssistantProviderResponseBuffer.php": "ec2374f16cf66bf874f0ced16ac6be7931cff2d2402ac472e8c4a02eca9f3a6c",
+            "app/Fiscal/AssistantProviderResponse.php": "8cd294cea34c95985a8174320ffcde4f78b09328fb686cd47024e56dd94ba49a",
+            "app/Fiscal/AssistantBudget.php": "146d949ef935881cf47e7f3acfc65679bcbffbdd16022dfe3ef23f988c3db030",
+            "app/Fiscal/ProviderIntentInput.php": "5494361614895668538183e994983b401237c0c139ad63eee42f8d5802aee104",
+            "app/Fiscal/AssistantDisclosure.php": "f1fbd681101970ae9e4f427cc0cec235d1eb421d2e00e663e9daf95a6cbe9b26",
+            "app/Fiscal/UnavailableAssistantPlanner.php": "2cdcd0a9972f57a16b6d084c50fd0f80804c2266353b24cef5cc7833eeaa404a",
+            "app/Fiscal/AssistantInteraction.php": "33d81bd1af84ba26a82fe7bd40b2969c36f8776b521f223e4527dbfda4032802",
+            "app/Fiscal/AssistantProviderPermit.php": "916142134c902520d258e7f77ab5682d1dcf794b42d0bbf8fef22c7220cfd500",
+            "app/Fiscal/VapAiGateway.php": "848ab89b0df7133d8f476692c4fca398be9fb3430daa4df8b555231097dd669a",
+            "app/Fiscal/GatewayAssistantPlanner.php": "2bfb625b34684f3dfe058dbf0e9e94fe35ec47925b26e353d3c33b7227d6a990",
+            "app/Fiscal/AssistantInput.php": "b8d6cf95c982d658f175992ba0d6d3dccbc67532eb5534f01eabfec01384f47e",
+            "app/Fiscal/AssistantProviderTransport.php": "24e075d5a845e3c9feb323f1a7603e39fdeb0fc98eba142689f267018e3d8732",
+            "app/Fiscal/AssistantPlan.php": "bf6a3d6ece37643574851ff09595d297c47c0dcaee9d145fe2a749fe7368160c",
+            "app/Fiscal/AssistantPlanner.php": "0176848d93a1e09ff92b0c682a51702e02059ec82014762cdff1d06691408180",
+            "app/Fiscal/AssistantProviderInvocation.php": "781d83b89907c6a644534c3e22e91633d01d882d38d95a3ae86476d1cb93758a",
+            "app/Fiscal/AiInferenceRequest.php": "312d3c505649751c437f628c5bf57d728247b1ef4927a87b63cfd846b9923b5f",
+            "app/Fiscal/AssistantProviderLedger.php": "c76dc9ef4e3b2873b36c9fdd4a2dec00ffc78b52e596494031dbf07fc123ca66",
+            "app/Fiscal/LegacyAssistantAiGateway.php": "5afd36866e9d7d04e80a5b86119d442d86addf7787d375695e2e267a61567f94",
+            "app/Fiscal/AssistantJson.php": "2ae23c6cb289c6e0ed1369767b2c745825bf1c3cd7798088b8f39b28d52d4cab",
+            "app/Fiscal/AssistantTools.php": "c030099f7bf68d447d4a20839571cf519d7e242dbd2bb48c79f705426ebc14b5",
+            "app/Fiscal/AiModelIdentity.php": "9b9806b4307ae4da646512d3b77ead3bbbc6a34fab76be860dd86c6c736e53dc",
+            "app/Fiscal/AnthropicIntentPlanner.php": "b1389a6c304e89b9cf797038adf1dce0591b561275397481db421ebe3ef0368b",
+            "app/Fiscal/AssistantInteractionContext.php": "a3377e3d37ac9b440649ad7cbf919ec9570229af2a45ed6d7c94804621648303",
+            "app/Fiscal/AssistantAudit.php": "3fdb1d8b07e54cf211b0cb9275d5bad8b552d6122fe4f0aae70bec1f8914a3a9",
+            "app/Fiscal/AssistantExecutionGuard.php": "a7724e38cdd1e6c3c237b4af26ef6639ac941bc4b47ece29647c44f94de68b14",
+            "app/Fiscal/AssistantIntentGateway.php": "13e54da5fa7d796758a350618f7b30c802f79b2822a16f77880af79248fea1e5",
+            "app/Fiscal/AssistantProviderProfile.php": "7bd19de18d5d12e3fc1d303ca1ff9dc9edf312c02a1d6c78a48e17164791c945",
+            "app/Fiscal/AiInferenceResult.php": "539bcf141695f9118bcc2d5bb3c76eeb88e205df69d44a62da0b0d260f716164",
+            "app/Fiscal/AiGatewayFailure.php": "83a1a80979ceeca07cbed364a97482d4f9462b70c7e0e7d8b4d283d9b3ac02f9",
+            "app/Providers/AppServiceProvider.php": "074f2909c12f574a6701269b8d8e600c4a4963cd7ac10dc6193016405dc8fc01",
+            "config/assistant.php": "8de522af1cad494b7a5e69b3babbf08bfd1080b4fae9d82905f5ebad7414d8ea",
+            "composer.json": "51c45057be5d73a67dbcdd4e47afb22b7aa48d6c9e9fb52c0050e7a6f676fc14",
+            "composer.lock": "856b697b619468a43439355ae38417147519b3e792331f5d1e6e089220d8a2c9",
+            "app/Exceptions/TenantAiStorageUnavailable.php": "896ac7442def05da020467e8e9d5047d0d6e174b247f09dd34eb26e6cad641cb",
+            "app/Fiscal/TenantAiCapabilities.php": "a69a907b586f5946daade628c3ba680744e9904dbd9e9d6bc7643cc9ea433d1e",
+            "app/Fiscal/TenantAiCatalogue.php": "89d5cddf334cde7cf75d5cfd8d2709a6acab998a8cdbff02bc27d894d3b54dfe",
+            "app/Fiscal/TenantAiContext.php": "060d18f4df0e0874ad5afdcfa189b7b3faed7ef0dc11b2d81f8fdcb31776e036",
+            "app/Fiscal/TenantAiEnvelope.php": "943406ce9f12f03dd9a7de8c4e41d64796aa72d988b37c8abc9bda9fd8521750",
+            "app/Fiscal/TenantAiKeyFile.php": "ee37302255d580609ba087580e4a15d7c5a9b03f63f24df7b8daaf9e50e82a79",
+            "app/Fiscal/TenantAiSchema.php": "c2dc2c8e2d55a55aa39499c71b06960898611b2aa1d3cdc76d9d10f30ea0ca30",
+            "app/Fiscal/TenantAiStorage.php": "659641fc6595454a95e0192b1207bf8ed633cfe069eca0693df937379db8b23b",
+            "app/Models/TenantAiCredential.php": "7f23e4f2fca75997afeae420224336e055e0319d9fa62e81f3af3db7e46e8471",
+            "config/tenant_ai.php": "b49514ae2f51403eb5b781bd02a6ac32a6f6cc8051e863f975f320c91c17a59f",
+            "database/migrations/2026_10_09_010739_create_tenant_ai_storage_tables.php": "dd3f486a6560bad0a458940e206aef736175d5a50eb10e019d2d6cf6c5766281",
+            "database/migrations/2026_10_09_011029_seed_tenant_ai_storage_catalogue.php": "0ea194e89d26ae649928ab9d6c5ef61befa4bfc5266bbbf6784bbecd065d7915",
+            "tests/Feature/TenantAiStorageTest.php": "7233a138db04837a3fb57bf0729d9803704d44a9854d278c7fa5075a662f4bd3",
+            "tests/TenantAiFixtures.php": "16c6fa93f9e0e63e693511a8ff59d102e4f9fc489f23a10b4264e04ea58d7126",
+            "tests/Unit/PostgresTenantAiStorageTest.php": "131b0e7b800297ec68ca45ca8372813fb5028792e4ad350596fed39f5a8c3a67",
+            "app/Actions/DeleteUserAccount.php": "2252b523431ba5811c6550ef4591ef7e2c8d5d6647967fbaa14c33cbfa8086e9",
+            "tests/Unit/PostgresAssistantProviderTest.php": "5ba43d41e505c47505e18f2f7a3837e32fe3ea2f7f52d307961e4792199df2b1",
+            "tests/Feature/TenantAiCustodyRemediationTest.php": "d01fc19f64ef67c0356565021490903749bffabcf22cfa712f3df244a0aaca85"
+        },
+        "frozen_mismatches": [],
+        "unrelated_supplement_sections_reconstruction_sha256": "6f4c20cb8a1b4883ccf5c501536632102f1a52eb412f5888230c6070e9a8cc8e",
+        "historical_3b_blocker_report_and_evidence": "unchanged"
+    },
+    "files_changed": ["docs/phase-7b-3-tenant-ai-control-plane-supplement.md"],
+    "files_added": [
+        "docs/phase-7b-3b-promotion-authority-decision-evidence.json"
+    ],
+    "runtime_implemented": false,
+    "migrations_added": [],
+    "tests_added": [],
+    "live_provider_requests": 0,
+    "credentials_created": false,
+    "configuration_changed": false,
+    "activation_changed": false,
+    "gateway_consumption_added": false,
+    "phase_3c_started": false,
+    "inherited_issues": "No repair/reclassification: 21 inherited PHPStan diagnostics, 9719 ESLint errors, four resource formatting failures, historical suite warnings, unresolved non-security PDF anomaly.",
+    "next_action": "Only corrected section 11.1 Sol Medium below-active implementation; stop for independent review. Active promotion remains deferred."
+}
