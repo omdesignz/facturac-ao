@@ -11,7 +11,6 @@ import {
 } from '@headlessui/vue';
 import { router, useHttp, usePage } from '@inertiajs/vue3';
 import {
-    ArrowRight,
     CornerDownLeft,
     FilePlus2,
     FileSignature,
@@ -65,8 +64,14 @@ interface Result {
     hint: string;
     href: string;
     icon: Component;
+    /** Documents and customers get two lines; everything else gets one. */
+    detail?: boolean;
+    /** The app's one primary create action, set apart with a gold chip. */
+    primary?: boolean;
+    /** Extra words the query may match that are not shown. */
+    keywords?: string;
     mono?: boolean;
-    amount?: string;
+    amount?: { figure: string; currency: string };
     status?: { label: string; tone: StatusTone };
 }
 
@@ -116,13 +121,21 @@ function normalise(value: string): string {
     return value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 }
 
-function wholeAmount(minor: number, currencyCode: string): string {
-    const amount = new Intl.NumberFormat('pt-AO', {
-        maximumFractionDigits: 0,
-    }).format(Math.round(minor / 100));
-
-    return `${amount} ${currencyCode === 'AOA' ? 'Kz' : currencyCode}`;
+function wholeAmount(
+    minor: number,
+    currencyCode: string,
+): { figure: string; currency: string } {
+    return {
+        figure: new Intl.NumberFormat('pt-AO', {
+            maximumFractionDigits: 0,
+        }).format(Math.round(minor / 100)),
+        currency: currencyCode === 'AOA' ? 'Kz' : currencyCode,
+    };
 }
+
+/** The key-cap recipe of the header's shortcut hint, reused wherever a key is named. */
+const keyCap =
+    'grid h-5 min-w-5 place-items-center rounded-md bg-white px-1.5 font-sans text-[0.6875rem] leading-none font-medium text-zinc-500 shadow-[0_0_0_1px_rgb(23_23_22/0.08)] dark:bg-white/10 dark:text-zinc-300 dark:shadow-none';
 
 function shortDate(isoDate: string): string {
     return new Intl.DateTimeFormat('pt-AO', {
@@ -141,6 +154,7 @@ const actions = computed<Result[]>(() =>
                   hint: 'Novo documento fiscal',
                   href: createInvoice.url(),
                   icon: FilePlus2,
+                  primary: true,
               },
               {
                   key: 'action:quote',
@@ -165,7 +179,8 @@ const pages = computed<Result[]>(() =>
         group.items.map((item) => ({
             key: `page:${item.href}`,
             label: item.name,
-            hint: group.name === item.name ? 'Página' : group.name,
+            hint: group.name === item.name ? '' : group.name,
+            keywords: 'Página',
             href: item.href,
             icon: item.icon,
         })),
@@ -177,7 +192,8 @@ function matchesQuery(result: Result): boolean {
 
     return (
         normalise(result.label).includes(needle) ||
-        normalise(result.hint).includes(needle)
+        normalise(result.hint).includes(needle) ||
+        normalise(result.keywords ?? '').includes(needle)
     );
 }
 
@@ -189,7 +205,9 @@ const resultGroups = computed<ResultGroup[]>(() => {
         ].filter((group) => group.results.length > 0);
     }
 
-    const showServerHits = answeredQuery.value === trimmedQuery.value;
+    // Hits from the previous term stay until the newer answer lands (the list
+    // is dimmed meanwhile) so the palette does not blank on every keystroke.
+    const showServerHits = trimmedQuery.value.length >= MIN_QUERY_LENGTH;
 
     const documentResults: Result[] = showServerHits
         ? documents.value.map((document) => ({
@@ -203,6 +221,7 @@ const resultGroups = computed<ResultGroup[]>(() => {
                   query: { documento: document.public_id },
               }),
               icon: FileText,
+              detail: true,
               mono: document.document_no !== null,
               amount: wholeAmount(
                   document.gross_total_minor,
@@ -229,6 +248,7 @@ const resultGroups = computed<ResultGroup[]>(() => {
                   .join(' · '),
               href: showCustomer.url(customer.public_id),
               icon: UserRound,
+              detail: true,
           }))
         : [];
 
@@ -257,6 +277,39 @@ const resultGroups = computed<ResultGroup[]>(() => {
         { name: 'Criar', results: actions.value.filter(matchesQuery) },
         { name: 'Mais', results: everywhere },
     ].filter((group) => group.results.length > 0);
+});
+
+/** Results from an earlier term are on screen while a newer one is looked up. */
+const isShowingStaleHits = computed(
+    () =>
+        isSearching.value &&
+        documents.value.length + customers.value.length > 0,
+);
+
+const resultCount = computed(() =>
+    resultGroups.value.reduce(
+        (total, group) => total + group.results.length,
+        0,
+    ),
+);
+
+/** Spoken, not shown: what the list is doing, since it changes silently. */
+const statusMessage = computed(() => {
+    if (trimmedQuery.value.length < MIN_QUERY_LENGTH) {
+        return '';
+    }
+
+    if (isSearching.value) {
+        return 'A procurar…';
+    }
+
+    if (resultCount.value === 0) {
+        return 'Nenhum resultado';
+    }
+
+    return resultCount.value === 1
+        ? '1 resultado'
+        : `${resultCount.value} resultados`;
 });
 
 const hasOnlyFallback = computed(
@@ -344,10 +397,21 @@ function isTypingInFormField(target: EventTarget | null): boolean {
     );
 }
 
+/** Another dialog already has the user's attention, and the page behind it is inert. */
+function isAnotherDialogOpen(): boolean {
+    return (
+        document.querySelector('[role="dialog"], [role="alertdialog"]') !== null
+    );
+}
+
 function handleGlobalKeydown(event: KeyboardEvent): void {
     const modifier = isApplePlatform.value ? event.metaKey : event.ctrlKey;
 
     if ((event.key === 'k' || event.key === 'K') && modifier && !event.altKey) {
+        if (!open.value && isAnotherDialogOpen()) {
+            return;
+        }
+
         event.preventDefault();
         open.value = !open.value;
 
@@ -358,7 +422,8 @@ function handleGlobalKeydown(event: KeyboardEvent): void {
     if (
         event.key === '/' &&
         !open.value &&
-        !isTypingInFormField(event.target)
+        !isTypingInFormField(event.target) &&
+        !isAnotherDialogOpen()
     ) {
         event.preventDefault();
         openPalette();
@@ -395,6 +460,7 @@ onBeforeUnmount(() => {
         <button
             type="button"
             class="group flex h-10 w-full max-w-md min-w-0 items-center gap-3 rounded-full bg-zinc-900/[0.04] pr-2 pl-3.5 text-left text-sm text-zinc-500 focus-ring transition hover:bg-zinc-900/[0.07] hover:text-zinc-700 dark:bg-white/[0.06] dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-zinc-200"
+            aria-haspopup="dialog"
             :aria-keyshortcuts="isApplePlatform ? 'Meta+K' : 'Control+K'"
             @click="openPalette"
         >
@@ -416,79 +482,79 @@ onBeforeUnmount(() => {
         </button>
 
         <TransitionRoot as="template" :show="open" @after-leave="resetPalette">
-            <Dialog class="relative z-50" @close="closePalette">
-                <TransitionChild
-                    as="template"
-                    enter="ease-out duration-150"
-                    enter-from="opacity-0"
-                    enter-to="opacity-100"
-                    leave="ease-in duration-100"
-                    leave-from="opacity-100"
-                    leave-to="opacity-0"
-                >
+            <Dialog
+                class="relative z-50"
+                aria-label="Pesquisa"
+                @close="closePalette"
+            >
+                <!-- No enter or leave animation: the palette answers a keystroke
+                     and should be there before the eye has moved. -->
+                <TransitionChild as="template">
                     <div class="fixed inset-0 dialog-scrim" />
                 </TransitionChild>
 
                 <div
-                    class="fixed inset-0 z-50 overflow-y-auto p-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:p-6 sm:pt-[12vh]"
+                    class="fixed inset-0 z-50 overflow-y-auto p-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:p-6 sm:pt-[12dvh]"
                 >
-                    <TransitionChild
-                        as="template"
-                        enter="ease-out duration-150"
-                        enter-from="opacity-0 -translate-y-1 scale-[0.98]"
-                        enter-to="opacity-100 translate-y-0 scale-100"
-                        leave="ease-in duration-100"
-                        leave-from="opacity-100 scale-100"
-                        leave-to="opacity-0 scale-[0.98]"
-                    >
+                    <TransitionChild as="template">
                         <DialogPanel
-                            class="mx-auto w-full max-w-[40rem] overflow-hidden dialog-panel"
+                            class="mx-auto w-full max-w-[40rem] overflow-clip dialog-panel"
                         >
                             <Combobox
                                 :model-value="null"
                                 @update:model-value="choose"
                             >
-                                <div
-                                    class="flex items-center gap-3 border-b border-zinc-900/[0.06] px-5 dark:border-white/10"
-                                >
-                                    <Search
-                                        class="size-5 shrink-0 text-zinc-400"
-                                        aria-hidden="true"
-                                    />
-                                    <ComboboxInput
-                                        class="h-14 min-w-0 flex-1 bg-transparent text-[0.9375rem] text-zinc-950 outline-none placeholder:text-zinc-400 dark:text-white dark:placeholder:text-zinc-500"
-                                        placeholder="Número, cliente, NIF ou página…"
-                                        autocomplete="off"
-                                        spellcheck="false"
-                                        aria-label="Pesquisar"
-                                        @change="query = $event.target.value"
-                                    />
-                                    <LoaderCircle
-                                        v-if="isSearching"
-                                        class="size-4 shrink-0 animate-spin text-zinc-400"
-                                        aria-hidden="true"
-                                    />
+                                <div class="flex items-center gap-2 p-2.5">
+                                    <div
+                                        class="flex h-12 min-w-0 flex-1 items-center gap-3 rounded-full bg-zinc-900/[0.04] ps-4 pe-2 focus-within:outline-1 focus-within:-outline-offset-1 focus-within:outline-zinc-900/20 dark:bg-white/[0.06] dark:focus-within:outline-white/20"
+                                    >
+                                        <Search
+                                            class="size-4.5 shrink-0 text-zinc-500 dark:text-zinc-400"
+                                            aria-hidden="true"
+                                        />
+                                        <ComboboxInput
+                                            class="h-full min-w-0 flex-1 bg-transparent text-[0.9375rem] text-zinc-950 outline-hidden placeholder:text-zinc-500 dark:text-white dark:placeholder:text-zinc-400"
+                                            placeholder="Número, cliente, NIF ou página…"
+                                            autocomplete="off"
+                                            spellcheck="false"
+                                            aria-label="Pesquisar"
+                                            @change="
+                                                query = $event.target.value
+                                            "
+                                        />
+                                        <LoaderCircle
+                                            v-if="isSearching"
+                                            class="size-4 shrink-0 animate-spin-delayed text-zinc-500 dark:text-zinc-400"
+                                            aria-hidden="true"
+                                        />
+                                        <kbd :class="[keyCap, 'hidden sm:grid']"
+                                            >esc</kbd
+                                        >
+                                    </div>
                                     <button
                                         type="button"
-                                        class="shrink-0 rounded-full px-2 py-1 text-sm font-medium text-zinc-500 focus-ring hover:text-zinc-900 sm:hidden dark:hover:text-white"
+                                        class="tap-target shrink-0 rounded-full px-2 py-1 text-sm font-medium text-zinc-500 focus-ring hover:text-zinc-900 sm:hidden dark:text-zinc-400 dark:hover:text-white"
                                         @click="closePalette"
                                     >
                                         Cancelar
                                     </button>
-                                    <kbd
-                                        class="hidden h-6 shrink-0 place-items-center rounded-md px-1.5 font-sans text-[0.6875rem] font-medium text-zinc-400 shadow-[0_0_0_1px_rgb(23_23_22/0.1)] sm:grid dark:shadow-[0_0_0_1px_rgb(255_255_255/0.12)]"
-                                        >esc</kbd
-                                    >
                                 </div>
+
+                                <p class="sr-only" role="status">
+                                    {{ statusMessage }}
+                                </p>
 
                                 <ComboboxOptions
                                     static
-                                    class="max-h-[min(28rem,65vh)] scroll-py-2 overflow-y-auto p-2"
+                                    class="max-h-[min(28rem,45dvh)] scroll-py-2 overflow-y-auto overscroll-contain p-2 pt-0 sm:max-h-[min(28rem,65dvh)]"
+                                    :class="
+                                        isShowingStaleHits ? 'opacity-60' : ''
+                                    "
                                 >
                                     <li
                                         v-if="hasOnlyFallback"
                                         role="presentation"
-                                        class="px-3 pt-5 pb-3 text-center"
+                                        class="px-3 py-4"
                                     >
                                         <p
                                             class="text-sm font-medium text-zinc-950 dark:text-white"
@@ -503,113 +569,184 @@ onBeforeUnmount(() => {
                                             nomes das páginas.
                                         </p>
                                     </li>
-                                    <template
-                                        v-for="group in resultGroups"
+                                    <li
+                                        v-for="(group, index) in resultGroups"
                                         :key="group.name"
+                                        role="presentation"
+                                        :class="
+                                            index > 0
+                                                ? 'mt-2 border-t border-zinc-900/[0.06] pt-3 dark:border-white/10'
+                                                : ''
+                                        "
                                     >
-                                        <li
-                                            v-if="!hasOnlyFallback"
-                                            role="presentation"
-                                            class="px-3 pt-3 pb-1.5 eyebrow text-zinc-400 first:pt-1.5 dark:text-zinc-500"
-                                        >
-                                            {{ group.name }}
-                                        </li>
-                                        <ComboboxOption
-                                            v-for="result in group.results"
-                                            :key="result.key"
-                                            v-slot="{ active }"
-                                            :value="result"
-                                            as="template"
+                                        <ul
+                                            role="group"
+                                            :aria-labelledby="
+                                                hasOnlyFallback
+                                                    ? undefined
+                                                    : `palette-group-${index}`
+                                            "
                                         >
                                             <li
-                                                class="flex cursor-pointer items-center gap-3 rounded-2xl px-3 py-2.5 select-none"
+                                                v-if="!hasOnlyFallback"
+                                                :id="`palette-group-${index}`"
+                                                role="presentation"
+                                                class="ps-3 pe-3 pb-1.5 eyebrow text-zinc-500 dark:text-zinc-400"
                                                 :class="
-                                                    active
-                                                        ? 'bg-zinc-900/[0.05] dark:bg-white/[0.07]'
-                                                        : ''
+                                                    index === 0 ? 'pt-1.5' : ''
                                                 "
                                             >
-                                                <span
-                                                    class="grid size-9 shrink-0 place-items-center rounded-xl"
-                                                    :class="
-                                                        active
-                                                            ? 'bg-white text-zinc-900 shadow-[0_0_0_1px_rgb(23_23_22/0.06)] dark:bg-white/10 dark:text-white dark:shadow-none'
-                                                            : 'bg-zinc-900/[0.04] text-zinc-500 dark:bg-white/[0.06] dark:text-zinc-400'
-                                                    "
-                                                >
-                                                    <component
-                                                        :is="result.icon"
-                                                        class="size-4"
-                                                        aria-hidden="true"
-                                                    />
-                                                </span>
-                                                <span class="min-w-0 flex-1">
-                                                    <span
-                                                        class="block truncate text-sm font-medium text-zinc-950 dark:text-white"
-                                                        :class="
-                                                            result.mono
-                                                                ? 'numeric tracking-[-0.01em]'
-                                                                : ''
-                                                        "
-                                                        >{{
-                                                            result.label
-                                                        }}</span
-                                                    >
-                                                    <span
-                                                        class="mt-0.5 block truncate text-xs text-zinc-500 dark:text-zinc-400"
-                                                        >{{ result.hint }}</span
-                                                    >
-                                                </span>
-                                                <span
-                                                    v-if="result.amount"
-                                                    class="hidden shrink-0 numeric text-sm text-zinc-700 sm:block dark:text-zinc-300"
-                                                    >{{ result.amount }}</span
-                                                >
-                                                <StatusBadge
-                                                    v-if="result.status"
-                                                    class="shrink-0"
-                                                    :label="result.status.label"
-                                                    :tone="result.status.tone"
-                                                />
-                                                <ArrowRight
-                                                    v-else
-                                                    class="size-4 shrink-0 text-zinc-400 transition"
-                                                    :class="
-                                                        active
-                                                            ? 'opacity-100'
-                                                            : 'opacity-0'
-                                                    "
-                                                    aria-hidden="true"
-                                                />
+                                                {{ group.name }}
                                             </li>
-                                        </ComboboxOption>
-                                    </template>
+                                            <ComboboxOption
+                                                v-for="result in group.results"
+                                                :key="result.key"
+                                                v-slot="{ active }"
+                                                :value="result"
+                                                as="template"
+                                            >
+                                                <li
+                                                    class="flex cursor-pointer items-center gap-3 px-3 select-none"
+                                                    :class="[
+                                                        result.detail
+                                                            ? 'rounded-2xl py-2.5'
+                                                            : 'min-h-10 rounded-xl py-2 pointer-coarse:min-h-11',
+                                                        active
+                                                            ? 'bg-zinc-900/[0.05] dark:bg-white/[0.07]'
+                                                            : '',
+                                                    ]"
+                                                >
+                                                    <span
+                                                        class="grid size-7 shrink-0 place-items-center"
+                                                        :class="
+                                                            result.primary
+                                                                ? 'rounded-full bg-accent-400 text-brand-950'
+                                                                : active
+                                                                  ? 'text-zinc-950 dark:text-white'
+                                                                  : 'text-zinc-500 dark:text-zinc-400'
+                                                        "
+                                                    >
+                                                        <component
+                                                            :is="result.icon"
+                                                            class="size-4 shrink-0"
+                                                            aria-hidden="true"
+                                                        />
+                                                    </span>
+
+                                                    <span
+                                                        v-if="result.detail"
+                                                        class="min-w-0 flex-1"
+                                                    >
+                                                        <span
+                                                            class="block truncate font-medium text-zinc-950 dark:text-white"
+                                                            :class="
+                                                                result.mono
+                                                                    ? 'font-mono text-[0.8125rem]'
+                                                                    : 'text-sm'
+                                                            "
+                                                            >{{
+                                                                result.label
+                                                            }}</span
+                                                        >
+                                                        <span
+                                                            class="mt-0.5 block truncate text-xs text-zinc-500 dark:text-zinc-400"
+                                                            >{{
+                                                                result.hint
+                                                            }}</span
+                                                        >
+                                                        <StatusBadge
+                                                            v-if="result.status"
+                                                            class="mt-1.5 sm:hidden"
+                                                            :label="
+                                                                result.status
+                                                                    .label
+                                                            "
+                                                            :tone="
+                                                                result.status
+                                                                    .tone
+                                                            "
+                                                        />
+                                                    </span>
+                                                    <template v-else>
+                                                        <span
+                                                            class="min-w-0 flex-1 truncate text-sm font-medium text-zinc-950 dark:text-white"
+                                                            >{{
+                                                                result.label
+                                                            }}</span
+                                                        >
+                                                        <span
+                                                            v-if="result.hint"
+                                                            class="ms-auto hidden shrink-0 ps-3 text-xs text-zinc-500 sm:block dark:text-zinc-400"
+                                                            >{{
+                                                                result.hint
+                                                            }}</span
+                                                        >
+                                                    </template>
+
+                                                    <span
+                                                        v-if="result.amount"
+                                                        class="hidden shrink-0 sm:block"
+                                                    >
+                                                        <span
+                                                            class="numeric text-sm text-zinc-950 dark:text-white"
+                                                            >{{
+                                                                result.amount
+                                                                    .figure
+                                                            }}</span
+                                                        ><span
+                                                            class="ms-1 text-xs text-zinc-500 dark:text-zinc-400"
+                                                            >{{
+                                                                result.amount
+                                                                    .currency
+                                                            }}</span
+                                                        >
+                                                    </span>
+                                                    <StatusBadge
+                                                        v-if="result.status"
+                                                        class="shrink-0 max-sm:hidden"
+                                                        :label="
+                                                            result.status.label
+                                                        "
+                                                        :tone="
+                                                            result.status.tone
+                                                        "
+                                                    />
+                                                    <kbd
+                                                        v-else
+                                                        :class="[
+                                                            keyCap,
+                                                            'hidden shrink-0 sm:grid',
+                                                            active
+                                                                ? ''
+                                                                : 'invisible',
+                                                        ]"
+                                                        aria-hidden="true"
+                                                        ><CornerDownLeft
+                                                            class="size-3"
+                                                    /></kbd>
+                                                </li>
+                                            </ComboboxOption>
+                                        </ul>
+                                    </li>
                                 </ComboboxOptions>
 
                                 <div
-                                    class="hidden items-center gap-5 border-t border-zinc-900/[0.06] px-5 py-3 text-xs text-zinc-500 sm:flex dark:border-white/10 dark:text-zinc-400"
+                                    class="hidden items-center gap-5 border-t border-zinc-900/[0.06] px-4 py-2.5 text-xs text-zinc-500 sm:flex dark:border-white/10 dark:text-zinc-400"
                                 >
                                     <span class="flex items-center gap-1.5">
-                                        <kbd
-                                            class="grid size-5 place-items-center rounded-md font-sans text-[0.6875rem] shadow-[0_0_0_1px_rgb(23_23_22/0.1)] dark:shadow-[0_0_0_1px_rgb(255_255_255/0.12)]"
-                                            >↑</kbd
-                                        >
-                                        <kbd
-                                            class="grid size-5 place-items-center rounded-md font-sans text-[0.6875rem] shadow-[0_0_0_1px_rgb(23_23_22/0.1)] dark:shadow-[0_0_0_1px_rgb(255_255_255/0.12)]"
-                                            >↓</kbd
-                                        >
+                                        <kbd :class="keyCap">↑</kbd>
+                                        <kbd :class="keyCap">↓</kbd>
                                         navegar
                                     </span>
                                     <span class="flex items-center gap-1.5">
-                                        <kbd
-                                            class="grid size-5 place-items-center rounded-md shadow-[0_0_0_1px_rgb(23_23_22/0.1)] dark:shadow-[0_0_0_1px_rgb(255_255_255/0.12)]"
+                                        <kbd :class="keyCap"
                                             ><CornerDownLeft
                                                 class="size-3"
                                                 aria-hidden="true"
                                         /></kbd>
                                         abrir
                                     </span>
-                                    <span class="ml-auto"
+                                    <span class="ms-auto"
                                         >Só procura na empresa em que está a
                                         trabalhar.</span
                                     >

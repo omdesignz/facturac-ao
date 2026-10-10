@@ -126,3 +126,12 @@ test('the header search box is wired to the search endpoint', function () {
         ->and($palette)->toContain("import { search } from '@/routes';")
         ->and($palette)->toContain('http.get(search.url())');
 });
+
+test('the palette sets one create action apart by flag, not by its label', function () {
+    $palette = (string) file_get_contents(resource_path('js/components/GlobalSearch.vue'));
+
+    expect($palette)->toContain('primary: true')
+        ->and($palette)->toContain('result.primary')
+        ->and($palette)->not->toContain("result.label === 'Emitir factura'")
+        ->and($palette)->not->toContain('ArrowRight');
+});
