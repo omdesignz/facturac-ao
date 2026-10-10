@@ -37,6 +37,9 @@ jobs:
       - name: Deterministic assistant rendering gate
         run: node --test tests/assistant-ui.test.mjs
 
+      - name: Calendar date arithmetic gate
+        run: node --test tests/payment-terms.test.mjs
+
       - name: Run CI Checks
         run: composer ci:check
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import {
     ArrowUpRight,
     Check,
@@ -18,7 +18,7 @@ import {
     SlidersHorizontal,
     X,
 } from '@lucide/vue';
-import { computed, ref } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import DateInput from '@/components/DateInput.vue';
 import DocumentLifecycle from '@/components/DocumentLifecycle.vue';
 import type { LifecycleStep } from '@/components/DocumentLifecycle.vue';
@@ -160,6 +160,9 @@ const from = ref<string | null>(props.filters.from || null);
 const to = ref<string | null>(props.filters.to || null);
 const sendingDocument = ref<string | null>(null);
 const openingDocument = ref<string | null>(null);
+const loading = ref(false);
+const detailPanel = ref<HTMLElement | null>(null);
+const page = usePage();
 const showFilters = ref(
     Boolean(
         props.filters.type ||
@@ -334,6 +337,14 @@ function query(): Record<string, string> {
     return values;
 }
 
+function startLoading(): void {
+    loading.value = true;
+}
+
+function finishLoading(): void {
+    loading.value = false;
+}
+
 function applyFilters(): void {
     if (['FT', 'FR', 'GF'].includes(type.value)) {
         family.value = 'invoice';
@@ -348,6 +359,8 @@ function applyFilters(): void {
         preserveState: true,
         replace: true,
         only: ['documents', 'filters', 'selected'],
+        onStart: startLoading,
+        onFinish: finishLoading,
     });
 }
 
@@ -374,39 +387,93 @@ function clearFilters(): void {
 }
 
 /**
- * Opens a document in the detail panel.
+ * The page of the list being looked at. Opening or closing a document keeps
+ * it in the address; changing a filter does not, because a new filter starts
+ * a new list.
+ */
+const carriedPage = computed<Record<string, string>>(() => {
+    const value = new URL(page.url, 'http://localhost').searchParams.get(
+        'page',
+    );
+
+    const carried: Record<string, string> = {};
+
+    if (value !== null && value !== '1') {
+        carried.page = value;
+    }
+
+    return carried;
+});
+
+/**
+ * The address that opens a document in the detail panel.
  *
  * Only the panel is reloaded: the list stays exactly where it was, and the
  * document's id goes into the address so the view can be shared or reloaded.
+ * Being a real address, it is also what a middle-click or copy-link gets.
  */
-function openDocument(publicId: string): void {
-    if (props.selected?.public_id === publicId) {
-        return;
-    }
+function documentUrl(publicId: string): string {
+    return documentsIndex.url({
+        query: { ...query(), ...carriedPage.value, documento: publicId },
+    });
+}
 
+function rowNumber(document: RegisterDocument): string {
+    return document.document_no ?? `Rascunho · ${document.document_type_label}`;
+}
+
+/** The row is a real link; a plain click is handled in the page, not reloaded. */
+function skipReopening(event: MouseEvent, publicId: string): void {
+    const modified =
+        event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;
+
+    if (props.selected?.public_id === publicId && !modified) {
+        event.preventDefault();
+    }
+}
+
+function startOpening(publicId: string): void {
     openingDocument.value = publicId;
+}
+
+function finishOpening(publicId: string): void {
+    if (openingDocument.value === publicId) {
+        openingDocument.value = null;
+    }
+}
+
+/**
+ * Below 80rem the panel sits above the list, so a tap on a row would change
+ * something off screen. Bring it into view and move focus into it; from 80rem
+ * the panel is beside the list and nothing moves.
+ */
+watch(
+    () => props.selected?.public_id,
+    async (publicId) => {
+        if (
+            publicId === undefined ||
+            window.matchMedia('(min-width: 80rem)').matches
+        ) {
+            return;
+        }
+
+        await nextTick();
+        detailPanel.value?.scrollIntoView({ block: 'start', behavior: 'auto' });
+        detailPanel.value?.focus({ preventScroll: true });
+    },
+);
+
+function closeDocument(): void {
     router.get(
         documentsIndex.url(),
-        { ...query(), documento: publicId },
+        { ...query(), ...carriedPage.value },
         {
             preserveState: true,
             preserveScroll: true,
             replace: true,
             only: ['selected'],
-            onFinish: () => {
-                openingDocument.value = null;
-            },
         },
     );
-}
-
-function closeDocument(): void {
-    router.get(documentsIndex.url(), query(), {
-        preserveState: true,
-        preserveScroll: true,
-        replace: true,
-        only: ['selected'],
-    });
 }
 
 function workflowIsActive(value: string): boolean {
@@ -419,19 +486,44 @@ function workflowIsActive(value: string): boolean {
     ].includes(value);
 }
 
+/* Formatters are built once: the list formats several figures per row. */
+const currencyFormatters = new Map<string, Intl.NumberFormat>();
+const wholeAmountFormatter = new Intl.NumberFormat('pt-AO', {
+    maximumFractionDigits: 0,
+});
+const longDateFormatter = new Intl.DateTimeFormat('pt-PT', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+});
+const shortDateFormatter = new Intl.DateTimeFormat('pt-AO', {
+    day: 'numeric',
+    month: 'short',
+});
+const dateTimeFormatter = new Intl.DateTimeFormat('pt-AO', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'Africa/Luanda',
+});
+
 function money(minor: number, currencyCode: string): string {
-    return new Intl.NumberFormat('pt-AO', {
-        style: 'currency',
-        currency: currencyCode,
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    }).format(minor / 100);
+    let formatter = currencyFormatters.get(currencyCode);
+
+    if (formatter === undefined) {
+        formatter = new Intl.NumberFormat('pt-AO', {
+            style: 'currency',
+            currency: currencyCode,
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
+        currencyFormatters.set(currencyCode, formatter);
+    }
+
+    return formatter.format(minor / 100);
 }
 
 function wholeAmount(minor: number): string {
-    return new Intl.NumberFormat('pt-AO', {
-        maximumFractionDigits: 0,
-    }).format(Math.round(minor / 100));
+    return wholeAmountFormatter.format(Math.round(minor / 100));
 }
 
 function currencyLabel(currencyCode: string): string {
@@ -443,11 +535,7 @@ function formatDate(value: string | null): string {
         return '—';
     }
 
-    return new Intl.DateTimeFormat('pt-PT', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-    }).format(new Date(`${value.slice(0, 10)}T12:00:00`));
+    return longDateFormatter.format(new Date(`${value.slice(0, 10)}T12:00:00`));
 }
 
 function formatShortDate(value: string | null): string {
@@ -455,10 +543,9 @@ function formatShortDate(value: string | null): string {
         return '—';
     }
 
-    return new Intl.DateTimeFormat('pt-AO', {
-        day: 'numeric',
-        month: 'short',
-    }).format(new Date(`${value.slice(0, 10)}T12:00:00`));
+    return shortDateFormatter.format(
+        new Date(`${value.slice(0, 10)}T12:00:00`),
+    );
 }
 
 function formatDateTime(value: string | null): string {
@@ -466,11 +553,7 @@ function formatDateTime(value: string | null): string {
         return '—';
     }
 
-    return new Intl.DateTimeFormat('pt-AO', {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-        timeZone: 'Africa/Luanda',
-    }).format(new Date(value));
+    return dateTimeFormatter.format(new Date(value));
 }
 
 function decodeEntities(label: string): string {
@@ -494,7 +577,9 @@ function eventMeta(event: HistoryEvent): string {
 async function sendDocument(document: RegisterDocument): Promise<void> {
     const confirmed = await confirmAction({
         title: `Enviar ${document.document_no ?? 'este documento'}?`,
-        message: `Será enviado por email para ${document.delivery_email}.`,
+        message: document.delivery_email
+            ? `Será enviado por email para ${document.delivery_email}.`
+            : 'Será enviado por email ao cliente.',
         confirmLabel: document.sent_at ? 'Reenviar agora' : 'Enviar agora',
         tone: 'neutral',
     });
@@ -559,8 +644,11 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                 id="register-search"
                                 v-model="search"
                                 type="search"
-                                placeholder="Número, cliente ou NIF"
-                                class="h-10 w-full rounded-full bg-zinc-900/[0.045] pr-4 pl-10 text-sm text-zinc-950 outline-none placeholder:text-zinc-400 focus:bg-white focus:ring-2 focus:ring-brand-950 dark:bg-white/[0.06] dark:text-white dark:focus:bg-zinc-900 dark:focus:ring-zinc-200"
+                                placeholder="Número, cliente ou NIF…"
+                                autocomplete="off"
+                                spellcheck="false"
+                                enterkeyhint="search"
+                                class="h-10 w-full rounded-full bg-zinc-900/[0.045] pr-4 pl-10 text-sm text-zinc-950 focus-ring placeholder:text-zinc-400 focus:bg-white dark:bg-white/[0.06] dark:text-white dark:focus:bg-zinc-900 pointer-coarse:h-11"
                             />
                         </form>
 
@@ -570,7 +658,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                             class="relative z-20"
                         >
                             <MenuButton
-                                class="inline-flex h-10 items-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300"
+                                class="inline-flex h-10 items-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300 pointer-coarse:h-11"
                             >
                                 <Plus class="size-4" aria-hidden="true" />
                                 Novo documento
@@ -584,12 +672,12 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                 enter-active-class="transition duration-100 ease-out"
                                 enter-from-class="scale-95 opacity-0"
                                 enter-to-class="scale-100 opacity-100"
-                                leave-active-class="transition duration-75 ease-in"
+                                leave-active-class="transition duration-75 ease-out"
                                 leave-from-class="scale-100 opacity-100"
                                 leave-to-class="scale-95 opacity-0"
                             >
                                 <MenuItems
-                                    class="absolute right-0 z-30 mt-2 w-80 origin-top-right rounded-2xl bg-white p-2 text-zinc-950 shadow-2xl ring-1 ring-black/10 focus:outline-none dark:bg-zinc-900 dark:text-white dark:ring-white/10"
+                                    class="absolute left-0 z-30 mt-2 w-80 max-w-[calc(100vw-2rem)] origin-top-left menu-panel p-1.5 sm:right-0 sm:left-auto sm:origin-top-right"
                                 >
                                     <p
                                         class="px-3 pt-2 pb-2 text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-400 uppercase"
@@ -613,7 +701,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                                 active
                                                     ? 'bg-zinc-100 dark:bg-white/5'
                                                     : '',
-                                                'flex items-start gap-3 rounded-xl px-3 py-2.5 focus:outline-none',
+                                                'flex items-start gap-3 menu-item py-2.5 focus:outline-none',
                                             ]"
                                         >
                                             <span
@@ -650,7 +738,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                         :key="segment.value"
                         type="button"
                         :aria-pressed="status === segment.value"
-                        class="inline-flex h-[2.125rem] items-center gap-1.5 rounded-full px-3.5 text-[0.8125rem] font-medium focus-ring transition"
+                        class="inline-flex h-[2.125rem] items-center gap-1.5 rounded-full px-3.5 text-[0.8125rem] font-medium focus-ring transition pointer-coarse:h-11"
                         :class="
                             status === segment.value
                                 ? 'bg-brand-950 text-white dark:bg-zinc-100 dark:text-brand-950'
@@ -687,7 +775,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                             :key="String(option.value)"
                             type="button"
                             :aria-pressed="family === option.value"
-                            class="border-b-2 pt-1 pb-2.5 text-sm font-medium focus-ring transition"
+                            class="border-b-2 pt-1 pb-2.5 text-sm font-medium focus-ring transition pointer-coarse:min-h-11"
                             :class="
                                 family === option.value
                                     ? 'border-brand-950 text-zinc-950 dark:border-white dark:text-white'
@@ -703,7 +791,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                             type="button"
                             :aria-expanded="showFilters"
                             aria-controls="register-filters"
-                            class="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[0.8125rem] font-medium text-zinc-600 focus-ring transition hover:bg-zinc-900/[0.05] hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-white/5 dark:hover:text-white"
+                            class="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[0.8125rem] font-medium text-zinc-600 focus-ring transition hover:bg-zinc-900/[0.05] hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-white/5 dark:hover:text-white pointer-coarse:h-11"
                             @click="showFilters = !showFilters"
                         >
                             <SlidersHorizontal
@@ -720,7 +808,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                         <button
                             v-if="activeFilterCount > 0"
                             type="button"
-                            class="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[0.8125rem] font-medium text-zinc-500 focus-ring transition hover:bg-zinc-900/[0.05] hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white"
+                            class="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[0.8125rem] font-medium text-zinc-500 focus-ring transition hover:bg-zinc-900/[0.05] hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white pointer-coarse:h-11"
                             @click="clearFilters"
                         >
                             <FilterX class="size-4" aria-hidden="true" />
@@ -757,7 +845,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                     />
                     <button
                         type="submit"
-                        class="inline-flex h-10 items-center justify-center rounded-full bg-brand-950 px-5 text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
+                        class="inline-flex h-10 items-center justify-center rounded-full bg-brand-950 px-5 text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white pointer-coarse:h-11"
                     >
                         Aplicar
                     </button>
@@ -767,7 +855,12 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                 <div
                     class="mt-6 grid items-start gap-5 xl:grid-cols-[26rem_minmax(0,1fr)]"
                 >
-                    <section aria-label="Documentos" class="min-w-0">
+                    <section
+                        aria-label="Documentos"
+                        :aria-busy="loading"
+                        class="min-w-0 transition-opacity duration-150 ease-out"
+                        :class="loading ? 'opacity-60 delay-150' : ''"
+                    >
                         <div
                             v-if="documents.data.length === 0"
                             class="grid place-items-center rounded-3xl bg-zinc-900/[0.04] px-6 py-14 text-center dark:bg-white/[0.04]"
@@ -797,7 +890,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                             <button
                                 v-if="hasDocuments"
                                 type="button"
-                                class="mt-5 inline-flex h-9 items-center rounded-full bg-white px-4 text-[0.8125rem] font-semibold text-zinc-900 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:bg-zinc-900 dark:text-white dark:ring-white/10"
+                                class="mt-5 inline-flex h-9 items-center rounded-full bg-white px-4 text-[0.8125rem] font-semibold text-zinc-900 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:bg-zinc-900 dark:text-white dark:ring-white/10 pointer-coarse:h-11"
                                 @click="clearFilters"
                             >
                                 Limpar filtros
@@ -805,7 +898,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                             <Link
                                 v-else-if="permissions.create"
                                 :href="createInvoice.url()"
-                                class="mt-5 inline-flex h-9 items-center gap-2 rounded-full bg-accent-400 px-4 text-[0.8125rem] font-semibold text-brand-950 focus-ring transition hover:bg-accent-300"
+                                class="mt-5 inline-flex h-9 items-center gap-2 rounded-full bg-accent-400 px-4 text-[0.8125rem] font-semibold text-brand-950 focus-ring transition hover:bg-accent-300 pointer-coarse:h-11"
                             >
                                 <Plus class="size-4" aria-hidden="true" />
                                 Criar factura
@@ -834,10 +927,14 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                         {{ group.documents.length }}
                                     </h2>
                                 </div>
-                                <button
+                                <Link
                                     v-for="document in group.documents"
                                     :key="document.public_id"
-                                    type="button"
+                                    :href="documentUrl(document.public_id)"
+                                    preserve-state
+                                    preserve-scroll
+                                    replace
+                                    :only="['selected']"
                                     :aria-current="
                                         selected?.public_id ===
                                         document.public_id
@@ -851,18 +948,22 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                             ? 'bg-white shadow-[inset_0_0_0_1.5px_var(--color-accent-400),0_10px_26px_-16px_rgb(143_91_0/0.4)] dark:bg-zinc-900'
                                             : 'bg-zinc-900/[0.04] hover:bg-zinc-900/[0.07] dark:bg-white/[0.04] dark:hover:bg-white/[0.07]'
                                     "
-                                    @click="openDocument(document.public_id)"
+                                    @click.capture="
+                                        skipReopening(
+                                            $event,
+                                            document.public_id,
+                                        )
+                                    "
+                                    @start="startOpening(document.public_id)"
+                                    @finish="finishOpening(document.public_id)"
                                 >
                                     <span
                                         class="flex items-center justify-between gap-3"
                                     >
                                         <span
+                                            :title="rowNumber(document)"
                                             class="truncate font-mono text-[0.8125rem] text-zinc-600 dark:text-zinc-300"
-                                            >{{
-                                                document.document_no ??
-                                                'Rascunho · ' +
-                                                    document.document_type_label
-                                            }}</span
+                                            >{{ rowNumber(document) }}</span
                                         >
                                         <span
                                             class="flex shrink-0 items-center gap-1.5"
@@ -872,7 +973,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                                     openingDocument ===
                                                     document.public_id
                                                 "
-                                                class="size-3.5 animate-spin text-zinc-400"
+                                                class="size-3.5 animate-spin-delayed text-zinc-400"
                                                 aria-hidden="true"
                                             />
                                             <StatusBadge
@@ -894,6 +995,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                         class="mt-2 flex items-baseline justify-between gap-3"
                                     >
                                         <span
+                                            :title="document.customer_name"
                                             class="truncate text-[0.9375rem] font-medium text-zinc-950 dark:text-white"
                                             >{{ document.customer_name }}</span
                                         >
@@ -934,13 +1036,17 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                                     'attention' &&
                                                 document.workflow_message
                                             "
+                                            :title="
+                                                document.workflow_message ??
+                                                undefined
+                                            "
                                             class="truncate text-rose-600 dark:text-rose-400"
                                             >{{
                                                 document.workflow_message
                                             }}</span
                                         >
                                     </span>
-                                </button>
+                                </Link>
                             </template>
 
                             <div
@@ -955,26 +1061,45 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                     class="flex flex-wrap gap-1"
                                     aria-label="Paginação"
                                 >
-                                    <Link
+                                    <template
                                         v-for="link in documents.links"
                                         :key="link.label"
-                                        :href="link.url ?? ''"
-                                        :class="[
-                                            link.active
-                                                ? 'bg-brand-950 text-white dark:bg-zinc-100 dark:text-brand-950'
-                                                : 'text-zinc-600 hover:bg-zinc-900/[0.05] dark:text-zinc-300 dark:hover:bg-white/5',
-                                            link.url === null
-                                                ? 'pointer-events-none opacity-40'
-                                                : '',
-                                            'inline-flex h-8 min-w-8 items-center justify-center rounded-full px-2.5 font-medium focus-ring',
-                                        ]"
-                                        preserve-scroll
-                                        preserve-state
                                     >
                                         <span
-                                            v-text="decodeEntities(link.label)"
-                                        />
-                                    </Link>
+                                            v-if="link.url === null"
+                                            aria-disabled="true"
+                                            class="inline-flex h-8 min-w-8 items-center justify-center rounded-full px-2.5 font-medium text-zinc-600 opacity-40 dark:text-zinc-300 pointer-coarse:h-11 pointer-coarse:min-w-11"
+                                        >
+                                            <span
+                                                v-text="
+                                                    decodeEntities(link.label)
+                                                "
+                                            />
+                                        </span>
+                                        <Link
+                                            v-else
+                                            :href="link.url"
+                                            :aria-current="
+                                                link.active ? 'page' : undefined
+                                            "
+                                            :class="
+                                                link.active
+                                                    ? 'bg-brand-950 text-white dark:bg-zinc-100 dark:text-brand-950'
+                                                    : 'text-zinc-600 hover:bg-zinc-900/[0.05] dark:text-zinc-300 dark:hover:bg-white/5'
+                                            "
+                                            class="inline-flex h-8 min-w-8 items-center justify-center rounded-full px-2.5 font-medium focus-ring transition pointer-coarse:h-11 pointer-coarse:min-w-11"
+                                            preserve-scroll
+                                            preserve-state
+                                            @start="startLoading"
+                                            @finish="finishLoading"
+                                        >
+                                            <span
+                                                v-text="
+                                                    decodeEntities(link.label)
+                                                "
+                                            />
+                                        </Link>
+                                    </template>
                                 </nav>
                             </div>
                         </div>
@@ -983,13 +1108,15 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                     <!-- ---------------------------------------------- detail -->
                     <section
                         v-if="selected"
-                        class="order-first min-w-0 rounded-3xl bg-zinc-900/[0.04] p-6 xl:sticky xl:top-24 xl:order-none dark:bg-white/[0.04]"
+                        ref="detailPanel"
+                        tabindex="-1"
+                        class="relative order-first min-w-0 scroll-mt-20 rounded-3xl bg-zinc-900/[0.04] p-6 focus-ring xl:sticky xl:top-24 xl:order-none xl:max-h-[calc(100dvh-7rem)] xl:overflow-y-auto xl:overscroll-contain dark:bg-white/[0.04]"
                         aria-labelledby="document-detail-title"
                     >
                         <div
                             class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
                         >
-                            <div class="min-w-0">
+                            <div class="min-w-0 max-lg:pe-12">
                                 <p
                                     class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                                 >
@@ -1033,7 +1160,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                 <a
                                     v-if="selected.can_print"
                                     :href="documentPdf.url(selected.public_id)"
-                                    class="inline-flex h-[2.125rem] items-center gap-1.5 rounded-full bg-white px-3.5 text-[0.8125rem] font-semibold text-zinc-900 shadow-[0_1px_2px_rgb(23_23_22/0.04)] ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:bg-zinc-900 dark:text-white dark:ring-white/10"
+                                    class="inline-flex h-[2.125rem] items-center gap-1.5 rounded-full bg-white px-3.5 text-[0.8125rem] font-semibold text-zinc-900 shadow-[0_1px_2px_rgb(23_23_22/0.04)] ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:bg-zinc-900 dark:text-white dark:ring-white/10 pointer-coarse:h-11"
                                 >
                                     <Download
                                         class="size-4"
@@ -1046,7 +1173,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                     :href="
                                         printDocument.url(selected.public_id)
                                     "
-                                    class="inline-flex h-[2.125rem] items-center gap-1.5 rounded-full bg-white px-3.5 text-[0.8125rem] font-semibold text-zinc-900 shadow-[0_1px_2px_rgb(23_23_22/0.04)] ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:bg-zinc-900 dark:text-white dark:ring-white/10"
+                                    class="inline-flex h-[2.125rem] items-center gap-1.5 rounded-full bg-white px-3.5 text-[0.8125rem] font-semibold text-zinc-900 shadow-[0_1px_2px_rgb(23_23_22/0.04)] ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:bg-zinc-900 dark:text-white dark:ring-white/10 pointer-coarse:h-11"
                                 >
                                     <Printer
                                         class="size-4"
@@ -1060,7 +1187,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                     :disabled="
                                         sendingDocument === selected.public_id
                                     "
-                                    class="inline-flex h-[2.125rem] items-center gap-1.5 rounded-full bg-white px-3.5 text-[0.8125rem] font-semibold text-zinc-900 shadow-[0_1px_2px_rgb(23_23_22/0.04)] ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 disabled:opacity-50 dark:bg-zinc-900 dark:text-white dark:ring-white/10"
+                                    class="inline-flex h-[2.125rem] items-center gap-1.5 rounded-full bg-white px-3.5 text-[0.8125rem] font-semibold text-zinc-900 shadow-[0_1px_2px_rgb(23_23_22/0.04)] ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 disabled:opacity-50 dark:bg-zinc-900 dark:text-white dark:ring-white/10 pointer-coarse:h-11"
                                     @click="sendDocument(selected)"
                                 >
                                     <LoaderCircle
@@ -1083,7 +1210,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                 <Link
                                     v-if="selected.can_edit"
                                     :href="editInvoice.url(selected.public_id)"
-                                    class="inline-flex h-[2.125rem] items-center gap-1.5 rounded-full bg-brand-950 px-3.5 text-[0.8125rem] font-semibold text-white focus-ring transition hover:bg-brand-800 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
+                                    class="inline-flex h-[2.125rem] items-center gap-1.5 rounded-full bg-brand-950 px-3.5 text-[0.8125rem] font-semibold text-white focus-ring transition hover:bg-brand-800 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white pointer-coarse:h-11"
                                 >
                                     <PencilLine
                                         class="size-4"
@@ -1093,7 +1220,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                 </Link>
                                 <button
                                     type="button"
-                                    class="grid size-[2.125rem] place-items-center rounded-full text-zinc-500 focus-ring transition hover:bg-zinc-900/[0.06] hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white"
+                                    class="grid size-[2.125rem] place-items-center rounded-full text-zinc-500 focus-ring transition hover:bg-zinc-900/[0.06] hover:text-zinc-950 max-lg:absolute max-lg:inset-e-4 max-lg:inset-bs-4 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white pointer-coarse:size-11"
                                     @click="closeDocument"
                                 >
                                     <X class="size-4" aria-hidden="true" />
@@ -1105,9 +1232,9 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                         </div>
 
                         <dl
-                            class="mt-6 grid grid-cols-2 gap-y-5 border-y border-zinc-900/[0.07] py-5 lg:grid-cols-4 dark:border-white/10"
+                            class="mt-6 grid grid-cols-2 gap-y-5 border-y border-zinc-900/[0.07] py-5 lg:grid-cols-3 dark:border-white/10"
                         >
-                            <div class="pr-4">
+                            <div class="pe-4">
                                 <dt
                                     class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                                 >
@@ -1141,7 +1268,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                 </dd>
                             </div>
                             <div
-                                class="border-l border-zinc-900/[0.07] px-4 dark:border-white/10"
+                                class="border-s border-zinc-900/[0.07] px-4 dark:border-white/10"
                             >
                                 <dt
                                     class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
@@ -1170,7 +1297,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                 </dd>
                             </div>
                             <div
-                                class="px-4 max-lg:border-l-0 max-lg:pl-0 lg:border-l lg:border-zinc-900/[0.07] dark:lg:border-white/10"
+                                class="pe-4 lg:border-s lg:border-zinc-900/[0.07] lg:ps-4 dark:lg:border-white/10"
                             >
                                 <dt
                                     class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
@@ -1218,14 +1345,16 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                 </dd>
                             </div>
                             <div
-                                class="border-l border-zinc-900/[0.07] px-4 dark:border-white/10"
+                                class="col-span-full flex items-center justify-between gap-x-4 gap-y-2 border-t border-zinc-900/[0.07] pt-5 dark:border-white/10"
                             >
                                 <dt
                                     class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                                 >
                                     AGT
                                 </dt>
-                                <dd class="mt-2">
+                                <dd
+                                    class="flex min-w-0 flex-wrap items-center justify-end gap-x-3 gap-y-1"
+                                >
                                     <StatusBadge
                                         :label="selected.workflow_label"
                                         :tone="
@@ -1237,12 +1366,13 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                             )
                                         "
                                     />
-                                </dd>
-                                <dd
-                                    v-if="selected.submission?.request_id"
-                                    class="mt-1.5 truncate font-mono text-xs text-zinc-500 dark:text-zinc-400"
-                                >
-                                    {{ selected.submission.request_id }}
+                                    <span
+                                        v-if="selected.submission?.request_id"
+                                        class="min-w-0 truncate font-mono text-xs text-zinc-500 dark:text-zinc-400"
+                                        :title="selected.submission.request_id"
+                                    >
+                                        {{ selected.submission.request_id }}
+                                    </span>
                                 </dd>
                             </div>
                         </dl>

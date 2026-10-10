@@ -6,7 +6,7 @@ import {
     TransitionChild,
     TransitionRoot,
 } from '@headlessui/vue';
-import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import {
     Building2,
     Calculator,
@@ -25,13 +25,21 @@ import {
     Trash2,
     UserRound,
 } from '@lucide/vue';
-import { computed, ref, watch } from 'vue';
+import {
+    computed,
+    nextTick,
+    onBeforeUnmount,
+    onMounted,
+    ref,
+    watch,
+} from 'vue';
 import DateInput from '@/components/DateInput.vue';
 import FormError from '@/components/FormError.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { addDaysToIsoDate } from '@/lib/dates';
 import { roundFiscalLineAmount } from '@/lib/fiscal-rounding';
 import { show as agtConnection } from '@/routes/agt/connection';
 import { issue, store, update } from '@/routes/invoices';
@@ -305,16 +313,25 @@ const settlementTotal = computed(() =>
     ),
 );
 
-function addSettlement(): void {
+async function addSettlement(): Promise<void> {
     form.settlements.push({
         document_public_id: '',
         document_no: '',
         amount: '0.00',
     });
+
+    const position = form.settlements.length;
+
+    announce(`Factura ${position} adicionada.`);
+    await nextTick();
+    focusFirst(`settlement-doc-${position - 1}`);
 }
 
-function removeSettlement(index: number): void {
+async function removeSettlement(index: number): Promise<void> {
     form.settlements.splice(index, 1);
+    announce(`Factura ${index + 1} removida.`);
+    await nextTick();
+    focusFirst(`remove-settlement-${index}`, 'add-settlement');
 }
 
 /** Every invoice this customer still owes on, allocated at its full balance. */
@@ -826,7 +843,8 @@ function formatMoney(minorUnits: bigint): string {
     const whole = minorUnits / 100n;
     const fraction = (minorUnits % 100n).toString().padStart(2, '0');
 
-    return `${integerFormatter.format(whole)}${decimalSeparator}${fraction} Kz`;
+    // A non-breaking space keeps «Kz» on the same line as its figure.
+    return `${integerFormatter.format(whole)}${decimalSeparator}${fraction}\u00A0Kz`;
 }
 
 function errorFor(path: string): string | undefined {
@@ -873,7 +891,7 @@ function applyWithholding(withholding: WithholdingRow | null): void {
     form.withholdings = [{ ...withholding }];
 }
 
-function addWithholding(): void {
+async function addWithholding(): Promise<void> {
     const used = new Set(form.withholdings.map((row) => row.type));
     const next = props.withholdingTypes.find(
         (option) => !used.has(option.value),
@@ -887,10 +905,19 @@ function addWithholding(): void {
         type: next.value,
         rate_percentage: next.suggested_rate,
     });
+
+    const position = form.withholdings.length;
+
+    announce(`Retenção ${position} adicionada.`);
+    await nextTick();
+    focusFirst(`withholding-type-${position - 1}`);
 }
 
-function removeWithholding(index: number): void {
+async function removeWithholding(index: number): Promise<void> {
     form.withholdings.splice(index, 1);
+    announce(`Retenção ${index + 1} removida.`);
+    await nextTick();
+    focusFirst(`remove-withholding-${index}`, 'add-withholding');
 }
 
 /**
@@ -930,14 +957,13 @@ function changeWithholdingType(index: number, value: string): void {
  * itself — leaving it blank would make the document permanently un-overdue.
  */
 function applyPaymentTerms(days: number): void {
-    const issued = new Date(`${form.document_date}T00:00:00`);
+    const due = addDaysToIsoDate(form.document_date, days);
 
-    if (Number.isNaN(issued.getTime())) {
+    if (due === null) {
         return;
     }
 
-    issued.setDate(issued.getDate() + days);
-    form.due_date = issued.toISOString().slice(0, 10);
+    form.due_date = due;
 }
 
 function useManualCustomer(): void {
@@ -945,17 +971,218 @@ function useManualCustomer(): void {
     selectCustomer();
 }
 
-function addLine(): void {
-    form.lines.push(editableLine(undefined, form.document_date));
+/**
+ * The ids a line's first field can have: the card layout (below `xl`) and the
+ * table each render their own copy, and only one of them is on screen.
+ */
+function firstFieldIds(key: string): string[] {
+    return [
+        `mobile-catalogue-${key}`,
+        `mobile-code-${key}`,
+        `catalogue-${key}`,
+        `code-${key}`,
+    ];
 }
 
-function removeLine(index: number): void {
+async function addLine(): Promise<void> {
+    const line = editableLine(undefined, form.document_date);
+
+    form.lines.push(line);
+    announce(
+        `Linha ${form.lines.length} adicionada. ${lineCountLabel(form.lines.length)}.`,
+    );
+    await nextTick();
+    focusFirst(...firstFieldIds(line.key));
+}
+
+async function removeLine(index: number): Promise<void> {
     if (form.lines.length === 1) {
         return;
     }
 
     form.lines.splice(index, 1);
+    announce(
+        `Linha ${index + 1} removida. ${lineCountLabel(form.lines.length)}.`,
+    );
+    await nextTick();
+
+    const next = form.lines[index];
+
+    focusFirst(
+        ...(next === undefined
+            ? []
+            : [`mobile-remove-line-${next.key}`, `remove-line-${next.key}`]),
+        'add-line-end',
+    );
 }
+
+function lineCountLabel(count: number): string {
+    return count === 1
+        ? '1 linha no documento'
+        : `${count} linhas no documento`;
+}
+
+/* ------------------------------------------------- focus and announcements */
+
+/** Spoken politely by the status region at the top of the form. */
+const announcement = ref('');
+
+function announce(message: string): void {
+    announcement.value = message;
+}
+
+function isOnScreen(element: HTMLElement): boolean {
+    return element.getClientRects().length > 0;
+}
+
+/** The control inside an id: Headless UI may put the id on a wrapper. */
+function focusTarget(element: HTMLElement | null): HTMLElement | null {
+    if (element === null) {
+        return null;
+    }
+
+    const target = element.matches('input, select, textarea, button')
+        ? element
+        : element.querySelector<HTMLElement>('input, select, textarea, button');
+
+    if (
+        target === null ||
+        !isOnScreen(target) ||
+        (target as HTMLButtonElement).disabled
+    ) {
+        return null;
+    }
+
+    return target;
+}
+
+/** Focuses the first of these ids that is on screen and enabled. */
+function focusFirst(...ids: string[]): boolean {
+    for (const id of ids) {
+        const target = focusTarget(document.getElementById(id));
+
+        if (target !== null) {
+            target.focus();
+
+            return true;
+        }
+    }
+
+    return false;
+}
+
+const errorBanner = ref<HTMLElement | null>(null);
+
+/**
+ * After a failed save, puts the user in front of the problem: the first
+ * invalid control that is actually on screen (the card layout and the table
+ * both exist in the DOM, one of them hidden), else the error banner.
+ */
+async function showFirstProblem(): Promise<void> {
+    await nextTick();
+
+    const invalid = Array.from(
+        document.querySelectorAll<HTMLElement>('[aria-invalid="true"]'),
+    )
+        .map((element) => focusTarget(element))
+        .find((element) => element !== null);
+
+    const target = invalid ?? errorBanner.value;
+
+    if (target === null || target === undefined) {
+        return;
+    }
+
+    target.focus({ preventScroll: true });
+    target.scrollIntoView({ block: 'center', behavior: 'auto' });
+}
+
+/** `invalid` for a field: true only while the server has an error for it. */
+function invalid(...paths: string[]): true | undefined {
+    return paths.some((path) => errorFor(path) !== undefined)
+        ? true
+        : undefined;
+}
+
+/** The id of the message that explains a field's error. */
+function errorId(path: string, scope = ''): string {
+    return `${scope}error-${path.replace(/[^a-z0-9]+/gi, '-')}`;
+}
+
+/** The ids of whichever of these errors are showing, for `aria-describedby`. */
+function describedBy(scope: string, ...paths: string[]): string | undefined {
+    const ids = paths
+        .filter((path) => errorFor(path) !== undefined)
+        .map((path) => errorId(path, scope));
+
+    return ids.length > 0 ? ids.join(' ') : undefined;
+}
+
+/* ------------------------------------------------------- unsaved changes */
+
+const unsavedChangesWarning =
+    'Tem alterações que ainda não foram guardadas. Se sair desta página, perdem-se.';
+
+/** Visits this page started itself (save, issue): they must never ask. */
+const ownVisits = new WeakSet<object>();
+
+function markOwnVisit(visit: object): void {
+    ownVisits.add(visit);
+}
+
+function hasUnsavedChanges(): boolean {
+    return form.isDirty && !form.processing && !issueForm.processing;
+}
+
+function warnBeforeUnload(event: BeforeUnloadEvent): void {
+    if (!hasUnsavedChanges()) {
+        return;
+    }
+
+    event.preventDefault();
+    event.returnValue = '';
+}
+
+let removeVisitGuard: (() => void) | null = null;
+
+onMounted(() => {
+    window.addEventListener('beforeunload', warnBeforeUnload);
+
+    /*
+     * Inertia cancels a visit when a listener returns false, and it has to be
+     * answered at once, so this uses the browser's own confirm() rather than
+     * the app's promise-shaped dialog.
+     */
+    removeVisitGuard = router.on('before', (event) => {
+        const visit = event.detail.visit;
+
+        if (
+            ownVisits.has(visit) ||
+            visit.prefetch ||
+            visit.async ||
+            visit.preserveState === true ||
+            !hasUnsavedChanges()
+        ) {
+            return;
+        }
+
+        const stayOnPage =
+            visit.url.pathname === window.location.pathname &&
+            (visit.only.length > 0 || visit.except.length > 0);
+
+        if (stayOnPage) {
+            return;
+        }
+
+        return window.confirm(unsavedChangesWarning);
+    });
+});
+
+onBeforeUnmount(() => {
+    window.removeEventListener('beforeunload', warnBeforeUnload);
+    removeVisitGuard?.();
+    removeVisitGuard = null;
+});
 
 function submit(): void {
     form.transform((data) => ({
@@ -996,9 +1223,13 @@ function submit(): void {
             : update(props.document.public_id),
         {
             preserveScroll: true,
+            onBefore: markOwnVisit,
             onSuccess: () => {
                 form.revision = props.document.revision;
                 form.defaults();
+            },
+            onError: () => {
+                void showFirstProblem();
             },
         },
     );
@@ -1027,6 +1258,7 @@ function confirmIssue(): void {
     issueForm.revision = props.document.revision;
     issueForm.submit(issue(props.document.public_id), {
         preserveScroll: true,
+        onBefore: markOwnVisit,
         onSuccess: () => {
             issueDialogOpen.value = false;
         },
@@ -1048,6 +1280,15 @@ function confirmIssue(): void {
             class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10"
             @submit.prevent="submit"
         >
+            <p
+                class="sr-only"
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+            >
+                {{ announcement }}
+            </p>
+
             <div class="mx-auto max-w-[100rem] space-y-7">
                 <PageHeader
                     :eyebrow="
@@ -1085,6 +1326,7 @@ function confirmIssue(): void {
                     <template #actions>
                         <button
                             type="submit"
+                            :aria-busy="form.processing"
                             :disabled="
                                 form.processing || establishments.length === 0
                             "
@@ -1096,11 +1338,7 @@ function confirmIssue(): void {
                                 aria-hidden="true"
                             />
                             <Save v-else class="size-4" aria-hidden="true" />
-                            {{
-                                form.processing
-                                    ? 'A guardar…'
-                                    : 'Guardar rascunho'
-                            }}
+                            Guardar rascunho
                         </button>
                     </template>
                 </PageHeader>
@@ -1119,7 +1357,9 @@ function confirmIssue(): void {
 
                 <div
                     v-if="flashError || hasErrors"
-                    class="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 dark:border-rose-400/20 dark:bg-rose-400/10 dark:text-rose-300"
+                    ref="errorBanner"
+                    tabindex="-1"
+                    class="scroll-mt-24 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 focus-ring dark:border-rose-400/20 dark:bg-rose-400/10 dark:text-rose-300"
                     role="alert"
                 >
                     <div class="flex gap-3">
@@ -1182,11 +1422,16 @@ function confirmIssue(): void {
                                 </label>
                                 <SelectInput
                                     id="document-type"
+                                    :invalid="invalid('document_type')"
+                                    :describedby="
+                                        describedBy('', 'document_type')
+                                    "
                                     v-model="form.document_type"
                                     class="mt-2"
                                     :options="documentTypeOptions"
                                 />
                                 <FormError
+                                    :id="errorId('document_type')"
                                     :message="form.errors.document_type"
                                 />
                             </div>
@@ -1210,6 +1455,15 @@ function confirmIssue(): void {
                                 <SelectInput
                                     v-else
                                     id="references-document"
+                                    :invalid="
+                                        invalid('references_document_public_id')
+                                    "
+                                    :describedby="
+                                        describedBy(
+                                            '',
+                                            'references_document_public_id',
+                                        )
+                                    "
                                     v-model="form.references_document_public_id"
                                     class="mt-2"
                                     placeholder="Escolher a factura…"
@@ -1217,6 +1471,9 @@ function confirmIssue(): void {
                                     @change="applyReferencedDocument($event)"
                                 />
                                 <FormError
+                                    :id="
+                                        errorId('references_document_public_id')
+                                    "
                                     :message="
                                         form.errors
                                             .references_document_public_id
@@ -1238,6 +1495,10 @@ function confirmIssue(): void {
                                 </label>
                                 <input
                                     id="adjustment-reason"
+                                    :aria-invalid="invalid('adjustment_reason')"
+                                    :aria-describedby="
+                                        describedBy('', 'adjustment_reason')
+                                    "
                                     v-model="form.adjustment_reason"
                                     type="text"
                                     maxlength="200"
@@ -1251,6 +1512,7 @@ function confirmIssue(): void {
                                     correcção.
                                 </p>
                                 <FormError
+                                    :id="errorId('adjustment_reason')"
                                     :message="form.errors.adjustment_reason"
                                 />
                             </div>
@@ -1264,11 +1526,16 @@ function confirmIssue(): void {
                                 </label>
                                 <SelectInput
                                     id="payment-method"
+                                    :invalid="invalid('payment_method')"
+                                    :describedby="
+                                        describedBy('', 'payment_method')
+                                    "
                                     v-model="form.payment_method"
                                     class="mt-2"
                                     :options="paymentMethodOptions"
                                 />
                                 <FormError
+                                    :id="errorId('payment_method')"
                                     :message="form.errors.payment_method"
                                 />
                             </div>
@@ -1282,6 +1549,10 @@ function confirmIssue(): void {
                                 </label>
                                 <DateInput
                                     id="payment-date"
+                                    :invalid="invalid('payment_date')"
+                                    :describedby="
+                                        describedBy('', 'payment_date')
+                                    "
                                     v-model="form.payment_date"
                                     class="mt-2"
                                     :clearable="false"
@@ -1289,6 +1560,7 @@ function confirmIssue(): void {
                                     aria-label="Data do pagamento"
                                 />
                                 <FormError
+                                    :id="errorId('payment_date')"
                                     :message="form.errors.payment_date"
                                 />
                             </div>
@@ -1302,12 +1574,22 @@ function confirmIssue(): void {
                                 </label>
                                 <SelectInput
                                     id="establishment"
+                                    :invalid="
+                                        invalid('establishment_public_id')
+                                    "
+                                    :describedby="
+                                        describedBy(
+                                            '',
+                                            'establishment_public_id',
+                                        )
+                                    "
                                     v-model="form.establishment_public_id"
                                     class="mt-2"
                                     placeholder="Seleccione um local"
                                     :options="establishmentOptions"
                                 />
                                 <FormError
+                                    :id="errorId('establishment_public_id')"
                                     :message="
                                         form.errors.establishment_public_id
                                     "
@@ -1323,11 +1605,16 @@ function confirmIssue(): void {
                                 </label>
                                 <SelectInput
                                     id="currency"
+                                    :invalid="invalid('currency_code')"
+                                    :describedby="
+                                        describedBy('', 'currency_code')
+                                    "
                                     v-model="form.currency_code"
                                     class="mt-2"
                                     :options="currencyOptions"
                                 />
                                 <FormError
+                                    :id="errorId('currency_code')"
                                     :message="form.errors.currency_code"
                                 />
                             </div>
@@ -1341,6 +1628,10 @@ function confirmIssue(): void {
                                 </label>
                                 <input
                                     id="exchange-rate"
+                                    :aria-invalid="invalid('exchange_rate')"
+                                    :aria-describedby="
+                                        describedBy('', 'exchange_rate')
+                                    "
                                     v-model="form.exchange_rate"
                                     inputmode="decimal"
                                     class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 numeric text-sm text-zinc-900 focus-ring outline-1 -outline-offset-1 outline-zinc-200 dark:bg-white/[0.03] dark:text-white dark:outline-white/10"
@@ -1352,6 +1643,7 @@ function confirmIssue(): void {
                                     este o valor que a AGT recebe convertido.
                                 </p>
                                 <FormError
+                                    :id="errorId('exchange_rate')"
                                     :message="form.errors.exchange_rate"
                                 />
                             </div>
@@ -1365,6 +1657,10 @@ function confirmIssue(): void {
                                 </label>
                                 <DateInput
                                     id="document-date"
+                                    :invalid="invalid('document_date')"
+                                    :describedby="
+                                        describedBy('', 'document_date')
+                                    "
                                     v-model="form.document_date"
                                     class="mt-2"
                                     :clearable="false"
@@ -1372,6 +1668,7 @@ function confirmIssue(): void {
                                     aria-label="Data do documento"
                                 />
                                 <FormError
+                                    :id="errorId('document_date')"
                                     :message="form.errors.document_date"
                                 />
                             </div>
@@ -1388,12 +1685,17 @@ function confirmIssue(): void {
                                 </label>
                                 <DateInput
                                     id="due-date"
+                                    :invalid="invalid('due_date')"
+                                    :describedby="describedBy('', 'due_date')"
                                     v-model="form.due_date"
                                     class="mt-2"
                                     :min-date="form.document_date"
                                     aria-label="Data de vencimento"
                                 />
-                                <FormError :message="form.errors.due_date" />
+                                <FormError
+                                    :id="errorId('due_date')"
+                                    :message="form.errors.due_date"
+                                />
                             </div>
                         </div>
                     </section>
@@ -1447,12 +1749,17 @@ function confirmIssue(): void {
                                 </label>
                                 <SelectInput
                                     id="saved-customer"
+                                    :invalid="invalid('customer_public_id')"
+                                    :describedby="
+                                        describedBy('', 'customer_public_id')
+                                    "
                                     v-model="form.customer_public_id"
                                     class="mt-2"
                                     :options="customerOptions"
                                     @change="selectCustomer"
                                 />
                                 <FormError
+                                    :id="errorId('customer_public_id')"
                                     :message="form.errors.customer_public_id"
                                 />
                             </div>
@@ -1466,12 +1773,17 @@ function confirmIssue(): void {
                                 </label>
                                 <input
                                     id="customer-name"
+                                    :aria-invalid="invalid('customer.name')"
+                                    :aria-describedby="
+                                        describedBy('', 'customer.name')
+                                    "
                                     v-model="form.customer.name"
                                     :readonly="Boolean(selectedCustomer)"
-                                    autocomplete="organization"
+                                    autocomplete="off"
                                     class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 read-only:bg-zinc-50 read-only:text-zinc-600 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:read-only:bg-white/[0.03] dark:read-only:text-zinc-300 dark:focus:outline-brand-400"
                                 />
                                 <FormError
+                                    :id="errorId('customer.name')"
                                     :message="errorFor('customer.name')"
                                 />
                             </div>
@@ -1485,6 +1797,20 @@ function confirmIssue(): void {
                                 </label>
                                 <input
                                     id="customer-nif"
+                                    autocomplete="off"
+                                    autocapitalize="characters"
+                                    spellcheck="false"
+                                    :aria-invalid="
+                                        invalid(
+                                            'customer.tax_identification_number',
+                                        )
+                                    "
+                                    :aria-describedby="
+                                        describedBy(
+                                            '',
+                                            'customer.tax_identification_number',
+                                        )
+                                    "
                                     v-model="
                                         form.customer.tax_identification_number
                                     "
@@ -1492,6 +1818,11 @@ function confirmIssue(): void {
                                     class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 font-mono text-sm text-zinc-900 uppercase outline-1 -outline-offset-1 outline-zinc-300 read-only:bg-zinc-50 read-only:text-zinc-600 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:read-only:bg-white/[0.03] dark:read-only:text-zinc-300 dark:focus:outline-brand-400"
                                 />
                                 <FormError
+                                    :id="
+                                        errorId(
+                                            'customer.tax_identification_number',
+                                        )
+                                    "
                                     :message="
                                         errorFor(
                                             'customer.tax_identification_number',
@@ -1509,12 +1840,21 @@ function confirmIssue(): void {
                                 </label>
                                 <input
                                     id="customer-country"
+                                    autocomplete="off"
+                                    autocapitalize="characters"
+                                    :aria-invalid="
+                                        invalid('customer.country_code')
+                                    "
+                                    :aria-describedby="
+                                        describedBy('', 'customer.country_code')
+                                    "
                                     v-model="form.customer.country_code"
                                     :readonly="Boolean(selectedCustomer)"
                                     maxlength="2"
                                     class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 font-mono text-sm text-zinc-900 uppercase outline-1 -outline-offset-1 outline-zinc-300 read-only:bg-zinc-50 read-only:text-zinc-600 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:read-only:bg-white/[0.03] dark:read-only:text-zinc-300 dark:focus:outline-brand-400"
                                 />
                                 <FormError
+                                    :id="errorId('customer.country_code')"
                                     :message="errorFor('customer.country_code')"
                                 />
                             </div>
@@ -1528,12 +1868,19 @@ function confirmIssue(): void {
                                 </label>
                                 <input
                                     id="customer-address"
+                                    :aria-invalid="
+                                        invalid('customer.address_line')
+                                    "
+                                    :aria-describedby="
+                                        describedBy('', 'customer.address_line')
+                                    "
                                     v-model="form.customer.address_line"
                                     :readonly="Boolean(selectedCustomer)"
-                                    autocomplete="street-address"
+                                    autocomplete="off"
                                     class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 read-only:bg-zinc-50 read-only:text-zinc-600 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:read-only:bg-white/[0.03] dark:read-only:text-zinc-300 dark:focus:outline-brand-400"
                                 />
                                 <FormError
+                                    :id="errorId('customer.address_line')"
                                     :message="errorFor('customer.address_line')"
                                 />
                             </div>
@@ -1566,7 +1913,7 @@ function confirmIssue(): void {
                             <button
                                 v-if="outstandingForCustomer.length > 1"
                                 type="button"
-                                class="inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold text-zinc-700 ring-1 ring-zinc-300 transition hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
+                                class="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-white px-[1.125rem] text-sm font-semibold text-zinc-900 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
                                 @click="settleEverythingOutstanding"
                             >
                                 <ListChecks class="size-4" aria-hidden="true" />
@@ -1575,9 +1922,10 @@ function confirmIssue(): void {
                                 }})
                             </button>
                             <button
+                                id="add-settlement"
                                 type="button"
                                 :disabled="settleableOptions.length === 0"
-                                class="inline-flex items-center gap-2 rounded-xl bg-zinc-950 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
+                                class="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-white px-[1.125rem] text-sm font-semibold text-zinc-900 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
                                 @click="addSettlement"
                             >
                                 <Plus class="size-4" aria-hidden="true" />
@@ -1616,6 +1964,17 @@ function confirmIssue(): void {
                                 </label>
                                 <SelectInput
                                     :id="`settlement-doc-${index}`"
+                                    :invalid="
+                                        invalid(
+                                            `settlements.${index}.document_public_id`,
+                                        )
+                                    "
+                                    :describedby="
+                                        describedBy(
+                                            '',
+                                            `settlements.${index}.document_public_id`,
+                                        )
+                                    "
                                     v-model="row.document_public_id"
                                     class="mt-2"
                                     placeholder="Escolher a factura…"
@@ -1625,6 +1984,11 @@ function confirmIssue(): void {
                                     "
                                 />
                                 <FormError
+                                    :id="
+                                        errorId(
+                                            `settlements.${index}.document_public_id`,
+                                        )
+                                    "
                                     :message="
                                         errorFor(
                                             `settlements.${index}.document_public_id`,
@@ -1642,12 +2006,22 @@ function confirmIssue(): void {
                                 </label>
                                 <input
                                     :id="`settlement-amount-${index}`"
+                                    :aria-invalid="
+                                        invalid(`settlements.${index}.amount`)
+                                    "
+                                    :aria-describedby="
+                                        describedBy(
+                                            '',
+                                            `settlements.${index}.amount`,
+                                        )
+                                    "
                                     v-model="row.amount"
                                     type="text"
                                     inputmode="decimal"
                                     class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-right font-mono numeric text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
                                 />
                                 <FormError
+                                    :id="errorId(`settlements.${index}.amount`)"
                                     :message="
                                         errorFor(`settlements.${index}.amount`)
                                     "
@@ -1655,8 +2029,9 @@ function confirmIssue(): void {
                             </div>
 
                             <button
+                                :id="`remove-settlement-${index}`"
                                 type="button"
-                                class="justify-self-start rounded-xl p-2.5 text-zinc-500 focus-ring transition hover:bg-rose-50 hover:text-rose-700 sm:justify-self-auto dark:hover:bg-rose-400/10 dark:hover:text-rose-400"
+                                class="icon-button justify-self-start text-zinc-500 focus-ring hover:bg-rose-50 hover:text-rose-700 sm:justify-self-auto dark:hover:bg-rose-400/10 dark:hover:text-rose-400"
                                 @click="removeSettlement(index)"
                             >
                                 <span class="sr-only"
@@ -1680,7 +2055,10 @@ function confirmIssue(): void {
                             >{{ formatMoney(BigInt(settlementTotal)) }}</span
                         >
                     </div>
-                    <FormError :message="form.errors.settlements" />
+                    <FormError
+                        :id="errorId('settlements')"
+                        :message="form.errors.settlements"
+                    />
                 </section>
 
                 <!--
@@ -1710,12 +2088,13 @@ function confirmIssue(): void {
                             </p>
                         </div>
                         <button
+                            id="add-withholding"
                             type="button"
                             :disabled="
                                 form.withholdings.length >=
                                 withholdingTypes.length
                             "
-                            class="inline-flex shrink-0 items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold text-zinc-700 ring-1 ring-zinc-300 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
+                            class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-white px-[1.125rem] text-sm font-semibold text-zinc-900 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
                             @click="addWithholding"
                         >
                             <Plus class="size-4" aria-hidden="true" />
@@ -1750,6 +2129,15 @@ function confirmIssue(): void {
                                 </label>
                                 <SelectInput
                                     :id="`withholding-type-${index}`"
+                                    :invalid="
+                                        invalid(`withholdings.${index}.type`)
+                                    "
+                                    :describedby="
+                                        describedBy(
+                                            '',
+                                            `withholdings.${index}.type`,
+                                        )
+                                    "
                                     :model-value="row.type"
                                     class="mt-2"
                                     :options="withholdingTypeOptions"
@@ -1759,6 +2147,7 @@ function confirmIssue(): void {
                                     "
                                 />
                                 <FormError
+                                    :id="errorId(`withholdings.${index}.type`)"
                                     :message="
                                         errorFor(`withholdings.${index}.type`)
                                     "
@@ -1774,12 +2163,28 @@ function confirmIssue(): void {
                                 </label>
                                 <input
                                     :id="`withholding-rate-${index}`"
+                                    :aria-invalid="
+                                        invalid(
+                                            `withholdings.${index}.rate_percentage`,
+                                        )
+                                    "
+                                    :aria-describedby="
+                                        describedBy(
+                                            '',
+                                            `withholdings.${index}.rate_percentage`,
+                                        )
+                                    "
                                     v-model="row.rate_percentage"
                                     type="text"
                                     inputmode="decimal"
                                     class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-right font-mono numeric text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
                                 />
                                 <FormError
+                                    :id="
+                                        errorId(
+                                            `withholdings.${index}.rate_percentage`,
+                                        )
+                                    "
                                     :message="
                                         errorFor(
                                             `withholdings.${index}.rate_percentage`,
@@ -1818,8 +2223,9 @@ function confirmIssue(): void {
                             </div>
 
                             <button
+                                :id="`remove-withholding-${index}`"
                                 type="button"
-                                class="justify-self-start rounded-xl p-2.5 text-zinc-500 focus-ring transition hover:bg-rose-50 hover:text-rose-700 sm:justify-self-auto dark:hover:bg-rose-400/10 dark:hover:text-rose-400"
+                                class="icon-button justify-self-start text-zinc-500 focus-ring hover:bg-rose-50 hover:text-rose-700 sm:justify-self-auto dark:hover:bg-rose-400/10 dark:hover:text-rose-400"
                                 @click="removeWithholding(index)"
                             >
                                 <span class="sr-only"
@@ -1829,8 +2235,13 @@ function confirmIssue(): void {
                             </button>
                         </li>
                     </ul>
-                    <FormError :message="form.errors.withholdings" />
+                    <FormError
+                        :id="errorId('withholdings')"
+                        :message="form.errors.withholdings"
+                    />
                 </section>
+
+                <FormError id="error-lines" :message="form.errors.lines" />
 
                 <section
                     v-if="requiresLines"
@@ -1860,8 +2271,9 @@ function confirmIssue(): void {
                             </p>
                         </div>
                         <button
+                            id="add-line"
                             type="button"
-                            class="inline-flex shrink-0 items-center gap-2 rounded-xl bg-zinc-950 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
+                            class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-white px-[1.125rem] text-sm font-semibold text-zinc-900 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
                             @click="addLine"
                         >
                             <Plus class="size-4" aria-hidden="true" />
@@ -1889,9 +2301,10 @@ function confirmIssue(): void {
                                     Linha {{ index + 1 }}
                                 </p>
                                 <button
+                                    :id="`mobile-remove-line-${line.key}`"
                                     type="button"
                                     :disabled="form.lines.length === 1"
-                                    class="icon-button text-zinc-400 transition hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-25 dark:hover:bg-rose-400/10 dark:hover:text-rose-300"
+                                    class="icon-button text-zinc-400 focus-ring transition hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-25 dark:hover:bg-rose-400/10 dark:hover:text-rose-300"
                                     @click="removeLine(index)"
                                 >
                                     <span class="sr-only"
@@ -1900,6 +2313,11 @@ function confirmIssue(): void {
                                     <Trash2 class="size-4" aria-hidden="true" />
                                 </button>
                             </div>
+
+                            <FormError
+                                :id="errorId(`lines.${index}`, 'm-')"
+                                :message="errorFor(`lines.${index}`)"
+                            />
 
                             <div v-if="catalogueItems.length > 0">
                                 <label
@@ -1928,10 +2346,27 @@ function confirmIssue(): void {
                                     </label>
                                     <input
                                         :id="`mobile-code-${line.key}`"
+                                        :aria-invalid="
+                                            invalid(
+                                                `lines.${index}.product_code`,
+                                            )
+                                        "
+                                        :aria-describedby="
+                                            describedBy(
+                                                'm-',
+                                                `lines.${index}.product_code`,
+                                            )
+                                        "
                                         v-model="line.product_code"
                                         class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 font-mono text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
                                     />
                                     <FormError
+                                        :id="
+                                            errorId(
+                                                `lines.${index}.product_code`,
+                                                'm-',
+                                            )
+                                        "
                                         :message="
                                             errorFor(
                                                 `lines.${index}.product_code`,
@@ -1948,10 +2383,27 @@ function confirmIssue(): void {
                                     </label>
                                     <input
                                         :id="`mobile-description-${line.key}`"
+                                        :aria-invalid="
+                                            invalid(
+                                                `lines.${index}.product_description`,
+                                            )
+                                        "
+                                        :aria-describedby="
+                                            describedBy(
+                                                'm-',
+                                                `lines.${index}.product_description`,
+                                            )
+                                        "
                                         v-model="line.product_description"
                                         class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
                                     />
                                     <FormError
+                                        :id="
+                                            errorId(
+                                                `lines.${index}.product_description`,
+                                                'm-',
+                                            )
+                                        "
                                         :message="
                                             errorFor(
                                                 `lines.${index}.product_description`,
@@ -1970,11 +2422,26 @@ function confirmIssue(): void {
                                 </label>
                                 <SelectInput
                                     :id="`mobile-operation-${line.key}`"
+                                    :invalid="
+                                        invalid(`lines.${index}.operation_type`)
+                                    "
+                                    :describedby="
+                                        describedBy(
+                                            'm-',
+                                            `lines.${index}.operation_type`,
+                                        )
+                                    "
                                     v-model="line.operation_type"
                                     class="mt-2"
                                     :options="operationTypeOptions"
                                 />
                                 <FormError
+                                    :id="
+                                        errorId(
+                                            `lines.${index}.operation_type`,
+                                            'm-',
+                                        )
+                                    "
                                     :message="
                                         errorFor(
                                             `lines.${index}.operation_type`,
@@ -1992,6 +2459,15 @@ function confirmIssue(): void {
                                 </label>
                                 <DateInput
                                     :id="`mobile-operation-date-${line.key}`"
+                                    :invalid="
+                                        invalid(`lines.${index}.operation_date`)
+                                    "
+                                    :describedby="
+                                        describedBy(
+                                            'm-',
+                                            `lines.${index}.operation_date`,
+                                        )
+                                    "
                                     v-model="line.operation_date"
                                     class="mt-2"
                                     :clearable="false"
@@ -1999,6 +2475,12 @@ function confirmIssue(): void {
                                     :aria-label="`Data da operação da linha ${index + 1}`"
                                 />
                                 <FormError
+                                    :id="
+                                        errorId(
+                                            `lines.${index}.operation_date`,
+                                            'm-',
+                                        )
+                                    "
                                     :message="
                                         errorFor(
                                             `lines.${index}.operation_date`,
@@ -2017,12 +2499,27 @@ function confirmIssue(): void {
                                     </label>
                                     <input
                                         :id="`mobile-quantity-${line.key}`"
+                                        :aria-invalid="
+                                            invalid(`lines.${index}.quantity`)
+                                        "
+                                        :aria-describedby="
+                                            describedBy(
+                                                'm-',
+                                                `lines.${index}.quantity`,
+                                            )
+                                        "
                                         v-model="line.quantity"
                                         type="text"
                                         inputmode="decimal"
                                         class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-right font-mono text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
                                     />
                                     <FormError
+                                        :id="
+                                            errorId(
+                                                `lines.${index}.quantity`,
+                                                'm-',
+                                            )
+                                        "
                                         :message="
                                             errorFor(`lines.${index}.quantity`)
                                         "
@@ -2037,10 +2534,27 @@ function confirmIssue(): void {
                                     </label>
                                     <input
                                         :id="`mobile-unit-${line.key}`"
+                                        :aria-invalid="
+                                            invalid(
+                                                `lines.${index}.unit_of_measure`,
+                                            )
+                                        "
+                                        :aria-describedby="
+                                            describedBy(
+                                                'm-',
+                                                `lines.${index}.unit_of_measure`,
+                                            )
+                                        "
                                         v-model="line.unit_of_measure"
                                         class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
                                     />
                                     <FormError
+                                        :id="
+                                            errorId(
+                                                `lines.${index}.unit_of_measure`,
+                                                'm-',
+                                            )
+                                        "
                                         :message="
                                             errorFor(
                                                 `lines.${index}.unit_of_measure`,
@@ -2058,6 +2572,17 @@ function confirmIssue(): void {
                                     <div class="relative mt-2">
                                         <input
                                             :id="`mobile-price-${line.key}`"
+                                            :aria-invalid="
+                                                invalid(
+                                                    `lines.${index}.unit_price`,
+                                                )
+                                            "
+                                            :aria-describedby="
+                                                describedBy(
+                                                    'm-',
+                                                    `lines.${index}.unit_price`,
+                                                )
+                                            "
                                             v-model="line.unit_price"
                                             type="text"
                                             inputmode="decimal"
@@ -2069,6 +2594,12 @@ function confirmIssue(): void {
                                         >
                                     </div>
                                     <FormError
+                                        :id="
+                                            errorId(
+                                                `lines.${index}.unit_price`,
+                                                'm-',
+                                            )
+                                        "
                                         :message="
                                             errorFor(
                                                 `lines.${index}.unit_price`,
@@ -2086,6 +2617,17 @@ function confirmIssue(): void {
                                     <div class="relative mt-2">
                                         <input
                                             :id="`mobile-discount-${line.key}`"
+                                            :aria-invalid="
+                                                invalid(
+                                                    `lines.${index}.discount_percentage`,
+                                                )
+                                            "
+                                            :aria-describedby="
+                                                describedBy(
+                                                    'm-',
+                                                    `lines.${index}.discount_percentage`,
+                                                )
+                                            "
                                             v-model="line.discount_percentage"
                                             type="text"
                                             inputmode="decimal"
@@ -2097,6 +2639,12 @@ function confirmIssue(): void {
                                         >
                                     </div>
                                     <FormError
+                                        :id="
+                                            errorId(
+                                                `lines.${index}.discount_percentage`,
+                                                'm-',
+                                            )
+                                        "
                                         :message="
                                             errorFor(
                                                 `lines.${index}.discount_percentage`,
@@ -2115,15 +2663,50 @@ function confirmIssue(): void {
                                 </label>
                                 <SelectInput
                                     :id="`mobile-tax-${line.key}`"
+                                    :invalid="
+                                        invalid(
+                                            `lines.${index}.tax`,
+                                            `lines.${index}.tax.percentage`,
+                                            `lines.${index}.tax.exemption_code`,
+                                        )
+                                    "
+                                    :describedby="
+                                        describedBy(
+                                            'm-',
+                                            `lines.${index}.tax`,
+                                            `lines.${index}.tax.percentage`,
+                                            `lines.${index}.tax.exemption_code`,
+                                        )
+                                    "
                                     v-model="line.tax_treatment"
                                     class="mt-2"
                                     :options="taxTreatmentOptions"
                                 />
                                 <FormError
+                                    :id="errorId(`lines.${index}.tax`, 'm-')"
+                                    :message="errorFor(`lines.${index}.tax`)"
+                                />
+                                <FormError
+                                    :id="
+                                        errorId(
+                                            `lines.${index}.tax.percentage`,
+                                            'm-',
+                                        )
+                                    "
                                     :message="
                                         errorFor(
                                             `lines.${index}.tax.percentage`,
-                                        ) ??
+                                        )
+                                    "
+                                />
+                                <FormError
+                                    :id="
+                                        errorId(
+                                            `lines.${index}.tax.exemption_code`,
+                                            'm-',
+                                        )
+                                    "
+                                    :message="
                                         errorFor(
                                             `lines.${index}.tax.exemption_code`,
                                         )
@@ -2132,7 +2715,7 @@ function confirmIssue(): void {
                             </div>
 
                             <dl
-                                class="grid grid-cols-3 gap-3 rounded-xl bg-stone-50 p-4 text-xs dark:bg-white/[0.03]"
+                                class="grid grid-cols-2 gap-3 rounded-xl bg-stone-50 p-4 text-xs sm:grid-cols-3 dark:bg-white/[0.03]"
                             >
                                 <div>
                                     <dt
@@ -2141,7 +2724,7 @@ function confirmIssue(): void {
                                         Líquido
                                     </dt>
                                     <dd
-                                        class="mt-1 font-mono font-semibold text-zinc-950 dark:text-white"
+                                        class="mt-1 font-mono numeric font-semibold whitespace-nowrap text-zinc-950 dark:text-white"
                                     >
                                         {{
                                             formatMoney(
@@ -2158,7 +2741,7 @@ function confirmIssue(): void {
                                         Imposto
                                     </dt>
                                     <dd
-                                        class="mt-1 font-mono font-semibold text-zinc-950 dark:text-white"
+                                        class="mt-1 font-mono numeric font-semibold whitespace-nowrap text-zinc-950 dark:text-white"
                                     >
                                         {{
                                             formatMoney(
@@ -2168,14 +2751,16 @@ function confirmIssue(): void {
                                         }}
                                     </dd>
                                 </div>
-                                <div class="text-right">
+                                <div
+                                    class="col-span-2 sm:col-span-1 sm:text-right"
+                                >
                                     <dt
                                         class="text-zinc-500 dark:text-zinc-400"
                                     >
                                         Total
                                     </dt>
                                     <dd
-                                        class="mt-1 font-mono font-bold text-brand-700 dark:text-brand-300"
+                                        class="mt-1 font-mono numeric font-bold whitespace-nowrap text-brand-700 dark:text-brand-300"
                                     >
                                         {{
                                             formatMoney(
@@ -2245,6 +2830,7 @@ function confirmIssue(): void {
                                             class="mb-2"
                                             size="sm"
                                             placeholder="Escolher do catálogo…"
+                                            :id="`catalogue-${line.key}`"
                                             :aria-label="`Artigo do catálogo para a linha ${index + 1}`"
                                             :options="catalogueOptions"
                                             @change="
@@ -2262,6 +2848,19 @@ function confirmIssue(): void {
                                                 >
                                                 <input
                                                     :id="`code-${line.key}`"
+                                                    :aria-invalid="
+                                                        invalid(
+                                                            `lines.${index}`,
+                                                            `lines.${index}.product_code`,
+                                                        )
+                                                    "
+                                                    :aria-describedby="
+                                                        describedBy(
+                                                            '',
+                                                            `lines.${index}`,
+                                                            `lines.${index}.product_code`,
+                                                        )
+                                                    "
                                                     v-model="line.product_code"
                                                     placeholder="Código"
                                                     class="block w-full rounded-lg bg-white px-2.5 py-2 font-mono text-xs text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
@@ -2275,6 +2874,17 @@ function confirmIssue(): void {
                                                 >
                                                 <input
                                                     :id="`description-${line.key}`"
+                                                    :aria-invalid="
+                                                        invalid(
+                                                            `lines.${index}.product_description`,
+                                                        )
+                                                    "
+                                                    :aria-describedby="
+                                                        describedBy(
+                                                            '',
+                                                            `lines.${index}.product_description`,
+                                                        )
+                                                    "
                                                     v-model="
                                                         line.product_description
                                                     "
@@ -2288,6 +2898,17 @@ function confirmIssue(): void {
                                             class="mt-2"
                                             size="sm"
                                             :aria-label="`Tipo de operação da linha ${index + 1}`"
+                                            :invalid="
+                                                invalid(
+                                                    `lines.${index}.operation_type`,
+                                                )
+                                            "
+                                            :describedby="
+                                                describedBy(
+                                                    '',
+                                                    `lines.${index}.operation_type`,
+                                                )
+                                            "
                                             :options="operationTypeOptions"
                                         />
                                         <div
@@ -2302,6 +2923,17 @@ function confirmIssue(): void {
                                             </label>
                                             <DateInput
                                                 :id="`operation-date-${line.key}`"
+                                                :invalid="
+                                                    invalid(
+                                                        `lines.${index}.operation_date`,
+                                                    )
+                                                "
+                                                :describedby="
+                                                    describedBy(
+                                                        '',
+                                                        `lines.${index}.operation_date`,
+                                                    )
+                                                "
                                                 v-model="line.operation_date"
                                                 :clearable="false"
                                                 :max-date="form.document_date"
@@ -2309,11 +2941,17 @@ function confirmIssue(): void {
                                             />
                                         </div>
                                         <FormError
+                                            :id="errorId(`lines.${index}`)"
                                             :message="
                                                 errorFor(`lines.${index}`)
                                             "
                                         />
                                         <FormError
+                                            :id="
+                                                errorId(
+                                                    `lines.${index}.product_code`,
+                                                )
+                                            "
                                             :message="
                                                 errorFor(
                                                     `lines.${index}.product_code`,
@@ -2321,6 +2959,11 @@ function confirmIssue(): void {
                                             "
                                         />
                                         <FormError
+                                            :id="
+                                                errorId(
+                                                    `lines.${index}.product_description`,
+                                                )
+                                            "
                                             :message="
                                                 errorFor(
                                                     `lines.${index}.product_description`,
@@ -2328,6 +2971,11 @@ function confirmIssue(): void {
                                             "
                                         />
                                         <FormError
+                                            :id="
+                                                errorId(
+                                                    `lines.${index}.operation_type`,
+                                                )
+                                            "
                                             :message="
                                                 errorFor(
                                                     `lines.${index}.operation_type`,
@@ -2335,6 +2983,11 @@ function confirmIssue(): void {
                                             "
                                         />
                                         <FormError
+                                            :id="
+                                                errorId(
+                                                    `lines.${index}.operation_date`,
+                                                )
+                                            "
                                             :message="
                                                 errorFor(
                                                     `lines.${index}.operation_date`,
@@ -2348,15 +3001,42 @@ function confirmIssue(): void {
                                             type="text"
                                             inputmode="decimal"
                                             :aria-label="`Quantidade da linha ${index + 1}`"
+                                            :aria-invalid="
+                                                invalid(
+                                                    `lines.${index}.quantity`,
+                                                )
+                                            "
+                                            :aria-describedby="
+                                                describedBy(
+                                                    '',
+                                                    `lines.${index}.quantity`,
+                                                )
+                                            "
                                             class="block w-full rounded-lg bg-white px-2.5 py-2 text-right font-mono text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
                                         />
                                         <input
                                             v-model="line.unit_of_measure"
                                             :aria-label="`Unidade da linha ${index + 1}`"
+                                            :aria-invalid="
+                                                invalid(
+                                                    `lines.${index}.unit_of_measure`,
+                                                )
+                                            "
+                                            :aria-describedby="
+                                                describedBy(
+                                                    '',
+                                                    `lines.${index}.unit_of_measure`,
+                                                )
+                                            "
                                             placeholder="un"
                                             class="mt-2 block w-full rounded-lg bg-white px-2.5 py-2 text-xs text-zinc-700 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-zinc-200 dark:outline-white/10 dark:focus:outline-brand-400"
                                         />
                                         <FormError
+                                            :id="
+                                                errorId(
+                                                    `lines.${index}.quantity`,
+                                                )
+                                            "
                                             :message="
                                                 errorFor(
                                                     `lines.${index}.quantity`,
@@ -2364,6 +3044,11 @@ function confirmIssue(): void {
                                             "
                                         />
                                         <FormError
+                                            :id="
+                                                errorId(
+                                                    `lines.${index}.unit_of_measure`,
+                                                )
+                                            "
                                             :message="
                                                 errorFor(
                                                     `lines.${index}.unit_of_measure`,
@@ -2378,6 +3063,17 @@ function confirmIssue(): void {
                                                 type="text"
                                                 inputmode="decimal"
                                                 :aria-label="`Preço unitário da linha ${index + 1}`"
+                                                :aria-invalid="
+                                                    invalid(
+                                                        `lines.${index}.unit_price`,
+                                                    )
+                                                "
+                                                :aria-describedby="
+                                                    describedBy(
+                                                        '',
+                                                        `lines.${index}.unit_price`,
+                                                    )
+                                                "
                                                 class="block w-full rounded-lg bg-white py-2 pr-8 pl-2.5 text-right font-mono text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
                                             />
                                             <span
@@ -2386,6 +3082,11 @@ function confirmIssue(): void {
                                             >
                                         </div>
                                         <FormError
+                                            :id="
+                                                errorId(
+                                                    `lines.${index}.unit_price`,
+                                                )
+                                            "
                                             :message="
                                                 errorFor(
                                                     `lines.${index}.unit_price`,
@@ -2402,6 +3103,17 @@ function confirmIssue(): void {
                                                 type="text"
                                                 inputmode="decimal"
                                                 :aria-label="`Desconto da linha ${index + 1}`"
+                                                :aria-invalid="
+                                                    invalid(
+                                                        `lines.${index}.discount_percentage`,
+                                                    )
+                                                "
+                                                :aria-describedby="
+                                                    describedBy(
+                                                        '',
+                                                        `lines.${index}.discount_percentage`,
+                                                    )
+                                                "
                                                 class="block w-full rounded-lg bg-white py-2 pr-7 pl-2.5 text-right font-mono text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
                                             />
                                             <span
@@ -2410,6 +3122,11 @@ function confirmIssue(): void {
                                             >
                                         </div>
                                         <FormError
+                                            :id="
+                                                errorId(
+                                                    `lines.${index}.discount_percentage`,
+                                                )
+                                            "
                                             :message="
                                                 errorFor(
                                                     `lines.${index}.discount_percentage`,
@@ -2422,14 +3139,35 @@ function confirmIssue(): void {
                                             v-model="line.tax_treatment"
                                             size="sm"
                                             :aria-label="`Tratamento fiscal da linha ${index + 1}`"
+                                            :invalid="
+                                                invalid(
+                                                    `lines.${index}.tax`,
+                                                    `lines.${index}.tax.percentage`,
+                                                    `lines.${index}.tax.exemption_code`,
+                                                )
+                                            "
+                                            :describedby="
+                                                describedBy(
+                                                    '',
+                                                    `lines.${index}.tax`,
+                                                    `lines.${index}.tax.percentage`,
+                                                    `lines.${index}.tax.exemption_code`,
+                                                )
+                                            "
                                             :options="taxTreatmentOptions"
                                         />
                                         <FormError
+                                            :id="errorId(`lines.${index}.tax`)"
                                             :message="
                                                 errorFor(`lines.${index}.tax`)
                                             "
                                         />
                                         <FormError
+                                            :id="
+                                                errorId(
+                                                    `lines.${index}.tax.percentage`,
+                                                )
+                                            "
                                             :message="
                                                 errorFor(
                                                     `lines.${index}.tax.percentage`,
@@ -2437,6 +3175,11 @@ function confirmIssue(): void {
                                             "
                                         />
                                         <FormError
+                                            :id="
+                                                errorId(
+                                                    `lines.${index}.tax.exemption_code`,
+                                                )
+                                            "
                                             :message="
                                                 errorFor(
                                                     `lines.${index}.tax.exemption_code`,
@@ -2446,7 +3189,7 @@ function confirmIssue(): void {
                                     </td>
                                     <td class="px-3 py-4 text-right">
                                         <p
-                                            class="font-mono text-sm font-semibold text-zinc-950 dark:text-white"
+                                            class="font-mono numeric text-sm font-semibold whitespace-nowrap text-zinc-950 dark:text-white"
                                         >
                                             {{
                                                 formatMoney(
@@ -2456,7 +3199,7 @@ function confirmIssue(): void {
                                             }}
                                         </p>
                                         <p
-                                            class="mt-1 text-xs text-zinc-500 dark:text-zinc-400"
+                                            class="mt-1 numeric text-xs whitespace-nowrap text-zinc-500 dark:text-zinc-400"
                                         >
                                             IVA
                                             {{
@@ -2471,9 +3214,10 @@ function confirmIssue(): void {
                                         class="py-4 pr-5 pl-3 text-right sm:pr-6"
                                     >
                                         <button
+                                            :id="`remove-line-${line.key}`"
                                             type="button"
                                             :disabled="form.lines.length === 1"
-                                            class="icon-button text-zinc-400 transition hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-25 dark:hover:bg-rose-400/10 dark:hover:text-rose-300"
+                                            class="icon-button text-zinc-400 focus-ring transition hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-25 dark:hover:bg-rose-400/10 dark:hover:text-rose-300"
                                             @click="removeLine(index)"
                                         >
                                             <span class="sr-only"
@@ -2497,7 +3241,7 @@ function confirmIssue(): void {
                                         Total do documento
                                     </th>
                                     <td
-                                        class="px-3 py-3 text-right font-mono text-sm font-bold text-zinc-950 dark:text-white"
+                                        class="px-3 py-3 text-right font-mono numeric text-sm font-bold whitespace-nowrap text-zinc-950 dark:text-white"
                                     >
                                         {{ formatMoney(totals.gross) }}
                                     </td>
@@ -2505,6 +3249,20 @@ function confirmIssue(): void {
                                 </tr>
                             </tfoot>
                         </table>
+                    </div>
+
+                    <div
+                        class="border-t border-zinc-100 px-5 py-4 sm:px-6 dark:border-white/10"
+                    >
+                        <button
+                            id="add-line-end"
+                            type="button"
+                            class="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-white px-[1.125rem] text-sm font-semibold text-zinc-900 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
+                            @click="addLine"
+                        >
+                            <Plus class="size-4" aria-hidden="true" />
+                            Adicionar linha
+                        </button>
                     </div>
                 </section>
 
@@ -2522,12 +3280,17 @@ function confirmIssue(): void {
                             </label>
                             <textarea
                                 id="notes"
+                                :aria-invalid="invalid('notes')"
+                                :aria-describedby="describedBy('', 'notes')"
                                 v-model="form.notes"
                                 rows="3"
                                 placeholder="Instruções de entrega ou referência interna…"
                                 class="mt-2 block w-full resize-y rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 placeholder:text-zinc-400 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-zinc-500 dark:focus:outline-brand-400"
                             />
-                            <FormError :message="form.errors.notes" />
+                            <FormError
+                                :id="errorId('notes')"
+                                :message="form.errors.notes"
+                            />
                         </section>
                     </div>
 
@@ -2784,7 +3547,7 @@ function confirmIssue(): void {
                             <button
                                 type="button"
                                 :disabled="!canOpenIssue"
-                                class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent-400 px-4 py-3 text-sm font-semibold text-brand-950 shadow-sm focus-ring-inverted transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
+                                class="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-sm focus-ring transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
                                 @click="openIssueDialog"
                             >
                                 <Send class="size-4" aria-hidden="true" />
@@ -2815,6 +3578,7 @@ function confirmIssue(): void {
 
                         <button
                             type="submit"
+                            :aria-busy="form.processing"
                             :disabled="
                                 form.processing || establishments.length === 0
                             "
@@ -2830,11 +3594,7 @@ function confirmIssue(): void {
                                 class="size-4"
                                 aria-hidden="true"
                             />
-                            {{
-                                form.processing
-                                    ? 'A guardar…'
-                                    : 'Guardar como rascunho'
-                            }}
+                            Guardar rascunho
                         </button>
 
                         <div
@@ -2854,10 +3614,10 @@ function confirmIssue(): void {
                 <Dialog class="relative z-50" @close="closeIssueDialog">
                     <TransitionChild
                         as="template"
-                        enter="ease-out duration-300"
+                        enter="ease-out duration-200"
                         enter-from="opacity-0"
                         enter-to="opacity-100"
-                        leave="ease-in duration-200"
+                        leave="ease-out duration-150"
                         leave-from="opacity-100"
                         leave-to="opacity-0"
                     >
@@ -2866,21 +3626,23 @@ function confirmIssue(): void {
                         />
                     </TransitionChild>
 
-                    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+                    <div
+                        class="fixed inset-0 z-10 overflow-y-auto overscroll-contain"
+                    >
                         <div
                             class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0"
                         >
                             <TransitionChild
                                 as="template"
-                                enter="ease-out duration-300"
+                                enter="ease-out duration-200"
                                 enter-from="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                                 enter-to="opacity-100 translate-y-0 sm:scale-100"
-                                leave="ease-in duration-200"
+                                leave="ease-out duration-150"
                                 leave-from="opacity-100 translate-y-0 sm:scale-100"
                                 leave-to="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                             >
                                 <DialogPanel
-                                    class="relative w-full max-w-[36.5rem] transform dialog-panel p-6 text-left transition-all sm:p-7"
+                                    class="relative w-full max-w-[36.5rem] dialog-panel p-6 text-left transition-[opacity,translate,scale] sm:p-7"
                                 >
                                     <!--
                                         The irreversible step, shown as a before
@@ -3036,6 +3798,9 @@ function confirmIssue(): void {
                                             />
                                             <button
                                                 type="submit"
+                                                :aria-busy="
+                                                    issueForm.processing
+                                                "
                                                 :disabled="issueForm.processing"
                                                 class="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-[0.85rem] font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                                             >
@@ -3049,11 +3814,7 @@ function confirmIssue(): void {
                                                     class="size-4"
                                                     aria-hidden="true"
                                                 />
-                                                {{
-                                                    issueForm.processing
-                                                        ? 'A emitir…'
-                                                        : 'Confirmar emissão'
-                                                }}
+                                                Confirmar emissão
                                             </button>
                                         </div>
                                     </form>
