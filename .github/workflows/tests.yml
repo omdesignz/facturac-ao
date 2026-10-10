@@ -46,21 +46,23 @@ jobs:
       postgres:
         image: postgres:18.6
         env:
-          POSTGRES_DB: facturac_test_ci
+          POSTGRES_DB: facturac_test_verification_cr1_ci
           POSTGRES_USER: facturac_test
           POSTGRES_PASSWORD: disposable-test-password
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U facturac_test -d facturac_test_ci"
+          --health-cmd "pg_isready -U facturac_test -d facturac_test_verification_cr1_ci"
           --health-interval 5s --health-timeout 5s --health-retries 10
     env:
       APP_ENV: testing
       FISCAL_PG_GATE: '1'
+      # Lets migrate:fresh drop the whole disposable schema; it refuses any database outside the facturac_test_verification_cr1_ prefix.
+      VERIFICATION_RUNTIME_PG_RESET: '1'
       DB_CONNECTION: pgsql
       DB_HOST: 127.0.0.1
       DB_PORT: 5432
-      DB_DATABASE: facturac_test_ci
+      DB_DATABASE: facturac_test_verification_cr1_ci
       DB_USERNAME: facturac_test
       DB_PASSWORD: disposable-test-password
       DB_URL: ''
@@ -82,6 +84,15 @@ jobs:
       - name: PostgreSQL UTF-8 prerequisite
         run: php -r '$db = new PDO("pgsql:host=".getenv("DB_HOST").";port=".getenv("DB_PORT").";dbname=".getenv("DB_DATABASE"), getenv("DB_USERNAME"), getenv("DB_PASSWORD")); $encoding = $db->query("SHOW server_encoding")->fetchColumn(); if ($encoding !== "UTF8") { fwrite(STDERR, "PostgreSQL UTF8 required\n"); exit(1); } echo "server_encoding=$encoding\n";'
       - name: Fiscal migrations and actual process contention
-        run: php artisan test --compact --group=postgresql
+        run: php artisan test --compact --group=postgresql --exclude-group=ai-verification-schema
+      # That suite accepts only this database name and expects it migrated, never reset.
+      - name: Tenant AI schema contract in its own migrated database
+        env:
+          DB_DATABASE: facturac_test_phase7b3c1_r3_utf8
+          PGPASSWORD: disposable-test-password
+        run: |
+          psql -h 127.0.0.1 -p 5432 -U facturac_test -d facturac_test_verification_cr1_ci -c "CREATE DATABASE facturac_test_phase7b3c1_r3_utf8 ENCODING 'UTF8' TEMPLATE template0"
+          php artisan migrate --force --no-interaction
+          php artisan test --compact tests/Unit/PostgresAiVerificationMigrationTest.php
       - name: Preserved session API and external read identity lifecycle gates
         run: php artisan test --compact tests/Feature/ReadFirstDocumentApiTest.php tests/Feature/AttributionIdentityTest.php tests/Feature/ExternalIntegrationTest.php tests/Feature/ExternalIntegrationReviewTest.php tests/Unit/IntegrationLifecycleTest.php tests/Feature/MasterDataReadApiTest.php tests/Feature/MasterDataScopeMigrationTest.php tests/Feature/MasterDataReadReviewTest.php tests/Feature/AgtObservationProjectionTest.php tests/Feature/AgtProjectionReviewTest.php tests/Feature/AgtSchemaTwoContractTest.php tests/Feature/PhaseFourFiscalIssuanceTest.php tests/Feature/QualifiedAgtStatusApiTest.php tests/Feature/QualifiedAgtScopeMigrationTest.php tests/Feature/QualifiedAgtReadReviewTest.php tests/Feature/BillingSummaryApiTest.php tests/Feature/BillingAnalyticsMigrationTest.php tests/Unit/CustomerCommandTest.php tests/Unit/CustomerCommandBoundaryTest.php tests/Unit/CustomerCommandMigrationTest.php tests/Unit/ServiceCommandTest.php tests/Unit/ServiceCommandBoundaryTest.php tests/Unit/ServiceCommandMigrationTest.php tests/Feature/AssistantFoundationTest.php tests/Feature/AiExecutionQuarantineTest.php tests/Feature/AssistantAuditClosureTest.php
