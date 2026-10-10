@@ -1,0 +1,4112 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "facturac Phase 3 external read integration",
+        "version": "1.0.0",
+        "description": "Disabled by default; server-to-server HTTPS Bearer credentials only. Credential identity, the operation-specific exact scope, immutable workspace/legal-entity/environment binding and current capability authorization are separate mandatory boundaries. Current verified/MFA-enabled owner/administrator sponsorship is revalidated on the primary database for each capability. Cookies never authenticate this adapter. No credential provisioning, recovery, writes, fiscal operations or AGT connections. GET/HEAD consume shared quotas: IP 120, integration 60, workspace 300 per minute. Production enablement requires subsequent Astra review and deployment gates. GET/HEAD accept no body inputs; authenticated nonempty bodies are rejected with 422. Empty JSON objects/arrays are tolerated but carry no input. Mandatory audit must be synchronously persisted before data or success is returned; disabled, buffered or cancelled audit fails closed. Additional independently grantable customers:read and catalogue:read scopes are production-context-only and share the existing integration/workspace quotas. External access stays disabled by default."
+    },
+    "servers": [
+        {
+            "url": "/"
+        }
+    ],
+    "security": [
+        {
+            "integrationBearer": []
+        }
+    ],
+    "paths": {
+        "/api/integrations/v1/workspaces/{workspacePublicId}/legal-entities/{entityPublicId}/environments/{environment}/documents": {
+            "get": {
+                "operationId": "externalListFiscalDocuments",
+                "summary": "List scoped fiscal documents",
+                "description": "Bound to this credential’s exact workspace/legal entity/environment. GET and HEAD enforce current machine/sponsor authority. Safe bounded descending list; unknown filters rejected.",
+                "parameters": [
+                    {
+                        "name": "workspacePublicId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                        }
+                    },
+                    {
+                        "name": "entityPublicId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                        }
+                    },
+                    {
+                        "name": "environment",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "enum": ["homologation", "production"]
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 10000,
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 50,
+                            "default": 25
+                        }
+                    },
+                    {
+                        "name": "agt_status",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "draft",
+                                "issued",
+                                "pending",
+                                "sending",
+                                "retrying",
+                                "received",
+                                "processing",
+                                "valid",
+                                "invalid",
+                                "rejected",
+                                "cancelled",
+                                "failed",
+                                "contingency"
+                            ],
+                            "description": "Legacy workflow summary only; never qualified AGT evidence or fiscal authority. See the Phase 4C V2 opt-in contract."
+                        }
+                    },
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "FA",
+                                "FT",
+                                "FR",
+                                "FG",
+                                "GF",
+                                "AC",
+                                "AR",
+                                "TV",
+                                "RC",
+                                "RG",
+                                "RE",
+                                "ND",
+                                "NC",
+                                "AF",
+                                "RP",
+                                "RA",
+                                "CS",
+                                "LD"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "X-Client-Request-ID",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9._-]{1,64}$"
+                        },
+                        "description": "Separate optional diagnostic value; server request ID is always a fresh UUID."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Minimal document read with deprecated legacy workflow-summary provenance; qualified AGT knowledge requires the independently granted V2 resource.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DocumentListResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Indistinguishable missing/invalid/expired/revoked credential",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "WWW-Authenticate": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "Bearer"
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient authority or any well-formed out-of-binding context, without target lookup",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Disabled/unknown path or missing/foreign document inside binding",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Authenticated invalid syntax/filters/delegation/correlation; supplied values are never echoed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Shared quota exceeded",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "Retry-After": {
+                                "schema": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 60
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Sanitized internal/audit failure, no data",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Unsupported method; no command dispatch",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "Allow": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Dependency unavailable or unsafe shared limiter, fails closed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "head": {
+                "operationId": "externalListFiscalDocumentsHead",
+                "summary": "Read headers using the same authorization and scope as GET",
+                "description": "Bound to this credential’s exact workspace/legal entity/environment. GET and HEAD enforce current machine/sponsor authority. Safe bounded descending list; unknown filters rejected.",
+                "parameters": [
+                    {
+                        "name": "workspacePublicId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                        }
+                    },
+                    {
+                        "name": "entityPublicId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                        }
+                    },
+                    {
+                        "name": "environment",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "enum": ["homologation", "production"]
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 10000,
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 50,
+                            "default": 25
+                        }
+                    },
+                    {
+                        "name": "agt_status",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "draft",
+                                "issued",
+                                "pending",
+                                "sending",
+                                "retrying",
+                                "received",
+                                "processing",
+                                "valid",
+                                "invalid",
+                                "rejected",
+                                "cancelled",
+                                "failed",
+                                "contingency"
+                            ],
+                            "description": "Legacy workflow summary only; never qualified AGT evidence or fiscal authority. See the Phase 4C V2 opt-in contract."
+                        }
+                    },
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "FA",
+                                "FT",
+                                "FR",
+                                "FG",
+                                "GF",
+                                "AC",
+                                "AR",
+                                "TV",
+                                "RC",
+                                "RG",
+                                "RE",
+                                "ND",
+                                "NC",
+                                "AF",
+                                "RP",
+                                "RA",
+                                "CS",
+                                "LD"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "X-Client-Request-ID",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9._-]{1,64}$"
+                        },
+                        "description": "Separate optional diagnostic value; server request ID is always a fresh UUID."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Minimal document read with deprecated legacy workflow-summary provenance; qualified AGT knowledge requires the independently granted V2 resource.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Indistinguishable missing/invalid/expired/revoked credential",
+                        "headers": {
+                            "WWW-Authenticate": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "Bearer"
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient authority or any well-formed out-of-binding context, without target lookup",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Disabled/unknown path or missing/foreign document inside binding",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Authenticated invalid syntax/filters/delegation/correlation; supplied values are never echoed",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Shared quota exceeded",
+                        "headers": {
+                            "Retry-After": {
+                                "schema": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 60
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Sanitized internal/audit failure, no data",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Unsupported method; no command dispatch",
+                        "headers": {
+                            "Allow": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Dependency unavailable or unsafe shared limiter, fails closed",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/integrations/v1/workspaces/{workspacePublicId}/legal-entities/{entityPublicId}/environments/{environment}/documents/{documentPublicId}": {
+            "get": {
+                "operationId": "externalGetFiscalDocument",
+                "summary": "Read one scoped fiscal document",
+                "description": "Bound to this credential’s exact workspace/legal entity/environment. GET and HEAD enforce current machine/sponsor authority. Safe ten-field projection; no export or delivery.",
+                "parameters": [
+                    {
+                        "name": "workspacePublicId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                        }
+                    },
+                    {
+                        "name": "entityPublicId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                        }
+                    },
+                    {
+                        "name": "environment",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "enum": ["homologation", "production"]
+                        }
+                    },
+                    {
+                        "name": "documentPublicId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                        }
+                    },
+                    {
+                        "name": "X-Client-Request-ID",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9._-]{1,64}$"
+                        },
+                        "description": "Separate optional diagnostic value; server request ID is always a fresh UUID."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Minimal document read with deprecated legacy workflow-summary provenance; qualified AGT knowledge requires the independently granted V2 resource.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DocumentResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Indistinguishable missing/invalid/expired/revoked credential",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "WWW-Authenticate": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "Bearer"
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient authority or any well-formed out-of-binding context, without target lookup",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Disabled/unknown path or missing/foreign document inside binding",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Authenticated invalid syntax/filters/delegation/correlation; supplied values are never echoed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Shared quota exceeded",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "Retry-After": {
+                                "schema": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 60
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Sanitized internal/audit failure, no data",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Unsupported method; no command dispatch",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "Allow": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Dependency unavailable or unsafe shared limiter, fails closed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "head": {
+                "operationId": "externalGetFiscalDocumentHead",
+                "summary": "Read headers using the same authorization and scope as GET",
+                "description": "Bound to this credential’s exact workspace/legal entity/environment. GET and HEAD enforce current machine/sponsor authority. Safe ten-field projection; no export or delivery.",
+                "parameters": [
+                    {
+                        "name": "workspacePublicId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                        }
+                    },
+                    {
+                        "name": "entityPublicId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                        }
+                    },
+                    {
+                        "name": "environment",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "enum": ["homologation", "production"]
+                        }
+                    },
+                    {
+                        "name": "documentPublicId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                        }
+                    },
+                    {
+                        "name": "X-Client-Request-ID",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9._-]{1,64}$"
+                        },
+                        "description": "Separate optional diagnostic value; server request ID is always a fresh UUID."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Minimal document read with deprecated legacy workflow-summary provenance; qualified AGT knowledge requires the independently granted V2 resource.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Indistinguishable missing/invalid/expired/revoked credential",
+                        "headers": {
+                            "WWW-Authenticate": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "Bearer"
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient authority or any well-formed out-of-binding context, without target lookup",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Disabled/unknown path or missing/foreign document inside binding",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Authenticated invalid syntax/filters/delegation/correlation; supplied values are never echoed",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Shared quota exceeded",
+                        "headers": {
+                            "Retry-After": {
+                                "schema": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 60
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Sanitized internal/audit failure, no data",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Unsupported method; no command dispatch",
+                        "headers": {
+                            "Allow": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Dependency unavailable or unsafe shared limiter, fails closed",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/integrations/v1/workspaces/{workspacePublicId}/legal-entities/{entityPublicId}/environments/{environment}/customers": {
+            "get": {
+                "operationId": "externalListCustomer",
+                "summary": "List minimized customer master data",
+                "description": "Production context only; homologation returns 403 before master queries. Explicit workspace/entity binding, fresh capability authority and durable audit required. GET/HEAD bodies with input rejected; HEAD performs the same authorization, queries, audit and quota consumption with no response body. No-store. Default active; page 1..10000, per_page 1..50. Literal case-sensitive Unicode substring, no accent folding; customers search name only, catalogue searches grouped name or code. Descending internal identity; offset pagination is not a cross-request snapshot. Unknown parameters rejected. Customer NIF/contact/address/commercial fields excluded. Catalogue base prices only; no stock/negotiated prices or tax certification. Shared fixed-window quotas across all resource families: IP 120/minute, integration 60/minute, workspace 300/minute, including denials and HEAD.",
+                "parameters": [
+                    {
+                        "name": "workspacePublicId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                        }
+                    },
+                    {
+                        "name": "entityPublicId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                        }
+                    },
+                    {
+                        "name": "environment",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "enum": ["homologation", "production"]
+                        }
+                    },
+                    {
+                        "name": "X-Client-Request-ID",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9._-]{1,64}$"
+                        },
+                        "description": "Separate optional diagnostic value; server request ID is always a fresh UUID."
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 10000,
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 50,
+                            "default": 25
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": ["active", "inactive", "all"],
+                            "default": "active"
+                        }
+                    },
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 80,
+                            "pattern": "^[^\\u0000-\\u001F\\u007F-\\u009F]+$",
+                            "description": "Valid UTF-8, after ASCII-space edge trim; literal case-sensitive substring."
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Minimized legal-entity master data after durable audit.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustomerListResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Indistinguishable missing/invalid/expired/revoked credential",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "WWW-Authenticate": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "Bearer"
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient authority or any well-formed out-of-binding context, without target lookup",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Disabled/unknown path or missing/foreign document inside binding",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Authenticated invalid syntax/filters/delegation/correlation; supplied values are never echoed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Shared quota exceeded",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "Retry-After": {
+                                "schema": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 60
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Sanitized internal/audit failure, no data",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Unsupported method; no command dispatch",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "Allow": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Dependency unavailable or unsafe shared limiter, fails closed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-required-scope": "customers:read"
+            },
+            "head": {
+                "operationId": "externalListCustomerHead",
+                "summary": "List minimized customer master data (HEAD)",
+                "description": "Production context only; homologation returns 403 before master queries. Explicit workspace/entity binding, fresh capability authority and durable audit required. GET/HEAD bodies with input rejected; HEAD performs the same authorization, queries, audit and quota consumption with no response body. No-store. Default active; page 1..10000, per_page 1..50. Literal case-sensitive Unicode substring, no accent folding; customers search name only, catalogue searches grouped name or code. Descending internal identity; offset pagination is not a cross-request snapshot. Unknown parameters rejected. Customer NIF/contact/address/commercial fields excluded. Catalogue base prices only; no stock/negotiated prices or tax certification. Shared fixed-window quotas across all resource families: IP 120/minute, integration 60/minute, workspace 300/minute, including denials and HEAD.",
+                "parameters": [
+                    {
+                        "name": "workspacePublicId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                        }
+                    },
+                    {
+                        "name": "entityPublicId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                        }
+                    },
+                    {
+                        "name": "environment",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "enum": ["homologation", "production"]
+                        }
+                    },
+                    {
+                        "name": "X-Client-Request-ID",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9._-]{1,64}$"
+                        },
+                        "description": "Separate optional diagnostic value; server request ID is always a fresh UUID."
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 10000,
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 50,
+                            "default": 25
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": ["active", "inactive", "all"],
+                            "default": "active"
+                        }
+                    },
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 80,
+                            "pattern": "^[^\\u0000-\\u001F\\u007F-\\u009F]+$",
+                            "description": "Valid UTF-8, after ASCII-space edge trim; literal case-sensitive substring."
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Minimized legal-entity master data after durable audit.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Indistinguishable missing/invalid/expired/revoked credential",
+                        "headers": {
+                            "WWW-Authenticate": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "Bearer"
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient authority or any well-formed out-of-binding context, without target lookup",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Disabled/unknown path or missing/foreign document inside binding",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Authenticated invalid syntax/filters/delegation/correlation; supplied values are never echoed",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Shared quota exceeded",
+                        "headers": {
+                            "Retry-After": {
+                                "schema": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 60
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Sanitized internal/audit failure, no data",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Unsupported method; no command dispatch",
+                        "headers": {
+                            "Allow": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Dependency unavailable or unsafe shared limiter, fails closed",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-required-scope": "customers:read"
+            }
+        },
+        "/api/integrations/v1/workspaces/{workspacePublicId}/legal-entities/{entityPublicId}/environments/{environment}/customers/{customerPublicId}": {
+            "get": {
+                "operationId": "externalReadCustomer",
+                "summary": "Read minimized customer master data",
+                "description": "Production context only; homologation returns 403 before master queries. Explicit workspace/entity binding, fresh capability authority and durable audit required. GET/HEAD bodies with input rejected; HEAD performs the same authorization, queries, audit and quota consumption with no response body. No-store. No query parameters. Inactive records remain readable. Foreign and absent records return identical 404. Customer NIF/contact/address/commercial fields excluded. Catalogue base prices only; no stock/negotiated prices or tax certification. Shared fixed-window quotas across all resource families: IP 120/minute, integration 60/minute, workspace 300/minute, including denials and HEAD.",
+                "parameters": [
+                    {
+                        "name": "workspacePublicId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                        }
+                    },
+                    {
+                        "name": "entityPublicId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                        }
+                    },
+                    {
+                        "name": "environment",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "enum": ["homologation", "production"]
+                        }
+                    },
+                    {
+                        "name": "X-Client-Request-ID",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9._-]{1,64}$"
+                        },
+                        "description": "Separate optional diagnostic value; server request ID is always a fresh UUID."
+                    },
+                    {
+                        "name": "customerPublicId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Minimized legal-entity master data after durable audit.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustomerResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Indistinguishable missing/invalid/expired/revoked credential",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "WWW-Authenticate": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "Bearer"
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient authority or any well-formed out-of-binding context, without target lookup",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Disabled/unknown path or missing/foreign document inside binding",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Authenticated invalid syntax/filters/delegation/correlation; supplied values are never echoed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Shared quota exceeded",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "Retry-After": {
+                                "schema": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 60
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Sanitized internal/audit failure, no data",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Unsupported method; no command dispatch",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "Allow": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Dependency unavailable or unsafe shared limiter, fails closed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-required-scope": "customers:read"
+            },
+            "head": {
+                "operationId": "externalReadCustomerHead",
+                "summary": "Read minimized customer master data (HEAD)",
+                "description": "Production context only; homologation returns 403 before master queries. Explicit workspace/entity binding, fresh capability authority and durable audit required. GET/HEAD bodies with input rejected; HEAD performs the same authorization, queries, audit and quota consumption with no response body. No-store. No query parameters. Inactive records remain readable. Foreign and absent records return identical 404. Customer NIF/contact/address/commercial fields excluded. Catalogue base prices only; no stock/negotiated prices or tax certification. Shared fixed-window quotas across all resource families: IP 120/minute, integration 60/minute, workspace 300/minute, including denials and HEAD.",
+                "parameters": [
+                    {
+                        "name": "workspacePublicId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                        }
+                    },
+                    {
+                        "name": "entityPublicId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                        }
+                    },
+                    {
+                        "name": "environment",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "enum": ["homologation", "production"]
+                        }
+                    },
+                    {
+                        "name": "X-Client-Request-ID",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9._-]{1,64}$"
+                        },
+                        "description": "Separate optional diagnostic value; server request ID is always a fresh UUID."
+                    },
+                    {
+                        "name": "customerPublicId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Minimized legal-entity master data after durable audit.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Indistinguishable missing/invalid/expired/revoked credential",
+                        "headers": {
+                            "WWW-Authenticate": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "Bearer"
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient authority or any well-formed out-of-binding context, without target lookup",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Disabled/unknown path or missing/foreign document inside binding",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Authenticated invalid syntax/filters/delegation/correlation; supplied values are never echoed",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Shared quota exceeded",
+                        "headers": {
+                            "Retry-After": {
+                                "schema": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 60
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Sanitized internal/audit failure, no data",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Unsupported method; no command dispatch",
+                        "headers": {
+                            "Allow": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Dependency unavailable or unsafe shared limiter, fails closed",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-required-scope": "customers:read"
+            }
+        },
+        "/api/integrations/v1/workspaces/{workspacePublicId}/legal-entities/{entityPublicId}/environments/{environment}/catalogue-items": {
+            "get": {
+                "operationId": "externalListCatalogue",
+                "summary": "List minimized catalogue master data",
+                "description": "Production context only; homologation returns 403 before master queries. Explicit workspace/entity binding, fresh capability authority and durable audit required. GET/HEAD bodies with input rejected; HEAD performs the same authorization, queries, audit and quota consumption with no response body. No-store. Default active; page 1..10000, per_page 1..50. Literal case-sensitive Unicode substring, no accent folding; customers search name only, catalogue searches grouped name or code. Descending internal identity; offset pagination is not a cross-request snapshot. Unknown parameters rejected. Customer NIF/contact/address/commercial fields excluded. Catalogue base prices only; no stock/negotiated prices or tax certification. Shared fixed-window quotas across all resource families: IP 120/minute, integration 60/minute, workspace 300/minute, including denials and HEAD.",
+                "parameters": [
+                    {
+                        "name": "workspacePublicId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                        }
+                    },
+                    {
+                        "name": "entityPublicId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                        }
+                    },
+                    {
+                        "name": "environment",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "enum": ["homologation", "production"]
+                        }
+                    },
+                    {
+                        "name": "X-Client-Request-ID",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9._-]{1,64}$"
+                        },
+                        "description": "Separate optional diagnostic value; server request ID is always a fresh UUID."
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 10000,
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 50,
+                            "default": 25
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": ["active", "inactive", "all"],
+                            "default": "active"
+                        }
+                    },
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 80,
+                            "pattern": "^[^\\u0000-\\u001F\\u007F-\\u009F]+$",
+                            "description": "Valid UTF-8, after ASCII-space edge trim; literal case-sensitive substring."
+                        }
+                    },
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": ["product", "service"]
+                        }
+                    },
+                    {
+                        "name": "code",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 60
+                        },
+                        "description": "Exact case-sensitive stored code; no whitespace normalization."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Minimized legal-entity master data after durable audit.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CatalogueListResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Indistinguishable missing/invalid/expired/revoked credential",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "WWW-Authenticate": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "Bearer"
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient authority or any well-formed out-of-binding context, without target lookup",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Disabled/unknown path or missing/foreign document inside binding",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Authenticated invalid syntax/filters/delegation/correlation; supplied values are never echoed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Shared quota exceeded",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "Retry-After": {
+                                "schema": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 60
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Sanitized internal/audit failure, no data",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Unsupported method; no command dispatch",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "Allow": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Dependency unavailable or unsafe shared limiter, fails closed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-required-scope": "catalogue:read"
+            },
+            "head": {
+                "operationId": "externalListCatalogueHead",
+                "summary": "List minimized catalogue master data (HEAD)",
+                "description": "Production context only; homologation returns 403 before master queries. Explicit workspace/entity binding, fresh capability authority and durable audit required. GET/HEAD bodies with input rejected; HEAD performs the same authorization, queries, audit and quota consumption with no response body. No-store. Default active; page 1..10000, per_page 1..50. Literal case-sensitive Unicode substring, no accent folding; customers search name only, catalogue searches grouped name or code. Descending internal identity; offset pagination is not a cross-request snapshot. Unknown parameters rejected. Customer NIF/contact/address/commercial fields excluded. Catalogue base prices only; no stock/negotiated prices or tax certification. Shared fixed-window quotas across all resource families: IP 120/minute, integration 60/minute, workspace 300/minute, including denials and HEAD.",
+                "parameters": [
+                    {
+                        "name": "workspacePublicId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                        }
+                    },
+                    {
+                        "name": "entityPublicId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                        }
+                    },
+                    {
+                        "name": "environment",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "enum": ["homologation", "production"]
+                        }
+                    },
+                    {
+                        "name": "X-Client-Request-ID",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9._-]{1,64}$"
+                        },
+                        "description": "Separate optional diagnostic value; server request ID is always a fresh UUID."
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 10000,
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 50,
+                            "default": 25
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": ["active", "inactive", "all"],
+                            "default": "active"
+                        }
+                    },
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 80,
+                            "pattern": "^[^\\u0000-\\u001F\\u007F-\\u009F]+$",
+                            "description": "Valid UTF-8, after ASCII-space edge trim; literal case-sensitive substring."
+                        }
+                    },
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": ["product", "service"]
+                        }
+                    },
+                    {
+                        "name": "code",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 60
+                        },
+                        "description": "Exact case-sensitive stored code; no whitespace normalization."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Minimized legal-entity master data after durable audit.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Indistinguishable missing/invalid/expired/revoked credential",
+                        "headers": {
+                            "WWW-Authenticate": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "Bearer"
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient authority or any well-formed out-of-binding context, without target lookup",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Disabled/unknown path or missing/foreign document inside binding",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Authenticated invalid syntax/filters/delegation/correlation; supplied values are never echoed",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Shared quota exceeded",
+                        "headers": {
+                            "Retry-After": {
+                                "schema": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 60
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Sanitized internal/audit failure, no data",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Unsupported method; no command dispatch",
+                        "headers": {
+                            "Allow": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Dependency unavailable or unsafe shared limiter, fails closed",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-required-scope": "catalogue:read"
+            }
+        },
+        "/api/integrations/v1/workspaces/{workspacePublicId}/legal-entities/{entityPublicId}/environments/{environment}/catalogue-items/{itemPublicId}": {
+            "get": {
+                "operationId": "externalReadCatalogue",
+                "summary": "Read minimized catalogue master data",
+                "description": "Production context only; homologation returns 403 before master queries. Explicit workspace/entity binding, fresh capability authority and durable audit required. GET/HEAD bodies with input rejected; HEAD performs the same authorization, queries, audit and quota consumption with no response body. No-store. No query parameters. Inactive records remain readable. Foreign and absent records return identical 404. Customer NIF/contact/address/commercial fields excluded. Catalogue base prices only; no stock/negotiated prices or tax certification. Shared fixed-window quotas across all resource families: IP 120/minute, integration 60/minute, workspace 300/minute, including denials and HEAD.",
+                "parameters": [
+                    {
+                        "name": "workspacePublicId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                        }
+                    },
+                    {
+                        "name": "entityPublicId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                        }
+                    },
+                    {
+                        "name": "environment",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "enum": ["homologation", "production"]
+                        }
+                    },
+                    {
+                        "name": "X-Client-Request-ID",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9._-]{1,64}$"
+                        },
+                        "description": "Separate optional diagnostic value; server request ID is always a fresh UUID."
+                    },
+                    {
+                        "name": "itemPublicId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Minimized legal-entity master data after durable audit.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CatalogueResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Indistinguishable missing/invalid/expired/revoked credential",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "WWW-Authenticate": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "Bearer"
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient authority or any well-formed out-of-binding context, without target lookup",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Disabled/unknown path or missing/foreign document inside binding",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Authenticated invalid syntax/filters/delegation/correlation; supplied values are never echoed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Shared quota exceeded",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "Retry-After": {
+                                "schema": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 60
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Sanitized internal/audit failure, no data",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Unsupported method; no command dispatch",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "Allow": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Dependency unavailable or unsafe shared limiter, fails closed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadError"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-required-scope": "catalogue:read"
+            },
+            "head": {
+                "operationId": "externalReadCatalogueHead",
+                "summary": "Read minimized catalogue master data (HEAD)",
+                "description": "Production context only; homologation returns 403 before master queries. Explicit workspace/entity binding, fresh capability authority and durable audit required. GET/HEAD bodies with input rejected; HEAD performs the same authorization, queries, audit and quota consumption with no response body. No-store. No query parameters. Inactive records remain readable. Foreign and absent records return identical 404. Customer NIF/contact/address/commercial fields excluded. Catalogue base prices only; no stock/negotiated prices or tax certification. Shared fixed-window quotas across all resource families: IP 120/minute, integration 60/minute, workspace 300/minute, including denials and HEAD.",
+                "parameters": [
+                    {
+                        "name": "workspacePublicId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                        }
+                    },
+                    {
+                        "name": "entityPublicId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                        }
+                    },
+                    {
+                        "name": "environment",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "enum": ["homologation", "production"]
+                        }
+                    },
+                    {
+                        "name": "X-Client-Request-ID",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9._-]{1,64}$"
+                        },
+                        "description": "Separate optional diagnostic value; server request ID is always a fresh UUID."
+                    },
+                    {
+                        "name": "itemPublicId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Minimized legal-entity master data after durable audit.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Indistinguishable missing/invalid/expired/revoked credential",
+                        "headers": {
+                            "WWW-Authenticate": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "Bearer"
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient authority or any well-formed out-of-binding context, without target lookup",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Disabled/unknown path or missing/foreign document inside binding",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Authenticated invalid syntax/filters/delegation/correlation; supplied values are never echoed",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Shared quota exceeded",
+                        "headers": {
+                            "Retry-After": {
+                                "schema": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 60
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Sanitized internal/audit failure, no data",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Unsupported method; no command dispatch",
+                        "headers": {
+                            "Allow": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            },
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Dependency unavailable or unsafe shared limiter, fails closed",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Fresh server correlation UUID",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store, private"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-required-scope": "catalogue:read"
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "integrationBearer": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "fcr1.<ULID>.<256-bit-base64url-secret>",
+                "description": "The operation-specific exact scope must be granted on both credential and integration: documents:read for document operations, customers:read for customer operations, catalogue:read for catalogue operations. These grants are independent; no scope implies another. Current sponsor authorization and immutable explicit context are additionally required. Scopes are persisted server-side; caller scope strings grant nothing. Operation-specific grants are independent. documents:agt-status:read grants only the V2 status resource, never V1 access."
+            }
+        },
+        "schemas": {
+            "Document": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                    "public_id",
+                    "document_no",
+                    "document_type",
+                    "environment",
+                    "revision",
+                    "currency_code",
+                    "gross_total_minor",
+                    "issue_status",
+                    "agt_status",
+                    "agt_status_source"
+                ],
+                "properties": {
+                    "public_id": {
+                        "type": "string",
+                        "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                    },
+                    "document_no": {
+                        "type": ["string", "null"]
+                    },
+                    "document_type": {
+                        "type": "string",
+                        "enum": [
+                            "FA",
+                            "FT",
+                            "FR",
+                            "FG",
+                            "GF",
+                            "AC",
+                            "AR",
+                            "TV",
+                            "RC",
+                            "RG",
+                            "RE",
+                            "ND",
+                            "NC",
+                            "AF",
+                            "RP",
+                            "RA",
+                            "CS",
+                            "LD"
+                        ]
+                    },
+                    "environment": {
+                        "type": "string",
+                        "enum": ["homologation", "production"]
+                    },
+                    "revision": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "currency_code": {
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 3
+                    },
+                    "gross_total_minor": {
+                        "type": "integer",
+                        "description": "Integer minor units in currency_code; no cross-currency aggregate."
+                    },
+                    "issue_status": {
+                        "type": "string",
+                        "enum": [
+                            "draft",
+                            "issued",
+                            "received",
+                            "processing",
+                            "valid",
+                            "invalid",
+                            "contingency"
+                        ],
+                        "description": "Persisted fiscal status, including legacy status evidence; never rewritten by reads."
+                    },
+                    "agt_status": {
+                        "type": "string",
+                        "enum": [
+                            "draft",
+                            "issued",
+                            "pending",
+                            "sending",
+                            "retrying",
+                            "received",
+                            "processing",
+                            "valid",
+                            "invalid",
+                            "rejected",
+                            "cancelled",
+                            "failed",
+                            "contingency"
+                        ],
+                        "description": "Deprecated legacy workflow summary/provenance (SA1). Persisted submission value, or frozen legacy fallback only without a submission; no evidence-confidence or freshness assurance. Never use as fiscal or receipt authorization. Qualified operational status is internal and is not exposed by v1.",
+                        "deprecated": true
+                    },
+                    "agt_status_source": {
+                        "type": "string",
+                        "enum": ["draft", "submission", "legacy"],
+                        "deprecated": true,
+                        "description": "Deprecated legacy workflow summary/provenance (SA1). Persisted submission value, or frozen legacy fallback only without a submission; no evidence-confidence or freshness assurance. Never use as fiscal or receipt authorization. Qualified operational status is internal and is not exposed by v1."
+                    }
+                }
+            },
+            "Meta": {
+                "type": "object",
+                "required": [
+                    "request_id",
+                    "workspace_public_id",
+                    "legal_entity_public_id",
+                    "environment"
+                ],
+                "properties": {
+                    "request_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "workspace_public_id": {
+                        "type": "string",
+                        "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                    },
+                    "legal_entity_public_id": {
+                        "type": "string",
+                        "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                    },
+                    "environment": {
+                        "type": "string",
+                        "enum": ["homologation", "production"]
+                    }
+                }
+            },
+            "DocumentResponse": {
+                "type": "object",
+                "required": ["data", "meta"],
+                "properties": {
+                    "data": {
+                        "$ref": "#/components/schemas/Document"
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/Meta"
+                    }
+                }
+            },
+            "DocumentListResponse": {
+                "type": "object",
+                "required": ["data", "meta"],
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "maxItems": 50,
+                        "items": {
+                            "$ref": "#/components/schemas/Document"
+                        }
+                    },
+                    "meta": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/Meta"
+                            },
+                            {
+                                "type": "object",
+                                "required": [
+                                    "page",
+                                    "per_page",
+                                    "total",
+                                    "last_page"
+                                ],
+                                "properties": {
+                                    "page": {
+                                        "type": "integer",
+                                        "minimum": 1
+                                    },
+                                    "per_page": {
+                                        "type": "integer",
+                                        "minimum": 1
+                                    },
+                                    "total": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                    },
+                                    "last_page": {
+                                        "type": "integer",
+                                        "minimum": 1
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            },
+            "ReadError": {
+                "type": "object",
+                "required": ["error", "meta"],
+                "properties": {
+                    "error": {
+                        "type": "object",
+                        "required": ["code", "message"],
+                        "properties": {
+                            "code": {
+                                "type": "string",
+                                "enum": [
+                                    "AUTHENTICATION_REQUIRED",
+                                    "FORBIDDEN",
+                                    "NOT_FOUND",
+                                    "METHOD_NOT_ALLOWED",
+                                    "VALIDATION_FAILED",
+                                    "RATE_LIMITED",
+                                    "INTERNAL_ERROR",
+                                    "SERVICE_UNAVAILABLE"
+                                ]
+                            },
+                            "message": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "meta": {
+                        "type": "object",
+                        "required": ["request_id"],
+                        "properties": {
+                            "request_id": {
+                                "type": "string",
+                                "format": "uuid"
+                            }
+                        }
+                    }
+                }
+            },
+            "CustomerRead": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["public_id", "name", "country_code", "is_active"],
+                "properties": {
+                    "public_id": {
+                        "type": "string",
+                        "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                    },
+                    "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 255
+                    },
+                    "country_code": {
+                        "type": "string",
+                        "pattern": "^[A-Z]{2}$"
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "CatalogueItemList": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                    "public_id",
+                    "code",
+                    "type",
+                    "name",
+                    "unit_of_measure",
+                    "unit_price_minor",
+                    "price_scale",
+                    "currency_code",
+                    "tax_type",
+                    "tax_code",
+                    "tax_percentage",
+                    "tax_exemption_code",
+                    "is_active"
+                ],
+                "properties": {
+                    "public_id": {
+                        "type": "string",
+                        "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                    },
+                    "code": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 60
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": ["product", "service"]
+                    },
+                    "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 255
+                    },
+                    "unit_of_measure": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 32
+                    },
+                    "unit_price_minor": {
+                        "type": "string",
+                        "pattern": "^(0|[1-9][0-9]{0,18})$",
+                        "description": "Exact base supply price in hundredths, maximum 9223372036854775807. No negotiated price, tax inclusion or conversion."
+                    },
+                    "price_scale": {
+                        "type": "integer",
+                        "const": 2
+                    },
+                    "currency_code": {
+                        "type": "string",
+                        "pattern": "^[A-Z]{3}$"
+                    },
+                    "tax_type": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 8
+                    },
+                    "tax_code": {
+                        "type": ["string", "null"],
+                        "maxLength": 8
+                    },
+                    "tax_percentage": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]{1,3}\\.[0-9]{2}$",
+                        "description": "Stored percentage; no repair or AGT validation claim."
+                    },
+                    "tax_exemption_code": {
+                        "type": ["string", "null"],
+                        "maxLength": 8
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "CatalogueItemDetail": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                    "public_id",
+                    "code",
+                    "type",
+                    "name",
+                    "unit_of_measure",
+                    "unit_price_minor",
+                    "price_scale",
+                    "currency_code",
+                    "tax_type",
+                    "tax_code",
+                    "tax_percentage",
+                    "tax_exemption_code",
+                    "is_active",
+                    "description"
+                ],
+                "properties": {
+                    "public_id": {
+                        "type": "string",
+                        "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                    },
+                    "code": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 60
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": ["product", "service"]
+                    },
+                    "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 255
+                    },
+                    "unit_of_measure": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 32
+                    },
+                    "unit_price_minor": {
+                        "type": "string",
+                        "pattern": "^(0|[1-9][0-9]{0,18})$",
+                        "description": "Exact base supply price in hundredths, maximum 9223372036854775807. No negotiated price, tax inclusion or conversion."
+                    },
+                    "price_scale": {
+                        "type": "integer",
+                        "const": 2
+                    },
+                    "currency_code": {
+                        "type": "string",
+                        "pattern": "^[A-Z]{3}$"
+                    },
+                    "tax_type": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 8
+                    },
+                    "tax_code": {
+                        "type": ["string", "null"],
+                        "maxLength": 8
+                    },
+                    "tax_percentage": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]{1,3}\\.[0-9]{2}$",
+                        "description": "Stored percentage; no repair or AGT validation claim."
+                    },
+                    "tax_exemption_code": {
+                        "type": ["string", "null"],
+                        "maxLength": 8
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "description": {
+                        "type": ["string", "null"],
+                        "maxLength": 500
+                    }
+                }
+            },
+            "MasterReadMeta": {
+                "type": "object",
+                "required": [
+                    "request_id",
+                    "workspace_public_id",
+                    "legal_entity_public_id",
+                    "environment",
+                    "data_scope"
+                ],
+                "properties": {
+                    "request_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "workspace_public_id": {
+                        "type": "string",
+                        "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                    },
+                    "legal_entity_public_id": {
+                        "type": "string",
+                        "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                    },
+                    "environment": {
+                        "type": "string",
+                        "const": "production"
+                    },
+                    "data_scope": {
+                        "type": "string",
+                        "const": "legal_entity_master"
+                    }
+                },
+                "additionalProperties": false
+            },
+            "MasterListMeta": {
+                "type": "object",
+                "required": [
+                    "request_id",
+                    "workspace_public_id",
+                    "legal_entity_public_id",
+                    "environment",
+                    "data_scope",
+                    "page",
+                    "per_page",
+                    "total",
+                    "last_page"
+                ],
+                "properties": {
+                    "request_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "workspace_public_id": {
+                        "type": "string",
+                        "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                    },
+                    "legal_entity_public_id": {
+                        "type": "string",
+                        "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                    },
+                    "environment": {
+                        "type": "string",
+                        "const": "production"
+                    },
+                    "data_scope": {
+                        "type": "string",
+                        "const": "legal_entity_master"
+                    },
+                    "page": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 10000
+                    },
+                    "per_page": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 50
+                    },
+                    "total": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "last_page": {
+                        "type": "integer",
+                        "minimum": 1
+                    }
+                },
+                "additionalProperties": false
+            },
+            "CustomerResponse": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["data", "meta"],
+                "properties": {
+                    "data": {
+                        "$ref": "#/components/schemas/CustomerRead"
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/MasterReadMeta"
+                    }
+                }
+            },
+            "CustomerListResponse": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["data", "meta"],
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CustomerRead"
+                        },
+                        "maxItems": 50
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/MasterListMeta"
+                    }
+                }
+            },
+            "CatalogueResponse": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["data", "meta"],
+                "properties": {
+                    "data": {
+                        "$ref": "#/components/schemas/CatalogueItemDetail"
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/MasterReadMeta"
+                    }
+                }
+            },
+            "CatalogueListResponse": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["data", "meta"],
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CatalogueItemList"
+                        },
+                        "maxItems": 50
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/MasterListMeta"
+                    }
+                }
+            }
+        }
+    }
+}
