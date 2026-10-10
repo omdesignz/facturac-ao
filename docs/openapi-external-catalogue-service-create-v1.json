@@ -1,0 +1,1195 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "Facturac bounded catalogue service-create command",
+        "version": "1.0.0-design",
+        "description": "Normative Phase 5B design only; no endpoint implemented or external enablement authorized. Read the governing Phase 5B contract and its CS1 extension. Exactly one new non-stock service-create capability."
+    },
+    "security": [
+        {
+            "IntegrationBearer": []
+        }
+    ],
+    "paths": {
+        "/api/integrations/commands/v1/workspaces/{workspacePublicId}/legal-entities/{entityPublicId}/environments/{environment}/catalogue-services": {
+            "parameters": [
+                {
+                    "name": "workspacePublicId",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string",
+                        "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                    },
+                    "description": "Explicit credential-bound ULID; either case accepted, canonical lowercase. Foreign/nonexistent context has identical denial."
+                },
+                {
+                    "name": "entityPublicId",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string",
+                        "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                    },
+                    "description": "Explicit credential-bound ULID; either case accepted, canonical lowercase. Foreign/nonexistent context has identical denial."
+                },
+                {
+                    "name": "environment",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string",
+                        "enum": ["production"]
+                    },
+                    "description": "Homologation denied before catalogue service/default/ledger lookup. Cannot override binding."
+                },
+                {
+                    "name": "Idempotency-Key",
+                    "in": "header",
+                    "required": true,
+                    "schema": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128,
+                        "pattern": "^[ -~]{1,128}$"
+                    },
+                    "description": "Opaque case-sensitive HTTP field value after standard outer OWS removal. Whitespace-only invalid. Printable ASCII, comma literal, not a list. Reject detectable duplicate fields; infrastructure must preserve one field. Random UUID recommended, not required. Never log raw value.",
+                    "x-reject-whitespace-only": true
+                },
+                {
+                    "name": "X-Client-Request-ID",
+                    "in": "header",
+                    "required": false,
+                    "schema": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9._-]{1,64}$"
+                    },
+                    "description": "Correlation only, excluded from authority/fingerprint."
+                }
+            ],
+            "post": {
+                "operationId": "externalCatalogueServiceCreateV1",
+                "summary": "Create one non-stock catalogue service or replay its original acknowledgement",
+                "description": "Requires current machine identity, catalogue:services:create in BOTH credential and parent, explicit production context and current original owner/administrator sponsor with verified email and configured/confirmed MFA. Revalidated under PostgreSQL locks on creation AND replay.",
+                "x-capability": "catalogue.services.create",
+                "x-required-scope": "catalogue:services:create",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CatalogueServiceCreateRequest"
+                            },
+                            "examples": {
+                                "minimal": {
+                                    "value": {
+                                        "code": "CONSULT-01",
+                                        "name": "Consultoria",
+                                        "unit_price_minor": "10000",
+                                        "currency_code": "AOA",
+                                        "tax_treatment": "IVA_NOR_14"
+                                    }
+                                },
+                                "explicitDefaults": {
+                                    "value": {
+                                        "code": "CONSULT-01",
+                                        "name": "Consultoria",
+                                        "description": "Serviço de consultoria",
+                                        "unit_of_measure": "UN",
+                                        "unit_price_minor": "10000",
+                                        "currency_code": "AOA",
+                                        "tax_treatment": "IVA_NOR_14"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "400": {
+                        "description": "INVALID_REQUEST. Generic envelope, no catalogue service data, SQL, keys/hashes, counts or original operation/result IDs. HEAD empty.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Required fresh server UUID, including replay.",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "x-required": true
+                            },
+                            "Cache-Control": {
+                                "description": "Required no-store and private directives; either order.",
+                                "schema": {
+                                    "type": "string",
+                                    "pattern": "^(no-store, private|private, no-store)$"
+                                },
+                                "x-required": true
+                            },
+                            "Vary": {
+                                "description": "Required.",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": ["Authorization"]
+                                },
+                                "x-required": true
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error400"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "UNAUTHENTICATED. Generic envelope, no catalogue service data, SQL, keys/hashes, counts or original operation/result IDs. HEAD empty.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Required fresh server UUID, including replay.",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "x-required": true
+                            },
+                            "Cache-Control": {
+                                "description": "Required no-store and private directives; either order.",
+                                "schema": {
+                                    "type": "string",
+                                    "pattern": "^(no-store, private|private, no-store)$"
+                                },
+                                "x-required": true
+                            },
+                            "Vary": {
+                                "description": "Required.",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": ["Authorization"]
+                                },
+                                "x-required": true
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error401"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "FORBIDDEN. Generic envelope, no catalogue service data, SQL, keys/hashes, counts or original operation/result IDs. HEAD empty.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Required fresh server UUID, including replay.",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "x-required": true
+                            },
+                            "Cache-Control": {
+                                "description": "Required no-store and private directives; either order.",
+                                "schema": {
+                                    "type": "string",
+                                    "pattern": "^(no-store, private|private, no-store)$"
+                                },
+                                "x-required": true
+                            },
+                            "Vary": {
+                                "description": "Required.",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": ["Authorization"]
+                                },
+                                "x-required": true
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error403"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "NOT_FOUND. Generic envelope, no catalogue service data, SQL, keys/hashes, counts or original operation/result IDs. HEAD empty.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Required fresh server UUID, including replay.",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "x-required": true
+                            },
+                            "Cache-Control": {
+                                "description": "Required no-store and private directives; either order.",
+                                "schema": {
+                                    "type": "string",
+                                    "pattern": "^(no-store, private|private, no-store)$"
+                                },
+                                "x-required": true
+                            },
+                            "Vary": {
+                                "description": "Required.",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": ["Authorization"]
+                                },
+                                "x-required": true
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error404"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "METHOD_NOT_ALLOWED. Generic envelope, no catalogue service data, SQL, keys/hashes, counts or original operation/result IDs. HEAD empty.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Required fresh server UUID, including replay.",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "x-required": true
+                            },
+                            "Cache-Control": {
+                                "description": "Required no-store and private directives; either order.",
+                                "schema": {
+                                    "type": "string",
+                                    "pattern": "^(no-store, private|private, no-store)$"
+                                },
+                                "x-required": true
+                            },
+                            "Vary": {
+                                "description": "Required.",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": ["Authorization"]
+                                },
+                                "x-required": true
+                            },
+                            "Allow": {
+                                "description": "Required.",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": ["POST"]
+                                },
+                                "x-required": true
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error405"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "IDEMPOTENCY_CONFLICT; COMMAND_IN_PROGRESS; CATALOGUE_CONFLICT. Generic envelope, no catalogue service data, SQL, keys/hashes, counts or original operation/result IDs. HEAD empty.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Required fresh server UUID, including replay.",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "x-required": true
+                            },
+                            "Cache-Control": {
+                                "description": "Required no-store and private directives; either order.",
+                                "schema": {
+                                    "type": "string",
+                                    "pattern": "^(no-store, private|private, no-store)$"
+                                },
+                                "x-required": true
+                            },
+                            "Vary": {
+                                "description": "Required.",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": ["Authorization"]
+                                },
+                                "x-required": true
+                            },
+                            "Retry-After": {
+                                "description": "Required exactly 1 only on COMMAND_IN_PROGRESS; absent on other 409 variants.",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": ["1"]
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error409"
+                                }
+                            }
+                        }
+                    },
+                    "413": {
+                        "description": "PAYLOAD_TOO_LARGE. Generic envelope, no catalogue service data, SQL, keys/hashes, counts or original operation/result IDs. HEAD empty.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Required fresh server UUID, including replay.",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "x-required": true
+                            },
+                            "Cache-Control": {
+                                "description": "Required no-store and private directives; either order.",
+                                "schema": {
+                                    "type": "string",
+                                    "pattern": "^(no-store, private|private, no-store)$"
+                                },
+                                "x-required": true
+                            },
+                            "Vary": {
+                                "description": "Required.",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": ["Authorization"]
+                                },
+                                "x-required": true
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error413"
+                                }
+                            }
+                        }
+                    },
+                    "415": {
+                        "description": "UNSUPPORTED_MEDIA_TYPE. Generic envelope, no catalogue service data, SQL, keys/hashes, counts or original operation/result IDs. HEAD empty.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Required fresh server UUID, including replay.",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "x-required": true
+                            },
+                            "Cache-Control": {
+                                "description": "Required no-store and private directives; either order.",
+                                "schema": {
+                                    "type": "string",
+                                    "pattern": "^(no-store, private|private, no-store)$"
+                                },
+                                "x-required": true
+                            },
+                            "Vary": {
+                                "description": "Required.",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": ["Authorization"]
+                                },
+                                "x-required": true
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error415"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "VALIDATION_FAILED. Generic envelope, no catalogue service data, SQL, keys/hashes, counts or original operation/result IDs. HEAD empty.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Required fresh server UUID, including replay.",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "x-required": true
+                            },
+                            "Cache-Control": {
+                                "description": "Required no-store and private directives; either order.",
+                                "schema": {
+                                    "type": "string",
+                                    "pattern": "^(no-store, private|private, no-store)$"
+                                },
+                                "x-required": true
+                            },
+                            "Vary": {
+                                "description": "Required.",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": ["Authorization"]
+                                },
+                                "x-required": true
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error422"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "RATE_LIMITED. Generic envelope, no catalogue service data, SQL, keys/hashes, counts or original operation/result IDs. HEAD empty.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Required fresh server UUID, including replay.",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "x-required": true
+                            },
+                            "Cache-Control": {
+                                "description": "Required no-store and private directives; either order.",
+                                "schema": {
+                                    "type": "string",
+                                    "pattern": "^(no-store, private|private, no-store)$"
+                                },
+                                "x-required": true
+                            },
+                            "Vary": {
+                                "description": "Required.",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": ["Authorization"]
+                                },
+                                "x-required": true
+                            },
+                            "Retry-After": {
+                                "description": "Required seconds to native fixed-minute boundary.",
+                                "schema": {
+                                    "type": "string",
+                                    "pattern": "^([1-9]|[1-5][0-9]|60)$"
+                                },
+                                "x-required": true
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error429"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "SERVICE_UNAVAILABLE. Generic envelope, no catalogue service data, SQL, keys/hashes, counts or original operation/result IDs. HEAD empty.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Required fresh server UUID, including replay.",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "x-required": true
+                            },
+                            "Cache-Control": {
+                                "description": "Required no-store and private directives; either order.",
+                                "schema": {
+                                    "type": "string",
+                                    "pattern": "^(no-store, private|private, no-store)$"
+                                },
+                                "x-required": true
+                            },
+                            "Vary": {
+                                "description": "Required.",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": ["Authorization"]
+                                },
+                                "x-required": true
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error503"
+                                }
+                            }
+                        }
+                    },
+                    "201": {
+                        "description": "New creation and authorized completed replay both return 201 with byte-identical stored JSON. No Location or live catalogue service representation.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Required fresh server UUID, including replay.",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "x-required": true
+                            },
+                            "Cache-Control": {
+                                "description": "Required no-store and private directives; either order.",
+                                "schema": {
+                                    "type": "string",
+                                    "pattern": "^(no-store, private|private, no-store)$"
+                                },
+                                "x-required": true
+                            },
+                            "Vary": {
+                                "description": "Required.",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": ["Authorization"]
+                                },
+                                "x-required": true
+                            },
+                            "Idempotency-Replayed": {
+                                "description": "Required false on first success, true on replay.",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": ["false", "true"]
+                                },
+                                "x-required": true
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CatalogueServiceCreateResult"
+                                },
+                                "example": {
+                                    "data": {
+                                        "public_id": "01arz3ndektsv4rrffq69g5fav"
+                                    },
+                                    "meta": {
+                                        "operation_id": "f98ee06e-70bf-4b2e-a6e4-5437db577c25"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "IntegrationBearer": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "fcr1.<credential ULID>.<43-character base64url secret>",
+                "description": "Existing hashed credentials. Bearer validity alone is insufficient. No wildcard, sessions, cookies or delegation."
+            }
+        },
+        "schemas": {
+            "PublicId": {
+                "type": "string",
+                "pattern": "^[0-7][0-9a-hjkmnp-tv-z]{25}$"
+            },
+            "CatalogueServiceCreateRequest": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                    "code",
+                    "name",
+                    "unit_price_minor",
+                    "currency_code",
+                    "tax_treatment"
+                ],
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 4096,
+                        "description": "ASCII edge trim and uppercase before validation. Unique within entity across products/services and active/inactive records.",
+                        "x-normalized-schema": {
+                            "type": "string",
+                            "pattern": "^[A-Z0-9][A-Z0-9._-]{0,59}$"
+                        }
+                    },
+                    "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 4096,
+                        "description": "NFC and ASCII SP/HT/CR/LF edge trim; normalized 1–255 Unicode code points, no remaining C0/C1 controls. Case and internal spacing retained.",
+                        "x-normalized-schema": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 255,
+                            "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]+$"
+                        }
+                    },
+                    "description": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 4096,
+                        "description": "NFC and ASCII SP/HT/CR/LF edge trim; normalized 1–255 Unicode code points, no remaining C0/C1 controls. Case and internal spacing retained. Omission stores null; supplied null or empty rejects.",
+                        "x-normalized-schema": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 255,
+                            "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]+$"
+                        }
+                    },
+                    "unit_of_measure": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 4096,
+                        "description": "Omission defaults to UN. ASCII edge trim and uppercase; bounded free unit label, not a registry identifier.",
+                        "x-normalized-schema": {
+                            "type": "string",
+                            "pattern": "^[A-Z][A-Z0-9._-]{0,9}$"
+                        },
+                        "default": "UN"
+                    },
+                    "unit_price_minor": {
+                        "type": "string",
+                        "pattern": "^(0|[1-9][0-9]{0,18})$",
+                        "maxLength": 19,
+                        "description": "Canonical integer minor-unit string, inclusive maximum 9223372036854775807 enforced by length/lexical comparison before casting. Scale two; pre-tax base supply price. No JSON number, float, rounding or FX.",
+                        "x-maximum-integer-string": "9223372036854775807",
+                        "x-scale": 2
+                    },
+                    "currency_code": {
+                        "type": "string",
+                        "const": "AOA",
+                        "description": "Exact token. On first effect must match locked entity base currency and enabled currency configuration; incompatible entity configuration gives generic 503. Replay does not read current defaults."
+                    },
+                    "tax_treatment": {
+                        "type": "string",
+                        "enum": [
+                            "IVA_NOR_14",
+                            "IVA_ISE_M00",
+                            "NS_M02",
+                            "IVA_ISE_M04"
+                        ],
+                        "description": "Exact frozen token. New effect resolves the authoritative SupportedTaxTreatment profile and verifies the pinned components; drift gives generic 503. No raw tax component fields or legal/homologation assurance."
+                    }
+                }
+            },
+            "CatalogueServiceCreateResult": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["data", "meta"],
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["public_id"],
+                        "properties": {
+                            "public_id": {
+                                "$ref": "#/components/schemas/PublicId"
+                            }
+                        }
+                    },
+                    "meta": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["operation_id"],
+                        "properties": {
+                            "operation_id": {
+                                "type": "string",
+                                "format": "uuid"
+                            }
+                        }
+                    }
+                }
+            },
+            "Error400": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["error", "meta"],
+                "properties": {
+                    "error": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["code", "message"],
+                        "properties": {
+                            "code": {
+                                "type": "string",
+                                "enum": ["INVALID_REQUEST"]
+                            },
+                            "message": {
+                                "type": "string",
+                                "const": "Não foi possível concluir o pedido."
+                            }
+                        }
+                    },
+                    "meta": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["request_id"],
+                        "properties": {
+                            "request_id": {
+                                "type": "string",
+                                "format": "uuid"
+                            }
+                        }
+                    }
+                }
+            },
+            "Error401": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["error", "meta"],
+                "properties": {
+                    "error": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["code", "message"],
+                        "properties": {
+                            "code": {
+                                "type": "string",
+                                "enum": ["UNAUTHENTICATED"]
+                            },
+                            "message": {
+                                "type": "string",
+                                "const": "Não foi possível concluir o pedido."
+                            }
+                        }
+                    },
+                    "meta": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["request_id"],
+                        "properties": {
+                            "request_id": {
+                                "type": "string",
+                                "format": "uuid"
+                            }
+                        }
+                    }
+                }
+            },
+            "Error403": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["error", "meta"],
+                "properties": {
+                    "error": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["code", "message"],
+                        "properties": {
+                            "code": {
+                                "type": "string",
+                                "enum": ["FORBIDDEN"]
+                            },
+                            "message": {
+                                "type": "string",
+                                "const": "Não foi possível concluir o pedido."
+                            }
+                        }
+                    },
+                    "meta": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["request_id"],
+                        "properties": {
+                            "request_id": {
+                                "type": "string",
+                                "format": "uuid"
+                            }
+                        }
+                    }
+                }
+            },
+            "Error404": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["error", "meta"],
+                "properties": {
+                    "error": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["code", "message"],
+                        "properties": {
+                            "code": {
+                                "type": "string",
+                                "enum": ["NOT_FOUND"]
+                            },
+                            "message": {
+                                "type": "string",
+                                "const": "Não foi possível concluir o pedido."
+                            }
+                        }
+                    },
+                    "meta": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["request_id"],
+                        "properties": {
+                            "request_id": {
+                                "type": "string",
+                                "format": "uuid"
+                            }
+                        }
+                    }
+                }
+            },
+            "Error405": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["error", "meta"],
+                "properties": {
+                    "error": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["code", "message"],
+                        "properties": {
+                            "code": {
+                                "type": "string",
+                                "enum": ["METHOD_NOT_ALLOWED"]
+                            },
+                            "message": {
+                                "type": "string",
+                                "const": "Não foi possível concluir o pedido."
+                            }
+                        }
+                    },
+                    "meta": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["request_id"],
+                        "properties": {
+                            "request_id": {
+                                "type": "string",
+                                "format": "uuid"
+                            }
+                        }
+                    }
+                }
+            },
+            "Error409": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["error", "meta"],
+                "properties": {
+                    "error": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["code", "message"],
+                        "properties": {
+                            "code": {
+                                "type": "string",
+                                "enum": [
+                                    "IDEMPOTENCY_CONFLICT",
+                                    "COMMAND_IN_PROGRESS",
+                                    "CATALOGUE_CONFLICT"
+                                ]
+                            },
+                            "message": {
+                                "type": "string",
+                                "const": "Não foi possível concluir o pedido."
+                            }
+                        }
+                    },
+                    "meta": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["request_id"],
+                        "properties": {
+                            "request_id": {
+                                "type": "string",
+                                "format": "uuid"
+                            }
+                        }
+                    }
+                }
+            },
+            "Error413": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["error", "meta"],
+                "properties": {
+                    "error": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["code", "message"],
+                        "properties": {
+                            "code": {
+                                "type": "string",
+                                "enum": ["PAYLOAD_TOO_LARGE"]
+                            },
+                            "message": {
+                                "type": "string",
+                                "const": "Não foi possível concluir o pedido."
+                            }
+                        }
+                    },
+                    "meta": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["request_id"],
+                        "properties": {
+                            "request_id": {
+                                "type": "string",
+                                "format": "uuid"
+                            }
+                        }
+                    }
+                }
+            },
+            "Error415": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["error", "meta"],
+                "properties": {
+                    "error": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["code", "message"],
+                        "properties": {
+                            "code": {
+                                "type": "string",
+                                "enum": ["UNSUPPORTED_MEDIA_TYPE"]
+                            },
+                            "message": {
+                                "type": "string",
+                                "const": "Não foi possível concluir o pedido."
+                            }
+                        }
+                    },
+                    "meta": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["request_id"],
+                        "properties": {
+                            "request_id": {
+                                "type": "string",
+                                "format": "uuid"
+                            }
+                        }
+                    }
+                }
+            },
+            "Error422": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["error", "meta"],
+                "properties": {
+                    "error": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["code", "message"],
+                        "properties": {
+                            "code": {
+                                "type": "string",
+                                "enum": ["VALIDATION_FAILED"]
+                            },
+                            "message": {
+                                "type": "string",
+                                "const": "Não foi possível concluir o pedido."
+                            }
+                        }
+                    },
+                    "meta": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["request_id"],
+                        "properties": {
+                            "request_id": {
+                                "type": "string",
+                                "format": "uuid"
+                            }
+                        }
+                    }
+                }
+            },
+            "Error429": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["error", "meta"],
+                "properties": {
+                    "error": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["code", "message"],
+                        "properties": {
+                            "code": {
+                                "type": "string",
+                                "enum": ["RATE_LIMITED"]
+                            },
+                            "message": {
+                                "type": "string",
+                                "const": "Não foi possível concluir o pedido."
+                            }
+                        }
+                    },
+                    "meta": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["request_id"],
+                        "properties": {
+                            "request_id": {
+                                "type": "string",
+                                "format": "uuid"
+                            }
+                        }
+                    }
+                }
+            },
+            "Error503": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["error", "meta"],
+                "properties": {
+                    "error": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["code", "message"],
+                        "properties": {
+                            "code": {
+                                "type": "string",
+                                "enum": ["SERVICE_UNAVAILABLE"]
+                            },
+                            "message": {
+                                "type": "string",
+                                "const": "Não foi possível concluir o pedido."
+                            }
+                        }
+                    },
+                    "meta": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["request_id"],
+                        "properties": {
+                            "request_id": {
+                                "type": "string",
+                                "format": "uuid"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "x-authoritative-contract": "phase-5b-catalogue-service-create-contract.md",
+    "x-enablements": {
+        "required": ["integrations.enabled", "integrations.commands_enabled"],
+        "checkedInDefaults": false,
+        "disabledStatus": 404,
+        "productionEnablementAuthorized": false
+    },
+    "x-request-boundary": {
+        "maxBodyBytes": 4096,
+        "maxParserDepth": 4,
+        "mediaType": "application/json; optional charset=utf-8",
+        "contentEncoding": "none",
+        "queryParameters": "none, including empty/repeated unknown parameters",
+        "duplicateJsonMembers": "reject after decoding member names, before lossy conversion",
+        "unknownProperties": "422, do not echo name",
+        "normalization": "x-normalized-schema is normative post-normalization validation, in addition to wire schema. See contract.",
+        "methodOverride": "forbidden",
+        "csrfSessionFallback": false
+    },
+    "x-unsupported-methods": {
+        "methods": ["GET", "HEAD", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        "recognizedEnabledPath": "IP quota, bearer, verified quotas and scope/context denial ordering before 405; no body validation/key reservation/domain lookup. HEAD suppresses every error body.",
+        "allow": "POST",
+        "success": false,
+        "automaticOptions": false
+    },
+    "x-idempotency": {
+        "namespace": [
+            "stable integration",
+            "workspace",
+            "legal entity",
+            "environment",
+            "catalogue.services.create",
+            "version 1",
+            "SHA256 parsed key"
+        ],
+        "canonicalizer": "command-json-v1",
+        "hash": "SHA-256",
+        "canonicalJson": "Typed normalized command/context/principal/defaults version, sorted object keys, deterministic UTF-8 escaping, no floats. Golden vectors required.",
+        "successReplayStatus": 201,
+        "successReplayBody": "byte-identical stored body",
+        "currentAuthorizationRequired": true,
+        "differentFingerprintStatus": 409,
+        "inProgressStatus": 409,
+        "inProgressRetryAfterSeconds": 1,
+        "expiry": "none; completed keys never re-execute",
+        "precommitFailure": "atomic rollback, authorized retry may claim",
+        "uncertainCommit": "retry same key/payload, never automatically execute again",
+        "stableOperationId": "meta.operation_id",
+        "freshTransportId": "X-Request-ID response header",
+        "defaultsPolicy": "catalogue-service-create-v1",
+        "replayDomainLookup": false
+    },
+    "x-quotas": {
+        "window": "native fixed 60 seconds; adjacent-window burst permitted",
+        "ipPerMinute": 60,
+        "integrationPerMinute": 10,
+        "workspacePerMinute": 30,
+        "identity": "verified stable integration/workspace, not credential/URI",
+        "replayAndConflictCharged": true,
+        "unsupportedMethodsCharged": true,
+        "preAuthMalformedCharged": "IP only",
+        "postIdentityMalformedCharged": "all applicable budgets",
+        "cacheFailureStatus": 503,
+        "completedOperationsPerIntegration": 100000,
+        "capacityFailure": "generic 503; completed replay remains available",
+        "sharedCommands": ["customers.create", "catalogue.services.create"],
+        "capacityScope": "100000 combined retained successes per stable integration, not per command"
+    },
+    "x-transaction": {
+        "database": "primary PostgreSQL 18; SQLite fast tests only; MySQL external command denied",
+        "isolation": "READ COMMITTED",
+        "outermost": true,
+        "serialize": "per integration",
+        "lockTimeoutMs": 1000,
+        "statementTimeoutMs": 2000,
+        "transactionTimeoutMs": 5000,
+        "atomic": [
+            "one complete non-stock catalogue service row",
+            "completed operation/result",
+            "required authorization/creation audit",
+            "capacity counter",
+            "last-used metadata"
+        ],
+        "externalSideEffects": false,
+        "newServiceEffectLock": "Bound legal entity FOR SHARE after common context locks, held through commit; no new domain/default lock on completed replay."
+    },
+    "x-response-minimization": {
+        "allowlisted": true,
+        "cookies": false,
+        "redirects": false,
+        "location": false,
+        "echoPayload": false,
+        "internalIds": false,
+        "secretsOrHashes": false
+    },
+    "x-error-order": "Disabled -> IP quota -> media/size -> bearer -> verified quotas -> preliminary sponsor/scope/context -> method/path/query/correlation/key/body -> attempted audit -> locked authorization -> idempotency -> domain/result/audit. Earlier generic faults take precedence; no business lookup before context authorization.",
+    "x-domain": {
+        "serverControlled": {
+            "type": "service",
+            "is_active": true,
+            "tracks_stock": false,
+            "stock_scale": 3,
+            "reorder_level_units": null
+        },
+        "optionalPriceRowsCreated": false,
+        "stockEffects": false,
+        "taxRegistry": "none; existing enum is authoritative",
+        "unitRegistry": "none; bounded label only",
+        "taxProfiles": {
+            "IVA_NOR_14": ["IVA", "NOR", "14.00", null],
+            "IVA_ISE_M00": ["IVA", "ISE", "0.00", "M00"],
+            "NS_M02": ["NS", null, "0.00", "M02"],
+            "IVA_ISE_M04": ["IVA", "ISE", "0.00", "M04"]
+        },
+        "domainUniqueness": "existing legal_entity_id + code across all catalogue types and active states; not an upsert",
+        "creationAudit": "catalogue.service.created",
+        "auditPayloadFields": false
+    }
+}

@@ -1,0 +1,1111 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "Facturac bounded customer-create command",
+        "version": "1.0.0-design",
+        "description": "Normative Phase 5A design; no deployed endpoint or enablement approval. Read with phase-5a-customer-create-command-contract.md. Exactly one create capability."
+    },
+    "security": [
+        {
+            "IntegrationBearer": []
+        }
+    ],
+    "paths": {
+        "/api/integrations/commands/v1/workspaces/{workspacePublicId}/legal-entities/{entityPublicId}/environments/{environment}/customers": {
+            "parameters": [
+                {
+                    "name": "workspacePublicId",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string",
+                        "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                    },
+                    "description": "Explicit credential-bound ULID; either case accepted, canonical lowercase. Foreign/nonexistent context has identical denial."
+                },
+                {
+                    "name": "entityPublicId",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string",
+                        "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                    },
+                    "description": "Explicit credential-bound ULID; either case accepted, canonical lowercase. Foreign/nonexistent context has identical denial."
+                },
+                {
+                    "name": "environment",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string",
+                        "enum": ["production"]
+                    },
+                    "description": "Homologation denied before customer/default/ledger lookup. Cannot override binding."
+                },
+                {
+                    "name": "Idempotency-Key",
+                    "in": "header",
+                    "required": true,
+                    "schema": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128,
+                        "pattern": "^[ -~]{1,128}$"
+                    },
+                    "description": "Opaque case-sensitive HTTP field value after standard outer OWS removal. Whitespace-only invalid. Printable ASCII, comma literal, not a list. Reject detectable duplicate fields; infrastructure must preserve one field. Random UUID recommended, not required. Never log raw value.",
+                    "x-reject-whitespace-only": true
+                },
+                {
+                    "name": "X-Client-Request-ID",
+                    "in": "header",
+                    "required": false,
+                    "schema": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9._-]{1,64}$"
+                    },
+                    "description": "Correlation only, excluded from authority/fingerprint."
+                }
+            ],
+            "post": {
+                "operationId": "externalCustomerCreateV1",
+                "summary": "Create one customer or replay its original acknowledgement",
+                "description": "Requires current machine identity, customers:create in BOTH credential and parent, explicit production context and current original owner/administrator sponsor with verified email and configured/confirmed MFA. Revalidated under PostgreSQL locks on creation AND replay.",
+                "x-capability": "customers.create",
+                "x-required-scope": "customers:create",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CustomerCreateRequest"
+                            },
+                            "examples": {
+                                "minimal": {
+                                    "value": {
+                                        "name": "Padaria Cazenga",
+                                        "tax_identification_number": "5401234567"
+                                    }
+                                },
+                                "explicitCountry": {
+                                    "value": {
+                                        "name": "Padaria Cazenga",
+                                        "tax_identification_number": "5401234567",
+                                        "country_code": "AO"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "400": {
+                        "description": "INVALID_REQUEST. Generic envelope, no customer data, SQL, keys/hashes, counts or original operation/result IDs. HEAD empty.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Required fresh server UUID, including replay.",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "x-required": true
+                            },
+                            "Cache-Control": {
+                                "description": "Required no-store and private directives; either order.",
+                                "schema": {
+                                    "type": "string",
+                                    "pattern": "^(no-store, private|private, no-store)$"
+                                },
+                                "x-required": true
+                            },
+                            "Vary": {
+                                "description": "Required.",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": ["Authorization"]
+                                },
+                                "x-required": true
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error400"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "UNAUTHENTICATED. Generic envelope, no customer data, SQL, keys/hashes, counts or original operation/result IDs. HEAD empty.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Required fresh server UUID, including replay.",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "x-required": true
+                            },
+                            "Cache-Control": {
+                                "description": "Required no-store and private directives; either order.",
+                                "schema": {
+                                    "type": "string",
+                                    "pattern": "^(no-store, private|private, no-store)$"
+                                },
+                                "x-required": true
+                            },
+                            "Vary": {
+                                "description": "Required.",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": ["Authorization"]
+                                },
+                                "x-required": true
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error401"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "FORBIDDEN. Generic envelope, no customer data, SQL, keys/hashes, counts or original operation/result IDs. HEAD empty.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Required fresh server UUID, including replay.",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "x-required": true
+                            },
+                            "Cache-Control": {
+                                "description": "Required no-store and private directives; either order.",
+                                "schema": {
+                                    "type": "string",
+                                    "pattern": "^(no-store, private|private, no-store)$"
+                                },
+                                "x-required": true
+                            },
+                            "Vary": {
+                                "description": "Required.",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": ["Authorization"]
+                                },
+                                "x-required": true
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error403"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "NOT_FOUND. Generic envelope, no customer data, SQL, keys/hashes, counts or original operation/result IDs. HEAD empty.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Required fresh server UUID, including replay.",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "x-required": true
+                            },
+                            "Cache-Control": {
+                                "description": "Required no-store and private directives; either order.",
+                                "schema": {
+                                    "type": "string",
+                                    "pattern": "^(no-store, private|private, no-store)$"
+                                },
+                                "x-required": true
+                            },
+                            "Vary": {
+                                "description": "Required.",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": ["Authorization"]
+                                },
+                                "x-required": true
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error404"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "METHOD_NOT_ALLOWED. Generic envelope, no customer data, SQL, keys/hashes, counts or original operation/result IDs. HEAD empty.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Required fresh server UUID, including replay.",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "x-required": true
+                            },
+                            "Cache-Control": {
+                                "description": "Required no-store and private directives; either order.",
+                                "schema": {
+                                    "type": "string",
+                                    "pattern": "^(no-store, private|private, no-store)$"
+                                },
+                                "x-required": true
+                            },
+                            "Vary": {
+                                "description": "Required.",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": ["Authorization"]
+                                },
+                                "x-required": true
+                            },
+                            "Allow": {
+                                "description": "Required.",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": ["POST"]
+                                },
+                                "x-required": true
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error405"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "IDEMPOTENCY_CONFLICT; COMMAND_IN_PROGRESS; CUSTOMER_CONFLICT. Generic envelope, no customer data, SQL, keys/hashes, counts or original operation/result IDs. HEAD empty.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Required fresh server UUID, including replay.",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "x-required": true
+                            },
+                            "Cache-Control": {
+                                "description": "Required no-store and private directives; either order.",
+                                "schema": {
+                                    "type": "string",
+                                    "pattern": "^(no-store, private|private, no-store)$"
+                                },
+                                "x-required": true
+                            },
+                            "Vary": {
+                                "description": "Required.",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": ["Authorization"]
+                                },
+                                "x-required": true
+                            },
+                            "Retry-After": {
+                                "description": "Required exactly 1 only on COMMAND_IN_PROGRESS; absent on other 409 variants.",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": ["1"]
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error409"
+                                }
+                            }
+                        }
+                    },
+                    "413": {
+                        "description": "PAYLOAD_TOO_LARGE. Generic envelope, no customer data, SQL, keys/hashes, counts or original operation/result IDs. HEAD empty.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Required fresh server UUID, including replay.",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "x-required": true
+                            },
+                            "Cache-Control": {
+                                "description": "Required no-store and private directives; either order.",
+                                "schema": {
+                                    "type": "string",
+                                    "pattern": "^(no-store, private|private, no-store)$"
+                                },
+                                "x-required": true
+                            },
+                            "Vary": {
+                                "description": "Required.",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": ["Authorization"]
+                                },
+                                "x-required": true
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error413"
+                                }
+                            }
+                        }
+                    },
+                    "415": {
+                        "description": "UNSUPPORTED_MEDIA_TYPE. Generic envelope, no customer data, SQL, keys/hashes, counts or original operation/result IDs. HEAD empty.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Required fresh server UUID, including replay.",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "x-required": true
+                            },
+                            "Cache-Control": {
+                                "description": "Required no-store and private directives; either order.",
+                                "schema": {
+                                    "type": "string",
+                                    "pattern": "^(no-store, private|private, no-store)$"
+                                },
+                                "x-required": true
+                            },
+                            "Vary": {
+                                "description": "Required.",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": ["Authorization"]
+                                },
+                                "x-required": true
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error415"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "VALIDATION_FAILED. Generic envelope, no customer data, SQL, keys/hashes, counts or original operation/result IDs. HEAD empty.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Required fresh server UUID, including replay.",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "x-required": true
+                            },
+                            "Cache-Control": {
+                                "description": "Required no-store and private directives; either order.",
+                                "schema": {
+                                    "type": "string",
+                                    "pattern": "^(no-store, private|private, no-store)$"
+                                },
+                                "x-required": true
+                            },
+                            "Vary": {
+                                "description": "Required.",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": ["Authorization"]
+                                },
+                                "x-required": true
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error422"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "RATE_LIMITED. Generic envelope, no customer data, SQL, keys/hashes, counts or original operation/result IDs. HEAD empty.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Required fresh server UUID, including replay.",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "x-required": true
+                            },
+                            "Cache-Control": {
+                                "description": "Required no-store and private directives; either order.",
+                                "schema": {
+                                    "type": "string",
+                                    "pattern": "^(no-store, private|private, no-store)$"
+                                },
+                                "x-required": true
+                            },
+                            "Vary": {
+                                "description": "Required.",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": ["Authorization"]
+                                },
+                                "x-required": true
+                            },
+                            "Retry-After": {
+                                "description": "Required seconds to native fixed-minute boundary.",
+                                "schema": {
+                                    "type": "string",
+                                    "pattern": "^([1-9]|[1-5][0-9]|60)$"
+                                },
+                                "x-required": true
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error429"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "SERVICE_UNAVAILABLE. Generic envelope, no customer data, SQL, keys/hashes, counts or original operation/result IDs. HEAD empty.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Required fresh server UUID, including replay.",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "x-required": true
+                            },
+                            "Cache-Control": {
+                                "description": "Required no-store and private directives; either order.",
+                                "schema": {
+                                    "type": "string",
+                                    "pattern": "^(no-store, private|private, no-store)$"
+                                },
+                                "x-required": true
+                            },
+                            "Vary": {
+                                "description": "Required.",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": ["Authorization"]
+                                },
+                                "x-required": true
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error503"
+                                }
+                            }
+                        }
+                    },
+                    "201": {
+                        "description": "New creation and authorized completed replay both return 201 with byte-identical stored JSON. No Location or live customer representation.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "description": "Required fresh server UUID, including replay.",
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "x-required": true
+                            },
+                            "Cache-Control": {
+                                "description": "Required no-store and private directives; either order.",
+                                "schema": {
+                                    "type": "string",
+                                    "pattern": "^(no-store, private|private, no-store)$"
+                                },
+                                "x-required": true
+                            },
+                            "Vary": {
+                                "description": "Required.",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": ["Authorization"]
+                                },
+                                "x-required": true
+                            },
+                            "Idempotency-Replayed": {
+                                "description": "Required false on first success, true on replay.",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": ["false", "true"]
+                                },
+                                "x-required": true
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustomerCreateResult"
+                                },
+                                "example": {
+                                    "data": {
+                                        "public_id": "01arz3ndektsv4rrffq69g5fav"
+                                    },
+                                    "meta": {
+                                        "operation_id": "f98ee06e-70bf-4b2e-a6e4-5437db577c25"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "IntegrationBearer": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "fcr1.<credential ULID>.<43-character base64url secret>",
+                "description": "Existing hashed credentials. Bearer validity alone is insufficient. No wildcard, sessions, cookies or delegation."
+            }
+        },
+        "schemas": {
+            "PublicId": {
+                "type": "string",
+                "pattern": "^[0-7][0-9a-hjkmnp-tv-z]{25}$"
+            },
+            "CustomerCreateRequest": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["name", "tax_identification_number"],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 4096,
+                        "description": "NFC normalize, trim ASCII SP/HT/CR/LF edges, then require 1–255 Unicode code points and no C0/C1 controls. Preserve case and internal spaces. Whole body max 4096 UTF-8 bytes.",
+                        "x-normalized-schema": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 255,
+                            "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]+$"
+                        }
+                    },
+                    "tax_identification_number": {
+                        "type": "string",
+                        "maxLength": 4096,
+                        "pattern": "^[ \\t\\r\\n]*[A-Za-z0-9]{9,32}[ \\t\\r\\n]*$",
+                        "description": "ASCII edge trim and uppercase; normalized [A-Z0-9]{9,32}; preserve leading zeroes. No punctuation removal or number coercion."
+                    },
+                    "country_code": {
+                        "type": "string",
+                        "maxLength": 4096,
+                        "pattern": "^[ \\t\\r\\n]*[A-Za-z]{2}[ \\t\\r\\n]*$",
+                        "description": "Omission defaults to AO. ASCII edge trim/uppercase. Null/empty invalid. Two-letter validation, no ISO registry claim."
+                    }
+                }
+            },
+            "CustomerCreateResult": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["data", "meta"],
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["public_id"],
+                        "properties": {
+                            "public_id": {
+                                "$ref": "#/components/schemas/PublicId"
+                            }
+                        }
+                    },
+                    "meta": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["operation_id"],
+                        "properties": {
+                            "operation_id": {
+                                "type": "string",
+                                "format": "uuid"
+                            }
+                        }
+                    }
+                }
+            },
+            "Error400": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["error", "meta"],
+                "properties": {
+                    "error": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["code", "message"],
+                        "properties": {
+                            "code": {
+                                "type": "string",
+                                "enum": ["INVALID_REQUEST"]
+                            },
+                            "message": {
+                                "type": "string",
+                                "const": "Não foi possível concluir o pedido."
+                            }
+                        }
+                    },
+                    "meta": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["request_id"],
+                        "properties": {
+                            "request_id": {
+                                "type": "string",
+                                "format": "uuid"
+                            }
+                        }
+                    }
+                }
+            },
+            "Error401": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["error", "meta"],
+                "properties": {
+                    "error": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["code", "message"],
+                        "properties": {
+                            "code": {
+                                "type": "string",
+                                "enum": ["UNAUTHENTICATED"]
+                            },
+                            "message": {
+                                "type": "string",
+                                "const": "Não foi possível concluir o pedido."
+                            }
+                        }
+                    },
+                    "meta": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["request_id"],
+                        "properties": {
+                            "request_id": {
+                                "type": "string",
+                                "format": "uuid"
+                            }
+                        }
+                    }
+                }
+            },
+            "Error403": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["error", "meta"],
+                "properties": {
+                    "error": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["code", "message"],
+                        "properties": {
+                            "code": {
+                                "type": "string",
+                                "enum": ["FORBIDDEN"]
+                            },
+                            "message": {
+                                "type": "string",
+                                "const": "Não foi possível concluir o pedido."
+                            }
+                        }
+                    },
+                    "meta": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["request_id"],
+                        "properties": {
+                            "request_id": {
+                                "type": "string",
+                                "format": "uuid"
+                            }
+                        }
+                    }
+                }
+            },
+            "Error404": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["error", "meta"],
+                "properties": {
+                    "error": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["code", "message"],
+                        "properties": {
+                            "code": {
+                                "type": "string",
+                                "enum": ["NOT_FOUND"]
+                            },
+                            "message": {
+                                "type": "string",
+                                "const": "Não foi possível concluir o pedido."
+                            }
+                        }
+                    },
+                    "meta": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["request_id"],
+                        "properties": {
+                            "request_id": {
+                                "type": "string",
+                                "format": "uuid"
+                            }
+                        }
+                    }
+                }
+            },
+            "Error405": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["error", "meta"],
+                "properties": {
+                    "error": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["code", "message"],
+                        "properties": {
+                            "code": {
+                                "type": "string",
+                                "enum": ["METHOD_NOT_ALLOWED"]
+                            },
+                            "message": {
+                                "type": "string",
+                                "const": "Não foi possível concluir o pedido."
+                            }
+                        }
+                    },
+                    "meta": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["request_id"],
+                        "properties": {
+                            "request_id": {
+                                "type": "string",
+                                "format": "uuid"
+                            }
+                        }
+                    }
+                }
+            },
+            "Error409": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["error", "meta"],
+                "properties": {
+                    "error": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["code", "message"],
+                        "properties": {
+                            "code": {
+                                "type": "string",
+                                "enum": [
+                                    "IDEMPOTENCY_CONFLICT",
+                                    "COMMAND_IN_PROGRESS",
+                                    "CUSTOMER_CONFLICT"
+                                ]
+                            },
+                            "message": {
+                                "type": "string",
+                                "const": "Não foi possível concluir o pedido."
+                            }
+                        }
+                    },
+                    "meta": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["request_id"],
+                        "properties": {
+                            "request_id": {
+                                "type": "string",
+                                "format": "uuid"
+                            }
+                        }
+                    }
+                }
+            },
+            "Error413": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["error", "meta"],
+                "properties": {
+                    "error": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["code", "message"],
+                        "properties": {
+                            "code": {
+                                "type": "string",
+                                "enum": ["PAYLOAD_TOO_LARGE"]
+                            },
+                            "message": {
+                                "type": "string",
+                                "const": "Não foi possível concluir o pedido."
+                            }
+                        }
+                    },
+                    "meta": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["request_id"],
+                        "properties": {
+                            "request_id": {
+                                "type": "string",
+                                "format": "uuid"
+                            }
+                        }
+                    }
+                }
+            },
+            "Error415": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["error", "meta"],
+                "properties": {
+                    "error": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["code", "message"],
+                        "properties": {
+                            "code": {
+                                "type": "string",
+                                "enum": ["UNSUPPORTED_MEDIA_TYPE"]
+                            },
+                            "message": {
+                                "type": "string",
+                                "const": "Não foi possível concluir o pedido."
+                            }
+                        }
+                    },
+                    "meta": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["request_id"],
+                        "properties": {
+                            "request_id": {
+                                "type": "string",
+                                "format": "uuid"
+                            }
+                        }
+                    }
+                }
+            },
+            "Error422": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["error", "meta"],
+                "properties": {
+                    "error": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["code", "message"],
+                        "properties": {
+                            "code": {
+                                "type": "string",
+                                "enum": ["VALIDATION_FAILED"]
+                            },
+                            "message": {
+                                "type": "string",
+                                "const": "Não foi possível concluir o pedido."
+                            }
+                        }
+                    },
+                    "meta": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["request_id"],
+                        "properties": {
+                            "request_id": {
+                                "type": "string",
+                                "format": "uuid"
+                            }
+                        }
+                    }
+                }
+            },
+            "Error429": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["error", "meta"],
+                "properties": {
+                    "error": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["code", "message"],
+                        "properties": {
+                            "code": {
+                                "type": "string",
+                                "enum": ["RATE_LIMITED"]
+                            },
+                            "message": {
+                                "type": "string",
+                                "const": "Não foi possível concluir o pedido."
+                            }
+                        }
+                    },
+                    "meta": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["request_id"],
+                        "properties": {
+                            "request_id": {
+                                "type": "string",
+                                "format": "uuid"
+                            }
+                        }
+                    }
+                }
+            },
+            "Error503": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["error", "meta"],
+                "properties": {
+                    "error": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["code", "message"],
+                        "properties": {
+                            "code": {
+                                "type": "string",
+                                "enum": ["SERVICE_UNAVAILABLE"]
+                            },
+                            "message": {
+                                "type": "string",
+                                "const": "Não foi possível concluir o pedido."
+                            }
+                        }
+                    },
+                    "meta": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["request_id"],
+                        "properties": {
+                            "request_id": {
+                                "type": "string",
+                                "format": "uuid"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "x-authoritative-contract": "phase-5a-customer-create-command-contract.md",
+    "x-enablements": {
+        "required": ["integrations.enabled", "integrations.commands_enabled"],
+        "checkedInDefaults": false,
+        "disabledStatus": 404,
+        "productionEnablementAuthorized": false
+    },
+    "x-request-boundary": {
+        "maxBodyBytes": 4096,
+        "maxParserDepth": 4,
+        "mediaType": "application/json; optional charset=utf-8",
+        "contentEncoding": "none",
+        "queryParameters": "none, including empty/repeated unknown parameters",
+        "duplicateJsonMembers": "reject after decoding member names, before lossy conversion",
+        "unknownProperties": "422, do not echo name",
+        "normalization": "x-normalized-schema is normative post-normalization validation, in addition to wire schema. See contract.",
+        "methodOverride": "forbidden",
+        "csrfSessionFallback": false
+    },
+    "x-unsupported-methods": {
+        "methods": ["GET", "HEAD", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        "recognizedEnabledPath": "IP quota, bearer, verified quotas and scope/context denial ordering before 405; no body validation/key reservation/domain lookup. HEAD suppresses every error body.",
+        "allow": "POST",
+        "success": false,
+        "automaticOptions": false
+    },
+    "x-idempotency": {
+        "namespace": [
+            "stable integration",
+            "workspace",
+            "legal entity",
+            "environment",
+            "customers.create",
+            "version 1",
+            "SHA256 parsed key"
+        ],
+        "canonicalizer": "command-json-v1",
+        "hash": "SHA-256",
+        "canonicalJson": "Typed normalized command/context/principal/defaults version, sorted object keys, deterministic UTF-8 escaping, no floats. Golden vectors required.",
+        "successReplayStatus": 201,
+        "successReplayBody": "byte-identical stored body",
+        "currentAuthorizationRequired": true,
+        "differentFingerprintStatus": 409,
+        "inProgressStatus": 409,
+        "inProgressRetryAfterSeconds": 1,
+        "expiry": "none; completed keys never re-execute",
+        "precommitFailure": "atomic rollback, authorized retry may claim",
+        "uncertainCommit": "retry same key/payload, never automatically execute again",
+        "stableOperationId": "meta.operation_id",
+        "freshTransportId": "X-Request-ID response header"
+    },
+    "x-quotas": {
+        "window": "native fixed 60 seconds; adjacent-window burst permitted",
+        "ipPerMinute": 60,
+        "integrationPerMinute": 10,
+        "workspacePerMinute": 30,
+        "identity": "verified stable integration/workspace, not credential/URI",
+        "replayAndConflictCharged": true,
+        "unsupportedMethodsCharged": true,
+        "preAuthMalformedCharged": "IP only",
+        "postIdentityMalformedCharged": "all applicable budgets",
+        "cacheFailureStatus": 503,
+        "completedOperationsPerIntegration": 100000,
+        "capacityFailure": "generic 503; completed replay remains available"
+    },
+    "x-transaction": {
+        "database": "primary PostgreSQL 18; SQLite fast tests only; MySQL external command denied",
+        "isolation": "READ COMMITTED",
+        "outermost": true,
+        "serialize": "per integration",
+        "lockTimeoutMs": 1000,
+        "statementTimeoutMs": 2000,
+        "transactionTimeoutMs": 5000,
+        "atomic": [
+            "customer",
+            "completed operation/result",
+            "required authorization/creation audit",
+            "capacity counter",
+            "last-used metadata"
+        ],
+        "externalSideEffects": false
+    },
+    "x-response-minimization": {
+        "allowlisted": true,
+        "cookies": false,
+        "redirects": false,
+        "location": false,
+        "echoPayload": false,
+        "internalIds": false,
+        "secretsOrHashes": false
+    },
+    "x-error-order": "Disabled -> IP quota -> media/size -> bearer -> verified quotas -> preliminary sponsor/scope/context -> method/path/query/correlation/key/body -> attempted audit -> locked authorization -> idempotency -> domain/result/audit. Earlier generic faults take precedence; no business lookup before context authorization."
+}
