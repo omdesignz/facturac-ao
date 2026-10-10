@@ -188,9 +188,9 @@ const withoutSeries = computed(() =>
                             class="mt-2 max-w-2xl text-sm/6 text-zinc-600 dark:text-zinc-400"
                         >
                             Cada loja, armazém ou posto tem a sua própria série
-                            da AGT e o seu próprio inventário. É por isso
-                            que uma factura diz de onde foi emitida, e não só
-                            por quem.
+                            da AGT e o seu próprio inventário. É por isso que
+                            uma factura diz de onde foi emitida, e não só por
+                            quem.
                         </p>
                     </div>
 

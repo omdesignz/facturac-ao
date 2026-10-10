@@ -1,2 +1,4 @@
 resources/js/components/ui/*
 resources/views/mail/*
+# Self-contained render sources for the promo films, hand-compacted on purpose.
+resources/promo/*.html

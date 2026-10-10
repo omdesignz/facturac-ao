@@ -84,6 +84,8 @@ export default defineConfigWithVueTs(
             // copy of the repo reports every problem twice and fails on files
             // that are not ours to fix.
             '.claude',
+            // Vendored agent skills ship their own scripts in their own style.
+            '.agents',
             'bootstrap/ssr',
             'tailwind.config.js',
             'vite.config.ts',
