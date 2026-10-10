@@ -1,0 +1,998 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "Facturac external qualified AGT read — Phase 4C design",
+        "version": "2.0.0",
+        "description": "Design-only contract; external access remains globally disabled. Does not authorize production rollout, fiscal actions or AGT network operations."
+    },
+    "x-global-access-enabled": false,
+    "x-rate-limits": {
+        "window": "fixed native-clock minute; boundary bursts permitted",
+        "ip": 120,
+        "integration": 60,
+        "workspace": 300,
+        "shared-across": "V1/V2, resources, scopes, GET/HEAD and overlapping rotation credentials"
+    },
+    "paths": {
+        "/api/integrations/v2/workspaces/{workspacePublicId}/legal-entities/{entityPublicId}/environments/{environment}/documents/{documentPublicId}/agt-status": {
+            "parameters": [
+                {
+                    "name": "workspacePublicId",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string",
+                        "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                    }
+                },
+                {
+                    "name": "entityPublicId",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string",
+                        "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                    }
+                },
+                {
+                    "name": "environment",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string",
+                        "enum": ["homologation", "production"]
+                    }
+                },
+                {
+                    "name": "documentPublicId",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string",
+                        "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+                    }
+                },
+                {
+                    "name": "X-Client-Request-ID",
+                    "in": "header",
+                    "required": false,
+                    "schema": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9._-]{1,64}$"
+                    },
+                    "description": "Optional diagnostic identifier only; it never replaces the fresh server UUID or a quota identity."
+                }
+            ],
+            "get": {
+                "operationId": "externalReadQualifiedAgtStatusV2",
+                "summary": "Read one qualified AGT observation summary",
+                "description": "Dedicated V2 read-only resource. V1 remains a deprecated legacy workflow summary. All query parameters are rejected. A 200, known valid or reconciliation_required=false is never fiscal eligibility or authorization. Both bound environments are readable; unresolved is not. Never polls, refreshes or rebuilds. The Phase 4C contract defines mandatory mapping and error precedence.",
+                "security": [
+                    {
+                        "integrationBearer": []
+                    }
+                ],
+                "x-required-scopes": ["documents:agt-status:read"],
+                "x-required-capability": "documents.agt-status.read",
+                "x-reject-unknown-query-parameters": true,
+                "x-allowed-empty-body-encodings": ["", "{}", "[]"],
+                "responses": {
+                    "200": {
+                        "description": "Closed qualified summary, including uncertainty. No fiscal authority is granted.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "$ref": "#/components/headers/RequestId"
+                            },
+                            "Cache-Control": {
+                                "$ref": "#/components/headers/NoStore"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/QualifiedAgtStatusResponse"
+                                },
+                                "example": {
+                                    "data": {
+                                        "document_public_id": "01arz3ndektsv4rrffq69g5fax",
+                                        "knowledge": "known",
+                                        "reported_state": "valid",
+                                        "synchronization": "idle",
+                                        "freshness": "stale",
+                                        "observed_at": "2026-10-07T10:00:00+00:00",
+                                        "last_successful_sync_at": "2026-10-07T10:00:00+00:00",
+                                        "as_of": "2026-10-07T11:00:00+00:00",
+                                        "effective_at": null,
+                                        "provenance": "agt_observation",
+                                        "explanation_code": "stale_observation",
+                                        "reconciliation_required": false
+                                    },
+                                    "meta": {
+                                        "request_id": "11111111-1111-4111-8111-111111111111",
+                                        "workspace_public_id": "01arz3ndektsv4rrffq69g5fav",
+                                        "legal_entity_public_id": "01arz3ndektsv4rrffq69g5faw",
+                                        "environment": "homologation"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Error403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Error404"
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/Error405"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Error422"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/Error429"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Error500"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/Error503"
+                    }
+                }
+            },
+            "head": {
+                "operationId": "externalHeadQualifiedAgtStatusV2",
+                "summary": "Read the same resource with no response body",
+                "description": "Same complete validation, authority, scoped read, representation validation, quotas, audit and last-use behavior as GET. All responses are bodyless, including errors. No cheap existence probe, state headers or conditional 304.",
+                "security": [
+                    {
+                        "integrationBearer": []
+                    }
+                ],
+                "x-required-scopes": ["documents:agt-status:read"],
+                "x-required-capability": "documents.agt-status.read",
+                "x-reject-unknown-query-parameters": true,
+                "x-allowed-empty-body-encodings": ["", "{}", "[]"],
+                "responses": {
+                    "200": {
+                        "description": "Identical authorization and status to GET; zero body bytes.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "$ref": "#/components/headers/RequestId"
+                            },
+                            "Cache-Control": {
+                                "$ref": "#/components/headers/NoStore"
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/HeadError401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/HeadError403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/HeadError404"
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/HeadError405"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/HeadError422"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/HeadError429"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/HeadError500"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/HeadError503"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "integrationBearer": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "fcr1.<ULID>.<256-bit-base64url-secret>",
+                "description": "Exact documents:agt-status:read scope on both credential and integration ceiling, immutable context and fresh sponsor/capability authority. No scope implies another. Cookies and caller scope strings grant nothing."
+            }
+        },
+        "headers": {
+            "RequestId": {
+                "description": "Fresh server correlation UUID, unrelated to any AGT request identity.",
+                "schema": {
+                    "type": "string",
+                    "format": "uuid"
+                }
+            },
+            "NoStore": {
+                "schema": {
+                    "type": "string",
+                    "const": "no-store, private"
+                }
+            },
+            "BearerChallenge": {
+                "schema": {
+                    "type": "string",
+                    "const": "Bearer"
+                }
+            },
+            "AllowRead": {
+                "schema": {
+                    "type": "string",
+                    "const": "GET, HEAD"
+                }
+            },
+            "RetryAfter": {
+                "description": "Seconds until the shared fixed minute window resets.",
+                "schema": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 60
+                }
+            }
+        },
+        "responses": {
+            "Error401": {
+                "description": "Indistinguishable missing, malformed, invalid, expired or revoked credential/integration.",
+                "headers": {
+                    "X-Request-ID": {
+                        "$ref": "#/components/headers/RequestId"
+                    },
+                    "Cache-Control": {
+                        "$ref": "#/components/headers/NoStore"
+                    },
+                    "WWW-Authenticate": {
+                        "$ref": "#/components/headers/BearerChallenge"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/components/schemas/ReadError"
+                                },
+                                {
+                                    "properties": {
+                                        "error": {
+                                            "properties": {
+                                                "code": {
+                                                    "const": "AUTHENTICATION_REQUIRED"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "HeadError401": {
+                "description": "Indistinguishable missing, malformed, invalid, expired or revoked credential/integration. HEAD has zero body bytes.",
+                "headers": {
+                    "X-Request-ID": {
+                        "$ref": "#/components/headers/RequestId"
+                    },
+                    "Cache-Control": {
+                        "$ref": "#/components/headers/NoStore"
+                    },
+                    "WWW-Authenticate": {
+                        "$ref": "#/components/headers/BearerChallenge"
+                    }
+                }
+            },
+            "Error403": {
+                "description": "HTTPS, current scope/sponsor authority or well-formed immutable context mismatch; no target lookup.",
+                "headers": {
+                    "X-Request-ID": {
+                        "$ref": "#/components/headers/RequestId"
+                    },
+                    "Cache-Control": {
+                        "$ref": "#/components/headers/NoStore"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/components/schemas/ReadError"
+                                },
+                                {
+                                    "properties": {
+                                        "error": {
+                                            "properties": {
+                                                "code": {
+                                                    "const": "FORBIDDEN"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "HeadError403": {
+                "description": "HTTPS, current scope/sponsor authority or well-formed immutable context mismatch; no target lookup. HEAD has zero body bytes.",
+                "headers": {
+                    "X-Request-ID": {
+                        "$ref": "#/components/headers/RequestId"
+                    },
+                    "Cache-Control": {
+                        "$ref": "#/components/headers/NoStore"
+                    }
+                }
+            },
+            "Error404": {
+                "description": "Disabled globally, unknown route or absent/out-of-context/unresolved target after authorization.",
+                "headers": {
+                    "X-Request-ID": {
+                        "$ref": "#/components/headers/RequestId"
+                    },
+                    "Cache-Control": {
+                        "$ref": "#/components/headers/NoStore"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/components/schemas/ReadError"
+                                },
+                                {
+                                    "properties": {
+                                        "error": {
+                                            "properties": {
+                                                "code": {
+                                                    "const": "NOT_FOUND"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "HeadError404": {
+                "description": "Disabled globally, unknown route or absent/out-of-context/unresolved target after authorization. HEAD has zero body bytes.",
+                "headers": {
+                    "X-Request-ID": {
+                        "$ref": "#/components/headers/RequestId"
+                    },
+                    "Cache-Control": {
+                        "$ref": "#/components/headers/NoStore"
+                    }
+                }
+            },
+            "Error405": {
+                "description": "Unsupported method on known path; no target lookup.",
+                "headers": {
+                    "X-Request-ID": {
+                        "$ref": "#/components/headers/RequestId"
+                    },
+                    "Cache-Control": {
+                        "$ref": "#/components/headers/NoStore"
+                    },
+                    "Allow": {
+                        "$ref": "#/components/headers/AllowRead"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/components/schemas/ReadError"
+                                },
+                                {
+                                    "properties": {
+                                        "error": {
+                                            "properties": {
+                                                "code": {
+                                                    "const": "METHOD_NOT_ALLOWED"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "HeadError405": {
+                "description": "Unsupported method on known path; no target lookup. HEAD has zero body bytes.",
+                "headers": {
+                    "X-Request-ID": {
+                        "$ref": "#/components/headers/RequestId"
+                    },
+                    "Cache-Control": {
+                        "$ref": "#/components/headers/NoStore"
+                    },
+                    "Allow": {
+                        "$ref": "#/components/headers/AllowRead"
+                    }
+                }
+            },
+            "Error422": {
+                "description": "Invalid protocol input, selector, query, nonempty body/form/file or forbidden delegation.",
+                "headers": {
+                    "X-Request-ID": {
+                        "$ref": "#/components/headers/RequestId"
+                    },
+                    "Cache-Control": {
+                        "$ref": "#/components/headers/NoStore"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/components/schemas/ReadError"
+                                },
+                                {
+                                    "properties": {
+                                        "error": {
+                                            "properties": {
+                                                "code": {
+                                                    "const": "VALIDATION_FAILED"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "HeadError422": {
+                "description": "Invalid protocol input, selector, query, nonempty body/form/file or forbidden delegation. HEAD has zero body bytes.",
+                "headers": {
+                    "X-Request-ID": {
+                        "$ref": "#/components/headers/RequestId"
+                    },
+                    "Cache-Control": {
+                        "$ref": "#/components/headers/NoStore"
+                    }
+                }
+            },
+            "Error429": {
+                "description": "Shared IP/integration/workspace fixed-window quota exceeded.",
+                "headers": {
+                    "X-Request-ID": {
+                        "$ref": "#/components/headers/RequestId"
+                    },
+                    "Cache-Control": {
+                        "$ref": "#/components/headers/NoStore"
+                    },
+                    "Retry-After": {
+                        "$ref": "#/components/headers/RetryAfter"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/components/schemas/ReadError"
+                                },
+                                {
+                                    "properties": {
+                                        "error": {
+                                            "properties": {
+                                                "code": {
+                                                    "const": "RATE_LIMITED"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "HeadError429": {
+                "description": "Shared IP/integration/workspace fixed-window quota exceeded. HEAD has zero body bytes.",
+                "headers": {
+                    "X-Request-ID": {
+                        "$ref": "#/components/headers/RequestId"
+                    },
+                    "Cache-Control": {
+                        "$ref": "#/components/headers/NoStore"
+                    },
+                    "Retry-After": {
+                        "$ref": "#/components/headers/RetryAfter"
+                    }
+                }
+            },
+            "Error500": {
+                "description": "Required authenticated denial audit failed.",
+                "headers": {
+                    "X-Request-ID": {
+                        "$ref": "#/components/headers/RequestId"
+                    },
+                    "Cache-Control": {
+                        "$ref": "#/components/headers/NoStore"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/components/schemas/ReadError"
+                                },
+                                {
+                                    "properties": {
+                                        "error": {
+                                            "properties": {
+                                                "code": {
+                                                    "const": "INTERNAL_ERROR"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "HeadError500": {
+                "description": "Required authenticated denial audit failed. HEAD has zero body bytes.",
+                "headers": {
+                    "X-Request-ID": {
+                        "$ref": "#/components/headers/RequestId"
+                    },
+                    "Cache-Control": {
+                        "$ref": "#/components/headers/NoStore"
+                    }
+                }
+            },
+            "Error503": {
+                "description": "Dependency, successful-read audit or unexpected internal failure; no details.",
+                "headers": {
+                    "X-Request-ID": {
+                        "$ref": "#/components/headers/RequestId"
+                    },
+                    "Cache-Control": {
+                        "$ref": "#/components/headers/NoStore"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/components/schemas/ReadError"
+                                },
+                                {
+                                    "properties": {
+                                        "error": {
+                                            "properties": {
+                                                "code": {
+                                                    "const": "SERVICE_UNAVAILABLE"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "HeadError503": {
+                "description": "Dependency, successful-read audit or unexpected internal failure; no details. HEAD has zero body bytes.",
+                "headers": {
+                    "X-Request-ID": {
+                        "$ref": "#/components/headers/RequestId"
+                    },
+                    "Cache-Control": {
+                        "$ref": "#/components/headers/NoStore"
+                    }
+                }
+            }
+        },
+        "schemas": {
+            "PublicId": {
+                "type": "string",
+                "pattern": "^[0-7][0-9a-hjkmnp-tv-z]{25}$"
+            },
+            "NullableObservationTime": {
+                "type": ["string", "null"],
+                "format": "date-time",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\+00:00$"
+            },
+            "Meta": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                    "request_id",
+                    "workspace_public_id",
+                    "legal_entity_public_id",
+                    "environment"
+                ],
+                "properties": {
+                    "request_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "workspace_public_id": {
+                        "$ref": "#/components/schemas/PublicId"
+                    },
+                    "legal_entity_public_id": {
+                        "$ref": "#/components/schemas/PublicId"
+                    },
+                    "environment": {
+                        "type": "string",
+                        "enum": ["homologation", "production"]
+                    }
+                }
+            },
+            "QualifiedAgtStatus": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                    "document_public_id",
+                    "knowledge",
+                    "reported_state",
+                    "synchronization",
+                    "freshness",
+                    "observed_at",
+                    "last_successful_sync_at",
+                    "as_of",
+                    "effective_at",
+                    "provenance",
+                    "explanation_code",
+                    "reconciliation_required"
+                ],
+                "properties": {
+                    "document_public_id": {
+                        "$ref": "#/components/schemas/PublicId"
+                    },
+                    "knowledge": {
+                        "type": "string",
+                        "enum": [
+                            "not_applicable",
+                            "known",
+                            "unknown",
+                            "insufficient_evidence",
+                            "conflicting_evidence"
+                        ]
+                    },
+                    "reported_state": {
+                        "type": ["string", "null"],
+                        "enum": [
+                            "valid",
+                            "invalid",
+                            "processing",
+                            "processing_cancelled",
+                            null
+                        ]
+                    },
+                    "synchronization": {
+                        "type": "string",
+                        "enum": [
+                            "not_applicable",
+                            "idle",
+                            "pending",
+                            "failed",
+                            "unknown"
+                        ]
+                    },
+                    "freshness": {
+                        "type": "string",
+                        "enum": [
+                            "not_applicable",
+                            "recent_observation",
+                            "stale",
+                            "unverified"
+                        ]
+                    },
+                    "observed_at": {
+                        "$ref": "#/components/schemas/NullableObservationTime"
+                    },
+                    "last_successful_sync_at": {
+                        "$ref": "#/components/schemas/NullableObservationTime"
+                    },
+                    "as_of": {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\+00:00$"
+                    },
+                    "effective_at": {
+                        "type": "null"
+                    },
+                    "provenance": {
+                        "type": "string",
+                        "enum": [
+                            "not_applicable",
+                            "agt_observation",
+                            "workflow_only",
+                            "unverified"
+                        ]
+                    },
+                    "explanation_code": {
+                        "type": "string",
+                        "enum": [
+                            "not_submitted",
+                            "delivery_pending",
+                            "delivery_acknowledged",
+                            "processing_reported",
+                            "validation_reported",
+                            "invalidity_reported",
+                            "processing_cancelled",
+                            "request_failed",
+                            "refresh_pending",
+                            "sync_failed",
+                            "stale_observation",
+                            "unknown_response",
+                            "evidence_conflict",
+                            "legacy_unverified",
+                            "state_unavailable"
+                        ]
+                    },
+                    "reconciliation_required": {
+                        "type": "boolean"
+                    }
+                },
+                "description": "Read-only observation summary, never fiscal or receipt authorization. Sections 3–6 of the Phase 4C contract define mapping, temporal and cross-field invariants. The API version is independent of internal reducer version.",
+                "allOf": [
+                    {
+                        "if": {
+                            "properties": {
+                                "knowledge": {
+                                    "const": "known"
+                                }
+                            },
+                            "required": ["knowledge"]
+                        },
+                        "then": {
+                            "properties": {
+                                "reported_state": {
+                                    "type": "string"
+                                },
+                                "observed_at": {
+                                    "type": "string"
+                                },
+                                "freshness": {
+                                    "type": "string",
+                                    "enum": ["recent_observation", "stale"]
+                                },
+                                "provenance": {
+                                    "const": "agt_observation"
+                                },
+                                "synchronization": {
+                                    "type": "string",
+                                    "enum": ["idle", "pending"]
+                                },
+                                "reconciliation_required": {
+                                    "const": false
+                                }
+                            }
+                        },
+                        "else": {
+                            "properties": {
+                                "reported_state": {
+                                    "type": "null"
+                                },
+                                "observed_at": {
+                                    "type": "null"
+                                },
+                                "freshness": {
+                                    "type": "string",
+                                    "enum": ["unverified", "not_applicable"]
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "if": {
+                            "properties": {
+                                "knowledge": {
+                                    "const": "not_applicable"
+                                }
+                            },
+                            "required": ["knowledge"]
+                        },
+                        "then": {
+                            "properties": {
+                                "synchronization": {
+                                    "const": "not_applicable"
+                                },
+                                "freshness": {
+                                    "const": "not_applicable"
+                                },
+                                "last_successful_sync_at": {
+                                    "type": "null"
+                                },
+                                "provenance": {
+                                    "const": "not_applicable"
+                                },
+                                "explanation_code": {
+                                    "const": "not_submitted"
+                                },
+                                "reconciliation_required": {
+                                    "const": false
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "if": {
+                            "properties": {
+                                "knowledge": {
+                                    "const": "insufficient_evidence"
+                                }
+                            },
+                            "required": ["knowledge"]
+                        },
+                        "then": {
+                            "properties": {
+                                "provenance": {
+                                    "const": "unverified"
+                                },
+                                "explanation_code": {
+                                    "const": "legacy_unverified"
+                                },
+                                "reconciliation_required": {
+                                    "const": true
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "if": {
+                            "properties": {
+                                "knowledge": {
+                                    "const": "conflicting_evidence"
+                                }
+                            },
+                            "required": ["knowledge"]
+                        },
+                        "then": {
+                            "properties": {
+                                "provenance": {
+                                    "const": "unverified"
+                                },
+                                "explanation_code": {
+                                    "const": "evidence_conflict"
+                                },
+                                "reconciliation_required": {
+                                    "const": true
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "if": {
+                            "properties": {
+                                "explanation_code": {
+                                    "const": "state_unavailable"
+                                }
+                            },
+                            "required": ["explanation_code"]
+                        },
+                        "then": {
+                            "properties": {
+                                "knowledge": {
+                                    "const": "unknown"
+                                },
+                                "synchronization": {
+                                    "const": "unknown"
+                                },
+                                "freshness": {
+                                    "const": "unverified"
+                                },
+                                "last_successful_sync_at": {
+                                    "type": "null"
+                                },
+                                "provenance": {
+                                    "const": "unverified"
+                                },
+                                "reconciliation_required": {
+                                    "const": true
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "if": {
+                            "properties": {
+                                "reported_state": {
+                                    "enum": [
+                                        "valid",
+                                        "invalid",
+                                        "processing_cancelled"
+                                    ]
+                                }
+                            },
+                            "required": ["reported_state"]
+                        },
+                        "then": {
+                            "properties": {
+                                "synchronization": {
+                                    "const": "idle"
+                                }
+                            }
+                        }
+                    }
+                ]
+            },
+            "QualifiedAgtStatusResponse": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["data", "meta"],
+                "properties": {
+                    "data": {
+                        "$ref": "#/components/schemas/QualifiedAgtStatus"
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/Meta"
+                    }
+                }
+            },
+            "ReadError": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["error", "meta"],
+                "properties": {
+                    "error": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["code", "message"],
+                        "properties": {
+                            "code": {
+                                "type": "string",
+                                "enum": [
+                                    "AUTHENTICATION_REQUIRED",
+                                    "FORBIDDEN",
+                                    "NOT_FOUND",
+                                    "METHOD_NOT_ALLOWED",
+                                    "VALIDATION_FAILED",
+                                    "RATE_LIMITED",
+                                    "INTERNAL_ERROR",
+                                    "SERVICE_UNAVAILABLE"
+                                ]
+                            },
+                            "message": {
+                                "type": "string",
+                                "const": "Não foi possível concluir a consulta."
+                            }
+                        }
+                    },
+                    "meta": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["request_id"],
+                        "properties": {
+                            "request_id": {
+                                "type": "string",
+                                "format": "uuid"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
