@@ -11,6 +11,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 /**
  * @property int $id
@@ -51,7 +54,29 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Customer extends Model
 {
     /** @use HasFactory<CustomerFactory> */
-    use HasFactory, HasUlids;
+    use HasFactory, HasUlids, LogsActivity;
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()->useLogName('customer')->logFillable()->logOnlyDirty()->dontLogEmptyChanges();
+    }
+
+    public function beforeActivityLogged(Model $activity, string $event): void
+    {
+        $changes = $activity->getAttribute('attribute_changes');
+        if (! $changes instanceof Collection) {
+            return;
+        }
+        $redacted = $changes->all();
+        foreach (['attributes', 'old'] as $side) {
+            foreach (['name', 'tax_identification_number', 'address_line', 'email', 'phone'] as $field) {
+                if (array_key_exists($field, $redacted[$side] ?? [])) {
+                    $redacted[$side][$field] = '[redacted]';
+                }
+            }
+        }
+        $activity->setAttribute('attribute_changes', $redacted);
+    }
 
     /** @return array<int, string> */
     public function uniqueIds(): array

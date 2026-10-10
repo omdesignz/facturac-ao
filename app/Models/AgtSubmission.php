@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\AgtSubmissionOperation;
 use App\AgtSubmissionStatus;
+use App\Fiscal\Documents\UtcEvidenceTimestamp;
+use App\Models\Concerns\HasFiscalEnvironment;
 use Carbon\CarbonImmutable;
 use Database\Factories\AgtSubmissionFactory;
 use DomainException;
@@ -16,6 +18,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
+ * @property int $operation_sequence
+ * @property string|null $active_operation_uuid
+ * @property CarbonImmutable|null $operation_lease_expires_at
+ * @property int $projection_revision
+ * @property int $reducer_version
+ * @property array<string, mixed>|null $qualified_projection
+ * @property string $environment
  * @property int $id
  * @property string $public_id
  * @property string $submission_uuid
@@ -43,6 +52,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property CarbonImmutable|null $failed_at
  */
 #[Fillable([
+    'environment',
     'submission_uuid',
     'workspace_id',
     'legal_entity_id',
@@ -65,12 +75,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'received_at',
     'completed_at',
     'failed_at',
+    'operation_sequence', 'active_operation_uuid', 'operation_lease_expires_at', 'projection_revision', 'reducer_version', 'qualified_projection',
 ])]
-#[Hidden(['request_body'])]
+#[Hidden(['request_body', 'qualified_projection', 'active_operation_uuid'])]
 class AgtSubmission extends Model
 {
     /** @use HasFactory<AgtSubmissionFactory> */
-    use HasFactory, HasUlids;
+    use HasFactory, HasFiscalEnvironment, HasUlids;
 
     protected static function booted(): void
     {
@@ -155,6 +166,8 @@ class AgtSubmission extends Model
             'received_at' => 'immutable_datetime',
             'completed_at' => 'immutable_datetime',
             'failed_at' => 'immutable_datetime',
+            'operation_sequence' => 'integer', 'projection_revision' => 'integer', 'reducer_version' => 'integer',
+            'qualified_projection' => 'array', 'operation_lease_expires_at' => UtcEvidenceTimestamp::class,
         ];
     }
 }

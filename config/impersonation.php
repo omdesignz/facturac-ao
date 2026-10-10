@@ -34,6 +34,13 @@ return [
     'blocked_routes' => [
         // Irreversible: filed with the AGT the moment it succeeds.
         'invoices.issue',
+        'invoices.send',
+        'recurring.store',
+        'recurring.update',
+        'recurring.run',
+        'transport-documents.issue',
+        'transport-documents.cancel',
+        'agt.series.store',
         'imports.commit',
 
         // Moves money, or the references that collect it.

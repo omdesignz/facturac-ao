@@ -307,7 +307,7 @@ async function deleteAccount(): Promise<void> {
                                     <strong>{{
                                         deletion.blocking_workspaces.join(', ')
                                     }}</strong>
-                                    e há mais pessoas a trabalhar lá. Passe a
+                                    e a empresa precisa de ser mantida. Passe a
                                     propriedade a alguém antes de eliminar a
                                     conta — deixar uma empresa sem dono não é
                                     algo que possamos decidir por si.

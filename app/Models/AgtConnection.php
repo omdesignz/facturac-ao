@@ -63,6 +63,15 @@ class AgtConnection extends Model
     /** @use HasFactory<AgtConnectionFactory> */
     use HasFactory, HasUlids;
 
+    protected static function booted(): void
+    {
+        static::updating(function (self $connection): void {
+            if ($connection->isDirty(['environment', 'workspace_id', 'legal_entity_id'])) {
+                throw new \DomainException('AGT connection tenant and environment identity is immutable.');
+            }
+        });
+    }
+
     /** @return array<int, string> */
     public function uniqueIds(): array
     {

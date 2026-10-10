@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\ResolveCustomerPrices;
 use App\Actions\SaveFiscalDocumentDraft;
 use App\Fiscal\Agt\Support\CanonicalNumber;
+use App\Fiscal\Documents\CurrentAgtState;
 use App\Fiscal\SupportedTaxTreatment;
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
@@ -112,6 +113,7 @@ class FiscalDocumentController extends Controller
             $user,
             $request->documentProfile(),
             $fiscalDocument,
+            (int) $request->validated('revision'),
         );
 
         return redirect()
@@ -142,7 +144,7 @@ class FiscalDocumentController extends Controller
             ->limit(500)
             ->get();
         $adjustable = $legalEntity->fiscalDocuments()
-            ->with('customer')
+            ->with(['customer', 'submissions'])
             ->withSum(['settledBy as settled_minor' => fn ($query) => $query->whereHas('receipt', fn ($receipt) => $receipt->where('status', '!=', FiscalDocumentStatus::Draft)),
             ], 'amount_minor')
             ->whereNotNull('document_no')
@@ -269,7 +271,7 @@ class FiscalDocumentController extends Controller
                 'customer_public_id' => $issued->customer?->public_id,
                 'currency_code' => $issued->currency_code,
                 'settleable' => ! $issued->document_type->isReceipt()
-                    && $issued->status === FiscalDocumentStatus::Valid
+                    && CurrentAgtState::acceptanceEvidenceSatisfied($issued)
                     && ! $issued->document_type->reducesReceivable(),
                 'gross_total_minor' => $issued->gross_total_minor,
                 'outstanding_minor' => max(

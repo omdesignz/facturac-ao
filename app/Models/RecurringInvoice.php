@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * A standing arrangement for a continuous service.
  *
+ * @property int $configuration_revision
  * @property int $id
  * @property string $public_id
  * @property string $name
@@ -51,6 +52,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 ])]
 class RecurringInvoice extends Model
 {
+    public const array CONFIGURATION_FIELDS = ['workspace_id', 'legal_entity_id', 'establishment_id', 'customer_id', 'created_by_user_id', 'document_type', 'frequency', 'is_active', 'auto_issue', 'starts_on', 'ends_on', 'lines', 'notes', 'configuration_revision'];
+
+    protected $attributes = ['configuration_revision' => 1];
+
+    protected static function booted(): void
+    {
+        static::updating(function (self $profile): void {
+            if ($profile->isDirty(self::CONFIGURATION_FIELDS)) {
+                $profile->configuration_revision = (int) $profile->getOriginal('configuration_revision') + 1;
+            }
+        });
+    }
+
     /** @use HasFactory<RecurringInvoiceFactory> */
     use HasFactory, HasUlids;
 
@@ -134,6 +148,7 @@ class RecurringInvoice extends Model
             'last_run_at' => 'immutable_datetime',
             'lines' => 'array',
             'generated_count' => 'integer',
+            'configuration_revision' => 'integer',
         ];
     }
 }

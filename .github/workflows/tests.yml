@@ -34,5 +34,54 @@ jobs:
       - name: Setup Application
         run: composer setup
 
+      - name: Deterministic assistant rendering gate
+        run: node --test tests/assistant-ui.test.mjs
+
       - name: Run CI Checks
         run: composer ci:check
+
+  postgres-fiscal-gate:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18.6
+        env:
+          POSTGRES_DB: facturac_test_ci
+          POSTGRES_USER: facturac_test
+          POSTGRES_PASSWORD: disposable-test-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U facturac_test -d facturac_test_ci"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      APP_ENV: testing
+      FISCAL_PG_GATE: '1'
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: facturac_test_ci
+      DB_USERNAME: facturac_test
+      DB_PASSWORD: disposable-test-password
+      DB_URL: ''
+      MAIL_MAILER: array
+      QUEUE_CONNECTION: sync
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
+        with:
+          php-version: '8.4'
+          extensions: pdo_pgsql, pcntl
+          tools: composer:v2
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist
+      - run: cp .env.example .env
+      - run: php artisan key:generate
+      - name: PostgreSQL UTF-8 prerequisite
+        run: php -r '$db = new PDO("pgsql:host=".getenv("DB_HOST").";port=".getenv("DB_PORT").";dbname=".getenv("DB_DATABASE"), getenv("DB_USERNAME"), getenv("DB_PASSWORD")); $encoding = $db->query("SHOW server_encoding")->fetchColumn(); if ($encoding !== "UTF8") { fwrite(STDERR, "PostgreSQL UTF8 required\n"); exit(1); } echo "server_encoding=$encoding\n";'
+      - name: Fiscal migrations and actual process contention
+        run: php artisan test --compact --group=postgresql
+      - name: Preserved session API and external read identity lifecycle gates
+        run: php artisan test --compact tests/Feature/ReadFirstDocumentApiTest.php tests/Feature/AttributionIdentityTest.php tests/Feature/ExternalIntegrationTest.php tests/Feature/ExternalIntegrationReviewTest.php tests/Unit/IntegrationLifecycleTest.php tests/Feature/MasterDataReadApiTest.php tests/Feature/MasterDataScopeMigrationTest.php tests/Feature/MasterDataReadReviewTest.php tests/Feature/AgtObservationProjectionTest.php tests/Feature/AgtProjectionReviewTest.php tests/Feature/AgtSchemaTwoContractTest.php tests/Feature/PhaseFourFiscalIssuanceTest.php tests/Feature/QualifiedAgtStatusApiTest.php tests/Feature/QualifiedAgtScopeMigrationTest.php tests/Feature/QualifiedAgtReadReviewTest.php tests/Feature/BillingSummaryApiTest.php tests/Feature/BillingAnalyticsMigrationTest.php tests/Unit/CustomerCommandTest.php tests/Unit/CustomerCommandBoundaryTest.php tests/Unit/CustomerCommandMigrationTest.php tests/Unit/ServiceCommandTest.php tests/Unit/ServiceCommandBoundaryTest.php tests/Unit/ServiceCommandMigrationTest.php tests/Feature/AssistantFoundationTest.php tests/Feature/AiExecutionQuarantineTest.php tests/Feature/AssistantAuditClosureTest.php

@@ -15,11 +15,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
 /**
+ * @property string $attribution_id
  * @property int $id
  * @property string $name
  * @property string $email
@@ -36,6 +38,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 #[Fillable(['name', 'email', 'password', 'work_session_minutes', 'notification_preferences'])]
 #[Hidden([
     'password',
+    'attribution_id',
     'remember_token',
     'two_factor_secret',
     'two_factor_recovery_codes',
@@ -44,6 +47,33 @@ class User extends Authenticatable implements MustVerifyEmailContract, PasskeyUs
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, MustVerifyEmail, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+
+    public $usesUniqueIds = true;
+
+    /** @return list<string> */
+    public function uniqueIds(): array
+    {
+        return ['attribution_id'];
+    }
+
+    public function newUniqueId(): string
+    {
+        return (string) Str::uuid();
+    }
+
+    public function setUniqueIds(): void
+    {
+        $this->attribution_id = $this->newUniqueId();
+    }
+
+    protected static function booted(): void
+    {
+        static::updating(function (User $user): void {
+            if ($user->isDirty('attribution_id')) {
+                throw new \DomainException('Immutable attribution identity.');
+            }
+        });
+    }
 
     /** @return BelongsTo<Workspace, $this> */
     public function currentWorkspace(): BelongsTo

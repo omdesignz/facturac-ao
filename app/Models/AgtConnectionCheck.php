@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\AgtConnectionCheckStatus;
 use App\AgtOperation;
+use App\Models\Concerns\HasFiscalEnvironment;
 use Carbon\CarbonImmutable;
 use Database\Factories\AgtConnectionCheckFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
+ * @property string $environment
  * @property int $id
  * @property string $public_id
  * @property int $workspace_id
@@ -35,6 +37,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property CarbonImmutable|null $completed_at
  */
 #[Fillable([
+    'environment',
     'workspace_id',
     'legal_entity_id',
     'agt_connection_id',
@@ -57,7 +60,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class AgtConnectionCheck extends Model
 {
     /** @use HasFactory<AgtConnectionCheckFactory> */
-    use HasFactory, HasUlids;
+    use HasFactory, HasFiscalEnvironment, HasUlids;
 
     /** @return array<int, string> */
     public function uniqueIds(): array

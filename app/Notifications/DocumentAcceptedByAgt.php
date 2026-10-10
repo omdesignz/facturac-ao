@@ -36,7 +36,7 @@ class DocumentAcceptedByAgt extends WorkspaceNotification
 
     public function body(): string
     {
-        return 'A comunicação ficou validada. Não há nada a fazer.';
+        return 'A AGT reportou validação. Consulte a data e a evidência do resultado.';
     }
 
     public function url(): ?string

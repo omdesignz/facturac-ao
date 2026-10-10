@@ -4,27 +4,35 @@ use App\Actions\IssueFiscalDocument;
 use App\Actions\SaveAgtConnection;
 use App\Actions\SaveFiscalDocumentDraft;
 use App\AgtConnectionStatus;
+use App\AgtEnvironment;
+use App\AgtSubmissionStatus;
+use App\Analytics\DocumentSnapshot;
 use App\Analytics\ReceivablesQuery;
 use App\Exceptions\FiscalFinalizationBlocked;
 use App\Fiscal\Agt\Contracts\AgtGateway;
 use App\Fiscal\Agt\Contracts\JwsSigner;
 use App\Fiscal\Agt\Support\CanonicalJson;
+use App\Fiscal\Documents\CurrentAgtState;
 use App\Fiscal\Documents\FiscalDocumentPresenter;
 use App\Fiscal\Documents\V2_0\FiscalDocumentPayloadBuilder;
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
+use App\Jobs\PollAgtSubmissionStatus;
 use App\Jobs\SubmitAgtDocument;
 use App\Models\AgtConnection;
+use App\Models\AgtSubmission;
 use App\Models\Establishment;
 use App\Models\FiscalDocument;
 use App\Models\FiscalDocumentWithholding;
 use App\Models\FiscalSeries;
 use App\Models\LegalEntity;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia;
+use Spatie\Activitylog\Models\Activity;
 
 /** @return array{user: User, entity: LegalEntity, establishment: Establishment, connection: AgtConnection, series: FiscalSeries} */
 function schemaTwoCompany(): array
@@ -97,8 +105,13 @@ function schemaTwoSource(
     int $netMinor = 10000,
     int $taxMinor = 1400,
     FiscalDocumentType $documentType = FiscalDocumentType::Invoice,
+    string $environment = 'homologation',
 ): FiscalDocument {
-    return FiscalDocument::factory()->create([
+    if ($environment === 'production') {
+        AgtConnection::factory()->create(['workspace_id' => $company['entity']->workspace_id, 'legal_entity_id' => $company['entity']->id, 'environment' => AgtEnvironment::Production]);
+    }
+    $source = FiscalDocument::factory()->create([
+        'environment' => $environment,
         'workspace_id' => $company['entity']->workspace_id, 'legal_entity_id' => $company['entity']->id,
         'establishment_id' => $company['establishment']->id,
         'created_by_user_id' => $company['user']->id, 'updated_by_user_id' => $company['user']->id,
@@ -107,6 +120,9 @@ function schemaTwoSource(
         'customer_tax_identification_number' => '5411111111',
         'net_total_minor' => $netMinor, 'tax_payable_minor' => $taxMinor, 'gross_total_minor' => $netMinor + $taxMinor,
     ]);
+    recordAuthoritativeAgtAcceptance($source);
+
+    return $source;
 }
 
 test('issuance freezes a schema 2 request with numeric line amounts and matching signed totals', function () {
@@ -221,7 +237,7 @@ test('partial receipt print rows match their frozen net and tax allocation', fun
     $company = schemaTwoCompany();
     $source = app(SaveFiscalDocumentDraft::class)->execute($company['entity'], $company['user'], schemaTwoProfile($company));
     app(IssueFiscalDocument::class)->execute($source, $company['user'], $company['series']->public_id, $source->revision);
-    FiscalDocument::query()->whereKey($source->id)->update(['status' => FiscalDocumentStatus::Valid, 'agt_document_status' => 'V']);
+    recordAuthoritativeAgtAcceptance($source);
     $source->refresh();
     $company['series']->update(['document_type' => FiscalDocumentType::Receipt, 'series_code' => 'RG26TEST']);
 
@@ -334,7 +350,7 @@ test('a legacy draft must be resaved before issue and resaving upgrades only tha
 
     expect(fn () => app(IssueFiscalDocument::class)->execute($draft, $company['user'], $company['series']->public_id, $draft->revision))
         ->toThrow(FiscalFinalizationBlocked::class);
-    $updated = app(SaveFiscalDocumentDraft::class)->execute($company['entity'], $company['user'], $profile, $draft);
+    $updated = app(SaveFiscalDocumentDraft::class)->execute($company['entity'], $company['user'], $profile, $draft, $draft->revision);
     expect($updated->payload_schema_version)->toBe('2.0');
 });
 
@@ -382,3 +398,87 @@ test('a settlement with another currency or customer is refused at the action bo
     'currency mismatch' => [['currency_code' => 'USD']],
     'customer mismatch' => [['customer_tax_identification_number' => '5411111112']],
 ]);
+
+test('current AGT submission overrides frozen fiscal state for receipt eligibility and queries', function (AgtSubmissionStatus $status) {
+    $company = schemaTwoCompany();
+    $source = app(SaveFiscalDocumentDraft::class)->execute($company['entity'], $company['user'], schemaTwoProfile($company));
+    $submission = app(IssueFiscalDocument::class)->execute($source, $company['user'], $company['series']->public_id, $source->revision);
+    $source->refresh();
+    $frozen = $source->getAttributes();
+    $valid = $status === AgtSubmissionStatus::Valid;
+    if ($valid) {
+        $submission->update(['status' => AgtSubmissionStatus::Received, 'request_id' => '123456789012345', 'next_attempt_at' => null]);
+        Http::fake(['*' => Http::response([
+            'resultCode' => '0', 'requestErrorList' => [],
+            'documentStatusList' => [['documentNo' => $source->document_no, 'documentStatus' => 'V', 'errorList' => []]],
+        ])]);
+        (new PollAgtSubmissionStatus($submission->id))->handle(app(AgtGateway::class));
+    } else {
+        $submission->update(['status' => $status]);
+    }
+
+    expect(CurrentAgtState::validated($source))->toBe($valid)
+        ->and(CurrentAgtState::matching(FiscalDocument::query()->whereKey($source->id), ['valid'])->exists())->toBe($valid);
+    $snapshot = app(DocumentSnapshot::class)->describe($source, CarbonImmutable::now());
+    expect($snapshot['status'])->toBe($valid ? 'valid' : ($status === AgtSubmissionStatus::Pending ? 'pending' : 'unknown'));
+
+    $receiptSeries = $company['series']->replicate();
+    $receiptSeries->fill(['series_code' => 'RG26TEST', 'document_type' => FiscalDocumentType::Receipt]);
+    $receiptSeries->save();
+    $receipt = app(SaveFiscalDocumentDraft::class)->execute($company['entity'], $company['user'], schemaTwoReceiptProfile($company, $source, $source->gross_total_minor));
+
+    if ($valid) {
+        app(IssueFiscalDocument::class)->execute($receipt, $company['user'], $receiptSeries->public_id, $receipt->revision);
+        expect($receipt->fresh()->status)->toBe(FiscalDocumentStatus::Issued);
+    } else {
+        expect(fn () => app(IssueFiscalDocument::class)->execute($receipt, $company['user'], $receiptSeries->public_id, $receipt->revision))
+            ->toThrow(FiscalFinalizationBlocked::class);
+        expect($receipt->fresh()->status)->toBe(FiscalDocumentStatus::Draft);
+    }
+
+    expect($source->fresh()->getAttributes())->toBe($frozen);
+})->with(AgtSubmissionStatus::cases());
+
+test('receipt and correction issuance reject source documents from a different environment', function (string $type) {
+    $company = schemaTwoCompany();
+    $source = schemaTwoSource($company, environment: 'production');
+    $company['series']->update(['document_type' => FiscalDocumentType::from($type), 'series_code' => $type.'26ENV']);
+    $profile = $type === 'RG'
+        ? schemaTwoReceiptProfile($company, $source, 11400)
+        : schemaTwoProfile($company, ['document_type' => $type, 'references_document_public_id' => $source->public_id, 'adjustment_reason' => 'Correction']);
+    $draft = app(SaveFiscalDocumentDraft::class)->execute($company['entity'], $company['user'], $profile);
+    expect(fn () => app(IssueFiscalDocument::class)->execute($draft, $company['user'], $company['series']->public_id, $draft->revision))
+        ->toThrow(FiscalFinalizationBlocked::class);
+    expect($draft->fresh()->document_no)->toBeNull()->and($company['series']->fresh()->next_number)->toBe(1)
+        ->and(AgtSubmission::count())->toBe(1);
+    Http::assertNothingSent();
+})->with(['RG', 'NC']);
+
+test('deprecated v1 V cannot authorize a receipt from the same unsupported legacy source', function () {
+    $company = schemaTwoCompany();
+    $source = app(SaveFiscalDocumentDraft::class)->execute($company['entity'], $company['user'], schemaTwoProfile($company));
+    $submission = app(IssueFiscalDocument::class)->execute($source, $company['user'], $company['series']->public_id, $source->revision);
+    $source->refresh();
+    $submission->update(['status' => AgtSubmissionStatus::Valid, 'next_attempt_at' => null]);
+    $company['user']->forceFill(['two_factor_secret' => 'test', 'two_factor_confirmed_at' => now()])->save();
+    $this->actingAs($company['user'])->getJson(route('api.v1.documents.show', [
+        'workspacePublicId' => $company['entity']->workspace->public_id, 'entityPublicId' => $company['entity']->public_id,
+        'environment' => $source->environment, 'documentPublicId' => $source->public_id,
+    ]))->assertSuccessful()->assertJsonPath('data.agt_status', 'valid')->assertJsonPath('data.agt_status_source', 'submission');
+    $series = $company['series']->replicate();
+    $series->fill(['series_code' => 'RGLEGACY', 'document_type' => FiscalDocumentType::Receipt]);
+    $series->save();
+    $receipt = app(SaveFiscalDocumentDraft::class)->execute($company['entity'], $company['user'], schemaTwoReceiptProfile($company, $source, $source->gross_total_minor));
+    $number = $series->next_number;
+    expect(fn () => app(IssueFiscalDocument::class)->execute($receipt, $company['user'], $series->public_id, $receipt->revision))->toThrow(FiscalFinalizationBlocked::class);
+    expect($series->fresh()->next_number)->toBe($number)
+        ->and($receipt->fresh()->document_no)->toBeNull()
+        ->and($receipt->fresh()->document_jws)->toBeNull()
+        ->and(AgtSubmission::query()->where('fiscal_document_id', $receipt->id)->count())->toBe(0);
+    $denial = Activity::query()->where('event', 'receipt-evidence-denied')->sole();
+    expect($denial->subject_id)->toBe($receipt->id)
+        ->and($denial->causer_id)->toBe($company['user']->id)
+        ->and($denial->properties['reason'])->toBe('source_agt_evidence_unproven')
+        ->and($denial->properties['environment'])->toBe($source->environment);
+    Http::assertNothingSent();
+});

@@ -2,7 +2,6 @@
 
 namespace App\Fiscal\Documents;
 
-use App\AgtSubmissionStatus;
 use App\Analytics\DocumentSnapshot;
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
@@ -11,7 +10,6 @@ use App\Models\FiscalDocument;
 use App\Models\LegalEntity;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Collection;
 
 final class FiscalDocumentRegister
 {
@@ -96,7 +94,7 @@ final class FiscalDocumentRegister
             ->with([
                 'customer:id,public_id,email',
                 'establishment:id,public_id,name,code',
-                'submissions:id,public_id,fiscal_document_id,status,request_id,safe_message,updated_at',
+                'submissions:id,public_id,fiscal_document_id,status,request_id,safe_message,updated_at,qualified_projection,reducer_version',
             ]);
 
         $this->applyFilters($query, $legalEntity, $filters);
@@ -231,69 +229,12 @@ final class FiscalDocumentRegister
             return;
         }
 
-        [$submissionStatuses, $legacyStatuses] = match ($status) {
-            'active' => [
-                [
-                    AgtSubmissionStatus::Pending,
-                    AgtSubmissionStatus::Sending,
-                    AgtSubmissionStatus::Retrying,
-                    AgtSubmissionStatus::Received,
-                    AgtSubmissionStatus::Processing,
-                ],
-                [
-                    FiscalDocumentStatus::Issued,
-                    FiscalDocumentStatus::Received,
-                    FiscalDocumentStatus::Processing,
-                ],
-            ],
-            'valid' => [
-                [AgtSubmissionStatus::Valid],
-                [FiscalDocumentStatus::Valid],
-            ],
-            'attention' => [
-                [
-                    AgtSubmissionStatus::Invalid,
-                    AgtSubmissionStatus::Rejected,
-                    AgtSubmissionStatus::Cancelled,
-                    AgtSubmissionStatus::Failed,
-                ],
-                [FiscalDocumentStatus::Invalid, FiscalDocumentStatus::Contingency],
-            ],
-        };
-
-        $query->where(function (Builder $workflow) use (
-            $legalEntity,
-            $submissionStatuses,
-            $legacyStatuses,
-        ): void {
-            $workflow
-                ->whereIn(
-                    'id',
-                    $this->submissionDocumentIds($legalEntity, $submissionStatuses),
-                )
-                ->orWhere(function (Builder $legacy) use ($legalEntity, $legacyStatuses): void {
-                    $legacy
-                        ->whereNotIn('id', $this->submissionDocumentIds($legalEntity))
-                        ->whereIn('status', $legacyStatuses);
-                });
+        CurrentAgtState::matching($query, match ($status) {
+            'active' => CurrentAgtState::ACTIVE,
+            'valid' => ['valid'],
+            'attention' => CurrentAgtState::ATTENTION,
+            default => [],
         });
-    }
-
-    /**
-     * @param  list<AgtSubmissionStatus>  $statuses
-     * @return Builder<AgtSubmission>
-     */
-    private function submissionDocumentIds(
-        LegalEntity $legalEntity,
-        array $statuses = [],
-    ): Builder {
-        return AgtSubmission::query()
-            ->where('legal_entity_id', $legalEntity->id)
-            ->when(
-                $statuses !== [],
-                fn (Builder $query): Builder => $query->whereIn('status', $statuses),
-            )
-            ->select('fiscal_document_id');
     }
 
     /** @return list<string> */
@@ -316,62 +257,23 @@ final class FiscalDocumentRegister
     /** @return array{total: int, draft: int, active: int, valid: int, attention: int} */
     private function summary(LegalEntity $legalEntity): array
     {
-        $submissionCounts = $legalEntity->agtSubmissions()
-            ->selectRaw('status, COUNT(*) as aggregate')
-            ->groupBy('status')
-            ->pluck('aggregate', 'status');
-        $legacyCounts = $legalEntity->fiscalDocuments()
-            ->whereNotIn('id', $this->submissionDocumentIds($legalEntity))
-            ->selectRaw('status, COUNT(*) as aggregate')
-            ->groupBy('status')
-            ->pluck('aggregate', 'status');
+        $query = FiscalDocument::query()->where('workspace_id', $legalEntity->workspace_id)->where('legal_entity_id', $legalEntity->id);
 
         return [
-            'total' => $legalEntity->fiscalDocuments()->count(),
-            'draft' => (int) ($legacyCounts[FiscalDocumentStatus::Draft->value] ?? 0),
-            'active' => $this->sumCounts($submissionCounts, [
-                AgtSubmissionStatus::Pending,
-                AgtSubmissionStatus::Sending,
-                AgtSubmissionStatus::Retrying,
-                AgtSubmissionStatus::Received,
-                AgtSubmissionStatus::Processing,
-            ]) + $this->sumCounts($legacyCounts, [
-                FiscalDocumentStatus::Issued,
-                FiscalDocumentStatus::Received,
-                FiscalDocumentStatus::Processing,
-            ]),
-            'valid' => $this->sumCounts($submissionCounts, [AgtSubmissionStatus::Valid])
-                + $this->sumCounts($legacyCounts, [FiscalDocumentStatus::Valid]),
-            'attention' => $this->sumCounts($submissionCounts, [
-                AgtSubmissionStatus::Invalid,
-                AgtSubmissionStatus::Rejected,
-                AgtSubmissionStatus::Cancelled,
-                AgtSubmissionStatus::Failed,
-            ]) + $this->sumCounts($legacyCounts, [
-                FiscalDocumentStatus::Invalid,
-                FiscalDocumentStatus::Contingency,
-            ]),
+            'total' => $query->clone()->count(),
+            'draft' => CurrentAgtState::matching($query->clone(), ['draft'])->count(),
+            'active' => CurrentAgtState::matching($query->clone(), CurrentAgtState::ACTIVE)->count(),
+            'valid' => CurrentAgtState::matching($query->clone(), ['valid'])->count(),
+            'attention' => CurrentAgtState::matching($query->clone(), CurrentAgtState::ATTENTION)->count(),
         ];
-    }
-
-    /**
-     * @param  Collection<string, int|string>  $counts
-     * @param  list<AgtSubmissionStatus|FiscalDocumentStatus>  $statuses
-     */
-    private function sumCounts(Collection $counts, array $statuses): int
-    {
-        return array_sum(array_map(
-            fn (AgtSubmissionStatus|FiscalDocumentStatus $status): int => (int) ($counts[$status->value] ?? 0),
-            $statuses,
-        ));
     }
 
     /** @return array<string, mixed> */
     private function present(FiscalDocument $document, bool $canPrepareDocuments): array
     {
         $submission = $document->submissions->first();
-        $workflowStatus = $submission?->status->value ?? $document->status->value;
-        $workflowLabel = $submission?->status->label() ?? $document->status->label();
+        $workflowStatus = CurrentAgtState::status($document)->value;
+        $workflowLabel = AgtStatusPresentation::label($document, CarbonImmutable::now());
         $deliveryEmail = $document->customer?->email;
 
         return [
@@ -396,11 +298,12 @@ final class FiscalDocumentRegister
             'status_label' => $document->status->label(),
             'workflow_status' => $workflowStatus,
             'workflow_label' => $workflowLabel,
-            'workflow_message' => $submission?->safe_message,
+            'workflow_message' => AgtStatusPresentation::describe($document, CarbonImmutable::now())['explanation']['message'],
+            'agt_operational' => AgtStatusPresentation::describe($document, CarbonImmutable::now()),
             'submission' => $submission instanceof AgtSubmission ? [
                 'public_id' => $submission->public_id,
-                'status' => $submission->status->value,
-                'status_label' => $submission->status->label(),
+                'status' => CurrentAgtState::status($document)->value,
+                'status_label' => AgtStatusPresentation::label($document, CarbonImmutable::now()),
                 'request_id' => $submission->request_id,
             ] : null,
             'issued_at' => $document->issued_at?->toIso8601String(),

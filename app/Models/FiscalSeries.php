@@ -5,6 +5,7 @@ namespace App\Models;
 use App\FiscalDocumentType;
 use App\FiscalSeriesContingency;
 use App\FiscalSeriesStatus;
+use App\Models\Concerns\HasFiscalEnvironment;
 use Carbon\CarbonImmutable;
 use Database\Factories\FiscalSeriesFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -15,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
+ * @property string $environment
  * @property int $id
  * @property string $public_id
  * @property int $workspace_id
@@ -40,6 +42,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property CarbonImmutable $synchronized_at
  */
 #[Fillable([
+    'environment',
     'workspace_id',
     'legal_entity_id',
     'establishment_id',
@@ -65,7 +68,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class FiscalSeries extends Model
 {
     /** @use HasFactory<FiscalSeriesFactory> */
-    use HasFactory, HasUlids;
+    use HasFactory, HasFiscalEnvironment, HasUlids;
 
     /** @return array<int, string> */
     public function uniqueIds(): array

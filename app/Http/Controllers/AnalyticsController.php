@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\AgtSubmissionStatus;
 use App\Analytics\AnalyticsPeriod;
 use App\Analytics\ReceivablesQuery;
+use App\Fiscal\Documents\CurrentAgtState;
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
 use App\Models\AgtSubmission;
@@ -189,28 +189,13 @@ class AnalyticsController extends Controller
         $submissions = AgtSubmission::query()
             ->where('legal_entity_id', $legalEntity->id)
             ->whereBetween('created_at', [$period->start, $period->end])
-            ->get(['status', 'created_at', 'updated_at']);
+            ->get(['status', 'created_at', 'updated_at', 'completed_at']);
 
-        $settled = $submissions->filter(
-            fn (AgtSubmission $submission): bool => in_array($submission->status, [
-                AgtSubmissionStatus::Valid,
-                AgtSubmissionStatus::Invalid,
-                AgtSubmissionStatus::Rejected,
-            ], true),
-        );
-
-        $accepted = $submissions
-            ->where('status', AgtSubmissionStatus::Valid)
-            ->count();
-
-        $failed = $submissions->filter(
-            fn (AgtSubmission $submission): bool => in_array($submission->status, [
-                AgtSubmissionStatus::Invalid,
-                AgtSubmissionStatus::Rejected,
-                AgtSubmissionStatus::Failed,
-            ], true),
-        )->count();
-
+        $documents = FiscalDocument::query()->where('legal_entity_id', $legalEntity->id)->whereHas('submissions',
+            fn ($query) => $query->whereBetween('created_at', [$period->start, $period->end]));
+        $accepted = CurrentAgtState::matching(clone $documents, ['valid'])->count();
+        $failed = CurrentAgtState::matching(clone $documents, CurrentAgtState::ATTENTION)->count();
+        $settled = $submissions->filter(fn (AgtSubmission $submission): bool => $submission->completed_at !== null);
         $pending = $submissions->count() - $accepted - $failed;
 
         // Median rather than mean: one submission stuck behind an AGT outage

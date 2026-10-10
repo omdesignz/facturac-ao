@@ -112,6 +112,7 @@ test('the fiscal register unifies drafts and AGT workflow outcomes', function ()
         'safe_message' => 'Documento validado pela AGT.',
         'completed_at' => now(),
     ]);
+    recordAuthoritativeAgtAcceptance($issued);
 
     $this->actingAs($company['user'])
         ->get(route('documents.index'))
@@ -238,7 +239,8 @@ test('opening a document loads its detail panel with history, without re-running
             ->component('Documents/Index')
             ->where('selected.public_id', $document->public_id)
             ->where('selected.document_no', 'FT 2026SEDE/7')
-            ->where('selected.snapshot.steps.3.state', 'done')
+            ->where('selected.snapshot.steps.3.state', 'error')
+            ->where('selected.snapshot.status', 'unknown')
             ->where('selected.history.0.type', 'validated')
             ->where('selected.history.0.tone', 'done')
             ->where('selected.history.1.label', 'Documento emitido')

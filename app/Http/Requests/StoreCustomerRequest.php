@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Fiscal\CustomerCreateInput;
 use App\Models\Customer;
 use App\Models\PriceList;
 use App\Models\Workspace;
@@ -19,16 +20,13 @@ class StoreCustomerRequest extends FormRequest
         $customer = $this->route('customer');
 
         return [
-            'name' => ['required', 'string', 'max:255'],
+            ...CustomerCreateInput::coreRules(),
             'tax_identification_number' => [
-                'required',
-                'string',
-                'regex:/\A[A-Z0-9]{9,32}\z/',
+                ...CustomerCreateInput::coreRules()['tax_identification_number'],
                 Rule::unique('customers', 'tax_identification_number')
                     ->where('legal_entity_id', $this->legalEntityId())
                     ->ignore($customer instanceof Customer ? $customer->id : null),
             ],
-            'country_code' => ['required', 'string', 'regex:/\A[A-Z]{2}\z/'],
             'address_line' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:40'],

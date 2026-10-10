@@ -1,12 +1,17 @@
 <?php
 
+use App\Actions\ApproveRecurringInvoice;
+use App\Actions\ConvertRecurringProfile;
 use App\Actions\IssueFiscalDocument;
 use App\Actions\SaveFiscalDocumentDraft;
+use App\Actions\SyncAgtSeries;
 use App\AgtConnectionCheckStatus;
 use App\AgtConnectionStatus;
+use App\AgtEnvironment;
 use App\AgtOperation;
 use App\AgtSubmissionStatus;
 use App\Fiscal\Agt\Contracts\AgtGateway;
+use App\Fiscal\Documents\CurrentAgtState;
 use App\Fiscal\Documents\FiscalDocumentNumber;
 use App\FiscalDocumentEventType;
 use App\FiscalDocumentStatus;
@@ -18,19 +23,26 @@ use App\Jobs\SubmitAgtDocument;
 use App\Models\AgtConnection;
 use App\Models\AgtConnectionCheck;
 use App\Models\AgtSubmission;
+use App\Models\Customer;
 use App\Models\Establishment;
 use App\Models\FiscalDocument;
 use App\Models\FiscalSeries;
 use App\Models\LegalEntity;
+use App\Models\RecurringInvoice;
 use App\Models\User;
+use App\Models\WorkspaceMembership;
+use App\WorkspaceRole;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Fortify;
+use Spatie\Activitylog\Models\Activity;
 
 /**
  * @return array{fingerprint: string}
@@ -223,6 +235,59 @@ beforeEach(function () {
 afterEach(function () {
     File::deleteDirectory((string) phaseFourState()['key_directory']);
 });
+
+test('recurring issuance rechecks current authority without using browser workspace selection', function (string $condition, bool $allowed) {
+    $company = phaseFourState();
+    Queue::fake();
+    Notification::fake();
+    $issuer = $company['user'];
+    $membership = WorkspaceMembership::query()->where('user_id', $issuer->id)->sole();
+
+    $customer = Customer::factory()->create([
+        'workspace_id' => $company['legal_entity']->workspace_id,
+        'legal_entity_id' => $company['legal_entity']->id,
+    ]);
+    $profile = RecurringInvoice::factory()->autoIssuing()->create([
+        'workspace_id' => $company['legal_entity']->workspace_id,
+        'legal_entity_id' => $company['legal_entity']->id,
+        'establishment_id' => $company['establishment']->id,
+        'customer_id' => $customer->id,
+        'created_by_user_id' => $issuer->id,
+    ]);
+
+    app(ApproveRecurringInvoice::class)->execute($profile, $issuer, AgtEnvironment::Homologation, CarbonImmutable::now()->addMonth());
+    if ($condition === 'inactive') {
+        $membership->update(['is_active' => false]);
+    } elseif ($condition === 'viewer') {
+        $membership->update(['role' => WorkspaceRole::Viewer]);
+    } elseif ($condition === 'no-mfa') {
+        $issuer->forceFill(['two_factor_secret' => null, 'two_factor_confirmed_at' => null])->save();
+    } elseif ($condition === 'unverified') {
+        $issuer->forceFill(['email_verified_at' => null])->save();
+    } elseif ($condition === 'other-browser-workspace') {
+        $other = User::factory()->withWorkspace()->create();
+        $issuer->update(['current_workspace_id' => $other->current_workspace_id]);
+    }
+
+    $document = app(ConvertRecurringProfile::class)->execute($profile, now('Africa/Luanda'));
+
+    expect($document->status)->toBe($allowed ? FiscalDocumentStatus::Issued : FiscalDocumentStatus::Draft)
+        ->and($company['series']->fresh()->next_number)->toBe($allowed ? 101 : 100)
+        ->and($document->submissions()->count())->toBe($allowed ? 1 : 0);
+
+    if (! $allowed) {
+        Queue::assertNothingPushed();
+        expect(Activity::query()
+            ->where('event', 'automatic-issuance-refused')->count())->toBe(1);
+    }
+})->with([
+    'active authority' => ['active', true],
+    'revoked membership' => ['inactive', false],
+    'downgraded role' => ['viewer', false],
+    'removed MFA' => ['no-mfa', false],
+    'unverified account' => ['unverified', false],
+    'browser switched elsewhere' => ['other-browser-workspace', true],
+]);
 
 test('issuing is one atomic irreversible transaction with exact signed bytes and one sequence', function () {
     $company = phaseFourState();
@@ -575,8 +640,12 @@ test('the durable outbox reuses frozen bytes and records receipt validation and 
         ]),
     ]);
 
+    $submission->update(['next_attempt_at' => null]);
     (new PollAgtSubmissionStatus($submission->id))->handle(app(AgtGateway::class));
     $submission = $submission->fresh();
+
+    expect(CurrentAgtState::validated($company['draft']->fresh()))->toBeTrue()
+        ->and($company['draft']->fresh()->status)->toBe(FiscalDocumentStatus::Issued);
 
     expect($submission->status)->toBe(AgtSubmissionStatus::Valid)
         ->and($submission->attempt_count)->toBe(2)
@@ -652,3 +721,27 @@ test('every document number starts with its own type code, not the invoice\'s', 
     'credit note' => [FiscalDocumentType::CreditNote, 'NC 2026SEDE/7'],
     'debit note' => [FiscalDocumentType::DebitNote, 'ND 2026SEDE/7'],
 ]);
+
+test('series synchronization isolates identical series codes in different environments', function () {
+    $company = phaseFourState();
+    $production = $company['connection']->replicate();
+    $production->environment = AgtEnvironment::Production;
+    $production->save();
+    $productionSeries = $company['series']->replicate();
+    $productionSeries->agt_connection_id = $production->id;
+    $productionSeries->environment = 'production';
+    $productionSeries->save();
+    Http::preventStrayRequests();
+    Http::fake(['*' => Http::response([
+        'resultCode' => '0', 'errorList' => [], 'seriesResultCount' => 1,
+        'seriesInfo' => [['seriesCode' => 'FT26HML', 'seriesYear' => (int) now()->format('Y'), 'documentType' => 'FT',
+            'seriesStatus' => 'U', 'seriesCreationDate' => now()->toDateString(), 'firstDocumentApproved' => '1',
+            'lastDocumentApproved' => '750', 'firstDocumentCreated' => '1', 'lastDocumentCreated' => '75',
+            'invoicingMethod' => 'FESF', 'seriesContingencyIndicator' => 'N']],
+    ])]);
+    $before = $productionSeries->fresh()->getAttributes();
+    $result = app(SyncAgtSeries::class)->execute($company['connection'], $company['legal_entity'], $company['establishment'], $company['user']);
+    expect($result['successful'])->toBeTrue();
+    expect($productionSeries->fresh()->getAttributes())->toBe($before);
+    expect($company['series']->fresh()->agt_last_document_created)->toBe('75');
+});

@@ -1,11 +1,12 @@
 <?php
 
+use App\Fiscal\IntegrationLogRedactor;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
 use Monolog\Processor\PsrLogMessageProcessor;
 
-return [
+$logging = [
 
     /*
     |--------------------------------------------------------------------------
@@ -138,3 +139,10 @@ return [
     ],
 
 ];
+
+foreach ($logging['channels'] as &$channel) {
+    $channel['tap'][] = IntegrationLogRedactor::class;
+}
+unset($channel);
+
+return $logging;

@@ -8,8 +8,7 @@ export type StatusTone =
     | 'contingency';
 
 /**
- * The pill tone for a document's workflow state: its latest AGT submission
- * when there is one, otherwise the document's own status.
+ * Visual tone for the qualified operational status supplied by the server.
  */
 export function statusTone(value: string): StatusTone {
     if (value === 'draft') {
@@ -20,7 +19,11 @@ export function statusTone(value: string): StatusTone {
         return 'success';
     }
 
-    if (['invalid', 'rejected', 'cancelled', 'failed'].includes(value)) {
+    if (
+        ['invalid', 'rejected', 'cancelled', 'failed', 'unknown'].includes(
+            value,
+        )
+    ) {
         return 'danger';
     }
 

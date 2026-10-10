@@ -55,7 +55,7 @@ test('a document is found by its number, with its AGT state', function () {
         ->assertJsonCount(1, 'documents')
         ->assertJsonPath('documents.0.public_id', $document->public_id)
         ->assertJsonPath('documents.0.document_no', 'FT LDA/417')
-        ->assertJsonPath('documents.0.workflow_status', $document->status->value);
+        ->assertJsonPath('documents.0.workflow_status', 'unknown');
 });
 
 test('customers are found by name or NIF, and documents by the customer they name', function () {

@@ -6,6 +6,7 @@ use App\Models\User;
 use App\NotificationTopic;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Reads what has already been sent to a user.
@@ -28,6 +29,11 @@ class NotificationFeed
             ->when(
                 $workspaceId !== null,
                 fn (Builder $query) => $query->where(function (Builder $nested) use ($workspaceId): void {
+                    if (DB::getDriverName() === 'pgsql') {
+                        $nested->whereRaw("(CAST(data AS jsonb)->>'workspace_id' IS NULL OR CAST(data AS jsonb)->>'workspace_id' = CAST(? AS text))", [$workspaceId]);
+
+                        return;
+                    }
                     $nested->whereNull('data->workspace_id')
                         ->orWhere('data->workspace_id', $workspaceId);
                 }),

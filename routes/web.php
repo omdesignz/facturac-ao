@@ -8,6 +8,7 @@ use App\Http\Controllers\AgtSeriesSyncController;
 use App\Http\Controllers\AgtSubmissionController;
 use App\Http\Controllers\AgtSubmissionRefreshController;
 use App\Http\Controllers\AnalyticsController;
+use App\Http\Controllers\AssistantController;
 use App\Http\Controllers\BillingCheckoutController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\BillingReferenceRefreshController;
@@ -383,3 +384,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             ->name('imports.destroy');
     });
 });
+
+Route::middleware(['auth', 'verified'])
+    ->prefix('assistant/workspaces/{workspacePublicId}/legal-entities/{entityPublicId}/environments/{environment}')
+    ->name('assistant.')
+    ->group(function (): void {
+        Route::get('/', [AssistantController::class, 'show'])->name('show');
+        Route::post('interactions', [AssistantController::class, 'store'])->name('store');
+        Route::post('acknowledgement', [AssistantController::class, 'acknowledgement'])->name('acknowledgement');
+    });

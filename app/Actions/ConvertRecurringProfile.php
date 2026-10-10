@@ -2,19 +2,26 @@
 
 namespace App\Actions;
 
+use App\AgtEnvironment;
 use App\Fiscal\Agt\Support\CanonicalJson;
 use App\Fiscal\Agt\Support\CanonicalNumber;
 use App\Fiscal\Calculation\CalculatedFiscalLine;
 use App\Fiscal\Calculation\FiscalCalculator;
+use App\Fiscal\ExecutionContext;
 use App\Fiscal\SupportedTaxTreatment;
 use App\FiscalDocumentStatus;
 use App\Models\FiscalDocument;
 use App\Models\FiscalSeries;
 use App\Models\RecurringInvoice;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use DomainException;
+use Illuminate\Support\Facades\Context;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Throwable;
 
 /**
@@ -36,6 +43,36 @@ class ConvertRecurringProfile
     ) {}
 
     public function execute(RecurringInvoice $profile, CarbonImmutable $runOn): FiscalDocument
+    {
+        return Context::scope(fn (): FiscalDocument => DB::transaction(function () use ($profile, $runOn): FiscalDocument {
+            $profile = RecurringInvoice::query()->lockForUpdate()->findOrFail($profile->id);
+            $existing = DB::table('recurring_occurrences')->where('recurring_invoice_id', $profile->id)
+                ->whereDate('scheduled_on', $runOn->toDateString())->first();
+            if ($existing !== null) {
+                return FiscalDocument::query()->where('workspace_id', $profile->workspace_id)
+                    ->where('legal_entity_id', $profile->legal_entity_id)->findOrFail((int) $existing->fiscal_document_id);
+            }
+            abort_unless($profile->is_active && $runOn->toDateString() >= $profile->starts_on->toDateString()
+                && ($profile->ends_on === null || $runOn->toDateString() <= $profile->ends_on->toDateString()), 409);
+            ApproveRecurringInvoice::fingerprint($profile);
+            $document = $this->convert($profile, $runOn);
+            DB::table('recurring_occurrences')->insert([
+                'recurring_invoice_id' => $profile->id, 'scheduled_on' => $runOn->toDateString(),
+                'fiscal_document_id' => $document->id,
+                'recurring_approval_id' => $document->status === FiscalDocumentStatus::Draft ? null : DB::table('recurring_approvals')->where('recurring_invoice_id', $profile->id)->whereNull('revoked_at')->latest('id')->value('id'),
+                'configuration_revision' => $profile->configuration_revision,
+                'completed_at' => now(),
+            ]);
+
+            return $document;
+        }, 5), [
+            'request_id' => Context::get('request_id') ?? (string) Str::uuid(),
+            'automation_id' => $profile->public_id,
+            'idempotency_reference' => $profile->public_id.':'.$runOn->toDateString(),
+        ]);
+    }
+
+    private function convert(RecurringInvoice $profile, CarbonImmutable $runOn): FiscalDocument
     {
         $customer = $profile->customer;
         $calculation = $this->calculator->calculate($this->lineProfiles($profile), $profile->document_type);
@@ -174,14 +211,45 @@ class ConvertRecurringProfile
      */
     private function issueOrLeaveDraft(FiscalDocument $document, RecurringInvoice $profile): void
     {
-        $issuer = $profile->created_by_user_id === null ? null : $profile->createdBy()->first();
+        $approval = DB::table('recurring_approvals')->where('recurring_invoice_id', $profile->id)
+            ->latest('id')->first();
+        $issuer = $approval === null ? null : User::query()->find((int) $approval->approved_by_user_id);
+        $context = null;
+        if ($approval !== null && $issuer !== null && $approval->revoked_at === null
+            && CarbonImmutable::parse($approval->expires_at)->isFuture()
+            && (int) $approval->configuration_revision === $profile->configuration_revision
+            && hash_equals($approval->configuration_sha256, ApproveRecurringInvoice::fingerprint($profile))) {
+            try {
+                $context = ExecutionContext::resolve($issuer, $profile->legalEntity,
+                    AgtEnvironment::from($approval->environment), $approval->id, $profile->public_id);
+            } catch (HttpException $exception) {
+                $context = null;
+            }
+        }
 
-        if ($issuer === null) {
+        if ($context === null || $issuer === null || Gate::forUser($issuer)->denies('issueAutomatically', $document)) {
+            activity('recurring-invoice')
+                ->causedBy($issuer)
+                ->performedOn($profile)
+                ->event('automatic-issuance-refused')
+                ->withProperties([
+                    'workspace_id' => $profile->workspace_id,
+                    'legal_entity_id' => $profile->legal_entity_id,
+                    'document_public_id' => $document->public_id,
+                    'reason' => 'current_issuance_authority_missing',
+                    'actor_kind' => 'scheduled', 'automation_id' => $profile->public_id,
+                    'approval_id' => $approval->id ?? null,
+                    'authority_user_id' => $approval->approved_by_user_id ?? null,
+                ])
+                ->log('Avença mantida em rascunho por falta de autorização actual para emitir.');
+
             return;
         }
 
         $series = FiscalSeries::query()
             ->where('legal_entity_id', $profile->legal_entity_id)
+            ->where('workspace_id', $profile->workspace_id)
+            ->whereHas('agtConnection', fn ($query) => $query->where('environment', $context->environment))
             ->where('establishment_id', $profile->establishment_id)
             ->where('document_type', $profile->document_type)
             ->where('series_year', (int) $document->document_date->format('Y'))
@@ -198,6 +266,8 @@ class ConvertRecurringProfile
 
         try {
             $this->issue->execute($document, $issuer, $series->public_id, $document->revision);
+            activity('recurring-invoice')->performedOn($profile)->causedBy($issuer)->event('approved-occurrence-issued')
+                ->withProperties([...$context->audit(), 'document_public_id' => $document->public_id])->log('Approved occurrence issued');
         } catch (Throwable $exception) {
             Log::warning('Recurring profile could not issue; draft left for review.', [
                 'profile' => $profile->public_id,

@@ -4,6 +4,7 @@ namespace App\Actions;
 
 use App\Exceptions\BillingActionRefused;
 use App\Models\FiscalDocument;
+use App\Models\Integration;
 use App\Models\User;
 use App\Models\Workspace;
 use App\WorkspaceRole;
@@ -81,7 +82,7 @@ class DeleteUserAccount
                 continue;
             }
 
-            if ($this->hasOtherMembers($workspace, $user)) {
+            if ($this->hasOtherMembers($workspace, $user) || $this->hasIntegrationEvidence($workspace) || $this->hasAiEvidence($workspace)) {
                 // Someone else still works here; handing it over is a decision
                 // for a person, not something to infer.
                 $blocking[] = $workspace->name;
@@ -158,6 +159,16 @@ class DeleteUserAccount
             || $user->impersonationsPerformed()->exists();
     }
 
+    private function hasAiEvidence(Workspace $workspace): bool
+    {
+        return DB::table('tenant_ai_settings')->where('workspace_id', $workspace->id)->exists();
+    }
+
+    private function hasIntegrationEvidence(Workspace $workspace): bool
+    {
+        return Integration::query()->where('workspace_id', $workspace->id)->exists();
+    }
+
     /**
      * When a company's records stop being legally required, or null when
      * nothing it holds is still inside the window.
@@ -210,6 +221,8 @@ class DeleteUserAccount
             // documents outlive the account and still name their issuer.
             if (! $this->hasOtherOwner($workspace, $user)
                 && ! $this->hasOtherMembers($workspace, $user)
+                && ! $this->hasIntegrationEvidence($workspace)
+                && ! $this->hasAiEvidence($workspace)
                 && $this->retentionWindow($workspace) === null) {
                 $ids[] = $workspace->id;
             }
@@ -240,6 +253,12 @@ class DeleteUserAccount
         }
 
         DB::transaction(function () use ($user, $preview): void {
+            DB::table('ai_gateway_controls')->where('kind', 'global')->orderBy('id')->lockForUpdate()->get();
+            foreach ($this->ownedWorkspaces($user) as $workspace) {
+                if (in_array($workspace->name, $preview['workspaces_deleted'], true) && $this->hasAiEvidence($workspace)) {
+                    throw BillingActionRefused::because('Existem registos de configuração de IA que devem ser conservados.');
+                }
+            }
             foreach ($this->ownedWorkspaces($user) as $workspace) {
                 if (in_array($workspace->name, $preview['workspaces_deleted'], true)) {
                     $this->empty($workspace);

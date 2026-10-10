@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Fiscal\CustomerCommands;
+use App\Fiscal\CustomerCreateInput;
+use App\Fiscal\HumanCustomerCommandContext;
 use App\Http\Requests\StoreCustomerRequest;
 use App\Models\Customer;
 use App\Models\LegalEntity;
@@ -10,6 +13,7 @@ use App\Models\Workspace;
 use App\WithholdingType;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -72,26 +76,14 @@ class CustomerController extends Controller
         ]);
     }
 
-    public function store(StoreCustomerRequest $request): RedirectResponse
+    public function store(StoreCustomerRequest $request, CustomerCommands $commands): RedirectResponse
     {
         Gate::authorize('create', Customer::class);
         $legalEntity = $this->legalEntity($request);
         abort_unless($legalEntity instanceof LegalEntity, 404);
 
-        $attributes = $this->attributes($request);
-
-        // Someone who does not pick a tabela joins the house one, which is the
-        // point of marking a list default — otherwise every new customer would
-        // silently start at catalogue price.
-        $attributes['price_list_id'] ??= PriceList::query()
-            ->where('legal_entity_id', $legalEntity->id)
-            ->where('is_default', true)
-            ->value('id');
-
-        $legalEntity->customers()->create([
-            ...$attributes,
-            'workspace_id' => $legalEntity->workspace_id,
-        ]);
+        $context = HumanCustomerCommandContext::resolve($request->user(), $legalEntity);
+        $commands->create($context, CustomerCreateInput::human($this->attributes($request)));
 
         return back()->with('success', 'Cliente guardado.');
     }
@@ -99,7 +91,7 @@ class CustomerController extends Controller
     public function update(StoreCustomerRequest $request, Customer $customer): RedirectResponse
     {
         Gate::authorize('update', $customer);
-        $customer->update($this->attributes($request));
+        DB::transaction(fn () => $customer->update($this->attributes($request)));
 
         return back()->with('success', 'Cliente actualizado.');
     }
@@ -111,7 +103,7 @@ class CustomerController extends Controller
     public function destroy(Request $request, Customer $customer): RedirectResponse
     {
         Gate::authorize('delete', $customer);
-        $customer->update(['is_active' => false]);
+        DB::transaction(fn () => $customer->update(['is_active' => false]));
 
         return back()->with('success', 'Cliente desactivado. Continua visível nas facturas já emitidas.');
     }

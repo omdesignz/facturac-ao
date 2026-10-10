@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AgtSubmission;
+use App\Fiscal\Documents\AgtStatusPresentation;
+use App\Fiscal\Documents\CurrentAgtState;
 use App\Models\Customer;
 use App\Models\FiscalDocument;
 use App\Models\LegalEntity;
 use App\Models\Workspace;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -69,7 +71,7 @@ class GlobalSearchController extends Controller
                     ->orWhere('customer_name', 'like', $pattern)
                     ->orWhere('customer_tax_identification_number', 'like', $pattern);
             })
-            ->with(['submissions' => fn ($query) => $query->latest('id')->select(['id', 'fiscal_document_id', 'status'])])
+            ->with(['submissions' => fn ($query) => $query->latest('id')->select(['id', 'fiscal_document_id', 'status', 'qualified_projection', 'reducer_version'])])
             ->latest('document_date')
             ->latest('id')
             ->limit(self::DOCUMENT_LIMIT)
@@ -85,12 +87,8 @@ class GlobalSearchController extends Controller
                     'customer_name' => $document->customer_name,
                     'gross_total_minor' => $document->gross_total_minor,
                     'currency_code' => $document->currency_code,
-                    'workflow_status' => $submission instanceof AgtSubmission
-                        ? $submission->status->value
-                        : $document->status->value,
-                    'workflow_label' => $submission instanceof AgtSubmission
-                        ? $submission->status->label()
-                        : $document->status->label(),
+                    'workflow_status' => CurrentAgtState::status($document)->value,
+                    'workflow_label' => AgtStatusPresentation::label($document, CarbonImmutable::now()),
                 ];
             })
             ->all());

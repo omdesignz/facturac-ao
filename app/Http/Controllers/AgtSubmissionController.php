@@ -4,12 +4,15 @@ namespace App\Http\Controllers;
 
 use App\AgtSubmissionStatus;
 use App\Fiscal\Agt\Support\CanonicalNumber;
+use App\Fiscal\Documents\AgtStatusPresentation;
+use App\Fiscal\Documents\CurrentAgtState;
 use App\Models\AgtSubmission;
 use App\Models\AgtSubmissionAttempt;
 use App\Models\FiscalDocument;
 use App\Models\FiscalDocumentEvent;
 use App\Models\LegalEntity;
 use App\Models\Workspace;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -46,17 +49,15 @@ class AgtSubmissionController extends Controller
             ]);
         }
 
-        $counts = (clone $query)
-            ->selectRaw('status, COUNT(*) as aggregate')
-            ->groupBy('status')
-            ->pluck('aggregate', 'status');
+        $documents = FiscalDocument::query()->where('workspace_id', $legalEntity->workspace_id)
+            ->where('legal_entity_id', $legalEntity->id)->whereHas('submissions');
+        $summary = [];
+        foreach ([...array_column(AgtSubmissionStatus::cases(), 'value'), 'unknown'] as $status) {
+            $summary[$status] = CurrentAgtState::matching(clone $documents, [$status])->count();
+        }
 
         return Inertia::render('Agt/Submissions/Index', [
-            'summary' => collect(AgtSubmissionStatus::cases())->mapWithKeys(
-                fn (AgtSubmissionStatus $status): array => [
-                    $status->value => (int) ($counts[$status->value] ?? 0),
-                ],
-            )->all(),
+            'summary' => $summary,
             'submissions' => $submissions
                 ->map(fn (AgtSubmission $submission): array => $this->submissionProps($submission))
                 ->values()
@@ -81,8 +82,8 @@ class AgtSubmissionController extends Controller
 
         return [
             'public_id' => $submission->public_id,
-            'status' => $submission->status->value,
-            'status_label' => $submission->status->label(),
+            'status' => CurrentAgtState::status($document)->value,
+            'status_label' => AgtStatusPresentation::label($document, CarbonImmutable::now()),
             'document_no' => $document->document_no,
             'document_type' => $document->document_type->label(),
             'customer_name' => $document->customer_name,
@@ -90,7 +91,8 @@ class AgtSubmissionController extends Controller
             'currency_code' => $document->currency_code,
             'request_id' => $submission->request_id,
             'attempt_count' => $submission->attempts_count,
-            'safe_message' => $submission->safe_message,
+            'safe_message' => AgtStatusPresentation::describe($document, CarbonImmutable::now())['explanation']['message'],
+            'agt_operational' => AgtStatusPresentation::describe($document, CarbonImmutable::now()),
             'created_at' => $submission->created_at?->toIso8601String(),
             'updated_at' => $submission->updated_at?->toIso8601String(),
         ];
@@ -108,8 +110,8 @@ class AgtSubmissionController extends Controller
             'request_body_sha256' => $submission->request_body_sha256,
             'last_response_body_sha256' => $submission->last_response_body_sha256,
             'last_http_status' => $submission->last_http_status,
-            'last_result_code' => $submission->last_result_code,
-            'last_error_codes' => $submission->last_error_codes ?? [],
+            'last_result_code' => null,
+            'last_error_codes' => [],
             'series_code' => $document->fiscalSeries?->series_code,
             'issue_sequence' => $document->issue_sequence,
             'issued_at' => $document->issued_at?->toIso8601String(),
@@ -122,9 +124,9 @@ class AgtSubmissionController extends Controller
                     'operation_label' => $attempt->operation->label(),
                     'attempt_number' => $attempt->attempt_number,
                     'http_status' => $attempt->http_status,
-                    'result_code' => $attempt->result_code,
-                    'error_codes' => $attempt->error_codes ?? [],
-                    'safe_message' => $attempt->safe_message,
+                    'result_code' => null,
+                    'error_codes' => [],
+                    'safe_message' => 'Registo histórico de comunicação; não comprova por si só validação.',
                     'request_body_sha256' => $attempt->request_body_sha256,
                     'response_body_sha256' => $attempt->response_body_sha256,
                     'started_at' => $attempt->started_at->toIso8601String(),
@@ -137,7 +139,7 @@ class AgtSubmissionController extends Controller
                     'type' => $event->event_type->value,
                     'label' => $event->event_type->label(),
                     'agt_document_status' => $event->agt_document_status,
-                    'safe_context' => $event->safe_context ?? [],
+                    'safe_context' => [],
                     'occurred_at' => $event->occurred_at->toIso8601String(),
                 ])
                 ->values()

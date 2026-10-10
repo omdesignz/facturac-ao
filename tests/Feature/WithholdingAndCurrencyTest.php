@@ -164,6 +164,7 @@ test('saving again replaces the withholding rather than adding to it', function 
             ['type' => 'IRT', 'rate_basis_points' => 1_050],
         ]),
         $draft,
+        $draft->revision,
     );
 
     expect($saved->withholdings)->toHaveCount(1)

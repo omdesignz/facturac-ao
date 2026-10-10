@@ -625,7 +625,7 @@ const dueCount = computed(
                         class="mt-0.5 size-4 rounded border-zinc-300 text-brand-700 focus-ring dark:border-white/15 dark:bg-white/5"
                     />
                     <span>
-                        Emitir automaticamente
+                        Autorizar emissão automática por 30 dias
                         <span
                             class="block text-xs text-zinc-500 dark:text-zinc-400"
                         >

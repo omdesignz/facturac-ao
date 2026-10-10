@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\AgtSubmissionStatus;
+use App\Fiscal\Documents\AgtSubmissionExecution;
 use App\Jobs\PollAgtSubmissionStatus;
 use App\Jobs\SubmitAgtDocument;
 use App\Models\AgtSubmission;
@@ -32,7 +33,8 @@ class DispatchDueAgtSubmissionPolls extends Command
             })
             ->orWhere(function ($query): void {
                 $query->where('status', AgtSubmissionStatus::Sending)
-                    ->where('updated_at', '<=', now()->subMinutes(2));
+                    ->whereNotNull('operation_lease_expires_at')
+                    ->where('operation_lease_expires_at', '<=', AgtSubmissionExecution::databaseNow());
             })
             ->oldest('id')
             ->limit($remaining)

@@ -5,16 +5,16 @@ namespace App\Jobs;
 use App\AgtSubmissionAttemptOperation;
 use App\AgtSubmissionStatus;
 use App\Fiscal\Agt\Contracts\AgtGateway;
-use App\Fiscal\Agt\Data\AgtRegistrationResult;
+use App\Fiscal\Documents\AgtSubmissionExecution;
 use App\FiscalDocumentEventType;
 use App\Models\AgtSubmission;
 use App\Models\FiscalDocumentEvent;
-use Carbon\CarbonInterface;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueueAfterCommit;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\Middleware\RateLimited;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Throwable;
 
 class SubmitAgtDocument implements ShouldBeUnique, ShouldQueueAfterCommit
@@ -27,8 +27,11 @@ class SubmitAgtDocument implements ShouldBeUnique, ShouldQueueAfterCommit
 
     public int $uniqueFor = 120;
 
-    public function __construct(public readonly int $submissionId)
+    public readonly string $executionId;
+
+    public function __construct(public readonly int $submissionId, ?string $executionId = null)
     {
+        $this->executionId = $executionId ?? (string) Str::uuid();
         $this->onQueue('agt');
     }
 
@@ -64,18 +67,10 @@ class SubmitAgtDocument implements ShouldBeUnique, ShouldQueueAfterCommit
             return;
         }
 
-        $startedAt = now();
         $result = $gateway->registerInvoice($claim->agtConnection, $claim->request_body);
-        $shouldPoll = DB::transaction(function () use ($claim, $result, $startedAt): ?int {
-            $submission = AgtSubmission::query()->lockForUpdate()->find($claim->id);
-
-            if (! $submission instanceof AgtSubmission || $submission->status->isTerminal()) {
-                return null;
-            }
-
-            $this->recordAttempt($submission, $result, $startedAt);
-
-            if (! hash_equals($submission->request_body_sha256, $result->requestBodySha256)) {
+        $shouldPoll = AgtSubmissionExecution::complete($claim, $result, function (AgtSubmission $submission, array $outcome) use ($result): ?int {
+            if ($outcome['classification'] === 'conflicting' || $outcome['reason'] === 'unknown_response'
+                || ! hash_equals($submission->request_body_sha256, $result->requestBodySha256)) {
                 $this->markFailed(
                     $submission,
                     'Os bytes enviados não correspondem ao registo fiscal congelado.',
@@ -85,7 +80,7 @@ class SubmitAgtDocument implements ShouldBeUnique, ShouldQueueAfterCommit
                 return null;
             }
 
-            if ($result->accepted && $result->requestId !== null) {
+            if ($result->accepted && $result->requestId !== null && ($outcome['delivery_state'] ?? null) === 'acknowledged') {
                 $submission->update([
                     'status' => AgtSubmissionStatus::Received,
                     'request_id' => $result->requestId,
@@ -124,7 +119,7 @@ class SubmitAgtDocument implements ShouldBeUnique, ShouldQueueAfterCommit
                     'next_attempt_at' => now()->addSeconds($delay),
                     'failed_at' => null,
                 ]);
-                $this->release($delay);
+                DB::afterCommit(fn () => $this->release($delay));
 
                 return null;
             }
@@ -157,7 +152,7 @@ class SubmitAgtDocument implements ShouldBeUnique, ShouldQueueAfterCommit
             );
 
             return null;
-        }, 3);
+        });
 
         if ($shouldPoll !== null) {
             PollAgtSubmissionStatus::dispatch($shouldPoll)
@@ -168,74 +163,12 @@ class SubmitAgtDocument implements ShouldBeUnique, ShouldQueueAfterCommit
 
     public function failed(?Throwable $exception): void
     {
-        DB::transaction(function (): void {
-            $submission = AgtSubmission::query()->lockForUpdate()->find($this->submissionId);
-
-            if (! $submission instanceof AgtSubmission || $submission->status->isTerminal()) {
-                return;
-            }
-
-            $this->markFailed(
-                $submission,
-                'A entrega excedeu o limite seguro de tentativas e requer intervenção.',
-                ['QUEUE_ATTEMPTS_EXHAUSTED'],
-            );
-        }, 3);
+        AgtSubmissionExecution::fail($this->submissionId, $this->executionId, $this->job?->attempts() ?? 1);
     }
 
     private function claim(): ?AgtSubmission
     {
-        return DB::transaction(function (): ?AgtSubmission {
-            $submission = AgtSubmission::query()
-                ->with(['agtConnection', 'fiscalDocument'])
-                ->lockForUpdate()
-                ->find($this->submissionId);
-
-            if (! $submission instanceof AgtSubmission) {
-                return null;
-            }
-
-            $isStaleClaim = $submission->status === AgtSubmissionStatus::Sending
-                && $submission->updated_at?->lt(now()->subMinutes(2));
-
-            if (! $submission->status->canSubmit() && ! $isStaleClaim) {
-                return null;
-            }
-
-            $submission->update([
-                'status' => AgtSubmissionStatus::Sending,
-                'safe_message' => 'A transmitir o documento para a AGT.',
-                'attempt_count' => $submission->attempt_count + 1,
-                'next_attempt_at' => now()->addMinutes(2),
-                'submitted_at' => $submission->submitted_at ?? now(),
-            ]);
-
-            return $submission->fresh(['agtConnection', 'fiscalDocument']);
-        }, 3);
-    }
-
-    private function recordAttempt(
-        AgtSubmission $submission,
-        AgtRegistrationResult $result,
-        CarbonInterface $startedAt,
-    ): void {
-        $submission->attempts()->create([
-            'workspace_id' => $submission->workspace_id,
-            'legal_entity_id' => $submission->legal_entity_id,
-            'operation' => AgtSubmissionAttemptOperation::RegisterInvoice,
-            'attempt_number' => $submission->attempt_count,
-            'endpoint_path' => $result->endpoint,
-            'request_body' => $submission->request_body,
-            'request_body_sha256' => $result->requestBodySha256,
-            'response_body' => $result->responseBody,
-            'response_body_sha256' => $result->responseBodySha256,
-            'http_status' => $result->httpStatus,
-            'result_code' => null,
-            'error_codes' => $result->errorCodes,
-            'safe_message' => $result->safeMessage,
-            'started_at' => $startedAt,
-            'completed_at' => now(),
-        ]);
+        return AgtSubmissionExecution::claim($this->submissionId, AgtSubmissionAttemptOperation::RegisterInvoice, $this->executionId, $this->job?->attempts() ?? 1);
     }
 
     /** @param list<string> $errorCodes */

@@ -19,7 +19,7 @@ class FiscalDocumentDeliveryController extends Controller
         FiscalDocument $fiscalDocument,
         SendFiscalDocumentToCustomer $send,
     ): RedirectResponse {
-        Gate::authorize('view', $fiscalDocument);
+        Gate::authorize('deliver', $fiscalDocument);
 
         try {
             $send->execute($fiscalDocument, $request->user());

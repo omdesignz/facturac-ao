@@ -77,6 +77,7 @@ interface FocusDocument {
     due_date: string | null;
     days_past_due: number;
     agt_message: string | null;
+    agt_operational: { observed_at: string | null };
     agt_error_codes: string[];
     steps: LifecycleStep[];
 }
@@ -243,6 +244,14 @@ function formatMoney(minor: number, currency = props.currencyCode): string {
 
 function currencyLabel(currency = props.currencyCode): string {
     return currency === 'AOA' ? 'Kz' : currency;
+}
+
+function formatObservation(value: string): string {
+    return new Intl.DateTimeFormat('pt-AO', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+        timeZone: TIMEZONE,
+    }).format(new Date(value));
 }
 
 function formatTime(value: string | null): string {
@@ -483,6 +492,11 @@ const reviewStatement = computed(() => {
 <template>
     <AppLayout>
         <Head title="Painel" />
+        <p>
+            Valores limitados à moeda da empresa. Saldos e recebimentos
+            representam o estado actual das facturas seleccionadas, não um saldo
+            histórico nem o movimento bancário do período.
+        </p>
 
         <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
             <div class="mx-auto max-w-[100rem]">
@@ -1049,16 +1063,20 @@ const reviewStatement = computed(() => {
                             <p
                                 class="text-sm font-semibold text-zinc-950 dark:text-white"
                             >
-                                {{
-                                    focus.reason === 'contingency'
-                                        ? 'Ainda não foi comunicada à AGT'
-                                        : 'A AGT não aceitou este documento'
-                                }}
+                                Observação AGT
                             </p>
                             <p
                                 class="mt-1 text-sm/6 text-zinc-600 dark:text-zinc-300"
                             >
                                 {{ focus.agt_message }}
+                                <span v-if="focus.agt_operational.observed_at">
+                                    Observação:
+                                    {{
+                                        formatObservation(
+                                            focus.agt_operational.observed_at,
+                                        )
+                                    }}.
+                                </span>
                             </p>
                             <p
                                 v-if="focus.agt_error_codes.length > 0"

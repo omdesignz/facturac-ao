@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\ApproveRecurringInvoice;
 use App\Actions\GenerateRecurringInvoices;
+use App\AgtEnvironment;
 use App\Fiscal\Agt\Support\CanonicalNumber;
 use App\Fiscal\Calculation\FiscalCalculator;
 use App\Fiscal\SupportedTaxTreatment;
@@ -18,6 +20,7 @@ use App\RecurrenceFrequency;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -77,8 +80,11 @@ class RecurringInvoiceController extends Controller
         Gate::authorize('create', Customer::class);
 
         $profile = new RecurringInvoice;
-        $this->fill($profile, $legalEntity, $request);
-        $profile->save();
+        DB::transaction(function () use ($profile, $legalEntity, $request): void {
+            $this->fill($profile, $legalEntity, $request);
+            $profile->save();
+            $this->renewApproval($profile, $request);
+        });
 
         return back()->with('success', "Avença “{$profile->name}” criada.");
     }
@@ -92,8 +98,12 @@ class RecurringInvoiceController extends Controller
         abort_unless($recurringInvoice->legal_entity_id === $legalEntity->id, 404);
         Gate::authorize('create', Customer::class);
 
-        $this->fill($recurringInvoice, $legalEntity, $request);
-        $recurringInvoice->save();
+        DB::transaction(function () use ($recurringInvoice, $legalEntity, $request): void {
+            $profile = RecurringInvoice::query()->lockForUpdate()->findOrFail($recurringInvoice->id);
+            $this->fill($profile, $legalEntity, $request);
+            $profile->save();
+            $this->renewApproval($profile, $request);
+        });
 
         return back()->with('success', 'Avença actualizada.');
     }
@@ -121,7 +131,7 @@ class RecurringInvoiceController extends Controller
         abort_unless($legalEntity instanceof LegalEntity, 404);
         Gate::authorize('create', Customer::class);
 
-        $result = $generate->execute();
+        $result = $generate->executeFor($legalEntity, $request->user());
 
         return back()->with(
             'success',
@@ -129,6 +139,13 @@ class RecurringInvoiceController extends Controller
                 ? 'Nenhuma avença estava por gerar.'
                 : "{$result['generated']} documento(s) gerado(s).",
         );
+    }
+
+    private function renewApproval(RecurringInvoice $profile, StoreRecurringInvoiceRequest $request): void
+    {
+        if ($profile->auto_issue && $profile->is_active) {
+            app(ApproveRecurringInvoice::class)->execute($profile, $request->user(), AgtEnvironment::Homologation, CarbonImmutable::now()->addDays(30));
+        }
     }
 
     private function fill(

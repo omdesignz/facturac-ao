@@ -4,9 +4,13 @@ namespace App\Actions;
 
 use App\FiscalDocumentStatus;
 use App\Models\FiscalDocument;
+use App\Models\LegalEntity;
 use App\Models\RecurringInvoice;
+use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceMembership;
 use App\Notifications\RecurringInvoiceGenerated;
+use App\WorkspaceRole;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -31,6 +35,25 @@ class GenerateRecurringInvoices
      */
     public function execute(?CarbonImmutable $on = null): array
     {
+        return $this->generate($on);
+    }
+
+    /** @return array{generated: int, profiles: int, failed: int} */
+    public function executeFor(LegalEntity $legalEntity, User $actor, ?CarbonImmutable $on = null): array
+    {
+        abort_unless($actor->hasVerifiedEmail() && WorkspaceMembership::query()
+            ->where('workspace_id', $legalEntity->workspace_id)
+            ->where('user_id', $actor->id)
+            ->where('is_active', true)
+            ->whereIn('role', [WorkspaceRole::Owner, WorkspaceRole::Administrator, WorkspaceRole::Accountant, WorkspaceRole::Billing])
+            ->exists(), 403);
+
+        return $this->generate($on, $legalEntity);
+    }
+
+    /** @return array{generated: int, profiles: int, failed: int} */
+    private function generate(?CarbonImmutable $on, ?LegalEntity $legalEntity = null): array
+    {
         /*
          * Parsed from the Luanda calendar date rather than taken as an instant.
          * `now('Africa/Luanda')->startOfDay()` is 23:00 UTC the day before, so
@@ -46,6 +69,9 @@ class GenerateRecurringInvoices
         $failed = 0;
 
         RecurringInvoice::query()
+            ->when($legalEntity !== null, fn ($query) => $query
+                ->where('workspace_id', $legalEntity->workspace_id)
+                ->where('legal_entity_id', $legalEntity->id))
             ->due($today)
             ->with(['customer', 'establishment', 'legalEntity'])
             ->chunkById(50, function ($due) use ($today, &$generated, &$profiles, &$failed): void {
@@ -62,7 +88,7 @@ class GenerateRecurringInvoices
                 }
             });
 
-        $this->closeFinishedProfiles($today);
+        $this->closeFinishedProfiles($today, $legalEntity);
 
         return ['generated' => $generated, 'profiles' => $profiles, 'failed' => $failed];
     }
@@ -75,9 +101,12 @@ class GenerateRecurringInvoices
      * billing again — the sort of thing nobody notices until a customer asks
      * why they stopped being invoiced.
      */
-    private function closeFinishedProfiles(CarbonImmutable $today): void
+    private function closeFinishedProfiles(CarbonImmutable $today, ?LegalEntity $legalEntity): void
     {
         RecurringInvoice::query()
+            ->when($legalEntity !== null, fn ($query) => $query
+                ->where('workspace_id', $legalEntity->workspace_id)
+                ->where('legal_entity_id', $legalEntity->id))
             ->where('is_active', true)
             ->whereNotNull('ends_on')
             ->whereDate('ends_on', '<', $today)
@@ -90,51 +119,40 @@ class GenerateRecurringInvoices
         $generated = 0;
 
         while ($generated < self::MAX_CATCH_UP) {
-            $runOn = CarbonImmutable::parse($profile->next_run_on->toDateString());
-
-            if ($runOn->greaterThan($today)) {
-                break;
-            }
-
-            if ($profile->ends_on !== null && $runOn->greaterThan(
-                CarbonImmutable::parse($profile->ends_on->toDateString()),
-            )) {
-                // The arrangement has run its course.
-                $profile->forceFill(['is_active' => false])->save();
-
-                break;
-            }
-
-            DB::transaction(function () use ($profile, $runOn): void {
-                $document = $this->convert->execute($profile, $runOn);
-
-                $profile->forceFill([
-                    'next_run_on' => $profile->frequency->next($runOn)->toDateString(),
-                    'last_run_at' => now(),
-                    'generated_count' => $profile->generated_count + 1,
-                ])->save();
-
-                activity('recurring-invoice')
-                    ->performedOn($profile)
-                    ->event('generated')
-                    ->withProperties([
-                        'profile' => $profile->name,
-                        'document_public_id' => $document->public_id,
-                        'run_on' => $runOn->toDateString(),
-                        'issued' => $document->status !== FiscalDocumentStatus::Draft,
-                    ])
-                    ->log('recurring document generated');
-
-                $workspace = $profile->workspace;
-
-                if ($workspace instanceof Workspace) {
-                    RecurringInvoiceGenerated::fromDocument($profile, $document)
-                        ->sendToWorkspace($workspace);
+            $completed = DB::transaction(function () use ($profile, $today): bool {
+                $locked = RecurringInvoice::query()->whereKey($profile->id)
+                    ->where('workspace_id', $profile->workspace_id)->where('legal_entity_id', $profile->legal_entity_id)
+                    ->lockForUpdate()->firstOrFail();
+                $runOn = CarbonImmutable::parse($locked->next_run_on->toDateString());
+                if (! $locked->is_active || $runOn->greaterThan($today)
+                    || ($locked->ends_on !== null && $runOn->greaterThan($locked->ends_on))) {
+                    return false;
                 }
-            });
+                $document = $this->convert->execute($locked, $runOn);
+                $locked->forceFill([
+                    'next_run_on' => $locked->frequency->next($runOn)->toDateString(),
+                    'last_run_at' => now(), 'generated_count' => $locked->generated_count + 1,
+                ])->save();
+                activity('recurring-invoice')->performedOn($locked)->event('generated')
+                    ->withProperties(['actor_kind' => 'scheduled', 'automation_id' => $locked->public_id,
+                        'workspace_id' => $locked->workspace_id, 'legal_entity_id' => $locked->legal_entity_id,
+                        'idempotency_reference' => $locked->public_id.':'.$runOn->toDateString(),
+                        'document_public_id' => $document->public_id, 'run_on' => $runOn->toDateString(),
+                        'issued' => $document->status !== FiscalDocumentStatus::Draft])
+                    ->log('recurring document generated');
+                DB::afterCommit(function () use ($locked, $document): void {
+                    $workspace = $locked->workspace;
+                    if ($workspace instanceof Workspace) {
+                        RecurringInvoiceGenerated::fromDocument($locked, $document)->sendToWorkspace($workspace);
+                    }
+                });
 
+                return true;
+            }, 5);
+            if (! $completed) {
+                break;
+            }
             $generated++;
-            $profile->refresh();
         }
 
         return $generated;

@@ -19,6 +19,7 @@ use App\Models\User;
 use App\WithholdingType;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 final readonly class SaveFiscalDocumentDraft
 {
@@ -67,9 +68,16 @@ final readonly class SaveFiscalDocumentDraft
         User $user,
         array $profile,
         ?FiscalDocument $draft = null,
+        ?int $expectedRevision = null,
     ): FiscalDocument {
-        return DB::transaction(function () use ($legalEntity, $user, $profile, $draft): FiscalDocument {
+        return DB::transaction(function () use ($legalEntity, $user, $profile, $draft, $expectedRevision): FiscalDocument {
             $document = $this->lockedDraft($legalEntity, $draft);
+            if ($document !== null && $expectedRevision !== $document->revision) {
+                throw ValidationException::withMessages([
+                    'revision' => "O rascunho está na revisão {$document->revision}. Recarregue a página antes de guardar novamente.",
+                ]);
+            }
+
             $isNew = $document === null;
             $document ??= new FiscalDocument([
                 'workspace_id' => $legalEntity->workspace_id,

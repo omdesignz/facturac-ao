@@ -108,6 +108,7 @@ interface SelectedDocument extends RegisterDocument {
         due_date: string | null;
         days_past_due: number;
         agt_message: string | null;
+        agt_operational: { observed_at: string | null };
         agt_error_codes: string[];
         steps: LifecycleStep[];
     };
@@ -243,6 +244,7 @@ const ATTENTION_STATUSES = [
     'cancelled',
     'failed',
     'contingency',
+    'unknown',
 ];
 
 function groupFor(document: RegisterDocument): QueueGroupKey {
@@ -250,14 +252,11 @@ function groupFor(document: RegisterDocument): QueueGroupKey {
         return 'draft';
     }
 
-    if (
-        ATTENTION_STATUSES.includes(document.workflow_status) ||
-        ATTENTION_STATUSES.includes(document.status)
-    ) {
+    if (ATTENTION_STATUSES.includes(document.workflow_status)) {
         return 'attention';
     }
 
-    if (document.workflow_status === 'valid' || document.status === 'valid') {
+    if (document.workflow_status === 'valid') {
         return 'valid';
     }
 
@@ -1255,16 +1254,26 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                             <p
                                 class="text-sm font-semibold text-zinc-950 dark:text-white"
                             >
-                                {{
-                                    selected.status === 'contingency'
-                                        ? 'Ainda não foi comunicado à AGT'
-                                        : 'A AGT não aceitou este documento'
-                                }}
+                                Observação AGT
                             </p>
                             <p
                                 class="mt-1 text-sm/6 text-zinc-600 dark:text-zinc-300"
                             >
                                 {{ selected.snapshot.agt_message }}
+                                <span
+                                    v-if="
+                                        selected.snapshot.agt_operational
+                                            .observed_at
+                                    "
+                                >
+                                    Observação:
+                                    {{
+                                        formatDateTime(
+                                            selected.snapshot.agt_operational
+                                                .observed_at,
+                                        )
+                                    }}.
+                                </span>
                             </p>
                             <p
                                 v-if="

@@ -489,6 +489,7 @@ function editableLine(
 }
 
 const form = useForm({
+    revision: props.document.revision,
     document_type: props.document.document_type,
     document_date: props.document.document_date,
     due_date: props.document.due_date ?? '',
@@ -995,7 +996,10 @@ function submit(): void {
             : update(props.document.public_id),
         {
             preserveScroll: true,
-            onSuccess: () => form.defaults(),
+            onSuccess: () => {
+                form.revision = props.document.revision;
+                form.defaults();
+            },
         },
     );
 }
@@ -1130,6 +1134,7 @@ function confirmIssue(): void {
                             <p class="mt-0.5 opacity-80">
                                 {{
                                     flashError ??
+                                    form.errors.revision ??
                                     'O rascunho não foi guardado porque há dados incompletos ou incompatíveis.'
                                 }}
                             </p>

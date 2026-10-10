@@ -16,8 +16,6 @@ class AgtSubmissionFactory extends Factory
     /** @return array<string, mixed> */
     public function definition(): array
     {
-        $requestBody = '{"documents":[],"numberOfEntries":1,"schemaVersion":"2.0"}';
-
         return [
             'fiscal_document_id' => FiscalDocument::factory()->issued(),
             'workspace_id' => fn (array $attributes): int => $this->document($attributes)->workspace_id,
@@ -35,8 +33,13 @@ class AgtSubmissionFactory extends Factory
             'schema_version' => '2.0',
             'status' => AgtSubmissionStatus::Pending,
             'request_id' => null,
-            'request_body' => $requestBody,
-            'request_body_sha256' => hash('sha256', $requestBody),
+            'request_body' => fn (array $attributes): string => json_encode([
+                'schemaVersion' => '2.0',
+                'taxRegistrationNumber' => $this->document($attributes)->legalEntity->tax_identification_number,
+                'numberOfEntries' => 1,
+                'documents' => [['documentNo' => $this->document($attributes)->document_no]],
+            ], JSON_THROW_ON_ERROR),
+            'request_body_sha256' => fn (array $attributes): string => hash('sha256', $attributes['request_body']),
             'last_response_body_sha256' => null,
             'last_http_status' => null,
             'last_result_code' => null,

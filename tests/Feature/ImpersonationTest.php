@@ -1,7 +1,14 @@
 <?php
 
+use App\Models\Customer;
+use App\Models\Establishment;
+use App\Models\FiscalDocument;
 use App\Models\ImpersonationSession;
+use App\Models\LegalEntity;
+use App\Models\RecurringInvoice;
+use App\Models\TransportDocument;
 use App\Models\User;
+use App\Models\Workspace;
 use App\Notifications\AccountAccessedBySupport;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
@@ -455,3 +462,35 @@ test('granting support access to an unknown email fails loudly', function () {
     $this->artisan('support:staff', ['email' => 'ninguem@vapsolucoes.ao'])
         ->assertFailed();
 });
+
+test('support cannot trigger delivery recurring authority or fiscal transport actions', function (string $routeName, string $method) {
+    startSession();
+    $route = app('router')->getRoutes()->getByName($routeName);
+    $parameters = [];
+    foreach ($route->parameterNames() as $parameter) {
+        $parameters[$parameter] = match ($parameter) {
+            'fiscalDocument' => FiscalDocument::factory()->create(),
+            'recurringInvoice' => RecurringInvoice::factory()->create([
+                'workspace_id' => Workspace::factory(),
+                'legal_entity_id' => LegalEntity::factory(),
+                'establishment_id' => Establishment::factory(),
+                'customer_id' => Customer::factory(),
+                'created_by_user_id' => User::factory(),
+            ]),
+            'transportDocument' => TransportDocument::factory()->create(),
+        };
+    }
+
+    $this->json($method, route($routeName, $parameters), [])->assertForbidden();
+
+    expect(ImpersonationSession::query()->sole()->blocked_count)->toBe(1)
+        ->and(Activity::query()->where('log_name', 'impersonation')->where('event', 'blocked')->sole()->properties['route'])->toBe($routeName);
+})->with([
+    ['invoices.send', 'POST'],
+    ['recurring.store', 'POST'],
+    ['recurring.update', 'PUT'],
+    ['recurring.run', 'POST'],
+    ['transport-documents.issue', 'POST'],
+    ['transport-documents.cancel', 'POST'],
+    ['agt.series.store', 'POST'],
+]);

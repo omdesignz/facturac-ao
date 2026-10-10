@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\CatalogueItemType;
+use App\Fiscal\HumanServiceCommandContext;
+use App\Fiscal\ServiceCommands;
+use App\Fiscal\ServiceCreateInput;
 use App\Http\Requests\StoreCatalogueItemRequest;
 use App\Models\CatalogueItem;
 use App\Models\LegalEntity;
@@ -79,11 +82,20 @@ class CatalogueItemController extends Controller
         $legalEntity = $this->legalEntity($request);
         abort_unless($legalEntity instanceof LegalEntity, 404);
 
-        $legalEntity->catalogueItems()->create([
-            ...$this->attributes($request),
-            'workspace_id' => $legalEntity->workspace_id,
-            'currency_code' => $legalEntity->currency_code,
-        ]);
+        if ($request->validated('type') === 'service') {
+            $values = $request->validated();
+            unset($values['type'], $values['tracks_stock'], $values['reorder_level']);
+            app(ServiceCommands::class)->create(
+                HumanServiceCommandContext::resolve($request->user(), $legalEntity),
+                ServiceCreateInput::human($values),
+            );
+        } else {
+            $legalEntity->catalogueItems()->create([
+                ...$this->attributes($request),
+                'workspace_id' => $legalEntity->workspace_id,
+                'currency_code' => $legalEntity->currency_code,
+            ]);
+        }
 
         return back()->with('success', 'Artigo guardado.');
     }

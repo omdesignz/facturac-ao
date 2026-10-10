@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
+ * @property string $environment
  * @property int $id
  * @property string $public_id
  * @property int $workspace_id
@@ -74,6 +75,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property-read Establishment $establishment
  */
 #[Fillable([
+    'environment',
     'workspace_id',
     'legal_entity_id',
     'establishment_id',

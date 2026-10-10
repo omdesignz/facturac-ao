@@ -2,6 +2,7 @@
 
 namespace App\Analytics;
 
+use App\Fiscal\Documents\CurrentAgtState;
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
 use App\Models\FiscalDocument;
@@ -39,32 +40,19 @@ class DashboardQuery
         $all = $this->receivables->forLegalEntity($legalEntity);
         $today = $this->onDay($all, $now);
 
-        $statusCounts = $today->clone()
-            ->reorder()
-            ->toBase()
-            ->groupBy('status')
-            ->selectRaw('status, COUNT(*) AS aggregate')
-            ->pluck('aggregate', 'status')
-            ->map(fn (mixed $count): int => (int) $count);
-
-        $countFor = fn (array $statuses): int => array_sum(array_map(
-            fn (FiscalDocumentStatus $status): int => $statusCounts[$status->value] ?? 0,
-            $statuses,
-        ));
-
         $overall = $this->receivables->summarise($all->clone());
 
         return [
             'billed_today_minor' => $this->receivables->summarise($today->clone())['billed_minor'],
             'billed_last_week_minor' => $this->receivables->summarise($this->onDay($all, $now->subWeek()))['billed_minor'],
-            'issued_today' => $statusCounts->sum(),
+            'issued_today' => $today->clone()->count(),
             'credit_notes_today' => $today->clone()
                 ->where('document_type', FiscalDocumentType::CreditNote)
                 ->count(),
-            'valid_today' => $countFor([FiscalDocumentStatus::Valid]),
-            'pending_today' => $countFor([...DocumentSnapshot::IN_FLIGHT, FiscalDocumentStatus::Contingency]),
-            'invalid_today' => $countFor([FiscalDocumentStatus::Invalid]),
-            'attention_count' => $all->clone()->whereIn('status', DocumentSnapshot::NEEDS_ATTENTION)->count(),
+            'valid_today' => CurrentAgtState::matching($today->clone(), ['valid'])->count(),
+            'pending_today' => CurrentAgtState::matching($today->clone(), [...CurrentAgtState::ACTIVE, 'contingency'])->count(),
+            'invalid_today' => CurrentAgtState::matching($today->clone(), ['invalid', 'rejected', 'cancelled', 'failed'])->count(),
+            'attention_count' => CurrentAgtState::matching($all->clone(), CurrentAgtState::ATTENTION)->count(),
             'outstanding_minor' => $overall['outstanding_minor'],
             'overdue_minor' => $overall['overdue_minor'],
             'overdue_count' => $overall['overdue_count'],
@@ -81,13 +69,11 @@ class DashboardQuery
         $issued = $this->receivables->forLegalEntity($legalEntity);
 
         $candidates = [
-            'invalid' => fn (): ?FiscalDocument => $issued->clone()
-                ->where('status', FiscalDocumentStatus::Invalid)
+            'invalid' => fn (): ?FiscalDocument => CurrentAgtState::matching($issued->clone(), ['invalid', 'rejected', 'cancelled', 'failed'])
                 ->latest('issued_at')
                 ->latest('id')
                 ->first(),
-            'contingency' => fn (): ?FiscalDocument => $issued->clone()
-                ->where('status', FiscalDocumentStatus::Contingency)
+            'contingency' => fn (): ?FiscalDocument => CurrentAgtState::matching($issued->clone(), ['contingency'])
                 ->latest('issued_at')
                 ->latest('id')
                 ->first(),
@@ -119,8 +105,8 @@ class DashboardQuery
         $documents = FiscalDocument::query()->where('legal_entity_id', $legalEntity->id);
 
         return [
-            'attention_count' => $documents->clone()->whereIn('status', DocumentSnapshot::NEEDS_ATTENTION)->count(),
-            'in_flight_count' => $documents->clone()->whereIn('status', DocumentSnapshot::IN_FLIGHT)->count(),
+            'attention_count' => CurrentAgtState::matching($documents->clone(), CurrentAgtState::ATTENTION)->count(),
+            'in_flight_count' => CurrentAgtState::matching($documents->clone(), CurrentAgtState::ACTIVE)->count(),
             'overdue_count' => $overdueCount,
             'drafts_open' => $documents->clone()->where('status', FiscalDocumentStatus::Draft)->count(),
         ];

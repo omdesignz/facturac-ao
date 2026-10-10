@@ -158,6 +158,11 @@ const submissionHealth = computed(() => [
 <template>
     <AppLayout>
         <Head title="Análises" />
+        <p>
+            Valores limitados à moeda da empresa. Saldos e recebimentos
+            representam o estado actual das facturas seleccionadas, não um saldo
+            histórico nem o movimento bancário do período.
+        </p>
 
         <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
             <div class="mx-auto max-w-6xl space-y-6">
@@ -202,7 +207,7 @@ const submissionHealth = computed(() => [
                         :comparison-label="period.comparison_label"
                     />
                     <StatTile
-                        label="Recebido"
+                        label="Recebido até hoje"
                         :value="money(summary.paid_minor)"
                         :current="summary.paid_minor"
                         :previous="previousSummary.paid_minor"

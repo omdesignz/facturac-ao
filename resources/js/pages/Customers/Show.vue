@@ -281,6 +281,10 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
 <template>
     <AppLayout>
         <Head :title="customer.name" />
+        <p>
+            Valores e documentos limitados à moeda da empresa; saldos actuais,
+            sem conversão cambial.
+        </p>
 
         <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
             <div class="mx-auto max-w-6xl space-y-6">
@@ -828,7 +832,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                         Data
                                     </th>
                                     <th class="px-5 py-3 eyebrow text-zinc-500">
-                                        Estado
+                                        Estado fiscal
                                     </th>
                                     <th
                                         class="px-5 py-3 text-right eyebrow text-zinc-500"

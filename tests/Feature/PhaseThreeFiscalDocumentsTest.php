@@ -192,7 +192,7 @@ test('updating a draft replaces its lines atomically and increments the revision
     ]);
 
     $this->actingAs($company['user'])
-        ->put(route('invoices.update', $document), $payload)
+        ->put(route('invoices.update', $document), $payload + ['revision' => $document->revision])
         ->assertSessionHasNoErrors()
         ->assertRedirect(route('invoices.edit', $document));
 
@@ -278,3 +278,21 @@ test('database tenant constraints reject a cross-company establishment', functio
         'updated_by_user_id' => $company['user']->id,
     ]);
 })->throws(QueryException::class);
+
+test('stale or missing draft revisions cannot replace saved fiscal work', function (?int $revision) {
+    $company = phaseThreeCompanyState();
+    $this->actingAs($company['user'])->post(route('invoices.store'), validFiscalDraft());
+    $document = FiscalDocument::query()->firstOrFail();
+    $this->put(route('invoices.update', $document), validFiscalDraft(['notes' => 'First writer']) + ['revision' => 1])
+        ->assertSessionHasNoErrors();
+    $before = $document->fresh()->getAttributes();
+    $lines = $document->lines()->get()->toArray();
+    $activities = Activity::query()->count();
+
+    $this->put(route('invoices.update', $document), validFiscalDraft(['notes' => 'Stale writer']) + ['revision' => $revision])
+        ->assertSessionHasErrors('revision');
+
+    expect($document->fresh()->getAttributes())->toBe($before)
+        ->and($document->lines()->get()->toArray())->toBe($lines)
+        ->and(Activity::query()->count())->toBe($activities);
+})->with(['stale' => 1, 'missing' => null]);

@@ -6,6 +6,7 @@ use App\AgtConnectionStatus;
 use App\AgtSubmissionOperation;
 use App\AgtSubmissionStatus;
 use App\Exceptions\FiscalFinalizationBlocked;
+use App\Exceptions\ReceiptEvidenceUnavailable;
 use App\Fiscal\Agt\Contracts\JwsSigner;
 use App\Fiscal\Agt\Support\CanonicalJson;
 use App\Fiscal\Agt\Support\CanonicalNumber;
@@ -14,9 +15,12 @@ use App\Fiscal\Calculation\CalculatedFiscalDocument;
 use App\Fiscal\Calculation\CalculatedFiscalLine;
 use App\Fiscal\Calculation\FiscalCalculator;
 use App\Fiscal\Calculation\FiscalReceiptCalculator;
+use App\Fiscal\Documents\AgtObservationReducer;
+use App\Fiscal\Documents\CurrentAgtState;
 use App\Fiscal\Documents\FiscalDocumentNumber;
 use App\Fiscal\Documents\FiscalDocumentPrints;
 use App\Fiscal\Documents\V2_0\FiscalDocumentPayloadBuilder;
+use App\Fiscal\RequiredAudit;
 use App\FiscalDocumentEventType;
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
@@ -31,6 +35,7 @@ use App\Models\FiscalDocumentLineTax;
 use App\Models\FiscalSeries;
 use App\Models\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Throwable;
@@ -56,6 +61,24 @@ final readonly class IssueFiscalDocument
         string $seriesPublicId,
         int $expectedRevision,
     ): AgtSubmission {
+        try {
+            return $this->issue($draft, $issuer, $seriesPublicId, $expectedRevision);
+        } catch (ReceiptEvidenceUnavailable $exception) {
+            RequiredAudit::record(fn () => activity('fiscal-document')->causedBy($issuer)->performedOn($draft)
+                ->event('receipt-evidence-denied')->withProperties([
+                    'actor_kind' => 'human', 'workspace_id' => $draft->workspace_id, 'legal_entity_id' => $draft->legal_entity_id,
+                    'environment' => $exception->environment, 'document_public_id' => $draft->public_id,
+                    'capability' => 'existing.receipt.issue', 'contract_version' => 'SA1', 'reason' => 'source_agt_evidence_unproven',
+                    'operation_id' => (string) Str::uuid(),
+                    'request_id' => Context::get('request_id') ?? (string) Str::uuid(),
+                ])->log('Receipt issuance denied: source AGT evidence is unproven'));
+
+            throw $exception;
+        }
+    }
+
+    private function issue(FiscalDocument $draft, User $issuer, string $seriesPublicId, int $expectedRevision): AgtSubmission
+    {
         $submission = DB::transaction(function () use (
             $draft,
             $issuer,
@@ -72,6 +95,16 @@ final readonly class IssueFiscalDocument
 
             $series = $this->lockedSeries($document, $seriesPublicId);
             $connection = $series->agtConnection;
+            if ($series->environment !== $connection->environment->value
+                || ($document->environment !== 'unresolved' && $document->environment !== $series->environment)) {
+                throw FiscalFinalizationBlocked::because('O ambiente fiscal não corresponde à série seleccionada.');
+            }
+            $document->environment = $series->environment;
+            if ($document->references_document_id !== null && ! FiscalDocument::query()
+                ->whereKey($document->references_document_id)->where('workspace_id', $document->workspace_id)
+                ->where('legal_entity_id', $document->legal_entity_id)->where('environment', $document->environment)->exists()) {
+                throw FiscalFinalizationBlocked::because('O documento de origem pertence a outro contexto fiscal.');
+            }
 
             $this->assertDocumentCanBeIssued($document, $series, $connection);
             $this->assertCalculationIntegrity($document);
@@ -156,6 +189,7 @@ final readonly class IssueFiscalDocument
                 'request_body_sha256' => hash('sha256', $requestBody),
                 'safe_message' => 'Documento emitido e colocado na fila segura para a AGT.',
                 'attempt_count' => 0,
+                'qualified_projection' => AgtObservationReducer::queued(),
                 'next_attempt_at' => $issuedAt,
             ]);
 
@@ -229,7 +263,7 @@ final readonly class IssueFiscalDocument
 
         SubmitAgtDocument::dispatch($submission->id)->afterCommit();
 
-        $this->sendToCustomerIfConfigured($draft->fresh(), $issuer);
+        DB::afterCommit(fn () => $this->sendToCustomerIfConfigured($draft->fresh(), $issuer));
 
         return $submission;
     }
@@ -413,11 +447,14 @@ final readonly class IssueFiscalDocument
             ->orderBy('id')
             ->lockForUpdate()
             ->get();
+        AgtSubmission::query()->whereIn('fiscal_document_id', $document->settlements->pluck('settled_document_id'))
+            ->orderBy('id')->lockForUpdate()->get();
         $document->load(['settlements.settledDocument', 'withholdings']);
 
-        if ($document->settlements->contains(fn ($settlement): bool => $settlement->settledDocument->status !== FiscalDocumentStatus::Valid
+        if ($document->settlements->contains(fn ($settlement): bool => ! CurrentAgtState::acceptanceEvidenceSatisfied($settlement->settledDocument)
+            || $settlement->settledDocument->environment !== $document->environment
         )) {
-            throw FiscalFinalizationBlocked::because('A AGT deve validar os documentos de origem antes da emissão do recibo.');
+            throw new ReceiptEvidenceUnavailable($document->environment);
         }
 
         try {

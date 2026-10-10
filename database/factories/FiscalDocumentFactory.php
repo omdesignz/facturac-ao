@@ -24,6 +24,7 @@ class FiscalDocumentFactory extends Factory
     public function definition(): array
     {
         return [
+            'environment' => 'homologation',
             'legal_entity_id' => LegalEntity::factory()->configured(),
             'workspace_id' => function (array $attributes): int {
                 return $this->resolveLegalEntity($attributes)->workspace_id;

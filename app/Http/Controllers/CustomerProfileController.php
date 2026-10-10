@@ -33,7 +33,7 @@ class CustomerProfileController extends Controller
         Gate::authorize('view', $customer);
 
         $issued = fn (): Builder => ReceivablesQuery::issued(
-            $customer->fiscalDocuments()->getQuery(),
+            $customer->fiscalDocuments()->where('currency_code', $customer->legalEntity->currency_code)->getQuery(),
         );
 
         // The summary, the trend and the mix are each one grouped query. Only
@@ -198,7 +198,7 @@ class CustomerProfileController extends Controller
                 'currency_code' => $document->currency_code,
                 // Only an issued document can be emailed; a draft has no number
                 // to send and nothing filed behind it.
-                'can_send' => $document->document_no !== null,
+                'can_send' => Gate::allows('deliver', $document),
                 'sent_at' => $document->sent_to_customer_at?->toIso8601String(),
                 'send_count' => $document->send_count,
             ];

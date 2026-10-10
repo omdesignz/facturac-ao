@@ -41,11 +41,7 @@ class DocumentRejectedByAgt extends WorkspaceNotification
 
     public function body(): string
     {
-        $codes = $this->errorCodes === []
-            ? 'A AGT não devolveu um código.'
-            : 'Código: '.implode(', ', $this->errorCodes).'.';
-
-        return "{$codes} Emita uma nota de correcção depois de perceber o motivo.";
+        return 'A AGT reportou o documento inválido. Reveja a evidência antes de decidir qualquer operação fiscal.';
     }
 
     public function url(): ?string

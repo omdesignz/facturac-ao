@@ -30,7 +30,8 @@ type SubmissionStatus =
     | 'invalid'
     | 'rejected'
     | 'cancelled'
-    | 'failed';
+    | 'failed'
+    | 'unknown';
 
 interface Submission {
     public_id: string;
@@ -44,6 +45,7 @@ interface Submission {
     request_id: string | null;
     attempt_count: number;
     safe_message: string;
+    agt_operational: { observed_at: string | null };
     created_at: string;
     updated_at: string;
 }
@@ -124,6 +126,7 @@ const attentionStatuses: SubmissionStatus[] = [
     'rejected',
     'cancelled',
     'failed',
+    'unknown',
 ];
 
 const total = computed(() =>
@@ -528,6 +531,19 @@ function abbreviate(value: string | null): string {
                                 </div>
                                 <p class="mt-4 text-sm/6 text-brand-100/70">
                                     {{ selected.safe_message }}
+                                    <span
+                                        v-if="
+                                            selected.agt_operational.observed_at
+                                        "
+                                    >
+                                        Observação:
+                                        {{
+                                            formatDate(
+                                                selected.agt_operational
+                                                    .observed_at,
+                                            )
+                                        }}.
+                                    </span>
                                 </p>
                             </div>
                             <dl

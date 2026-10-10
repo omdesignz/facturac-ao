@@ -26,8 +26,8 @@ use InvalidArgumentException;
  * month would otherwise pay for all of them to build one summary card.
  *
  * The SQL is deliberately plain — CASE expressions and plain aggregates, no
- * date functions — because the test suite runs on SQLite and production runs on
- * MySQL, and a query that only works on one of those proves nothing about the
+ * date functions — because fast tests run on SQLite and fiscal integration runs on
+ * PostgreSQL, and a query that only works on one of those proves nothing about the
  * other.
  */
 class ReceivablesQuery
@@ -39,14 +39,7 @@ class ReceivablesQuery
      */
     public static function billableTypes(): array
     {
-        return array_values(array_map(
-            fn (FiscalDocumentType $type): string => $type->value,
-            array_filter(
-                FiscalDocumentType::issuable(),
-                fn (FiscalDocumentType $type): bool => $type->requiresLines()
-                    && ! $type->reducesReceivable(),
-            ),
-        ));
+        return BillingDefinition::billableTypes();
     }
 
     /**
@@ -85,7 +78,9 @@ class ReceivablesQuery
     public function forLegalEntity(LegalEntity $legalEntity): Builder
     {
         return self::issued(
-            FiscalDocument::query()->where('legal_entity_id', $legalEntity->id),
+            FiscalDocument::query()->where('workspace_id', $legalEntity->workspace_id)
+                ->where('legal_entity_id', $legalEntity->id)
+                ->where('currency_code', $legalEntity->currency_code),
         );
     }
 
@@ -123,12 +118,9 @@ class ReceivablesQuery
         $credit = FiscalDocumentType::CreditNote->value;
         $outstanding = $this->outstandingExpression();
 
+        $billing = BillingDefinition::sum('gross_total_minor', $billable);
         $row = $this->aggregateOver($query)
-            ->selectRaw(
-                'COALESCE(SUM(CASE WHEN d.document_type IN ('.$this->placeholders($billable).')'
-                .' THEN d.gross_total_minor ELSE 0 END), 0) AS billed_minor',
-                $billable,
-            )
+            ->selectRaw($billing['sql'].' AS billed_minor', $billing['bindings'])
             ->selectRaw(
                 'COALESCE(SUM(CASE WHEN d.document_type = ? THEN d.gross_total_minor ELSE 0 END), 0)'
                 .' AS credited_minor',

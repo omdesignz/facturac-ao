@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\AgtSubmissionStatus;
+use App\Fiscal\Documents\AgtSubmissionExecution;
 use App\Http\Requests\RefreshAgtSubmissionsRequest;
 use App\Jobs\PollAgtSubmissionStatus;
 use App\Models\AgtSubmission;
 use App\Models\LegalEntity;
 use App\Models\Workspace;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 
 class AgtSubmissionRefreshController extends Controller
 {
@@ -30,18 +32,26 @@ class AgtSubmissionRefreshController extends Controller
             ->limit(100)
             ->pluck('id');
 
-        AgtSubmission::query()
-            ->whereKey($submissionIds)
-            ->update(['next_attempt_at' => now()]);
-        $submissionIds->each(
-            fn (int $submissionId) => PollAgtSubmissionStatus::dispatch($submissionId),
-        );
+        $scheduled = 0;
+        foreach ($submissionIds as $submissionId) {
+            DB::transaction(function () use ($submissionId, $legalEntity, &$scheduled): void {
+                $submission = AgtSubmissionExecution::locked($submissionId);
+                if ($submission === null || $submission->workspace_id !== $legalEntity->workspace_id
+                    || $submission->legal_entity_id !== $legalEntity->id || ! $submission->status->canPoll()
+                    || $submission->operation_lease_expires_at?->gt(AgtSubmissionExecution::databaseNow())) {
+                    return;
+                }
+                $submission->update(['next_attempt_at' => now()]);
+                DB::afterCommit(fn () => PollAgtSubmissionStatus::dispatch($submissionId));
+                $scheduled++;
+            }, 3);
+        }
 
         return back()->with(
             'success',
-            $submissionIds->isEmpty()
+            $scheduled === 0
                 ? 'Não existem pedidos AGT pendentes de validação.'
-                : $submissionIds->count().' pedido(s) colocado(s) na fila de actualização.',
+                : $scheduled.' pedido(s) colocado(s) na fila de actualização.',
         );
     }
 }

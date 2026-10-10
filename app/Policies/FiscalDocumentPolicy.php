@@ -41,6 +41,26 @@ class FiscalDocumentPolicy
         return false;
     }
 
+    public function deliver(User $user, FiscalDocument $fiscalDocument): bool
+    {
+        return ! $fiscalDocument->isMutable()
+            && filled($fiscalDocument->document_no)
+            && $this->canPrepareDocuments($this->activeMembership($user, $fiscalDocument));
+    }
+
+    /** Standing recurrence is evaluated against the document, never a browser selection. */
+    public function issueAutomatically(User $user, FiscalDocument $fiscalDocument): bool
+    {
+        return $fiscalDocument->isMutable()
+            && $user->hasVerifiedEmail()
+            && $user->hasEnabledTwoFactorAuthentication()
+            && $this->canPrepareDocuments(WorkspaceMembership::query()
+                ->where('user_id', $user->id)
+                ->where('workspace_id', $fiscalDocument->workspace_id)
+                ->where('is_active', true)
+                ->first());
+    }
+
     public function restore(User $user, FiscalDocument $fiscalDocument): bool
     {
         return false;

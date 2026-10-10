@@ -5,8 +5,8 @@ namespace App\Jobs;
 use App\AgtSubmissionAttemptOperation;
 use App\AgtSubmissionStatus;
 use App\Fiscal\Agt\Contracts\AgtGateway;
-use App\Fiscal\Agt\Data\AgtDocumentStatusResult;
 use App\Fiscal\Agt\Data\AgtInvoiceStatusResult;
+use App\Fiscal\Documents\AgtSubmissionExecution;
 use App\FiscalDocumentEventType;
 use App\Models\AgtSubmission;
 use App\Models\FiscalDocument;
@@ -14,12 +14,12 @@ use App\Models\FiscalDocumentEvent;
 use App\Models\Workspace;
 use App\Notifications\DocumentAcceptedByAgt;
 use App\Notifications\DocumentRejectedByAgt;
-use Carbon\CarbonInterface;
 use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use Illuminate\Contracts\Queue\ShouldQueueAfterCommit;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\Middleware\RateLimited;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Throwable;
 
 class PollAgtSubmissionStatus implements ShouldBeUniqueUntilProcessing, ShouldQueueAfterCommit
@@ -32,8 +32,11 @@ class PollAgtSubmissionStatus implements ShouldBeUniqueUntilProcessing, ShouldQu
 
     public int $uniqueFor = 120;
 
-    public function __construct(public readonly int $submissionId)
+    public readonly string $executionId;
+
+    public function __construct(public readonly int $submissionId, ?string $executionId = null)
     {
+        $this->executionId = $executionId ?? (string) Str::uuid();
         $this->onQueue('agt');
     }
 
@@ -69,29 +72,23 @@ class PollAgtSubmissionStatus implements ShouldBeUniqueUntilProcessing, ShouldQu
             return;
         }
 
-        $startedAt = now();
         $result = $gateway->queryInvoiceStatus(
             $claim->agtConnection,
             $claim->legalEntity,
             $claim->request_id,
         );
-        $scheduleNextPoll = DB::transaction(function () use ($claim, $result, $startedAt): bool {
-            $submission = AgtSubmission::query()
-                ->with('fiscalDocument')
-                ->lockForUpdate()
-                ->find($claim->id);
+        $scheduleNextPoll = AgtSubmissionExecution::complete($claim, $result, function (AgtSubmission $submission, array $outcome) use ($result): bool {
+            if ($outcome['reason'] === 'unknown_response' || $outcome['classification'] === 'conflicting') {
+                $this->markFailed($submission, $result, [], 'O resultado requer revisão da evidência.');
 
-            if (! $submission instanceof AgtSubmission || $submission->status->isTerminal()) {
                 return false;
             }
-
-            $this->recordAttempt($submission, $result, $startedAt);
 
             if (! $result->successful) {
                 return $this->handleUnsuccessfulResult($submission, $result);
             }
 
-            if ($result->isProcessing()) {
+            if ($outcome['reported_state'] === 'processing' || $outcome['reason'] === 'refresh_pending') {
                 $wasProcessing = $submission->status === AgtSubmissionStatus::Processing;
                 $submission->update([
                     'status' => AgtSubmissionStatus::Processing,
@@ -115,7 +112,7 @@ class PollAgtSubmissionStatus implements ShouldBeUniqueUntilProcessing, ShouldQu
                 return true;
             }
 
-            if ($result->isCancelled()) {
+            if ($outcome['reported_state'] === 'processing_cancelled') {
                 $this->complete(
                     $submission,
                     AgtSubmissionStatus::Cancelled,
@@ -128,23 +125,15 @@ class PollAgtSubmissionStatus implements ShouldBeUniqueUntilProcessing, ShouldQu
                 return false;
             }
 
-            $documentStatus = collect($result->documents)->first(
-                fn (AgtDocumentStatusResult $document): bool => $document->documentNumber
-                    === $submission->fiscalDocument->document_no,
-            );
-
-            if (! $documentStatus instanceof AgtDocumentStatusResult) {
-                $this->markFailed(
-                    $submission,
-                    $result,
-                    ['AGT_DOCUMENT_STATUS_MISSING'],
-                    'A AGT concluiu o pedido sem devolver o estado deste documento.',
-                );
-
-                return false;
+            $documentErrorCodes = [];
+            foreach ($result->documents as $documentStatus) {
+                if ($documentStatus->documentNumber === $submission->fiscalDocument->document_no && $documentStatus->status === 'I') {
+                    $documentErrorCodes = $documentStatus->errorCodes;
+                    break;
+                }
             }
 
-            if ($documentStatus->status === 'V') {
+            if ($outcome['reported_state'] === 'valid') {
                 $this->complete(
                     $submission,
                     AgtSubmissionStatus::Valid,
@@ -157,17 +146,23 @@ class PollAgtSubmissionStatus implements ShouldBeUniqueUntilProcessing, ShouldQu
                 return false;
             }
 
+            if ($outcome['reported_state'] !== 'invalid') {
+                $this->markFailed($submission, $result, [], 'O resultado requer revisão da evidência.');
+
+                return false;
+            }
+
             $this->complete(
                 $submission,
                 AgtSubmissionStatus::Invalid,
                 FiscalDocumentEventType::Invalidated,
                 'I',
                 $result,
-                $documentStatus->errorCodes,
+                $documentErrorCodes,
             );
 
             return false;
-        }, 3);
+        });
 
         if ($scheduleNextPoll) {
             static::dispatch($claim->id)
@@ -178,62 +173,12 @@ class PollAgtSubmissionStatus implements ShouldBeUniqueUntilProcessing, ShouldQu
 
     public function failed(?Throwable $exception): void
     {
-        DB::transaction(function (): void {
-            $submission = AgtSubmission::query()->lockForUpdate()->find($this->submissionId);
-
-            if (! $submission instanceof AgtSubmission || $submission->status->isTerminal()) {
-                return;
-            }
-
-            $submission->update([
-                'status' => AgtSubmissionStatus::Failed,
-                'last_error_codes' => ['QUEUE_ATTEMPTS_EXHAUSTED'],
-                'safe_message' => 'A consulta do estado excedeu o limite seguro de tentativas.',
-                'next_attempt_at' => null,
-                'completed_at' => now(),
-                'failed_at' => now(),
-            ]);
-            $this->recordEvent(
-                $submission,
-                FiscalDocumentEventType::DeliveryFailed,
-                'N',
-                ['error_codes' => ['QUEUE_ATTEMPTS_EXHAUSTED']],
-            );
-        }, 3);
+        AgtSubmissionExecution::fail($this->submissionId, $this->executionId, $this->job?->attempts() ?? 1);
     }
 
     private function claim(): ?AgtSubmission
     {
-        return DB::transaction(function (): ?AgtSubmission {
-            $submission = AgtSubmission::query()
-                ->with(['agtConnection', 'legalEntity', 'fiscalDocument'])
-                ->lockForUpdate()
-                ->find($this->submissionId);
-
-            if (! $submission instanceof AgtSubmission || ! $submission->status->canPoll()) {
-                return null;
-            }
-
-            if (blank($submission->request_id)) {
-                $submission->update([
-                    'status' => AgtSubmissionStatus::Failed,
-                    'last_error_codes' => ['REQUEST_ID_MISSING'],
-                    'safe_message' => 'Não existe identificador AGT para consultar este pedido.',
-                    'next_attempt_at' => null,
-                    'completed_at' => now(),
-                    'failed_at' => now(),
-                ]);
-
-                return null;
-            }
-
-            $submission->update([
-                'attempt_count' => $submission->attempt_count + 1,
-                'next_attempt_at' => now()->addMinutes(2),
-            ]);
-
-            return $submission->fresh(['agtConnection', 'legalEntity', 'fiscalDocument']);
-        }, 3);
+        return AgtSubmissionExecution::claim($this->submissionId, AgtSubmissionAttemptOperation::QueryStatus, $this->executionId, $this->job?->attempts() ?? 1);
     }
 
     private function handleUnsuccessfulResult(
@@ -290,7 +235,7 @@ class PollAgtSubmissionStatus implements ShouldBeUniqueUntilProcessing, ShouldQu
             'response_body_sha256' => $result->responseBodySha256,
         ]);
 
-        $this->announce($submission, $status, $errorCodes);
+        DB::afterCommit(fn () => $this->announce($submission, $status, $errorCodes));
     }
 
     /**
@@ -310,6 +255,10 @@ class PollAgtSubmissionStatus implements ShouldBeUniqueUntilProcessing, ShouldQu
         $document = $submission->fiscalDocument;
 
         if (! $workspace instanceof Workspace || ! $document instanceof FiscalDocument) {
+            return;
+        }
+
+        if ($status === AgtSubmissionStatus::Cancelled) {
             return;
         }
 
@@ -348,30 +297,6 @@ class PollAgtSubmissionStatus implements ShouldBeUniqueUntilProcessing, ShouldQu
                 'response_body_sha256' => $result->responseBodySha256,
             ],
         );
-    }
-
-    private function recordAttempt(
-        AgtSubmission $submission,
-        AgtInvoiceStatusResult $result,
-        CarbonInterface $startedAt,
-    ): void {
-        $submission->attempts()->create([
-            'workspace_id' => $submission->workspace_id,
-            'legal_entity_id' => $submission->legal_entity_id,
-            'operation' => AgtSubmissionAttemptOperation::QueryStatus,
-            'attempt_number' => $submission->attempt_count,
-            'endpoint_path' => $result->endpoint,
-            'request_body' => $result->requestBody,
-            'request_body_sha256' => $result->requestBodySha256,
-            'response_body' => $result->responseBody,
-            'response_body_sha256' => $result->responseBodySha256,
-            'http_status' => $result->httpStatus,
-            'result_code' => $result->resultCode,
-            'error_codes' => $result->requestErrorCodes,
-            'safe_message' => $result->safeMessage,
-            'started_at' => $startedAt,
-            'completed_at' => now(),
-        ]);
     }
 
     /** @param array<string, mixed> $context */

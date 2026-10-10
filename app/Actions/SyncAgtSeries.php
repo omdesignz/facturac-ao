@@ -166,8 +166,12 @@ final readonly class SyncAgtSeries
         $series = FiscalSeries::query()
             ->where('legal_entity_id', $legalEntity->id)
             ->where('series_code', $remote->seriesCode)
+            ->where('environment', $connection->environment->value)
             ->lockForUpdate()
             ->first();
+        if ($series instanceof FiscalSeries && $series->agtConnection->environment !== $connection->environment) {
+            throw new UnexpectedValueException('A série existente pertence a outro ambiente AGT. A sincronização foi recusada.');
+        }
         $nextFromAgt = max($first, ($lastCreated ?? ($first - 1)) + 1);
         $next = $series instanceof FiscalSeries
             ? max($series->next_number, $nextFromAgt)

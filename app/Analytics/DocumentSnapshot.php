@@ -2,6 +2,8 @@
 
 namespace App\Analytics;
 
+use App\Fiscal\Documents\AgtStatusPresentation;
+use App\Fiscal\Documents\CurrentAgtState;
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
 use App\Models\AgtSubmission;
@@ -58,8 +60,8 @@ class DocumentSnapshot
             'public_id' => $document->public_id,
             'document_no' => $document->document_no,
             'type_label' => $document->document_type->label(),
-            'status' => $document->status->value,
-            'status_label' => $document->status->label(),
+            'status' => CurrentAgtState::status($document, $now)->value,
+            'status_label' => AgtStatusPresentation::label($document, $now),
             'customer_name' => $document->customer_name,
             'customer_tax_identification_number' => $document->customer_tax_identification_number,
             'establishment_name' => $document->establishment->name ?? null,
@@ -72,15 +74,11 @@ class DocumentSnapshot
             'document_date' => $document->document_date->toDateString(),
             'due_date' => $document->due_date?->toDateString(),
             'days_past_due' => $daysPastDue,
-            'agt_message' => $this->needsExplaining($document) ? $submission?->safe_message : null,
-            'agt_error_codes' => $this->needsExplaining($document) ? ($submission->last_error_codes ?? []) : [],
-            'steps' => $this->steps($document, $submission, $outstanding, $daysPastDue),
+            'agt_message' => AgtStatusPresentation::describe($document, $now)['explanation']['message'],
+            'agt_operational' => AgtStatusPresentation::describe($document, $now),
+            'agt_error_codes' => [],
+            'steps' => $this->steps($document, $submission, $outstanding, $daysPastDue, $now),
         ];
-    }
-
-    private function needsExplaining(FiscalDocument $document): bool
-    {
-        return in_array($document->status, self::NEEDS_ATTENTION, true);
     }
 
     /**
@@ -96,27 +94,30 @@ class DocumentSnapshot
         ?AgtSubmission $submission,
         int $outstanding,
         int $daysPastDue,
+        CarbonImmutable $asOf,
     ): array {
-        $status = $document->status;
+        $status = CurrentAgtState::status($document, $asOf)->value;
+        $view = AgtStatusPresentation::describe($document, $asOf);
+        $observedAt = $view['observed_at'] === null ? null : CarbonImmutable::parse($view['observed_at']);
         $sentAt = $submission->submitted_at ?? $submission?->received_at;
 
         $agt = match (true) {
-            $status === FiscalDocumentStatus::Valid => [
-                'label' => 'Validada',
-                'at' => $submission?->completed_at,
+            $status === 'valid' => [
+                'label' => AgtStatusPresentation::label($document, $asOf),
+                'at' => $observedAt,
                 'state' => 'done',
                 'detail' => null,
             ],
-            $status === FiscalDocumentStatus::Invalid => [
-                'label' => 'Inválida',
-                'at' => $submission->failed_at ?? $submission?->completed_at,
+            in_array($status, CurrentAgtState::ATTENTION, true) => [
+                'label' => AgtStatusPresentation::label($document, $asOf),
+                'at' => $observedAt,
                 'state' => 'error',
-                'detail' => $submission?->safe_message,
+                'detail' => $view['explanation']['message'],
             ],
             default => [
                 'label' => 'Validada',
                 'at' => null,
-                'state' => in_array($status, self::IN_FLIGHT, true) ? 'current' : 'todo',
+                'state' => in_array($status, CurrentAgtState::ACTIVE, true) ? 'current' : 'todo',
                 'detail' => null,
             ],
         };
@@ -126,7 +127,7 @@ class DocumentSnapshot
                 'key' => 'draft',
                 'label' => 'Rascunho',
                 'at' => $document->created_at,
-                'state' => $status === FiscalDocumentStatus::Draft ? 'current' : 'done',
+                'state' => $status === 'draft' ? 'current' : 'done',
                 'detail' => null,
             ],
             [
@@ -138,11 +139,11 @@ class DocumentSnapshot
             ],
             [
                 'key' => 'sent',
-                'label' => $status === FiscalDocumentStatus::Contingency ? 'Em contingência' : 'Enviada à AGT',
+                'label' => $status === 'contingency' ? 'Em contingência' : 'Enviada à AGT',
                 'at' => $sentAt,
                 'state' => match (true) {
                     $sentAt !== null => 'done',
-                    $status === FiscalDocumentStatus::Contingency => 'current',
+                    $status === 'contingency' => 'current',
                     default => 'todo',
                 },
                 'detail' => null,
@@ -154,7 +155,7 @@ class DocumentSnapshot
         // note or a standalone receipt ends at validation.
         if ($this->receivables->isBillable($document->document_type)) {
             // A draft has asked nobody for money, so it cannot be paid yet.
-            $paid = $status !== FiscalDocumentStatus::Draft
+            $paid = $status !== 'draft'
                 && ($document->document_type === FiscalDocumentType::InvoiceReceipt || $outstanding === 0);
 
             $steps[] = [

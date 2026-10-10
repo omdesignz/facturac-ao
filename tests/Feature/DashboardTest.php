@@ -133,18 +133,19 @@ test('a document the AGT marked invalid leads the page with the AGT explanation'
         'submitted_at' => now()->subMinutes(3),
         'failed_at' => now()->subMinutes(2),
     ]);
+    recordAuthoritativeAgtAcceptance($invalid, 'I');
 
     $this->actingAs($fixture['owner'])
         ->get(route('dashboard'))
         ->assertInertia(fn (Assert $page) => $page
             ->where('focus.reason', 'invalid')
             ->where('focus.document_no', 'FT 2026/148')
-            ->where('focus.agt_message', 'O NIF do adquirente não foi reconhecido.')
-            ->where('focus.agt_error_codes', ['E-104'])
+            ->where('focus.agt_message', 'A AGT reportou o documento inválido na data indicada.')
+            ->where('focus.agt_error_codes', [])
             ->where('focus.steps.3.key', 'agt')
             ->where('focus.steps.3.state', 'error')
-            ->where('kpis.attention_count', 1)
-            ->where('review.attention_count', 1)
+            ->where('kpis.attention_count', 2)
+            ->where('review.attention_count', 2)
         );
 });
 
@@ -174,18 +175,20 @@ test('without an AGT problem the most overdue invoice leads, with how late it is
 test('on a quiet day the latest document leads and an invoice-receipt counts as paid', function () {
     $fixture = dashboardFixture();
 
-    dashboardDocument($fixture, [
+    $document = dashboardDocument($fixture, [
         'document_no' => 'FR 2026/22',
         'document_type' => FiscalDocumentType::InvoiceReceipt,
         'status' => FiscalDocumentStatus::Valid,
     ]);
+
+    recordAuthoritativeAgtAcceptance($document);
 
     $this->actingAs($fixture['owner'])
         ->get(route('dashboard'))
         ->assertInertia(fn (Assert $page) => $page
             ->where('focus.reason', 'latest')
             ->where('focus.document_no', 'FR 2026/22')
-            ->where('focus.agt_message', null)
+            ->where('focus.agt_message', 'A AGT reportou validação na data indicada.')
             ->where('focus.steps.4.state', 'done')
             ->where('kpis.valid_today', 1)
         );
