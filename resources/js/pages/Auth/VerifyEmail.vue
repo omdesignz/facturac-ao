@@ -72,7 +72,7 @@ const linkWasSent = computed(
                     :href="logout.url()"
                     method="post"
                     as="button"
-                    class="font-semibold text-brand-700 hover:text-brand-600 dark:text-brand-300"
+                    class="rounded font-semibold text-brand-700 focus-ring hover:text-brand-600 dark:text-brand-300 dark:hover:text-brand-100"
                     >Terminar sessão</Link
                 >
             </p>

@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { Form, Head, Link } from '@inertiajs/vue3';
 import { LoaderCircle } from '@lucide/vue';
+import { onMounted, ref } from 'vue';
 import FormError from '@/components/FormError.vue';
 import GoogleMark from '@/components/GoogleMark.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
+import { focusFirstInvalid } from '@/lib/focus';
 import { login } from '@/routes';
 import { store as registerStore } from '@/routes/register';
 import { redirect as googleRedirect } from '@/routes/social/google';
@@ -11,6 +13,18 @@ import { redirect as googleRedirect } from '@/routes/social/google';
 defineProps<{
     googleEnabled: boolean;
 }>();
+
+const nameInput = ref<HTMLInputElement | null>(null);
+
+/**
+ * Focus the first field on arrival only where there is a keyboard to answer
+ * it; on a phone it would open the on-screen keyboard over the form.
+ */
+onMounted(() => {
+    if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+        nameInput.value?.focus();
+    }
+});
 </script>
 
 <template>
@@ -25,24 +39,27 @@ defineProps<{
             v-bind="registerStore.form()"
             :reset-on-success="['password', 'password_confirmation']"
             class="space-y-5"
+            @error="focusFirstInvalid()"
             #default="{ errors, processing }"
         >
             <div>
                 <label
                     for="name"
                     class="block text-sm/6 font-medium text-zinc-900 dark:text-zinc-100"
-                    >Seu nome</label
+                    >O seu nome</label
                 >
                 <input
                     id="name"
+                    ref="nameInput"
                     name="name"
                     type="text"
                     autocomplete="name"
                     required
-                    autofocus
+                    :aria-invalid="errors.name ? 'true' : undefined"
+                    :aria-describedby="errors.name ? 'name-error' : undefined"
                     class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-base text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 sm:text-sm dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
                 />
-                <FormError :message="errors.name" />
+                <FormError id="name-error" :message="errors.name" />
             </div>
 
             <div>
@@ -57,10 +74,19 @@ defineProps<{
                     type="text"
                     autocomplete="organization"
                     required
+                    :aria-invalid="errors.workspace_name ? 'true' : undefined"
+                    :aria-describedby="
+                        errors.workspace_name
+                            ? 'workspace-name-error'
+                            : undefined
+                    "
                     class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-base text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 sm:text-sm dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
                     placeholder="Ex.: Kwanza Mercantil"
                 />
-                <FormError :message="errors.workspace_name" />
+                <FormError
+                    id="workspace-name-error"
+                    :message="errors.workspace_name"
+                />
             </div>
 
             <div>
@@ -73,12 +99,17 @@ defineProps<{
                     id="email"
                     name="email"
                     type="email"
+                    inputmode="email"
                     autocomplete="username"
+                    autocapitalize="none"
+                    spellcheck="false"
                     required
+                    :aria-invalid="errors.email ? 'true' : undefined"
+                    :aria-describedby="errors.email ? 'email-error' : undefined"
                     class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-base text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 sm:text-sm dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
                     placeholder="nome@empresa.ao"
                 />
-                <FormError :message="errors.email" />
+                <FormError id="email-error" :message="errors.email" />
             </div>
 
             <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
@@ -94,9 +125,13 @@ defineProps<{
                         type="password"
                         autocomplete="new-password"
                         required
-                        class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                        :aria-invalid="errors.password ? 'true' : undefined"
+                        :aria-describedby="
+                            errors.password ? 'password-error' : undefined
+                        "
+                        class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-base text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 sm:text-sm dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
                     />
-                    <FormError :message="errors.password" />
+                    <FormError id="password-error" :message="errors.password" />
                 </div>
                 <div>
                     <label
@@ -110,7 +145,7 @@ defineProps<{
                         type="password"
                         autocomplete="new-password"
                         required
-                        class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                        class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-base text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 sm:text-sm dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
                     />
                 </div>
             </div>
@@ -160,7 +195,7 @@ defineProps<{
                 Já tem conta?
                 <Link
                     :href="login.url()"
-                    class="font-semibold text-brand-700 hover:text-brand-600 dark:text-brand-300"
+                    class="rounded font-semibold text-brand-700 focus-ring hover:text-brand-600 dark:text-brand-300 dark:hover:text-brand-100"
                     >Entrar</Link
                 >
             </p>

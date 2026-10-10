@@ -23,16 +23,22 @@ const props = defineProps<{
 }>();
 
 const menuOpen = ref(false);
+const menuButton = ref<HTMLButtonElement | null>(null);
 const selectedMomentIndex = ref(0);
 const selectedLifecycleIndex = ref(0);
 const closingWordmark = ref<InstanceType<typeof BrandWordmark> | null>(null);
 
 let lifecycleTimer: number | undefined;
 
-/** Escape closes the menu, which is the one shortcut people try without asking. */
+/**
+ * Escape closes the menu, which is the one shortcut people try without asking,
+ * and hands focus back to the button that opened it so the keyboard is not
+ * left on a link that has just disappeared.
+ */
 function closeOnEscape(event: KeyboardEvent): void {
-    if (event.key === 'Escape') {
+    if (event.key === 'Escape' && menuOpen.value) {
         menuOpen.value = false;
+        menuButton.value?.focus();
     }
 }
 
@@ -488,14 +494,16 @@ const questions: { question: string; answer: string }[] = [
             class="sticky top-0 z-50 border-b border-zinc-900/5 bg-white/85 backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/85"
         >
             <nav
-                class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-6 px-5 sm:px-8"
+                class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-5 sm:gap-6 sm:px-8"
                 aria-label="Principal"
             >
                 <a
                     href="#topo"
-                    class="rounded-lg text-brand-950 focus-ring dark:text-white"
+                    class="shrink-0 rounded-lg text-brand-950 focus-ring dark:text-white"
                 >
-                    <BrandWordmark class="h-5 w-auto sm:h-[1.4rem]" />
+                    <BrandWordmark
+                        class="h-4 w-auto min-[360px]:h-5 sm:h-[1.4rem]"
+                    />
                 </a>
 
                 <div
@@ -519,13 +527,14 @@ const questions: { question: string; answer: string }[] = [
                     </Link>
                     <Link
                         :href="register.url()"
-                        class="inline-flex h-10 items-center rounded-full bg-accent-400 px-4 text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1)] focus-ring transition hover:bg-accent-300"
+                        class="inline-flex h-10 items-center rounded-full bg-accent-400 px-3.5 text-sm font-semibold whitespace-nowrap text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1)] focus-ring transition hover:bg-accent-300 sm:px-4"
                     >
                         Abrir conta
                     </Link>
                     <button
+                        ref="menuButton"
                         type="button"
-                        class="rounded-full p-2 text-brand-800 focus-ring transition hover:bg-brand-50 lg:hidden dark:text-zinc-200 dark:hover:bg-white/5"
+                        class="grid size-10 place-items-center rounded-full text-brand-800 focus-ring transition hover:bg-brand-50 lg:hidden dark:text-zinc-200 dark:hover:bg-white/5 pointer-coarse:size-11"
                         :aria-expanded="menuOpen"
                         aria-controls="menu-movel"
                         @click="menuOpen = !menuOpen"
@@ -542,28 +551,33 @@ const questions: { question: string; answer: string }[] = [
                 </div>
             </nav>
 
-            <div
-                v-if="menuOpen"
-                id="menu-movel"
-                class="border-t border-zinc-900/5 px-5 pb-4 lg:hidden dark:border-white/10"
+            <Transition
+                enter-active-class="transition duration-150 ease-out motion-reduce:transition-none"
+                enter-from-class="-translate-y-1 opacity-0"
             >
-                <a
-                    v-for="section in sections"
-                    :key="section.href"
-                    :href="section.href"
-                    class="block rounded-lg py-2.5 text-sm font-medium text-brand-700 focus-ring dark:text-zinc-300"
-                    @click="menuOpen = false"
-                    >{{ section.label }}</a
+                <div
+                    v-if="menuOpen"
+                    id="menu-movel"
+                    class="border-t border-zinc-900/5 px-5 pb-4 lg:hidden dark:border-white/10"
                 >
-                <Link
-                    :href="login.url()"
-                    class="block rounded-lg py-2.5 text-sm font-medium text-brand-700 focus-ring sm:hidden dark:text-zinc-300"
-                    >Entrar</Link
-                >
-            </div>
+                    <a
+                        v-for="section in sections"
+                        :key="section.href"
+                        :href="section.href"
+                        class="block rounded-lg py-3 text-sm font-medium text-brand-700 focus-ring dark:text-zinc-300"
+                        @click="menuOpen = false"
+                        >{{ section.label }}</a
+                    >
+                    <Link
+                        :href="login.url()"
+                        class="block rounded-lg py-3 text-sm font-medium text-brand-700 focus-ring sm:hidden dark:text-zinc-300"
+                        >Entrar</Link
+                    >
+                </div>
+            </Transition>
         </header>
 
-        <main id="conteudo">
+        <main id="conteudo" tabindex="-1" class="focus:outline-hidden">
             <!-- ---------------------------------------------------------- hero -->
             <section
                 id="topo"
@@ -571,7 +585,7 @@ const questions: { question: string; answer: string }[] = [
             >
                 <div>
                     <p
-                        class="flex flex-wrap items-center gap-2.5 text-xs font-medium tracking-[0.08em] text-brand-400 uppercase dark:text-zinc-500"
+                        class="flex flex-wrap items-center gap-2.5 text-xs font-medium tracking-[0.08em] text-brand-500 uppercase dark:text-zinc-400"
                     >
                         Facturação electrónica para Angola
                         <span
@@ -579,9 +593,7 @@ const questions: { question: string; answer: string }[] = [
                             >Pronta para 2027</span
                         >
                     </p>
-                    <h1
-                        class="mt-5 font-display text-[2.85rem] leading-[0.98] tracking-[-0.035em] text-balance sm:text-6xl lg:text-[5.25rem]"
-                    >
+                    <h1 class="mt-5 font-display text-hero text-balance">
                         Facturação sempre acabou em
                         <span class="whitespace-nowrap"
                             ><span class="brand-dot" aria-hidden="true" /><span
@@ -611,7 +623,7 @@ const questions: { question: string; answer: string }[] = [
                             Ver o que resolve
                         </a>
                     </div>
-                    <p class="mt-4 text-sm text-brand-400 dark:text-zinc-500">
+                    <p class="mt-4 text-sm text-brand-500 dark:text-zinc-400">
                         Sem cartão. Sem contrato. Os seus dados saem consigo se
                         um dia quiser sair.
                     </p>
@@ -622,7 +634,7 @@ const questions: { question: string; answer: string }[] = [
                     with the gold dot travelling to its full stop. The steps are
                     buttons, so the reader can walk it themselves.
                 -->
-                <div class="relative">
+                <div class="relative mx-auto w-full max-w-md lg:max-w-none">
                     <div
                         class="ml-auto w-full max-w-sm rounded-md bg-white p-6 text-[0.72rem]/[1.45] text-zinc-800 shadow-[0_2px_6px_rgb(23_23_22/0.06),0_40px_70px_-36px_rgb(23_23_22/0.38)] ring-1 ring-zinc-900/5"
                         aria-label="Exemplo de uma factura-recibo"
@@ -750,7 +762,7 @@ const questions: { question: string; answer: string }[] = [
                             class="flex items-baseline justify-between gap-4 text-sm"
                         >
                             <span
-                                class="font-mono text-xs text-brand-400 dark:text-zinc-500"
+                                class="font-mono text-xs text-brand-500 dark:text-zinc-400"
                                 >FR LOJA2026/00184</span
                             >
                             <span class="font-semibold" aria-live="polite"
@@ -767,7 +779,7 @@ const questions: { question: string; answer: string }[] = [
                                 class="absolute inset-x-0 top-2 h-0.5 rounded bg-zinc-200 dark:bg-white/10"
                             />
                             <span
-                                class="absolute top-2 left-0 h-0.5 rounded bg-brand-950 transition-[width] duration-700 ease-[cubic-bezier(0.65,0,0.35,1)] motion-reduce:transition-none dark:bg-white"
+                                class="absolute top-2 left-0 h-0.5 rounded bg-brand-950 transition-[width] duration-[450ms] ease-in-out-strong motion-reduce:transition-none dark:bg-white"
                                 :style="{
                                     width: `${(selectedLifecycleIndex / (lifecycle.length - 1)) * 100}%`,
                                 }"
@@ -776,7 +788,7 @@ const questions: { question: string; answer: string }[] = [
                                 v-for="(stage, index) in lifecycle"
                                 :key="stage.status"
                                 type="button"
-                                class="absolute top-0 -ml-2.5 grid size-5 place-items-center rounded-full focus-ring"
+                                class="absolute top-0 -ml-2.5 grid size-5 place-items-center rounded-full focus-ring after:absolute after:-inset-3 after:content-['']"
                                 :style="{
                                     left: `${(index / (lifecycle.length - 1)) * 100}%`,
                                 }"
@@ -794,7 +806,7 @@ const questions: { question: string; answer: string }[] = [
                                 />
                             </button>
                             <span
-                                class="pointer-events-none absolute top-0 -ml-2.5 size-5 rounded-full bg-accent-400 shadow-[0_0_0_4px_white,0_6px_14px_-4px_rgb(150_95_0/0.55)] transition-[left] duration-700 ease-[cubic-bezier(0.65,0,0.35,1)] motion-reduce:transition-none dark:shadow-[0_0_0_4px_var(--color-zinc-900)]"
+                                class="pointer-events-none absolute top-0 -ml-2.5 size-5 rounded-full bg-accent-400 shadow-[0_0_0_4px_white,0_6px_14px_-4px_rgb(150_95_0/0.55)] transition-[left] duration-[450ms] ease-in-out-strong motion-reduce:transition-none dark:shadow-[0_0_0_4px_var(--color-zinc-900)]"
                                 :style="{
                                     left: `${(selectedLifecycleIndex / (lifecycle.length - 1)) * 100}%`,
                                 }"
@@ -819,7 +831,7 @@ const questions: { question: string; answer: string }[] = [
                                 ]"
                                 >{{ stage.status
                                 }}<span
-                                    class="block font-normal text-brand-400 dark:text-zinc-500"
+                                    class="block font-normal text-brand-500 dark:text-zinc-400"
                                     >{{ stage.time }}</span
                                 ></span
                             >
@@ -858,19 +870,17 @@ const questions: { question: string; answer: string }[] = [
             </div>
 
             <!-- ------------------------------------------------------ deadline -->
-            <section id="prazo" class="px-5 pt-24 sm:px-8 lg:pt-32">
+            <section id="prazo" class="px-5 pt-(--space-section) sm:px-8">
                 <div
                     v-reveal
                     class="mx-auto grid max-w-6xl items-end gap-10 rounded-[2rem] bg-brand-950 p-8 text-white sm:p-12 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:p-16 dark:bg-zinc-900 dark:ring-1 dark:ring-white/10"
                 >
                     <div>
-                        <p
-                            class="font-display text-[3.4rem] leading-[0.9] tracking-[-0.04em] whitespace-nowrap sm:text-7xl lg:text-[7rem]"
-                        >
+                        <h2 class="font-display text-stamp whitespace-nowrap">
                             <span aria-hidden="true"
                                 >atenc<span class="brand-dot" />ao</span
                             ><span class="sr-only">Atenção</span>
-                        </p>
+                        </h2>
                         <p
                             v-if="daysUntilMandatory > 0"
                             class="mt-6 flex items-baseline gap-3"
@@ -926,12 +936,10 @@ const questions: { question: string; answer: string }[] = [
             <!-- ------------------------------------------------------- moments -->
             <section
                 id="momentos"
-                class="mx-auto max-w-6xl px-5 pt-24 sm:px-8 lg:pt-32"
+                class="mx-auto max-w-6xl px-5 pt-(--space-section) sm:px-8"
             >
-                <div v-reveal class="max-w-2xl">
-                    <h2
-                        class="font-display text-4xl leading-[1.02] tracking-[-0.03em] text-balance sm:text-5xl"
-                    >
+                <div class="max-w-2xl">
+                    <h2 class="font-display text-section text-balance">
                         Feito para o que acontece num dia de trabalho
                     </h2>
                     <p class="mt-4 text-lg text-brand-600 dark:text-zinc-400">
@@ -972,8 +980,8 @@ const questions: { question: string; answer: string }[] = [
                                 class="shrink-0 font-mono text-xs font-normal"
                                 :class="
                                     index === selectedMomentIndex
-                                        ? 'text-accent-600 dark:text-accent-400'
-                                        : 'text-brand-400 dark:text-zinc-500'
+                                        ? 'text-accent-700 dark:text-accent-400'
+                                        : 'text-brand-500 dark:text-zinc-400'
                                 "
                                 >{{ moment.tag }}</span
                             >
@@ -998,7 +1006,7 @@ const questions: { question: string; answer: string }[] = [
                                 class="flex items-center justify-between gap-3"
                             >
                                 <span
-                                    class="text-[0.7rem] font-medium tracking-[0.07em] text-brand-400 uppercase dark:text-zinc-500"
+                                    class="text-[0.7rem] font-medium tracking-[0.07em] text-brand-500 uppercase dark:text-zinc-400"
                                     >{{ selectedMoment.proof.eyebrow }}</span
                                 >
                                 <span
@@ -1021,7 +1029,7 @@ const questions: { question: string; answer: string }[] = [
                                     class="flex justify-between gap-4 border-t border-zinc-900/5 py-2.5 text-sm dark:border-white/10"
                                 >
                                     <dt
-                                        class="text-brand-400 dark:text-zinc-500"
+                                        class="text-brand-500 dark:text-zinc-400"
                                     >
                                         {{ row.label }}
                                     </dt>
@@ -1046,12 +1054,10 @@ const questions: { question: string; answer: string }[] = [
             <!-- ------------------------------------------------ small business -->
             <section
                 id="pequenos"
-                class="mx-auto grid max-w-6xl items-center gap-14 px-5 pt-24 sm:px-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-20 lg:pt-32"
+                class="mx-auto grid max-w-6xl items-center gap-14 px-5 pt-(--space-section) sm:px-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-20"
             >
                 <div v-reveal>
-                    <h2
-                        class="font-display text-4xl leading-[1.02] tracking-[-0.03em] text-balance sm:text-5xl"
-                    >
+                    <h2 class="font-display text-section text-balance">
                         Comece pelo telemóvel que já tem no bolso
                     </h2>
                     <p class="mt-4 text-lg text-brand-600 dark:text-zinc-400">
@@ -1151,7 +1157,7 @@ const questions: { question: string; answer: string }[] = [
                                 class="text-right numeric text-[0.72rem] font-semibold"
                                 >{{ row.amount }}
                                 <span
-                                    class="block text-[0.6rem] text-accent-600 dark:text-accent-400"
+                                    class="block text-[0.6rem] text-accent-700 dark:text-accent-400"
                                     >Lembrar</span
                                 ></span
                             >
@@ -1161,14 +1167,14 @@ const questions: { question: string; answer: string }[] = [
             </section>
 
             <!-- ----------------------------------------------------- switching -->
-            <section id="mudar" class="px-5 pt-24 sm:px-8 lg:pt-32">
+            <section id="mudar" class="px-5 pt-(--space-section) sm:px-8">
                 <div
                     v-reveal
                     class="mx-auto max-w-6xl rounded-[2rem] bg-accent-400 p-8 text-brand-950 [--wordmark-dot:var(--color-brand-950)] sm:p-12 lg:p-16"
                 >
                     <div class="flex flex-wrap items-end justify-between gap-6">
                         <h2
-                            class="font-display text-[3.2rem] leading-[0.9] tracking-[-0.04em] whitespace-nowrap sm:text-7xl lg:text-[6.5rem]"
+                            class="font-display text-[length:clamp(2.75rem,0.5rem+11vw,6.5rem)] leading-[0.9] tracking-[-0.04em] whitespace-nowrap"
                         >
                             <span aria-hidden="true"
                                 >migrac<span class="brand-dot" />ao</span
@@ -1209,11 +1215,11 @@ const questions: { question: string; answer: string }[] = [
             <!-- ------------------------------------------------------ included -->
             <section
                 id="incluido"
-                class="mx-auto max-w-6xl px-5 pt-24 sm:px-8 lg:pt-32"
+                class="mx-auto max-w-6xl px-5 pt-(--space-section) sm:px-8"
             >
                 <h2
                     v-reveal
-                    class="max-w-3xl font-display text-4xl leading-[1.02] tracking-[-0.03em] text-balance sm:text-5xl"
+                    class="max-w-3xl font-display text-section text-balance"
                 >
                     Tudo o que a AGT pede, e o resto que o seu negócio precisa
                 </h2>
@@ -1224,7 +1230,7 @@ const questions: { question: string; answer: string }[] = [
                         v-reveal="index"
                     >
                         <h3
-                            class="border-b border-brand-950 pb-3 text-xs font-semibold tracking-[0.07em] text-brand-400 uppercase dark:border-white dark:text-zinc-500"
+                            class="border-b border-brand-950 pb-3 text-xs font-semibold tracking-[0.07em] text-brand-500 uppercase dark:border-white dark:text-zinc-400"
                         >
                             {{ group.group }}
                         </h3>
@@ -1240,7 +1246,7 @@ const questions: { question: string; answer: string }[] = [
                     </div>
                     <div v-reveal="2">
                         <h3
-                            class="border-b border-brand-950 pb-3 text-xs font-semibold tracking-[0.07em] text-brand-400 uppercase dark:border-white dark:text-zinc-500"
+                            class="border-b border-brand-950 pb-3 text-xs font-semibold tracking-[0.07em] text-brand-500 uppercase dark:border-white dark:text-zinc-400"
                         >
                             Fiscal e confiança
                         </h3>
@@ -1252,7 +1258,7 @@ const questions: { question: string; answer: string }[] = [
                             >
                                 <dt>{{ row.term }}</dt>
                                 <dd
-                                    class="mt-0.5 text-sm text-brand-400 dark:text-zinc-500"
+                                    class="mt-0.5 text-sm text-brand-500 dark:text-zinc-400"
                                 >
                                     {{ row.value }}
                                 </dd>
@@ -1265,12 +1271,10 @@ const questions: { question: string; answer: string }[] = [
             <!-- --------------------------------------------------------- plans -->
             <section
                 id="precos"
-                class="mx-auto max-w-6xl px-5 pt-24 sm:px-8 lg:pt-32"
+                class="mx-auto max-w-6xl px-5 pt-(--space-section) sm:px-8"
             >
-                <div v-reveal class="max-w-2xl">
-                    <h2
-                        class="font-display text-4xl leading-[1.02] tracking-[-0.03em] text-balance sm:text-5xl"
-                    >
+                <div class="max-w-2xl">
+                    <h2 class="font-display text-section text-balance">
                         Experimente primeiro. Decida depois.
                     </h2>
                     <p class="mt-4 text-lg text-brand-600 dark:text-zinc-400">
@@ -1368,15 +1372,14 @@ const questions: { question: string; answer: string }[] = [
             <!-- ----------------------------------------------------- questions -->
             <section
                 id="perguntas"
-                class="mx-auto grid max-w-6xl gap-10 px-5 pt-24 sm:px-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16 lg:pt-32"
+                class="mx-auto grid max-w-6xl gap-10 px-5 pt-(--space-section) sm:px-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16"
             >
-                <h2
-                    v-reveal
-                    class="font-display text-4xl leading-[1.02] tracking-[-0.03em] text-balance sm:text-5xl"
-                >
+                <h2 class="font-display text-section text-balance">
                     O que as pessoas perguntam antes de mudar
                 </h2>
-                <div class="border-t border-zinc-900/10 dark:border-white/10">
+                <div
+                    class="faq border-t border-zinc-900/10 dark:border-white/10"
+                >
                     <details
                         v-for="(item, index) in questions"
                         :key="item.question"
@@ -1415,7 +1418,7 @@ const questions: { question: string; answer: string }[] = [
                     class="mt-8 font-display text-xl tracking-[-0.02em] sm:text-2xl"
                 >
                     Tire o til. Tire a cedilha. Ponha um ponto.
-                    <span class="text-brand-400 dark:text-zinc-500"
+                    <span class="text-brand-500 dark:text-zinc-400"
                         >É só isso.</span
                     >
                 </p>
@@ -1427,7 +1430,7 @@ const questions: { question: string; answer: string }[] = [
                 </Link>
                 <button
                     type="button"
-                    class="mt-4 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-brand-400 focus-ring transition hover:text-brand-950 dark:text-zinc-500 dark:hover:text-white"
+                    class="mt-4 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-brand-500 focus-ring transition hover:text-brand-950 dark:text-zinc-400 dark:hover:text-white"
                     @click="closingWordmark?.replay()"
                 >
                     <RotateCcw class="size-3.5" aria-hidden="true" />
@@ -1462,7 +1465,7 @@ const questions: { question: string; answer: string }[] = [
                 </div>
                 <nav aria-label="Produto">
                     <p
-                        class="text-xs font-medium tracking-[0.07em] text-brand-400 uppercase dark:text-zinc-500"
+                        class="text-xs font-medium tracking-[0.07em] text-brand-500 uppercase dark:text-zinc-400"
                     >
                         Produto
                     </p>
@@ -1478,7 +1481,7 @@ const questions: { question: string; answer: string }[] = [
                 </nav>
                 <nav aria-label="Legal">
                     <p
-                        class="text-xs font-medium tracking-[0.07em] text-brand-400 uppercase dark:text-zinc-500"
+                        class="text-xs font-medium tracking-[0.07em] text-brand-500 uppercase dark:text-zinc-400"
                     >
                         Legal
                     </p>

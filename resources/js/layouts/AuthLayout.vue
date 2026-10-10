@@ -47,21 +47,30 @@ onMounted(() => {
 
 <template>
     <div
-        class="flex min-h-screen bg-white text-zinc-950 dark:bg-zinc-950 dark:text-white"
+        class="flex min-h-svh bg-white text-zinc-950 dark:bg-zinc-950 dark:text-white"
     >
+        <a
+            href="#conteudo"
+            class="sr-only focus-ring focus:not-sr-only focus:fixed focus:inset-s-3 focus:inset-bs-3 focus:z-[100] focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold dark:focus:bg-zinc-900"
+        >
+            Saltar para o conteúdo
+        </a>
+
         <CookieConsent />
 
         <main
-            class="relative flex flex-1 flex-col justify-center px-5 py-10 sm:px-8 lg:flex-none lg:px-20 xl:px-24"
+            id="conteudo"
+            tabindex="-1"
+            class="relative flex flex-1 flex-col justify-center px-5 py-10 focus:outline-hidden sm:px-8 lg:flex-none lg:px-20 xl:px-24"
         >
             <button
                 type="button"
-                class="absolute top-5 right-5 rounded-full p-2.5 text-zinc-500 ring-1 ring-zinc-900/10 focus-ring transition hover:bg-zinc-50 hover:text-zinc-950 dark:text-zinc-400 dark:ring-white/10 dark:hover:bg-white/5 dark:hover:text-white"
+                class="absolute inset-e-5 inset-bs-5 grid size-10 place-items-center rounded-full text-zinc-500 ring-1 ring-zinc-900/10 focus-ring transition hover:bg-zinc-50 hover:text-zinc-950 dark:text-zinc-400 dark:ring-white/10 dark:hover:bg-white/5 dark:hover:text-white pointer-coarse:size-11"
                 :aria-label="isDark ? 'Usar tema claro' : 'Usar tema escuro'"
                 @click="toggleAppearance"
             >
-                <Sun v-if="isDark" class="size-5" aria-hidden="true" />
-                <Moon v-else class="size-5" aria-hidden="true" />
+                <Sun class="hidden size-5 dark:block" aria-hidden="true" />
+                <Moon class="size-5 dark:hidden" aria-hidden="true" />
             </button>
 
             <div class="mx-auto w-full max-w-sm lg:w-96">
@@ -114,7 +123,7 @@ onMounted(() => {
             it. Underneath, a specimen of what the product makes, as paper.
         -->
         <aside
-            class="sticky top-0 hidden h-screen flex-1 overflow-hidden bg-zinc-900/[0.035] lg:block dark:bg-white/[0.03]"
+            class="sticky top-0 hidden h-dvh flex-1 overflow-clip bg-zinc-900/[0.035] lg:block dark:bg-white/[0.03]"
             aria-label="O que a aplicação faz a cada documento"
         >
             <div

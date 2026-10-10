@@ -3,10 +3,11 @@ import { Form, Head, Link, router, usePage } from '@inertiajs/vue3';
 import { Passkeys } from '@laravel/passkeys';
 import { usePasskeyVerify } from '@laravel/passkeys/vue';
 import { Fingerprint, LoaderCircle, LockKeyhole } from '@lucide/vue';
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import FormError from '@/components/FormError.vue';
 import GoogleMark from '@/components/GoogleMark.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
+import { focusFirstInvalid } from '@/lib/focus';
 import { dashboard, register } from '@/routes';
 import { store as loginStore } from '@/routes/login';
 import { request as passwordRequest } from '@/routes/password';
@@ -66,6 +67,21 @@ async function signInWithPasskey(): Promise<void> {
     }
 }
 
+const emailInput = ref<HTMLInputElement | null>(null);
+
+/**
+ * Focus the email field on arrival, but only where there is a keyboard to
+ * answer it. On a phone, focusing here opens the on-screen keyboard over half
+ * the form before the reader has seen it. Focus is what lets the browser offer
+ * saved passkeys from the field, so the passkey request itself does not depend
+ * on it: it is already waiting from the moment the page loads.
+ */
+onMounted(() => {
+    if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+        emailInput.value?.focus();
+    }
+});
+
 const page = usePage();
 const flash = computed(
     () =>
@@ -104,6 +120,7 @@ const flash = computed(
             v-bind="loginStore.form()"
             :reset-on-success="['password']"
             class="space-y-5"
+            @error="focusFirstInvalid()"
             #default="{ errors, processing }"
         >
             <div>
@@ -114,15 +131,20 @@ const flash = computed(
                 >
                 <input
                     id="email"
+                    ref="emailInput"
                     name="email"
                     type="email"
+                    inputmode="email"
                     autocomplete="username webauthn"
+                    autocapitalize="none"
+                    spellcheck="false"
                     required
-                    autofocus
+                    :aria-invalid="errors.email ? 'true' : undefined"
+                    :aria-describedby="errors.email ? 'email-error' : undefined"
                     class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-base text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 placeholder:text-zinc-400 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 sm:text-sm dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-zinc-500 dark:focus:outline-brand-400"
                     placeholder="nome@empresa.ao"
                 />
-                <FormError :message="errors.email" />
+                <FormError id="email-error" :message="errors.email" />
             </div>
 
             <div>
@@ -135,7 +157,7 @@ const flash = computed(
                     <Link
                         v-if="canResetPassword"
                         :href="passwordRequest.url()"
-                        class="text-sm/6 font-semibold text-brand-700 hover:text-brand-600 dark:text-brand-300 dark:hover:text-brand-200"
+                        class="rounded text-sm/6 font-semibold text-brand-700 focus-ring hover:text-brand-600 dark:text-brand-300 dark:hover:text-brand-200"
                     >
                         Esqueceu-se?
                     </Link>
@@ -146,13 +168,17 @@ const flash = computed(
                     type="password"
                     autocomplete="current-password"
                     required
+                    :aria-invalid="errors.password ? 'true' : undefined"
+                    :aria-describedby="
+                        errors.password ? 'password-error' : undefined
+                    "
                     class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-base text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 sm:text-sm dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
                 />
-                <FormError :message="errors.password" />
+                <FormError id="password-error" :message="errors.password" />
             </div>
 
             <label
-                class="flex w-fit items-center gap-3 text-sm/6 text-zinc-700 dark:text-zinc-300"
+                class="flex min-h-11 w-fit items-center gap-3 py-2 text-sm/6 text-zinc-700 dark:text-zinc-300"
             >
                 <span class="group grid size-4 grid-cols-1">
                     <input
@@ -196,7 +222,7 @@ const flash = computed(
             <button
                 type="button"
                 :disabled="passkeyPending"
-                class="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-white px-4 text-sm font-semibold text-zinc-900 ring-1 ring-zinc-900/10 focus-ring transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
+                class="flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-white px-4 py-2.5 text-center text-sm font-semibold text-zinc-900 ring-1 ring-zinc-900/10 focus-ring transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
                 @click="signInWithPasskey"
             >
                 <LoaderCircle
@@ -241,7 +267,7 @@ const flash = computed(
                 class="flex h-11 w-full items-center justify-center gap-3 rounded-full bg-white px-4 text-sm font-semibold text-zinc-900 ring-1 ring-zinc-900/10 focus-ring transition hover:bg-zinc-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
             >
                 <GoogleMark />
-                Google
+                Continuar com Google
             </a>
         </template>
 
@@ -250,12 +276,12 @@ const flash = computed(
                 Ainda não tem conta?
                 <Link
                     :href="register.url()"
-                    class="font-semibold text-brand-700 hover:text-brand-600 dark:text-brand-300"
+                    class="rounded font-semibold text-brand-700 focus-ring hover:text-brand-600 dark:text-brand-300 dark:hover:text-brand-100"
                     >Criar conta</Link
                 >
             </p>
             <p
-                class="mt-4 flex items-center justify-center gap-2 text-xs text-zinc-400"
+                class="mt-4 flex items-center justify-center gap-2 text-xs text-zinc-500 dark:text-zinc-400"
             >
                 <LockKeyhole class="size-3.5" aria-hidden="true" />
                 Sessão protegida e auditável

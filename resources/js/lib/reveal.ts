@@ -13,7 +13,7 @@ import type { Directive, DirectiveBinding } from 'vue';
  */
 
 /** How far up the viewport an element travels as it arrives, in pixels. */
-const TRAVEL = 18;
+const TRAVEL = 12;
 
 /** The gap between staggered siblings. Long enough to read as a sequence. */
 const STEP_MS = 70;
@@ -27,9 +27,21 @@ const STEP_MS = 70;
  */
 let observer: IntersectionObserver | null = null;
 
+/**
+ * Whether the observer has ever called back.
+ *
+ * An observer delivers a first callback for everything it is given, on screen
+ * or not, so this turns true within a frame or two wherever observers work at
+ * all. It is what lets the failsafe tell "the observer is broken" from "the
+ * observer is simply waiting for the reader to scroll".
+ */
+let alive = false;
+
 function watcher(): IntersectionObserver {
     observer ??= new IntersectionObserver(
         (entries) => {
+            alive = true;
+
             for (const entry of entries) {
                 if (!entry.isIntersecting) {
                     continue;
@@ -70,13 +82,16 @@ function alreadyInView(element: HTMLElement): boolean {
 let failsafe: ReturnType<typeof setTimeout> | undefined;
 
 /**
- * Shows everything still waiting, whatever went wrong.
+ * Shows everything still waiting, if the observer never delivered.
  *
  * The entrance is a nicety; the content is the point. An observer that never
- * delivers — because the page was opened deep at an anchor, because a bot is
- * rendering it, because a browser did something unexpected — must not be able
- * to leave the page blank below the fold. After this fires the animation is
- * simply forfeited, which is the right thing to lose.
+ * calls back — an old browser, a bot rendering the page, something unexpected —
+ * must not be able to leave the page blank below the fold. After this fires the
+ * animation is simply forfeited, which is the right thing to lose.
+ *
+ * It does nothing once the observer has called back: from then on the observer
+ * reveals each element as it arrives, and revealing them early here would spend
+ * every entrance on a reader who has not scrolled yet.
  */
 function armFailsafe(): void {
     if (failsafe !== undefined) {
@@ -84,6 +99,16 @@ function armFailsafe(): void {
     }
 
     failsafe = setTimeout(() => {
+        /*
+         * Cleared so that a page visited again later, with the observer still
+         * silent, arms a fresh one rather than being left without.
+         */
+        failsafe = undefined;
+
+        if (alive) {
+            return;
+        }
+
         for (const waiting of document.querySelectorAll(
             '.reveal:not(.is-revealed)',
         )) {
@@ -102,7 +127,7 @@ export const vReveal: Directive<HTMLElement, number | undefined> = {
          * ordinary styles and never gets the class that hides it, so it is
          * simply there rather than fading in instantly.
          */
-        if (prefersStillness()) {
+        if (prefersStillness() || typeof IntersectionObserver === 'undefined') {
             return;
         }
 

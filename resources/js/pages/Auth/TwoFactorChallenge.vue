@@ -1,12 +1,28 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
 import { KeyRound, LoaderCircle, Smartphone } from '@lucide/vue';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import FormError from '@/components/FormError.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
+import { focusFirstInvalid } from '@/lib/focus';
 import { store as twoFactorLoginStore } from '@/routes/two-factor/login';
 
 const useRecoveryCode = ref(false);
+const recoveryInput = ref<HTMLInputElement | null>(null);
+const codeInput = ref<HTMLInputElement | null>(null);
+
+/**
+ * Switching between the two kinds of code swaps the field under the reader's
+ * hands. Focus would otherwise stay on the toggle, so the next thing typed
+ * goes nowhere; it follows the field that has just appeared instead.
+ */
+watch(
+    useRecoveryCode,
+    (usingRecoveryCode) => {
+        (usingRecoveryCode ? recoveryInput : codeInput).value?.focus();
+    },
+    { flush: 'post' },
+);
 </script>
 
 <template>
@@ -15,7 +31,7 @@ const useRecoveryCode = ref(false);
         title="Confirme que é você"
         :description="
             useRecoveryCode
-                ? 'Introduza um dos códigos de recuperação guardados quando activou o MFA.'
+                ? 'Introduza um dos códigos de recuperação guardados quando activou os dois factores.'
                 : 'Abra a aplicação autenticadora e introduza o código actual de seis dígitos.'
         "
     >
@@ -44,6 +60,7 @@ const useRecoveryCode = ref(false);
             v-bind="twoFactorLoginStore.form()"
             :reset-on-error="[useRecoveryCode ? 'recovery_code' : 'code']"
             class="space-y-5"
+            @error="focusFirstInvalid()"
             #default="{ errors, processing }"
         >
             <div v-if="useRecoveryCode">
@@ -54,14 +71,24 @@ const useRecoveryCode = ref(false);
                 >
                 <input
                     id="recovery-code"
+                    ref="recoveryInput"
                     name="recovery_code"
                     type="text"
                     autocomplete="one-time-code"
+                    autocapitalize="characters"
+                    spellcheck="false"
                     required
                     autofocus
+                    :aria-invalid="errors.recovery_code ? 'true' : undefined"
+                    :aria-describedby="
+                        errors.recovery_code ? 'recovery-code-error' : undefined
+                    "
                     class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 font-mono text-base tracking-wider text-zinc-900 uppercase outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
                 />
-                <FormError :message="errors.recovery_code" />
+                <FormError
+                    id="recovery-code-error"
+                    :message="errors.recovery_code"
+                />
             </div>
             <div v-else>
                 <label
@@ -71,17 +98,22 @@ const useRecoveryCode = ref(false);
                 >
                 <input
                     id="code"
+                    ref="codeInput"
                     name="code"
                     type="text"
                     inputmode="numeric"
                     pattern="[0-9]*"
                     autocomplete="one-time-code"
+                    autocapitalize="none"
+                    spellcheck="false"
                     maxlength="6"
                     required
                     autofocus
-                    class="mt-2 block w-full rounded-xl bg-white px-3 py-3 text-center font-mono text-2xl tracking-[0.45em] text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                    :aria-invalid="errors.code ? 'true' : undefined"
+                    :aria-describedby="errors.code ? 'code-error' : undefined"
+                    class="mt-2 block w-full rounded-xl bg-white py-3 ps-[calc(0.75rem+0.45em)] pe-3 text-center font-mono text-2xl tracking-[0.45em] text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
                 />
-                <FormError :message="errors.code" />
+                <FormError id="code-error" :message="errors.code" />
             </div>
 
             <button
@@ -102,7 +134,7 @@ const useRecoveryCode = ref(false);
             <p class="text-center">
                 <button
                     type="button"
-                    class="font-semibold text-brand-700 hover:text-brand-600 dark:text-brand-300"
+                    class="rounded font-semibold text-brand-700 focus-ring hover:text-brand-600 dark:text-brand-300 dark:hover:text-brand-100"
                     @click="useRecoveryCode = !useRecoveryCode"
                 >
                     {{
