@@ -19,6 +19,7 @@ import {
     Settings2,
     ShieldCheck,
     SlidersHorizontal,
+    Sparkles,
     Store,
     Tags,
     Truck,
@@ -56,6 +57,8 @@ export interface NavigationItem {
     /** The URL prefix that belongs to this page. The longest match wins. */
     match: string;
     icon: Component;
+    /** False for a page that should only be requested when someone opens it. */
+    prefetch?: boolean;
 }
 
 export interface NavigationGroup {
@@ -65,6 +68,8 @@ export interface NavigationGroup {
     /** Where the group's icon goes when clicked: its first, most used page. */
     href: string;
     items: NavigationItem[];
+    /** False for a place that should only be requested when someone opens it. */
+    prefetch?: boolean;
 }
 
 /**
@@ -288,6 +293,32 @@ const internalGroup: NavigationGroup = {
     ],
 };
 
+/**
+ * The read-only assistant, offered only where the server says it is on.
+ *
+ * Its address carries the company, so it arrives as a shared prop rather than
+ * a route helper; it is never prefetched, because merely hovering the entry
+ * should not ask the assistant for anything.
+ */
+function assistantGroup(url: string): NavigationGroup {
+    return {
+        key: 'assistant',
+        name: 'Assistente',
+        icon: Sparkles,
+        href: url,
+        prefetch: false,
+        items: [
+            {
+                name: 'Assistente',
+                href: url,
+                match: '/assistant',
+                icon: Sparkles,
+                prefetch: false,
+            },
+        ],
+    };
+}
+
 /** The pages the invoice composer lives under, for highlighting Documentos. */
 const DOCUMENT_COMPOSER_PREFIX = '/documents/invoices';
 
@@ -343,11 +374,24 @@ export function useNavigation(): {
 } {
     const page = usePage();
 
-    const groups = computed(() =>
-        page.props.auth.user?.is_support_staff === true
-            ? [...baseGroups, internalGroup]
-            : baseGroups,
-    );
+    const groups = computed(() => {
+        const assistant = page.props.assistant;
+        const analyticsAt = baseGroups.findIndex(
+            (group) => group.key === 'analytics',
+        );
+        const visible =
+            assistant === null || assistant === undefined
+                ? baseGroups
+                : [
+                      ...baseGroups.slice(0, analyticsAt + 1),
+                      assistantGroup(assistant.url),
+                      ...baseGroups.slice(analyticsAt + 1),
+                  ];
+
+        return page.props.auth.user?.is_support_staff === true
+            ? [...visible, internalGroup]
+            : visible;
+    });
 
     return {
         groups,

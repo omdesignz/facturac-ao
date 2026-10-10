@@ -23,6 +23,7 @@ declare module '@inertiajs/core' {
             name: string;
             auth: Auth;
             currentWorkspace: CurrentWorkspace | null;
+            assistant: { url: string } | null;
             flash: FlashMessages;
             workSession: WorkSessionSettings | null;
             impersonation: Impersonation | null;

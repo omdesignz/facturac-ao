@@ -38,6 +38,20 @@ export function formatAssistantMoney(minor: string): string {
 
     return `${negative ? '-' : ''}${digits.slice(0, -2)},${digits.slice(-2)}`;
 }
+
+/**
+ * Amount with the thousands grouping the app shows for kwanza (pt-AO uses a
+ * non-breaking space, U+00A0). String maths only: minor units can exceed
+ * Number.MAX_SAFE_INTEGER.
+ */
+export function groupAssistantMoney(minor: string): string {
+    const [whole, cents] = formatAssistantMoney(minor).split(',');
+    const negative = whole.startsWith('-');
+    const digits = negative ? whole.slice(1) : whole;
+    const grouped = digits.replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0');
+
+    return `${negative ? '-' : ''}${grouped},${cents}`;
+}
 export function plainAssistantText(value: string): string {
     return value.replace(/[\p{Cc}\p{Cf}]/gu, (character) => {
         const code = character.codePointAt(0);
@@ -78,6 +92,88 @@ const metricLabels: Record<string, string> = {
     after_credits_net_minor: 'Líquido após créditos',
     after_credits_tax_minor: 'Imposto após créditos',
 };
+const billingCaveat =
+    'Valores nas moedas originais; não representam receitas, cobranças ou dívida.';
+const monthNames = [
+    'janeiro',
+    'fevereiro',
+    'março',
+    'abril',
+    'maio',
+    'junho',
+    'julho',
+    'agosto',
+    'setembro',
+    'outubro',
+    'novembro',
+    'dezembro',
+];
+
+function billingBuckets(
+    data: Record<string, unknown>,
+): Record<string, unknown>[] {
+    return Array.isArray(data.currencies)
+        ? (data.currencies as Record<string, unknown>[])
+        : [];
+}
+
+function isActiveBucket(bucket: Record<string, unknown>): boolean {
+    return (
+        Number(bucket.billed_document_count) > 0 ||
+        Number(bucket.credit_note_count) > 0
+    );
+}
+
+function monthLabel(month: string): string {
+    const match = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(month);
+
+    return match ? `${monthNames[Number(match[2]) - 1]} de ${match[1]}` : month;
+}
+
+function countLabel(count: number, one: string, many: string): string {
+    return `${count} ${count === 1 ? one : many}`;
+}
+
+/**
+ * One plain sentence per active currency for the monthly billing answer, or
+ * an empty list for every other tool. Amounts are never combined across
+ * currencies.
+ */
+export function assistantHeadline(result: AssistantResult): string[] {
+    if (result.tool !== 'getMonthlyRecordedBilling') {
+        return [];
+    }
+
+    const data = result.data;
+    const month = monthLabel(String((data.period as { month: string }).month));
+    const active = billingBuckets(data).filter(isActiveBucket);
+
+    if (active.length === 0) {
+        return [`Não há facturação registada em ${month}.`];
+    }
+
+    return active.map((bucket) => {
+        const code = String(bucket.currency_code);
+        const unit = code === 'AOA' ? 'Kz' : code;
+        const documents = Number(bucket.billed_document_count);
+        const credits = Number(bucket.credit_note_count);
+        const creditLabel = countLabel(
+            credits,
+            'nota de crédito',
+            'notas de crédito',
+        );
+
+        if (documents === 0) {
+            return `Em ${month} registou ${creditLabel} de ${groupAssistantMoney(String(bucket.credit_gross_minor))} ${unit}.`;
+        }
+
+        const sentence = `Em ${month} facturou ${groupAssistantMoney(String(bucket.invoiced_gross_minor))} ${unit} em ${countLabel(documents, 'documento', 'documentos')}.`;
+
+        return credits > 0
+            ? `${sentence} Com ${creditLabel}, fica em ${groupAssistantMoney(String(bucket.after_credits_gross_minor))} ${unit}.`
+            : sentence;
+    });
+}
 export function assistantLines(result: AssistantResult): string[] {
     const data = result.data;
     const customer = (item: Record<string, unknown>): string =>
@@ -117,22 +213,31 @@ export function assistantLines(result: AssistantResult): string[] {
                 'Esta consulta não autoriza emissão ou liquidação fiscal.',
             ];
         case 'getMonthlyRecordedBilling': {
+            const buckets = billingBuckets(data);
             const lines = [
                 `Facturação registada · ${(data.period as { month: string }).month}`,
-                'Valores nas moedas originais; não representam receitas, cobranças ou dívida.',
+                billingCaveat,
                 `Consulta: ${data.as_of}`,
             ];
 
-            for (const bucket of data.currencies as Record<string, unknown>[]) {
+            for (const bucket of buckets.filter(isActiveBucket)) {
                 lines.push(
                     `${bucket.currency_code} · Documentos: ${bucket.billed_document_count} · Notas de crédito: ${bucket.credit_note_count}`,
                 );
 
                 for (const [key, label] of Object.entries(metricLabels)) {
                     lines.push(
-                        `${label}: ${formatAssistantMoney(String(bucket[key]))} ${bucket.currency_code}`,
+                        `${label}: ${groupAssistantMoney(String(bucket[key]))} ${bucket.currency_code}`,
                     );
                 }
+            }
+
+            const idle = buckets
+                .filter((bucket) => !isActiveBucket(bucket))
+                .map((bucket) => String(bucket.currency_code));
+
+            if (idle.length > 0) {
+                lines.push(`Sem movimento noutras moedas: ${idle.join(', ')}.`);
             }
 
             return lines;
@@ -143,8 +248,10 @@ export function assistantLines(result: AssistantResult): string[] {
 }
 export function assistantReason(reason: string | null): string {
     const messages: Record<string, string> = {
-        select_customer: 'Seleccione o identificador público do cliente.',
-        select_document: 'Seleccione o identificador público do documento.',
+        select_customer:
+            'Escolha o cliente em «Referências» e volte a perguntar.',
+        select_document:
+            'Escolha o documento em «Referências» e volte a perguntar.',
         specify_month: 'Indique um mês no formato AAAA-MM.',
         refine_customer_search: 'Refine o nome do cliente.',
         outside_read_contract:
@@ -152,4 +259,83 @@ export function assistantReason(reason: string | null): string {
     };
 
     return messages[reason ?? ''] ?? 'Informação indisponível.';
+}
+
+const failureMessages: Record<string, string> = {
+    unauthenticated:
+        'A sua sessão terminou. Inicie sessão novamente para continuar.',
+    forbidden:
+        'O assistente exige autenticação em dois passos e acesso a esta empresa. Active a autenticação em dois passos em Conta e segurança ou peça acesso a um administrador.',
+    not_found:
+        'Não encontrámos esta empresa ou o assistente não está activo. Volte ao painel e tente novamente.',
+    method_not_allowed:
+        'O pedido não foi aceite. Recarregue a página e tente novamente.',
+    interaction_conflict:
+        'Este pedido já estava a ser tratado. Aguarde um momento e volte a perguntar.',
+    session_expired:
+        'A página expirou. Recarregue a página e volte a perguntar.',
+    invalid_input:
+        'A pergunta ou as referências não foram aceites. Reformule com menos palavras (máximo 2000 caracteres) e tente de novo.',
+    rate_limited:
+        'Atingiu o limite diário de perguntas. Tente novamente mais tarde.',
+    unavailable:
+        'O assistente está temporariamente indisponível. Utilize a pesquisa e as páginas habituais da aplicação.',
+};
+const statusCodes: Record<number, string> = {
+    401: 'unauthenticated',
+    403: 'forbidden',
+    404: 'not_found',
+    405: 'method_not_allowed',
+    409: 'interaction_conflict',
+    419: 'session_expired',
+    422: 'invalid_input',
+    429: 'rate_limited',
+    503: 'unavailable',
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null;
+}
+
+/**
+ * The server's failure code for a rejected request, read from the JSON body
+ * and, failing that, from the HTTP status. Null when there was no response.
+ */
+export function assistantFailureCode(error: unknown): string | null {
+    const response = isRecord(error) ? error.response : null;
+
+    if (!isRecord(response)) {
+        return null;
+    }
+
+    let body: unknown = response.data;
+
+    if (typeof body === 'string') {
+        try {
+            body = JSON.parse(body);
+        } catch {
+            body = null;
+        }
+    }
+
+    const code =
+        isRecord(body) && isRecord(body.error) ? body.error.code : null;
+
+    if (typeof code === 'string' && code in failureMessages) {
+        return code;
+    }
+
+    return typeof response.status === 'number'
+        ? (statusCodes[response.status] ?? 'unavailable')
+        : null;
+}
+
+/** What went wrong and what to do next, in words that never echo the server. */
+export function assistantFailure(
+    error: unknown,
+    fallback = 'Não foi possível concluir o pedido. Utilize a pesquisa e as páginas habituais da aplicação.',
+): string {
+    const code = assistantFailureCode(error);
+
+    return code === null ? fallback : (failureMessages[code] ?? fallback);
 }

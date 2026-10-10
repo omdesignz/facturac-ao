@@ -177,7 +177,7 @@ function initials(name: string): string {
                             <li v-for="item in group.items" :key="item.name">
                                 <Link
                                     :href="item.href"
-                                    prefetch
+                                    :prefetch="item.prefetch !== false"
                                     :aria-current="
                                         activeItem === item ? 'page' : undefined
                                     "

@@ -54,6 +54,7 @@ class HandleInertiaRequests extends Middleware
             'impersonation' => fn (): ?array => $this->impersonationProps($request),
             'legal' => fn (): array => $this->legalProps($request),
             'currentWorkspace' => fn (): ?array => $this->currentWorkspaceProps($request),
+            'assistant' => fn (): ?array => $this->assistantProps($request),
             'notifications' => fn (): ?array => $this->notificationProps($request),
             'flash' => [
                 'status' => fn (): ?string => $request->session()->get('status'),
@@ -288,9 +289,63 @@ class HandleInertiaRequests extends Middleware
     }
 
     /**
+     * Where the navigation sends someone to the read-only assistant.
+     *
+     * Null unless the assistant is switched on and the company they are working
+     * in has a legal entity, so the entry never appears for a page that would
+     * only answer 404. The assistant has no other environment than production.
+     *
+     * @return array{url: string}|null
+     */
+    private function assistantProps(Request $request): ?array
+    {
+        if (config('assistant.enabled') !== true) {
+            return null;
+        }
+
+        // The assistant names its company in its own address instead of using the current one,
+        // so on that page the entry keeps pointing at the page being shown.
+        if ($request->routeIs('assistant.show')) {
+            return ['url' => '/'.ltrim($request->path(), '/')];
+        }
+
+        $workspace = $this->currentWorkspaceProps($request);
+        $legalEntity = $workspace['legal_entity'] ?? null;
+
+        if (! is_array($workspace) || ! is_array($legalEntity)) {
+            return null;
+        }
+
+        return [
+            'url' => route('assistant.show', [
+                'workspacePublicId' => $workspace['public_id'],
+                'entityPublicId' => $legalEntity['public_id'],
+                'environment' => 'production',
+            ], false),
+        ];
+    }
+
+    /**
+     * Resolved once per request: the assistant entry reads the same company
+     * the header does, and neither should pay for the lookup twice.
+     *
      * @return array<string, mixed>|null
      */
     private function currentWorkspaceProps(Request $request): ?array
+    {
+        $key = 'inertia.current_workspace_props';
+
+        if (! $request->attributes->has($key)) {
+            $request->attributes->set($key, $this->resolveCurrentWorkspaceProps($request));
+        }
+
+        return $request->attributes->get($key);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function resolveCurrentWorkspaceProps(Request $request): ?array
     {
         $workspace = $request->attributes->get('currentWorkspace');
         $membership = $request->attributes->get('currentWorkspaceMembership');

@@ -280,6 +280,13 @@ test('assistant output validation rejects added fields and noncanonical financia
     expect(fn () => AssistantTools::validate($tool, $data))->toThrow(HttpException::class);
 })->with(['getCustomer', 'getFiscalDocumentSummary']);
 
+test('assistant page keeps its own navigation entry although it does not use the current company', function () {
+    $f = assistantFixture();
+    $url = route('assistant.show', $f['parameters'], false);
+    $this->actingAs($f['user'])->get($url)->assertSuccessful()
+        ->assertInertia(fn (Assert $page) => $page->component('Assistant/Index')->where('assistant.url', $url)->where('currentWorkspace', null));
+});
+
 test('assistant page uses explicit context and clears data without restoring browser defaults', function () {
     $f = assistantFixture();
     $other = assistantFixture();

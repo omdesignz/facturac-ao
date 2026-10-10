@@ -225,7 +225,7 @@ onBeforeUnmount(cancelClose);
                                 (element) => registerTrigger(group.key, element)
                             "
                             :href="group.href"
-                            prefetch
+                            :prefetch="group.prefetch !== false"
                             :aria-label="group.name"
                             :aria-current="
                                 activeGroup?.key === group.key
@@ -274,7 +274,7 @@ onBeforeUnmount(cancelClose);
                                 >
                                     <Link
                                         :href="item.href"
-                                        prefetch
+                                        :prefetch="item.prefetch !== false"
                                         :aria-current="
                                             activeItem === item
                                                 ? 'page'

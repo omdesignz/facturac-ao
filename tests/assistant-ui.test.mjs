@@ -9,8 +9,12 @@ import { renderToString } from 'vue/server-renderer';
 import {
     plainAssistantText,
     formatAssistantMoney,
+    groupAssistantMoney,
+    assistantHeadline,
     assistantLines,
     assistantReason,
+    assistantFailure,
+    assistantFailureCode,
     acceptsResponse,
 } from '../resources/js/lib/assistant.ts';
 
@@ -149,6 +153,211 @@ test('monthly financial cards retain all eight native buckets without cross-curr
 
     assert.ok(lines[0].includes('Facturação registada'));
     assert.ok(!lines.some((line) => line.includes('Total geral')));
+});
+const NBSP = '\u00A0';
+function bucket(code, overrides = {}) {
+    return {
+        currency_code: code,
+        billed_document_count: 0,
+        credit_note_count: 0,
+        invoiced_gross_minor: '0',
+        invoiced_net_minor: '0',
+        invoiced_tax_minor: '0',
+        credit_gross_minor: '0',
+        credit_net_minor: '0',
+        credit_tax_minor: '0',
+        after_credits_gross_minor: '0',
+        after_credits_net_minor: '0',
+        after_credits_tax_minor: '0',
+        ...overrides,
+    };
+}
+function billing(currencies, month = '2026-10') {
+    return result('getMonthlyRecordedBilling', {
+        period: { month },
+        as_of: 'time',
+        currencies,
+    });
+}
+const aoaActive = {
+    billed_document_count: 2,
+    invoiced_gross_minor: '23550000',
+    after_credits_gross_minor: '23550000',
+};
+
+test('groupAssistantMoney groups the integer part with non-breaking spaces using string maths only', () => {
+    assert.equal(groupAssistantMoney('23550000'), `235${NBSP}500,00`);
+    assert.equal(
+        groupAssistantMoney('-123456789'),
+        `-1${NBSP}234${NBSP}567,89`,
+    );
+    assert.equal(groupAssistantMoney('0'), '0,00');
+    assert.equal(groupAssistantMoney('99999'), '999,99');
+    assert.equal(groupAssistantMoney('100000'), `1${NBSP}000,00`);
+    assert.equal(
+        groupAssistantMoney('9223372036854775807'),
+        `92${NBSP}233${NBSP}720${NBSP}368${NBSP}547${NBSP}758,07`,
+    );
+
+    for (const bad of ['01', '-0', '1.2', '1e10', 'NaN', '']) {
+        assert.throws(() => groupAssistantMoney(bad));
+    }
+});
+test('headline states one currency in a plain sentence', () => {
+    assert.deepEqual(
+        assistantHeadline(billing([bucket('AOA', aoaActive), bucket('EUR')])),
+        [`Em outubro de 2026 facturou 235${NBSP}500,00 Kz em 2 documentos.`],
+    );
+    assert.deepEqual(
+        assistantHeadline(
+            billing([
+                bucket('USD', {
+                    billed_document_count: 1,
+                    invoiced_gross_minor: '100',
+                }),
+            ]),
+        ),
+        ['Em outubro de 2026 facturou 1,00 USD em 1 documento.'],
+    );
+});
+test('headline adds the position after credit notes', () => {
+    const one = assistantHeadline(
+        billing([
+            bucket('AOA', {
+                ...aoaActive,
+                credit_note_count: 1,
+                after_credits_gross_minor: '20000000',
+            }),
+        ]),
+    );
+    assert.deepEqual(one, [
+        `Em outubro de 2026 facturou 235${NBSP}500,00 Kz em 2 documentos. Com 1 nota de crédito, fica em 200${NBSP}000,00 Kz.`,
+    ]);
+    assert.ok(
+        assistantHeadline(
+            billing([bucket('AOA', { ...aoaActive, credit_note_count: 3 })]),
+        )[0].includes('Com 3 notas de crédito, fica em'),
+    );
+});
+test('headline reports credit notes alone when nothing was billed', () => {
+    assert.deepEqual(
+        assistantHeadline(
+            billing([
+                bucket('AOA', {
+                    credit_note_count: 1,
+                    credit_gross_minor: '3550000',
+                }),
+            ]),
+        ),
+        [
+            `Em outubro de 2026 registou 1 nota de crédito de 35${NBSP}500,00 Kz.`,
+        ],
+    );
+});
+test('headline says so when there is no activity in any currency', () => {
+    assert.deepEqual(
+        assistantHeadline(billing([bucket('AOA'), bucket('EUR')])),
+        ['Não há facturação registada em outubro de 2026.'],
+    );
+    assert.deepEqual(assistantHeadline(billing([])), [
+        'Não há facturação registada em outubro de 2026.',
+    ]);
+});
+test('headline keeps two active currencies on separate lines without a combined total', () => {
+    const lines = assistantHeadline(
+        billing([
+            bucket('AOA', aoaActive),
+            bucket('BRL'),
+            bucket('EUR', {
+                billed_document_count: 1,
+                invoiced_gross_minor: '12345',
+            }),
+        ]),
+    );
+    assert.equal(lines.length, 2);
+    assert.ok(lines[0].includes('Kz'));
+    assert.ok(lines[1].includes('123,45 EUR'));
+    assert.ok(!lines.some((line) => /total/i.test(line)));
+});
+test('headline is empty for every other tool', () => {
+    assert.deepEqual(
+        assistantHeadline(result('getCustomer', { name: 'A' })),
+        [],
+    );
+    assert.deepEqual(assistantHeadline(result('searchCustomers', {})), []);
+});
+test('headline falls back to the raw month when it is not YYYY-MM', () => {
+    for (const month of ['2026-13', '2026-00', 'outubro', '2026-1']) {
+        assert.deepEqual(assistantHeadline(billing([], month)), [
+            `Não há facturação registada em ${month}.`,
+        ]);
+    }
+
+    assert.ok(
+        assistantHeadline(
+            billing([bucket('AOA', aoaActive)], '2026-03'),
+        )[0].startsWith('Em março de 2026 facturou'),
+    );
+});
+test('detail lines list active currencies only and name the idle ones', () => {
+    const lines = assistantLines(
+        billing([
+            bucket('AOA', aoaActive),
+            bucket('BRL'),
+            bucket('CNY'),
+            bucket('EUR'),
+        ]),
+    );
+    assert.equal(lines[0], 'Facturação registada · 2026-10');
+    assert.equal(
+        lines[1],
+        'Valores nas moedas originais; não representam receitas, cobranças ou dívida.',
+    );
+    assert.equal(lines[2], 'Consulta: time');
+    assert.equal(lines.filter((line) => line.endsWith(' AOA')).length, 9);
+    assert.equal(lines.filter((line) => line.endsWith(' BRL')).length, 0);
+    assert.ok(lines.includes(`Facturado bruto: 235${NBSP}500,00 AOA`));
+    assert.equal(lines.length, 3 + 10 + 1);
+    assert.equal(lines.at(-1), 'Sem movimento noutras moedas: BRL, CNY, EUR.');
+    assert.deepEqual(assistantLines(billing([])).length, 3);
+});
+test('billing card leads with the headline and keeps the breakdown behind a disclosure', async () => {
+    const html = await renderToString(
+        createSSRApp(Card, {
+            context,
+            result: billing([bucket('AOA', aoaActive), bucket('BRL')]),
+        }),
+    );
+    assert.ok(
+        html.includes(
+            `Em outubro de 2026 facturou 235${NBSP}500,00 Kz em 2 documentos.`,
+        ),
+    );
+    assert.match(
+        html,
+        /<details[^>]*>\s*<summary[^>]*>\s*Ver detalhe\s*<\/summary>/,
+    );
+    assert.ok(html.includes('Factos consultados'));
+    assert.ok(html.includes('Fonte: getMonthlyRecordedBilling'));
+    assert.ok(html.includes('Sem movimento noutras moedas: BRL.'));
+    assert.ok(!html.includes('Facturado bruto: 0,00 BRL'));
+    assert.ok(!html.includes('BRL · Documentos'));
+    assert.ok(html.includes('AOA · Documentos: 2'));
+});
+test('cards for other tools render without a disclosure', async () => {
+    const html = await renderToString(
+        createSSRApp(Card, {
+            context,
+            result: result('getCustomer', {
+                public_id: 'c',
+                name: 'Ana',
+                country_code: 'AO',
+                is_active: true,
+            }),
+        }),
+    );
+    assert.ok(!html.includes('<details'));
+    assert.ok(!html.includes('Ver detalhe'));
 });
 test('page cancels and clears state on context/navigation/unmount with no persistent transcripts', async () => {
     const source = await readFile(
@@ -289,4 +498,66 @@ test('withdrawal remains visible when provider admission later becomes unavailab
     );
     assert.ok(html.includes('Retirar a confirmação'));
     assert.match(html, /<button[^>]*type="submit"[^>]*\sdisabled(?:=|\s|>)/);
+});
+
+const failureCases = [
+    ['unauthenticated', 401, 'Inicie sessão'],
+    ['forbidden', 403, 'dois passos'],
+    ['not_found', 404, 'não encontrámos'],
+    ['interaction_conflict', 409, 'Aguarde'],
+    ['session_expired', 419, 'Recarregue'],
+    ['invalid_input', 422, 'Reformule'],
+    ['rate_limited', 429, 'limite diário'],
+    ['unavailable', 503, 'temporariamente indisponível'],
+];
+function failure(status, code) {
+    return {
+        response: {
+            status,
+            data: JSON.stringify({
+                error: { code, message: 'Não foi possível concluir o pedido.' },
+                request_id: 'r',
+            }),
+        },
+    };
+}
+
+test('every server failure code maps to a Portuguese next step, never the generic server message', () => {
+    for (const [code, status, expected] of failureCases) {
+        const message = assistantFailure(failure(status, code));
+        assert.equal(assistantFailureCode(failure(status, code)), code);
+        assert.ok(
+            message.toLowerCase().includes(expected.toLowerCase()),
+            `${code}: ${message}`,
+        );
+        assert.ok(!message.includes('Não foi possível concluir o pedido.'));
+    }
+});
+test('failures fall back to the HTTP status, then to unavailable, and to the fallback without a response', () => {
+    const fallback = 'Texto de recurso.';
+    assert.equal(
+        assistantFailureCode({ response: { status: 429, data: 'not json' } }),
+        'rate_limited',
+    );
+    assert.equal(
+        assistantFailureCode({
+            response: {
+                status: 429,
+                data: { error: { code: 'rate_limited' } },
+            },
+        }),
+        'rate_limited',
+    );
+    assert.equal(
+        assistantFailureCode({ response: { status: 502, data: '' } }),
+        'unavailable',
+    );
+    assert.equal(
+        assistantFailureCode(failure(500, 'something_new')),
+        'unavailable',
+    );
+    assert.equal(assistantFailureCode(new Error('offline')), null);
+    assert.equal(assistantFailureCode(null), null);
+    assert.equal(assistantFailure(new Error('offline'), fallback), fallback);
+    assert.ok(assistantFailure(undefined).includes('páginas habituais'));
 });
