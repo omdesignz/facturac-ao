@@ -1,0 +1,609 @@
+{
+    "schema_version": 1,
+    "phase": "7 bounded remediation",
+    "status": "ready for independent re-review; not independently approved",
+    "created_at_utc": "2026-10-08T20:20:43.004732+00:00",
+    "scope": [
+        "FPM-safe trusted CLI resolution",
+        "original-question disclosure validation"
+    ],
+    "new_regression_cases": 20,
+    "validation": [
+        {
+            "name": "targeted",
+            "command": "php artisan test --compact tests/Feature/AssistantProviderCliTest.php tests/Feature/AssistantProviderExecutionTest.php tests/Feature/ProviderIntentInputTest.php",
+            "exit_status": 0,
+            "log": "/private/tmp/phase7-remediation-targeted.log",
+            "sha256": "db251ec77d0adcad4edb96044b03e0afd8fe2dbc0e0839861281cb49d42f04b5",
+            "result": {
+                "tool": "pest",
+                "result": "passed",
+                "tests": 85,
+                "passed": 85,
+                "assertions": 568,
+                "duration_ms": 29857
+            },
+            "fresh": true
+        },
+        {
+            "name": "focused",
+            "command": "php artisan test --compact tests/Feature/AssistantProviderCliTest.php tests/Feature/AssistantProviderContractTest.php tests/Feature/ProviderIntentInputTest.php tests/Feature/AssistantProviderProtocolTest.php tests/Feature/AssistantProviderExecutionTest.php tests/Feature/AiExecutionQuarantineTest.php tests/Feature/AssistantAuditClosureTest.php tests/Feature/AssistantFoundationTest.php",
+            "exit_status": 0,
+            "log": "/private/tmp/phase7-remediation-focused.log",
+            "sha256": "fc485d59abcaa957bfcab446971821f3ce7a512ca1acf179e156ce0f39e6a6b4",
+            "result": {
+                "tool": "pest",
+                "result": "passed",
+                "tests": 352,
+                "passed": 352,
+                "assertions": 1941,
+                "duration_ms": 132196
+            },
+            "fresh": true
+        },
+        {
+            "name": "pg",
+            "command": "RANDFILE=/private/tmp/phase7-remediation-rand APP_ENV=testing FISCAL_PG_GATE=1 DB_CONNECTION=pgsql DB_HOST=127.0.0.1 DB_PORT=55439 DB_DATABASE=facturac_test_phase7_concurrency DB_USERNAME=Oz DB_PASSWORD='' DB_URL='' php artisan test --compact -d memory_limit=1G tests/Unit/PostgresAssistantProviderTest.php",
+            "exit_status": 2,
+            "log": "/private/tmp/phase7-remediation-pg.log",
+            "sha256": "4bf46ad87f7ce26ccb9180bcd220221ba180b95419978789f1805ab2f06fdba7",
+            "result": {
+                "tool": "pest",
+                "result": "failed",
+                "tests": 18,
+                "passed": 0,
+                "assertions": 0,
+                "duration_ms": 445,
+                "errors": 18,
+                "error_details": [
+                    {
+                        "test": "P\\Tests\\Unit\\PostgresAssistantProviderTest::__pest_evaluable_postgres_provider_final_affordable_reservation_never_overspends_any_scope_under_independent_processes with data set \"('deployment_month')\"",
+                        "file": "/Users/Oz/Apps/vap-invoice/vendor/laravel/framework/src/Illuminate/Database/Connectors/Connector.php",
+                        "line": 67,
+                        "message": "SQLSTATE[08006] [7] connection to server at \"127.0.0.1\", port 55439 failed: Operation not permitted\n\tIs the server running on that host and accepting TCP/IP connections? (Connection: pgsql, Host: 127.0.0.1, Port: 55439, Database: facturac_test_phase7_concurrency, SQL: SHOW server_encoding)"
+                    },
+                    {
+                        "test": "P\\Tests\\Unit\\PostgresAssistantProviderTest::__pest_evaluable_postgres_provider_final_affordable_reservation_never_overspends_any_scope_under_independent_processes with data set \"('deployment_day')\"",
+                        "file": "/Users/Oz/Apps/vap-invoice/vendor/laravel/framework/src/Illuminate/Database/Connectors/Connector.php",
+                        "line": 67,
+                        "message": "SQLSTATE[08006] [7] connection to server at \"127.0.0.1\", port 55439 failed: Operation not permitted\n\tIs the server running on that host and accepting TCP/IP connections? (Connection: pgsql, Host: 127.0.0.1, Port: 55439, Database: facturac_test_phase7_concurrency, SQL: SHOW server_encoding)"
+                    },
+                    {
+                        "test": "P\\Tests\\Unit\\PostgresAssistantProviderTest::__pest_evaluable_postgres_provider_final_affordable_reservation_never_overspends_any_scope_under_independent_processes with data set \"('workspace_month')\"",
+                        "file": "/Users/Oz/Apps/vap-invoice/vendor/laravel/framework/src/Illuminate/Database/Connectors/Connector.php",
+                        "line": 67,
+                        "message": "SQLSTATE[08006] [7] connection to server at \"127.0.0.1\", port 55439 failed: Operation not permitted\n\tIs the server running on that host and accepting TCP/IP connections? (Connection: pgsql, Host: 127.0.0.1, Port: 55439, Database: facturac_test_phase7_concurrency, SQL: SHOW server_encoding)"
+                    },
+                    {
+                        "test": "P\\Tests\\Unit\\PostgresAssistantProviderTest::__pest_evaluable_postgres_provider_final_affordable_reservation_never_overspends_any_scope_under_independent_processes with data set \"('workspace_day')\"",
+                        "file": "/Users/Oz/Apps/vap-invoice/vendor/laravel/framework/src/Illuminate/Database/Connectors/Connector.php",
+                        "line": 67,
+                        "message": "SQLSTATE[08006] [7] connection to server at \"127.0.0.1\", port 55439 failed: Operation not permitted\n\tIs the server running on that host and accepting TCP/IP connections? (Connection: pgsql, Host: 127.0.0.1, Port: 55439, Database: facturac_test_phase7_concurrency, SQL: SHOW server_encoding)"
+                    },
+                    {
+                        "test": "P\\Tests\\Unit\\PostgresAssistantProviderTest::__pest_evaluable_postgres_provider_final_affordable_reservation_never_overspends_any_scope_under_independent_processes with data set \"('user_day')\"",
+                        "file": "/Users/Oz/Apps/vap-invoice/vendor/laravel/framework/src/Illuminate/Database/Connectors/Connector.php",
+                        "line": 67,
+                        "message": "SQLSTATE[08006] [7] connection to server at \"127.0.0.1\", port 55439 failed: Operation not permitted\n\tIs the server running on that host and accepting TCP/IP connections? (Connection: pgsql, Host: 127.0.0.1, Port: 55439, Database: facturac_test_phase7_concurrency, SQL: SHOW server_encoding)"
+                    },
+                    {
+                        "test": "P\\Tests\\Unit\\PostgresAssistantProviderTest::__pest_evaluable_postgres_provider_unique_window_creation_and_duplicate_interaction_accounting_are_atomic with data set \"(false)\"",
+                        "file": "/Users/Oz/Apps/vap-invoice/vendor/laravel/framework/src/Illuminate/Database/Connectors/Connector.php",
+                        "line": 67,
+                        "message": "SQLSTATE[08006] [7] connection to server at \"127.0.0.1\", port 55439 failed: Operation not permitted\n\tIs the server running on that host and accepting TCP/IP connections? (Connection: pgsql, Host: 127.0.0.1, Port: 55439, Database: facturac_test_phase7_concurrency, SQL: SHOW server_encoding)"
+                    },
+                    {
+                        "test": "P\\Tests\\Unit\\PostgresAssistantProviderTest::__pest_evaluable_postgres_provider_unique_window_creation_and_duplicate_interaction_accounting_are_atomic with data set \"(true)\"",
+                        "file": "/Users/Oz/Apps/vap-invoice/vendor/laravel/framework/src/Illuminate/Database/Connectors/Connector.php",
+                        "line": 67,
+                        "message": "SQLSTATE[08006] [7] connection to server at \"127.0.0.1\", port 55439 failed: Operation not permitted\n\tIs the server running on that host and accepting TCP/IP connections? (Connection: pgsql, Host: 127.0.0.1, Port: 55439, Database: facturac_test_phase7_concurrency, SQL: SHOW server_encoding)"
+                    },
+                    {
+                        "test": "P\\Tests\\Unit\\PostgresAssistantProviderTest::__pest_evaluable_postgres_concurrent_provider_finalization_cannot_double_add_usage_or_release_reservations",
+                        "file": "/Users/Oz/Apps/vap-invoice/vendor/laravel/framework/src/Illuminate/Database/Connectors/Connector.php",
+                        "line": 67,
+                        "message": "SQLSTATE[08006] [7] connection to server at \"127.0.0.1\", port 55439 failed: Operation not permitted\n\tIs the server running on that host and accepting TCP/IP connections? (Connection: pgsql, Host: 127.0.0.1, Port: 55439, Database: facturac_test_phase7_concurrency, SQL: SHOW server_encoding)"
+                    },
+                    {
+                        "test": "P\\Tests\\Unit\\PostgresAssistantProviderTest::__pest_evaluable_postgres_provider_finalized_usage_remains_in_original_UTC_windows_across_month_rollover",
+                        "file": "/Users/Oz/Apps/vap-invoice/vendor/laravel/framework/src/Illuminate/Database/Connectors/Connector.php",
+                        "line": 67,
+                        "message": "SQLSTATE[08006] [7] connection to server at \"127.0.0.1\", port 55439 failed: Operation not permitted\n\tIs the server running on that host and accepting TCP/IP connections? (Connection: pgsql, Host: 127.0.0.1, Port: 55439, Database: facturac_test_phase7_concurrency, SQL: SHOW server_encoding)"
+                    },
+                    {
+                        "test": "P\\Tests\\Unit\\PostgresAssistantProviderTest::__pest_evaluable_postgres_provider_database_guards_preserve_immutable_context_terminal_outcomes_and_liability",
+                        "file": "/Users/Oz/Apps/vap-invoice/vendor/laravel/framework/src/Illuminate/Database/Connectors/Connector.php",
+                        "line": 67,
+                        "message": "SQLSTATE[08006] [7] connection to server at \"127.0.0.1\", port 55439 failed: Operation not permitted\n\tIs the server running on that host and accepting TCP/IP connections? (Connection: pgsql, Host: 127.0.0.1, Port: 55439, Database: facturac_test_phase7_concurrency, SQL: SHOW server_encoding)"
+                    },
+                    {
+                        "test": "P\\Tests\\Unit\\PostgresAssistantProviderTest::__pest_evaluable_postgres_killed_provider_worker_cannot_lose_admitted_liability_before_or_after_transmission_intent with data set \"(false)\"",
+                        "file": "/Users/Oz/Apps/vap-invoice/vendor/laravel/framework/src/Illuminate/Database/Connectors/Connector.php",
+                        "line": 67,
+                        "message": "SQLSTATE[08006] [7] connection to server at \"127.0.0.1\", port 55439 failed: Operation not permitted\n\tIs the server running on that host and accepting TCP/IP connections? (Connection: pgsql, Host: 127.0.0.1, Port: 55439, Database: facturac_test_phase7_concurrency, SQL: SHOW server_encoding)"
+                    },
+                    {
+                        "test": "P\\Tests\\Unit\\PostgresAssistantProviderTest::__pest_evaluable_postgres_killed_provider_worker_cannot_lose_admitted_liability_before_or_after_transmission_intent with data set \"(true)\"",
+                        "file": "/Users/Oz/Apps/vap-invoice/vendor/laravel/framework/src/Illuminate/Database/Connectors/Connector.php",
+                        "line": 67,
+                        "message": "SQLSTATE[08006] [7] connection to server at \"127.0.0.1\", port 55439 failed: Operation not permitted\n\tIs the server running on that host and accepting TCP/IP connections? (Connection: pgsql, Host: 127.0.0.1, Port: 55439, Database: facturac_test_phase7_concurrency, SQL: SHOW server_encoding)"
+                    },
+                    {
+                        "test": "P\\Tests\\Unit\\PostgresAssistantProviderTest::__pest_evaluable_postgres_committed_approval_withdrawal_before_transmission_cannot_use_an_admitted_permit with data set \"('circuit')\"",
+                        "file": "/Users/Oz/Apps/vap-invoice/vendor/laravel/framework/src/Illuminate/Database/Connectors/Connector.php",
+                        "line": 67,
+                        "message": "SQLSTATE[08006] [7] connection to server at \"127.0.0.1\", port 55439 failed: Operation not permitted\n\tIs the server running on that host and accepting TCP/IP connections? (Connection: pgsql, Host: 127.0.0.1, Port: 55439, Database: facturac_test_phase7_concurrency, SQL: SHOW server_encoding)"
+                    },
+                    {
+                        "test": "P\\Tests\\Unit\\PostgresAssistantProviderTest::__pest_evaluable_postgres_committed_approval_withdrawal_before_transmission_cannot_use_an_admitted_permit with data set \"('acknowledgement')\"",
+                        "file": "/Users/Oz/Apps/vap-invoice/vendor/laravel/framework/src/Illuminate/Database/Connectors/Connector.php",
+                        "line": 67,
+                        "message": "SQLSTATE[08006] [7] connection to server at \"127.0.0.1\", port 55439 failed: Operation not permitted\n\tIs the server running on that host and accepting TCP/IP connections? (Connection: pgsql, Host: 127.0.0.1, Port: 55439, Database: facturac_test_phase7_concurrency, SQL: SHOW server_encoding)"
+                    },
+                    {
+                        "test": "P\\Tests\\Unit\\PostgresAssistantProviderTest::__pest_evaluable_postgres_provider_user_budgets_span_explicit_workspaces_and_ignore_mutable_browser_selection",
+                        "file": "/Users/Oz/Apps/vap-invoice/vendor/laravel/framework/src/Illuminate/Database/Connectors/Connector.php",
+                        "line": 67,
+                        "message": "SQLSTATE[08006] [7] connection to server at \"127.0.0.1\", port 55439 failed: Operation not permitted\n\tIs the server running on that host and accepting TCP/IP connections? (Connection: pgsql, Host: 127.0.0.1, Port: 55439, Database: facturac_test_phase7_concurrency, SQL: SHOW server_encoding)"
+                    },
+                    {
+                        "test": "P\\Tests\\Unit\\PostgresAssistantProviderTest::__pest_evaluable_postgres_provider_additive_migration_round_trip_preserves_existing_domain_records",
+                        "file": "/Users/Oz/Apps/vap-invoice/vendor/laravel/framework/src/Illuminate/Database/Connectors/Connector.php",
+                        "line": 67,
+                        "message": "SQLSTATE[08006] [7] connection to server at \"127.0.0.1\", port 55439 failed: Operation not permitted\n\tIs the server running on that host and accepting TCP/IP connections? (Connection: pgsql, Host: 127.0.0.1, Port: 55439, Database: facturac_test_phase7_concurrency, SQL: SHOW server_encoding)"
+                    },
+                    {
+                        "test": "P\\Tests\\Unit\\PostgresAssistantProviderTest::__pest_evaluable_postgres_provider_budget_and_unresolved_liability_survive_connection_restart_and_cache_loss",
+                        "file": "/Users/Oz/Apps/vap-invoice/vendor/laravel/framework/src/Illuminate/Database/Connectors/Connector.php",
+                        "line": 67,
+                        "message": "SQLSTATE[08006] [7] connection to server at \"127.0.0.1\", port 55439 failed: Operation not permitted\n\tIs the server running on that host and accepting TCP/IP connections? (Connection: pgsql, Host: 127.0.0.1, Port: 55439, Database: facturac_test_phase7_concurrency, SQL: SHOW server_encoding)"
+                    },
+                    {
+                        "test": "P\\Tests\\Unit\\PostgresAssistantProviderTest::__pest_evaluable_postgres_worker_death_after_received_commit_cannot_cause_usage_to_be_counted_twice",
+                        "file": "/Users/Oz/Apps/vap-invoice/vendor/laravel/framework/src/Illuminate/Database/Connectors/Connector.php",
+                        "line": 67,
+                        "message": "SQLSTATE[08006] [7] connection to server at \"127.0.0.1\", port 55439 failed: Operation not permitted\n\tIs the server running on that host and accepting TCP/IP connections? (Connection: pgsql, Host: 127.0.0.1, Port: 55439, Database: facturac_test_phase7_concurrency, SQL: SHOW server_encoding)"
+                    }
+                ]
+            },
+            "fresh": true
+        },
+        {
+            "name": "pg-approved",
+            "command": "RANDFILE=/private/tmp/phase7-remediation-rand APP_ENV=testing FISCAL_PG_GATE=1 DB_CONNECTION=pgsql DB_HOST=127.0.0.1 DB_PORT=55439 DB_DATABASE=facturac_test_phase7_concurrency DB_USERNAME=Oz DB_PASSWORD='' DB_URL='' php artisan test --compact -d memory_limit=1G tests/Unit/PostgresAssistantProviderTest.php",
+            "exit_status": 0,
+            "log": "/private/tmp/phase7-remediation-pg-approved.log",
+            "sha256": "d0e1abf7de294e3ca24f929921bd46293e2928d970f7cbd566c3045788b244fc",
+            "result": {
+                "tool": "pest",
+                "result": "passed",
+                "tests": 18,
+                "passed": 18,
+                "assertions": 261,
+                "duration_ms": 15098
+            },
+            "fresh": true
+        },
+        {
+            "name": "ui",
+            "command": "node --test tests/assistant-ui.test.mjs",
+            "exit_status": 0,
+            "log": "/private/tmp/phase7-remediation-ui.log",
+            "sha256": "76d349ecd3dc7ef5ca4d4a20abd5974306857b2593e8995d80f9255bbc88805c",
+            "result": "9:15:43 PM [vite] (client) Re-optimizing dependencies because vite config has changed\n✔ money keeps exact signed minor-unit strings without Number or FX conversion (2.448417ms)\n✔ late or foreign-context responses never replace the current answer (0.588375ms)\n✔ actual Vue renderer escapes stored malicious business text and keeps source identity (2.9345ms)\n✔ workflow valid is explicitly separate from AGT evidence and receipt authorization (0.202083ms)\n✔ unknown conflicting AGT evidence uses fixed uncertainty and never guesses acceptance (0.11225ms)\n✔ monthly financial cards retain all eight native buckets without cross-currency totals (0.266584ms)\n✔ page cancels and clears state on context/navigation/unmount with no persistent transcripts (12.912959ms)\n✔ stored directional and control characters are displayed as visible text, preserving ordinary names (0.311291ms)\n9:15:43 PM [vite] (client) Re-optimizing dependencies because vite config has changed\n✔ assistant page renders provider unavailable and cannot imply consent by default (2.337625ms)\n✔ assistant page presents the external disclosure and requires explicit acknowledgement (0.545333ms)\n✔ acknowledged page exposes withdrawal while preserving a deliberate submit action (0.411708ms)\n✔ withdrawal remains visible when provider admission later becomes unavailable (0.295209ms)\nℹ tests 12\nℹ suites 0\nℹ pass 12\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1133.478666\n",
+            "fresh": true
+        },
+        {
+            "name": "types",
+            "command": "npm run types:check",
+            "exit_status": 0,
+            "log": "/private/tmp/phase7-remediation-types.log",
+            "sha256": "76a0d417f4df143c6bdf0bc46a6ee1bf52c19ef20bed5b5c0f1c052ed05f1596",
+            "result": "npm warn Unknown user config \"user\". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.\nnpm warn Unknown user config \"unsafe-perm\". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.\n\n> types:check\n> vue-tsc --noEmit\n\n",
+            "fresh": true
+        },
+        {
+            "name": "phpstan",
+            "command": "php -d memory_limit=1G vendor/bin/phpstan analyse --no-progress --debug --error-format=json",
+            "exit_status": 1,
+            "log": "/private/tmp/phase7-remediation-phpstan.log",
+            "sha256": "2b11e997591349ea5b612efa7f8fd696164f499c2fb9a640b96a305750412f2a",
+            "result": {
+                "tool": "phpstan",
+                "result": "failed",
+                "errors": 21,
+                "error_details": {
+                    "/Users/Oz/Apps/vap-invoice/app/Actions/ConvertQuoteToInvoice.php": [
+                        {
+                            "line": 70,
+                            "message": "Using nullsafe property access \"?->tax_identification_number\" on left side of ?? is unnecessary. Use -> instead.",
+                            "identifier": "nullsafe.neverNull"
+                        }
+                    ],
+                    "/Users/Oz/Apps/vap-invoice/app/Actions/IssueTransportDocument.php": [
+                        {
+                            "line": 90,
+                            "message": "Using nullsafe property access \"?->product_id\" on left side of ?? is unnecessary. Use -> instead.",
+                            "identifier": "nullsafe.neverNull"
+                        },
+                        {
+                            "line": 92,
+                            "message": "Using nullsafe property access \"?->product_version\" on left side of ?? is unnecessary. Use -> instead.",
+                            "identifier": "nullsafe.neverNull"
+                        }
+                    ],
+                    "/Users/Oz/Apps/vap-invoice/app/Actions/SaveTransportDocumentDraft.php": [
+                        {
+                            "line": 167,
+                            "message": "Parameter #1 $array (list<array<string, mixed>>) of array_values is already a list, call has no effect.",
+                            "identifier": "arrayValues.list",
+                            "tip": "Because the type is coming from a PHPDoc, you can turn off this check by setting treatPhpDocTypesAsCertain: false in your %configurationFile%."
+                        }
+                    ],
+                    "/Users/Oz/Apps/vap-invoice/app/Analytics/DocumentSnapshot.php": [
+                        {
+                            "line": 196,
+                            "message": "Method App\\Analytics\\DocumentSnapshot::history() should return list<array{type: string, label: string, tone: string, actor_name: string|null, document_no: string|null, occurred_at: string}> but returns array<int, array{type: 'delivery_failed'|'invalidated'|'issued'|'processing'|'processing_cancelled'|'submission_accepted'|'submission_queued'|'submission_rejected'|'validated', label: string, tone: 'done'|'error'|'pending', actor_name: string|null, document_no: string|null, occurred_at: string}>.",
+                            "identifier": "return.type",
+                            "tip": "array<int, array{type: 'delivery_failed'|'invalidated'|'issued'|'processing'|'processing_cancelled'|'submission_accepted'|'submission_queued'|'submission_rejected'|'validated', label: string, tone: 'done'|'error'|'pending', actor_name: string, document_no: string, occurred_at: string}> might not be a list."
+                        }
+                    ],
+                    "/Users/Oz/Apps/vap-invoice/app/Fiscal/Documents/V1_2/FiscalDocumentPayloadBuilder.php": [
+                        {
+                            "line": 77,
+                            "message": "Method App\\Fiscal\\Documents\\V1_2\\FiscalDocumentPayloadBuilder::paymentReceipt() should return array{sourceDocuments: list<array<string, mixed>>}|null but returns array{sourceDocuments: array<int, array{lineNo: decimal-int-string, sourceDocumentID: array{originatingON: string, documentDate: string}, debitAmount?: App\\Fiscal\\Agt\\Support\\CanonicalNumber, creditAmount?: App\\Fiscal\\Agt\\Support\\CanonicalNumber}>}.",
+                            "identifier": "return.type",
+                            "tip": "Type #1 from the union: Offset 'sourceDocuments' (list<array<string, mixed>>) does not accept type array<int, array{lineNo: decimal-int-string, sourceDocumentID: array{originatingON: string, documentDate: string}, debitAmount?: App\\Fiscal\\Agt\\Support\\CanonicalNumber, creditAmount?: App\\Fiscal\\Agt\\Support\\CanonicalNumber}>: array<int, array{lineNo: decimal-int-string, sourceDocumentID: array{originatingON: string, documentDate: string}, debitAmount?: App\\Fiscal\\Agt\\Support\\CanonicalNumber, creditAmount?: App\\Fiscal\\Agt\\Support\\CanonicalNumber}> might not be a list."
+                        }
+                    ],
+                    "/Users/Oz/Apps/vap-invoice/app/Fiscal/Saft/SaftExportSummary.php": [
+                        {
+                            "line": 165,
+                            "message": "Using nullsafe property access \"?->name\" on left side of ?? is unnecessary. Use -> instead.",
+                            "identifier": "nullsafe.neverNull"
+                        }
+                    ],
+                    "/Users/Oz/Apps/vap-invoice/app/Fiscal/Saft/SaftExporter.php": [
+                        {
+                            "line": 223,
+                            "message": "Using nullsafe property access on non-nullable type App\\Models\\Establishment. Use -> instead.",
+                            "identifier": "nullsafe.neverNull"
+                        },
+                        {
+                            "line": 233,
+                            "message": "Using nullsafe property access \"?->code\" on left side of ?? is unnecessary. Use -> instead.",
+                            "identifier": "nullsafe.neverNull"
+                        },
+                        {
+                            "line": 681,
+                            "message": "Using nullsafe property access \"?->tax_code\" on left side of ?? is unnecessary. Use -> instead.",
+                            "identifier": "nullsafe.neverNull"
+                        },
+                        {
+                            "line": 682,
+                            "message": "Using nullsafe property access \"?->tax_rate_basis_points\" on left side of ?? is unnecessary. Use -> instead.",
+                            "identifier": "nullsafe.neverNull"
+                        },
+                        {
+                            "line": 1024,
+                            "message": "Using nullsafe property access \"?->software_validation_number\" on left side of ?? is unnecessary. Use -> instead.",
+                            "identifier": "nullsafe.neverNull"
+                        },
+                        {
+                            "line": 1027,
+                            "message": "Using nullsafe property access \"?->software_validation_number\" on left side of ?? is unnecessary. Use -> instead.",
+                            "identifier": "nullsafe.neverNull"
+                        },
+                        {
+                            "line": 1056,
+                            "message": "Using nullsafe property access \"?->public_id\" on left side of ?? is unnecessary. Use -> instead.",
+                            "identifier": "nullsafe.neverNull"
+                        },
+                        {
+                            "line": 1061,
+                            "message": "Using nullsafe property access \"?->public_id\" on left side of ?? is unnecessary. Use -> instead.",
+                            "identifier": "nullsafe.neverNull"
+                        },
+                        {
+                            "line": 1074,
+                            "message": "Using nullsafe property access \"?->public_id\" on left side of ?? is unnecessary. Use -> instead.",
+                            "identifier": "nullsafe.neverNull"
+                        }
+                    ],
+                    "/Users/Oz/Apps/vap-invoice/app/Http/Controllers/FiscalDocumentController.php": [
+                        {
+                            "line": 429,
+                            "message": "Using nullsafe property access \"?->value\" on left side of ?? is unnecessary. Use -> instead.",
+                            "identifier": "nullsafe.neverNull"
+                        }
+                    ],
+                    "/Users/Oz/Apps/vap-invoice/app/Http/Controllers/TransportDocumentController.php": [
+                        {
+                            "line": 79,
+                            "message": "Method App\\Http\\Controllers\\TransportDocumentController::edit() should return Inertia\\Response but returns Illuminate\\Http\\RedirectResponse|Inertia\\Response.",
+                            "identifier": "return.type"
+                        }
+                    ],
+                    "/Users/Oz/Apps/vap-invoice/app/Http/Requests/StoreTransportDocumentRequest.php": [
+                        {
+                            "line": 27,
+                            "message": "Using nullsafe property access \"?->workspace_id\" on left side of ?? is unnecessary. Use -> instead.",
+                            "identifier": "nullsafe.neverNull"
+                        },
+                        {
+                            "line": 28,
+                            "message": "Using nullsafe property access \"?->id\" on left side of ?? is unnecessary. Use -> instead.",
+                            "identifier": "nullsafe.neverNull"
+                        },
+                        {
+                            "line": 172,
+                            "message": "Method App\\Http\\Requests\\StoreTransportDocumentRequest::addressProfile() return type has no value type specified in iterable type array.",
+                            "identifier": "missingType.iterableValue",
+                            "tip": "See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type"
+                        }
+                    ]
+                },
+                "instructions": "Each error has an associated identifier, like `argument.type` or `return.missing`. Each error identifier has documentation at URL https://phpstan.org/error-identifiers/<identifier>, which contains a code example, explanation why it is an error, and instructions on how to fix it. Before fixing the error, fetch the documentation page for its identifier. The error usually indicates a real bug or incorrect type in the code. Fix the underlying cause, do not just make the error go away. Do not add `@phpstan-ignore` comments, `@phpstan-ignore-next-line` comments, or baseline entries to suppress the error. Do not use assert() or inline @var PHPDoc tag to override PHPStan's inferred type. Do not add type casts just to silence errors. Do not widen parameter or return types just to make the error go away."
+            },
+            "fresh": true
+        },
+        {
+            "name": "pint-dirty",
+            "command": "vendor/bin/pint --dirty --format agent",
+            "exit_status": 0,
+            "log": "/private/tmp/phase7-remediation-pint-dirty.log",
+            "sha256": "f54af134928980507ae928987b75098e3b1ade8723f1ce16682e176f72bdd402",
+            "result": {
+                "tool": "pint",
+                "result": "fixed",
+                "files": [
+                    {
+                        "path": "tests/Feature/AssistantProviderExecutionTest.php",
+                        "fixers": [
+                            "class_definition",
+                            "fully_qualified_strict_types",
+                            "braces_position",
+                            "ordered_imports"
+                        ]
+                    }
+                ]
+            },
+            "fresh": true
+        },
+        {
+            "name": "pint",
+            "command": "vendor/bin/pint --format agent app/Fiscal/AssistantProviderTransport.php app/Fiscal/AssistantInput.php app/Fiscal/ProviderIntentInput.php config/assistant.php tests/Feature/AssistantProviderCliTest.php tests/Feature/AssistantProviderExecutionTest.php tests/Feature/ProviderIntentInputTest.php",
+            "exit_status": 0,
+            "log": "/private/tmp/phase7-remediation-pint.log",
+            "sha256": "cd1a94fc2cf6a965b86e1a4809d6c7fb9148b1ee374e1010ed2ac96ff4876ec2",
+            "result": {
+                "tool": "pint",
+                "result": "passed"
+            },
+            "fresh": true
+        },
+        {
+            "name": "doc-format",
+            "command": "npx prettier --write docs/phase-7-remediation-report.md",
+            "exit_status": 0,
+            "log": "/private/tmp/phase7-remediation-doc-format.log",
+            "sha256": "9687a8c6ec557fab9562a26925cc44935dace7465fc73f5fc2bff27447fca0a7",
+            "result": "npm warn Unknown user config \"user\". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.\nnpm warn Unknown user config \"unsafe-perm\". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.\ndocs/phase-7-remediation-report.md 65ms\n",
+            "fresh": true
+        },
+        {
+            "name": "syntax",
+            "command": "php -l app/Fiscal/AssistantProviderTransport.php",
+            "exit_status": 0,
+            "result": "No syntax errors detected",
+            "fresh": true
+        },
+        {
+            "name": "syntax",
+            "command": "php -l config/assistant.php",
+            "exit_status": 0,
+            "result": "No syntax errors detected",
+            "fresh": true
+        },
+        {
+            "name": "syntax",
+            "command": "php -l app/Fiscal/AssistantInput.php",
+            "exit_status": 0,
+            "result": "No syntax errors detected",
+            "fresh": true
+        },
+        {
+            "name": "syntax",
+            "command": "php -l app/Fiscal/ProviderIntentInput.php",
+            "exit_status": 0,
+            "result": "No syntax errors detected",
+            "fresh": true
+        },
+        {
+            "name": "syntax",
+            "command": "php -l tests/Feature/AssistantProviderCliTest.php",
+            "exit_status": 0,
+            "result": "No syntax errors detected",
+            "fresh": true
+        },
+        {
+            "name": "syntax",
+            "command": "php -l tests/Feature/AssistantProviderExecutionTest.php",
+            "exit_status": 0,
+            "result": "No syntax errors detected",
+            "fresh": true
+        },
+        {
+            "name": "syntax",
+            "command": "php -l tests/Feature/ProviderIntentInputTest.php",
+            "exit_status": 0,
+            "result": "No syntax errors detected",
+            "fresh": true
+        },
+        {
+            "name": "evidence-format",
+            "command": "npx prettier --write docs/phase-7-remediation-evidence.json",
+            "exit_status": 0,
+            "log": "/private/tmp/phase7-remediation-evidence-format.log",
+            "sha256": "5b8208db88b850752ac63b67f57b7056821857b7d30cd9ef22b2856bd3928933",
+            "result": "npm warn Unknown user config \"user\". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.\nnpm warn Unknown user config \"unsafe-perm\". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.\ndocs/phase-7-remediation-evidence.json 32ms\n",
+            "fresh": true
+        },
+        {
+            "name": "doc-check",
+            "command": "npx prettier --check docs/phase-7-remediation-report.md docs/phase-7-remediation-evidence.json",
+            "exit_status": 0,
+            "log": "/private/tmp/phase7-remediation-doc-check.log",
+            "sha256": "3dd8d0f892a77f8416c3bc310273cce1e34c98dcf24ca3d80f1ce017c10abd1e",
+            "result": "npm warn Unknown user config \"user\". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.\nnpm warn Unknown user config \"unsafe-perm\". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.\nChecking formatting...\nAll matched files use Prettier code style!\n",
+            "fresh": true
+        }
+    ],
+    "changed_files": [
+        {
+            "path": "app/Fiscal/AssistantProviderTransport.php",
+            "before_sha256": "7e3412e98adfbf8aad82aea68827d45dad1d49dfd28e707943dd20b1a604e0de",
+            "sha256": "24e075d5a845e3c9feb323f1a7603e39fdeb0fc98eba142689f267018e3d8732"
+        },
+        {
+            "path": "config/assistant.php",
+            "before_sha256": "5e845aeb618721ad343b0b3c1360b601ab8c81c844006ceba2e44e5c38c2464a",
+            "sha256": "8de522af1cad494b7a5e69b3babbf08bfd1080b4fae9d82905f5ebad7414d8ea"
+        },
+        {
+            "path": "app/Fiscal/AssistantInput.php",
+            "before_sha256": "bfb5dfd6ccf23881aafe68acac28a6b0cca0704053d65141d03d3eef886a4743",
+            "sha256": "b8d6cf95c982d658f175992ba0d6d3dccbc67532eb5534f01eabfec01384f47e"
+        },
+        {
+            "path": "app/Fiscal/ProviderIntentInput.php",
+            "before_sha256": "94529c86f48cf45c0aee5c4c513012340ac63daeb7e3cd4da0e1453679742e7e",
+            "sha256": "5494361614895668538183e994983b401237c0c139ad63eee42f8d5802aee104"
+        },
+        {
+            "path": "tests/Feature/AssistantProviderCliTest.php",
+            "before_sha256": null,
+            "sha256": "2e0c0d6fb920fe5ef94935eb6cc0cc6ddd63e0d37af3317534485fda834aa3ba"
+        },
+        {
+            "path": "tests/Feature/AssistantProviderExecutionTest.php",
+            "before_sha256": "4e161949082cce50d4ee1854b6eb0900c42890d81181de171a36183b9e9cc0ff",
+            "sha256": "f0e9e49b9b5928ae6cde8b780c5e95640bbf35f15acb8337971362c9fe426c8d"
+        },
+        {
+            "path": "tests/Feature/ProviderIntentInputTest.php",
+            "before_sha256": "ff36d07880baae3266302c9d3f4b8082826fc24322b557d79d3cb08ae2968dfb",
+            "sha256": "d2d12a9021158bc75d8f7aa9ecf55f4e38c20bce35fabbe292580b0236cafc6b"
+        },
+        {
+            "path": "docs/phase-7-remediation-report.md",
+            "before_sha256": null,
+            "sha256": "6319c7512bdd6cede768da90b511d21f4cafe3efba73a399b5aed9d2f20b1e1a"
+        }
+    ],
+    "evidence_self_hash": "Excluded to avoid self-reference",
+    "preserved_documents": {
+        "docs/phase-0/certification-plan.md": "294672545c7e236d09cc3209ae51bc588964b7019e29ed72ee32014a8280d53d",
+        "docs/phase-3-trust-boundary-review.md": "3d590d4de22a6697b73a4d953efbc1007e8bd4fd8a6b16ff26b994fe82ae7c48",
+        "docs/phase-0/README.md": "5a2ffc63bd61750fced3594854055c54df39532e30972c05a61be9e5d69e3a66",
+        "docs/phase-2-trust-boundary-review.md": "6aac200a4437925019e1770e74b80a5258bcba92fc6f4038011c6cabedffd9ab",
+        "docs/phase-4d-query-plan-remediation-review.md": "339295ea110474c81a806aabbaadca48857ee8f68f193fc02bbb64e09d9c735e",
+        "docs/phase-0/adr/0003-versioned-agt-gateway.md": "f07cf76899bff6792f4f3df760d977dfb5184be317b14f17ca7ce0baf7fc2851",
+        "docs/openapi-read-v1.json": "52578e2444482c0c18da3cf17c712148948e401784cf7dabde43660db5c9dbdc",
+        "docs/openapi-external-catalogue-service-create-v1.json": "06d0b7ceb5d63483f7741271e40b27c08480f02ecfc377230d1b9ee52150f480",
+        "docs/phase-4d-query-plan-remediation-round-2.md": "aa9e57230f065d3ffdd58b1f7f829ee373a4c93a32d9fafa4a3d90442dcd8129",
+        "docs/phase-0/source-register.md": "240f020f576e744b75c8cab1c270f733cf9f5e78b476b3ce8f1a87f33ae514b0",
+        "docs/phase-0/adr/0006-saft-and-accounting-scope.md": "d0c6f18ad59d8a6ed5cdcddaa6c72fbdd9e880e54afeac6ad77431f298be6900",
+        "docs/phase-0/adr/0001-tenant-and-legal-entity-boundaries.md": "b28f8ca234faac4c1cf60fd52d97d8ab46523d6794cd3761285a3e57ca7b04f2",
+        "docs/phase-0/adr/0002-immutable-fiscal-ledger.md": "684dd4013db0659b92fbeddcf31b32b87e48651da3694b252206c17251a9171d",
+        "docs/phase-0/adr/0008-interface-system.md": "4392362af261f950257cc7ec3bc485b1cddf19f095d740df5b63da794ad4185f",
+        "docs/phase-6-laravel-ai-sdk-review.md": "77e501eab6f9ee4305578271b3f11a2c567ea5e294a6e60a3b1fde3d58a98daa",
+        "docs/phase-6-implementation-report.md": "cdd600a0f6f4b1e0a23f9c9893ba02221fc6af8f1e02ce7cdb5b14164f24ffad",
+        "docs/phase-5a-implementation-evidence.json": "a736517e2dd55f1f63ca8b00cb1a813b763e4fd7e8f9cd4db04db194604c43bc",
+        "docs/phase-6-implementation-evidence.json": "a70b2ab58c6117034ef13bc00dd9c8886c81e5dbdea7668ca2866a8242f99542",
+        "docs/phase-5b-implementation-report.md": "c6d0c38f3a4534569d822f98dc7b30a5045512a3ea24aae67d1b8849e3955b22",
+        "docs/phase-4b-status-authority-amendment.md": "f338d99c7369fa85fdb360af5977821a5b8d843175bc6c222da647dab859d70c",
+        "docs/phase-7-live-inference-security-contract.md": "34d0a59a9a907b9a3f7cdbfbf8bb87c9831417d45641412805d0d39299baa24f",
+        "docs/phase-4c-qualified-agt-read-contract.md": "e1126a52ddb4d39f9c7b91a05fe711fab6c99fec3bb06a631f925572406d0333",
+        "docs/phase-5b-implementation-evidence.json": "be73ad04c95e3cede931d42e1a6e75bf905c3d785405f558dc600654f62081ed",
+        "docs/openapi-external-read-v1.json": "11ccaee8e40a886a83600fd6acfe322fc38904c4cca910dd6f06ec2ffe504c38",
+        "docs/phase-6-read-only-assistant-contract.md": "33f9dcadf4bfcf2e6a372bbb9c5ffb27b23a50bb0959493b1e81eb00ee380005",
+        "docs/phase-4b-agt-status-read-contract.md": "c5dcf3684be246e7ad27eeabe9b51b0f37735455ecf02296dd6e2c0a021c4bcd",
+        "docs/phase-7-implementation-evidence.json": "97b0ffe53a88ee52d6858e4abd28069af91a143143b751954f9885afb1786319",
+        "docs/openapi-external-customer-create-v1.json": "7536d833619479f78dda557754ca5bb1178c8c18960f89dde2340261e2d3e6b5",
+        "docs/openapi-external-billing-v2.json": "1f13976646a37f2c216ecfb505ec8b3c4544ed79fc7763b5c760483e1f5323eb",
+        "docs/phase-4d-query-plan-review-evidence.json": "fafbf27f3b952e772f31253a3514dff6d2fee8d926068c817cdbd86fb00df5c7",
+        "docs/phase-4d-query-plan-round-2-evidence.json": "0b961af789fbce4fddbd1509d89c25fb43c07b77f7f787e55c4375bec7e0afd9",
+        "docs/phase-2-read-first-foundation.md": "6ee603dae96737862beef7e22b54ba339f45bdb531e0127d75246fff4fbd8e03",
+        "docs/phase-4d-final-review-evidence.json": "ad02ff1e9b2b6ab337506053cfc141bc0361d8b7d128c1ca3726dbbe499c9101",
+        "docs/phase-0/adr/0004-signing-key-custody.md": "00e9b7b5a134da89741bb0c2e69361398490a05c1be8619d71b49c865d50c6ac",
+        "docs/phase-4c-trust-boundary-review.md": "702f52fe332a87a9cf3c57653b8afee0f5a72ac5edfaccb6599b7e1a741204d0",
+        "docs/phase-4d-implementation-report.md": "0f44549e0be061ea83b9cdba5ed5b34dc9b6bf85e02fb992c90d6d2ad226d7fa",
+        "docs/phase-5a-trust-boundary-review.md": "a5dbca066572574f65130c1dc539019a18365b4c7cbe0a4caba51575872c0dce",
+        "docs/phase-4b-implementation-report.md": "e80e5c386c212b8a1aad440614f79fa333796e4864308ec1c009e4e2d90d5d7d",
+        "docs/phase-4d-trust-boundary-review.md": "92b205ac6c50bb80c0397cadabb4dff645ba1955524ccc3be9ab3378fe17106e",
+        "docs/phase-4a-implementation-report.md": "929c1909497884fefd8e0a2b236a4ec3fadc0fa8a9248cba42b413e48a39515d",
+        "docs/phase-0/prototype-coverage.md": "9031c36b486ccd126be0d5e960f4f27900aa6930e2a7bf24d124cece331f2a12",
+        "docs/phase-0/agt-clarification-request.md": "d9af5707c099428a4da29ef2aca003ffb40512d430c2f6488c4562dac1b2b767",
+        "docs/phase-4b-trust-boundary-review.md": "c7a840deb27016d47369504ccb4f14fec7e23cb173557f3c0e9c342d5e575fb5",
+        "docs/openapi-external-qualified-agt-v2.json": "4dabd42405adb80275660480938c55dff725782bba07fc12369a5498cc72a3b5",
+        "docs/phase-5a-implementation-report.md": "13b338d53aa76ee9f4ec143f1357aabdf56dbd1b76fcacc70b0fc6427c2e0972",
+        "docs/phase-7-implementation-report.md": "6be17f6153bab69307b68931e307db62c95e7c6be28cebd6b2b7843a231efad5",
+        "docs/phase-5b-catalogue-service-create-contract.md": "6032553bb9b49ed201eff93ce5c2aa242b1aee5c722fa74551a5fe7353b39d9c",
+        "docs/phase-0/adr/0007-platform-and-recovery.md": "f0c4efdafab43536c80f61af3336dde10d11139c0d17f348361e5663968f40b4",
+        "docs/phase-4a-trust-boundary-review.md": "a2e9abf42c3a7e1ba1077022edfa6081866de81afc6017b4e20b00dc1280a911",
+        "docs/phase-5a-final-review-evidence.json": "2c9fe85dfe53cc5a1c60354290517aff6a5da9727b9fc1ca168d2b33cc4f56b9",
+        "docs/phase-5a-customer-create-command-contract.md": "8cd9f0a6756cace0223dbf6ee883de15708e581aebaba341eed9c5d3b475851d",
+        "docs/phase-3-external-read-integration-contract.md": "ffeea01d69b3d878573a7ca5f37c13d0a6e1a948499ed43361e65bd6c537cbfa",
+        "docs/phase-4c-implementation-report.md": "1e1cd7eb7c3ce5338bb3175de6c576c3623f099e10c030aca53251eab20be501",
+        "docs/phase-3a-implementation-report.md": "988122916fcda536d7ecf7090073dcc49f03449941f8602b85123168de75d0ff",
+        "docs/phase-4d-analytics-read-contract.md": "095e5a56897b9caf65666233637b3954864f98606c38f236a58c11598991c180",
+        "docs/phase-0/adr/0005-contingency-and-offline-issuing.md": "9ac9b079af29b806dc1246283ed1a84900dc3ba6b30a376d6a9a3c13c8617beb",
+        "docs/phase-7-provider-privacy-decision.md": "55e9e93cf33703a816b9083601edb1497b6338a8402f6fab51301bf3a2280011",
+        "docs/phase-0/compliance-matrix.md": "2f24cdaa6ecde38e90a387477f4931f65bb20d2b53c4dfef462f8902a878c422",
+        "docs/phase-4a-customer-catalogue-read-contract.md": "94b0e9dfd61be3b1cd3fed5571b20908600effc6aef6d2be330413ccb1e9d459",
+        "docs/phase-1-capability-contract.md": "a385b3ff2990c0b6923a85320b22c66ec9eec3a7e627d7ac8515b5b0c85da50c"
+    },
+    "repository_preservation": {
+        "starting_file_count": 2565,
+        "changed_existing_files": [
+            "config/assistant.php",
+            "app/Fiscal/AssistantInput.php",
+            "tests/Feature/AssistantProviderExecutionTest.php",
+            "app/Fiscal/ProviderIntentInput.php",
+            "app/Fiscal/AssistantProviderTransport.php",
+            "tests/Feature/ProviderIntentInputTest.php"
+        ],
+        "unrelated_changes_detected": false
+    },
+    "phpstan": {
+        "errors": 21,
+        "exact_inherited_match": true,
+        "new_diagnostics": 0
+    },
+    "accounting": "Unchanged: P7-PC1 section 6 items 4-6, section 7 and exact handoff require retained reservation without refunds, including admitted pre-transmission failures.",
+    "prior_evidence": {
+        "path": "docs/phase-7-implementation-evidence.json",
+        "sha256": "97b0ffe53a88ee52d6858e4abd28069af91a143143b751954f9885afb1786319",
+        "historical_only": [
+            "full SQLite",
+            "full PostgreSQL integration/concurrency matrix",
+            "customer-search query plans",
+            "repository-wide ESLint/format debt"
+        ]
+    },
+    "failed_attempts": [
+        "Initial PostgreSQL gate blocked by sandbox networking; authorized isolated localhost rerun passed.",
+        "Initial PHPStan evidence parser expected standard JSON instead of installed agent wrapper; corrected parser proved exact inherited diagnostics."
+    ],
+    "live_provider_requests": 0,
+    "credentials_added": false,
+    "production_activation": false,
+    "migrations_added": false,
+    "limitations": [
+        "Deployment operator must verify/install exact-version CLI and protected path under actual FPM runtime before activation.",
+        "Independent re-review outstanding.",
+        "Original legal/privacy/provider/account/retention/geography/credential/operational gates remain unresolved.",
+        "Full repository suites not rerun; fresh focused Phase 6/7 and provider PostgreSQL gates are distinguished from preserved historical evidence."
+    ]
+}

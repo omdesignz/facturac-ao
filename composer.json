@@ -12,6 +12,7 @@
         "php": "^8.3",
         "carlos-meneses/laravel-mpdf": "^2.1",
         "inertiajs/inertia-laravel": "^3.0",
+        "laravel/ai": "^0.11.2",
         "laravel/fortify": "^1.37",
         "laravel/framework": "^13.17",
         "laravel/socialite": "^5.29",
@@ -102,7 +103,9 @@
     },
     "extra": {
         "laravel": {
-            "dont-discover": []
+            "dont-discover": [
+                "laravel/ai"
+            ]
         }
     },
     "config": {
