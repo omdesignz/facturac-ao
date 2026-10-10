@@ -36,8 +36,12 @@ final class AssistantProviderProfile
 
     public const OUTPUT_RATE = 2750000;
 
-    public const BUDGET_CEILINGS = ['attempt' => 600000, 'user_day' => 2000000, 'workspace_day' => 5000000,
-        'workspace_month' => 50000000, 'deployment_day' => 20000000, 'deployment_month' => 200000000];
+    /**
+     * Highest reservation each window may be configured to hold, written as questions times the 552816 reserved per question.
+     * The reservation assumes a full input envelope; a real question is bounded by the response validator at about 0.0015 USD.
+     */
+    public const BUDGET_CEILINGS = ['attempt' => 600000, 'user_day' => 60 * 552816, 'workspace_day' => 300 * 552816,
+        'workspace_month' => 5000 * 552816, 'deployment_day' => 3000 * 552816, 'deployment_month' => 50000 * 552816];
 
     public static function reservation(): int
     {

@@ -32,5 +32,22 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <env name="ASSISTANT_ENABLED" value="false"/>
+        <env name="ASSISTANT_PROVIDER_ENABLED" value="false"/>
+        <env name="ASSISTANT_PROVIDER_EGRESS_ENABLED" value="false"/>
+        <env name="ASSISTANT_PROVIDER_DNS_PHP_CLI" value="(null)"/>
+        <env name="ASSISTANT_PROVIDER_BUDGET_ID" value="(null)"/>
+        <env name="ASSISTANT_PROVIDER_USAGE_BUDGET_ID" value="(null)"/>
+        <env name="ASSISTANT_PROVIDER_APPROVAL_REFERENCE" value="(null)"/>
+        <env name="ASSISTANT_PROVIDER_SECRET_FILE" value="(null)"/>
+        <env name="ASSISTANT_PROVIDER_NOTICE_URL" value="(null)"/>
+        <env name="ASSISTANT_PROVIDER_NOTICE_VERSION" value="(null)"/>
+        <env name="TENANT_AI_DEPLOYMENT_ID" value="(null)"/>
+        <env name="ASSISTANT_PROVIDER_BUDGET_ATTEMPT" value="0"/>
+        <env name="ASSISTANT_PROVIDER_BUDGET_USER_DAY" value="0"/>
+        <env name="ASSISTANT_PROVIDER_BUDGET_WORKSPACE_DAY" value="0"/>
+        <env name="ASSISTANT_PROVIDER_BUDGET_WORKSPACE_MONTH" value="0"/>
+        <env name="ASSISTANT_PROVIDER_BUDGET_DEPLOYMENT_DAY" value="0"/>
+        <env name="ASSISTANT_PROVIDER_BUDGET_DEPLOYMENT_MONTH" value="0"/>
     </php>
 </phpunit>

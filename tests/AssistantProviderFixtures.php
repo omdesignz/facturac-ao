@@ -65,7 +65,9 @@ function providerApprovals(array $fixture, string $secretPath, bool $acknowledge
         'assistant.provider.budget_id' => $budget, 'assistant.provider.approval_reference' => 'synthetic-approval',
         'assistant.provider.secret_reference' => $secretPath, 'assistant.provider.notice_version' => AssistantProviderProfile::POLICY,
         'assistant.provider.notice_url' => '/privacidade',
-        'assistant.provider.budgets' => AssistantProviderProfile::BUDGET_CEILINGS]);
+        // The limits these suites were written against: three questions a user a day, nine a company, thirty-six overall.
+        'assistant.provider.budgets' => ['attempt' => 600000, 'user_day' => 2000000, 'workspace_day' => 5000000,
+            'workspace_month' => 50000000, 'deployment_day' => 20000000, 'deployment_month' => 200000000]]);
     DB::table('assistant_provider_controls')->insert(['budget_id' => $budget, 'enabled' => true, 'circuit_blocked' => false,
         'profile' => AssistantProviderProfile::ID, 'policy' => AssistantProviderProfile::POLICY,
         'approval_reference' => 'synthetic-approval', 'approval_expires_at' => now()->addDay()]);
