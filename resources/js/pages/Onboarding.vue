@@ -23,6 +23,7 @@ import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { confirmAction } from '@/lib/confirm';
+import { localIsoDate, startOfYearIsoDate } from '@/lib/dates';
 import { dashboard } from '@/routes';
 import { show as agtConnectionShow } from '@/routes/agt/connection';
 import {
@@ -124,11 +125,8 @@ async function removeLogo(): Promise<void> {
     }
 }
 
-const startOfYear = new Date(new Date().getFullYear(), 0, 1)
-    .toISOString()
-    .slice(0, 10);
-const saftFrom = ref(startOfYear);
-const saftTo = ref(new Date().toISOString().slice(0, 10));
+const saftFrom = ref(startOfYearIsoDate());
+const saftTo = ref(localIsoDate());
 
 const saftUrl = computed(
     () => `${saftExport.url()}?from=${saftFrom.value}&to=${saftTo.value}`,

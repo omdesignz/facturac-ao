@@ -19,6 +19,7 @@ import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { confirmAction } from '@/lib/confirm';
+import { localIsoDate } from '@/lib/dates';
 import {
     destroy as destroyProfile,
     run as runProfiles,
@@ -105,7 +106,7 @@ const form = useForm({
     establishment_public_id: '',
     document_type: 'FT',
     frequency: 'monthly',
-    starts_on: new Date().toISOString().slice(0, 10),
+    starts_on: localIsoDate(),
     ends_on: '',
     is_active: true,
     auto_issue: false,
