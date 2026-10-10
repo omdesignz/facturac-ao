@@ -17,7 +17,7 @@ withDefaults(
 
 <template>
     <div
-        class="pr-6 sm:border-l sm:border-zinc-900/10 sm:pl-6 sm:first:border-l-0 sm:first:pl-0 dark:sm:border-white/10"
+        class="min-w-0 pr-6 sm:border-l sm:border-zinc-900/10 sm:pl-6 sm:first:border-l-0 sm:first:pl-0 dark:sm:border-white/10"
     >
         <dt
             class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
@@ -28,8 +28,8 @@ withDefaults(
             :class="[
                 compact
                     ? 'text-base font-medium tracking-[-0.01em]'
-                    : 'text-[1.75rem] leading-none tracking-[-0.03em]',
-                'mt-2.5 numeric text-zinc-950 dark:text-white',
+                    : 'text-stat leading-none tracking-[-0.03em]',
+                'mt-2.5 numeric break-words text-zinc-950 dark:text-white',
             ]"
         >
             <slot>{{ value }}</slot>

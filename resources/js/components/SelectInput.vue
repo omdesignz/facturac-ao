@@ -13,6 +13,7 @@ import {
     nextTick,
     onBeforeUnmount,
     ref,
+    useAttrs,
     watch,
 } from 'vue';
 import type { SelectOption } from '@/types/select';
@@ -34,6 +35,28 @@ const OpenWatcher = defineComponent({
     },
 });
 
+/**
+ * Attributes are routed on purpose. `class` and `style` describe the control as
+ * a block in the page, so they go to the wrapper. Everything else (`autocomplete`,
+ * `aria-*`, `data-*`, listeners…) describes the field, so it goes to the
+ * combobox input, where assistive technology and form code look for it.
+ */
+defineOptions({ inheritAttrs: false });
+
+const attrs = useAttrs();
+
+function wrapperAttrs(): Record<string, unknown> {
+    return { class: attrs.class, style: attrs.style };
+}
+
+function inputAttrs(): Record<string, unknown> {
+    return Object.fromEntries(
+        Object.entries(attrs).filter(
+            ([key]) => key !== 'class' && key !== 'style',
+        ),
+    );
+}
+
 const props = withDefaults(
     defineProps<{
         modelValue: T;
@@ -49,14 +72,22 @@ const props = withDefaults(
         disabled?: boolean;
         /** `sm` matches the compact controls used inside table rows. */
         size?: 'sm' | 'md';
+        /** Marks the field as failing validation (`aria-invalid` and an outline). */
+        invalid?: boolean;
+        /** The id of the error or hint element that describes this field. */
+        describedby?: string;
+        required?: boolean;
     }>(),
     {
         name: undefined,
         id: undefined,
-        placeholder: 'Seleccione uma opção',
+        placeholder: 'Seleccione uma opção…',
         ariaLabel: undefined,
         disabled: false,
         size: 'md',
+        invalid: false,
+        describedby: undefined,
+        required: false,
     },
 );
 
@@ -105,7 +136,16 @@ const inputClasses = computed(() =>
         : 'rounded-xl py-2.5 pr-9 pl-3 text-sm',
 );
 
-const buttonClasses = computed(() => (props.size === 'sm' ? 'pr-2' : 'pr-2.5'));
+const buttonClasses = computed(() =>
+    props.size === 'sm' ? 'pr-2 pl-2' : 'pr-2.5 pl-2',
+);
+
+/** The query is echoed back in the empty message, so keep it from taking over. */
+const echoedQuery = computed(() => {
+    const trimmed = query.value.trim();
+
+    return trimmed.length > 40 ? `${trimmed.slice(0, 40)}…` : trimmed;
+});
 
 function update(value: T): void {
     emit('update:modelValue', value);
@@ -168,6 +208,7 @@ onBeforeUnmount(() => watchViewport(false));
         :model-value="modelValue"
         :disabled="disabled"
         as="div"
+        v-bind="wrapperAttrs()"
         @update:model-value="update"
     >
         <template #default="{ open }">
@@ -186,18 +227,25 @@ onBeforeUnmount(() => watchViewport(false));
                     :aria-label="ariaLabel"
                     :display-value="displayValue"
                     :placeholder="placeholder"
+                    :required="required || undefined"
+                    :aria-invalid="invalid ? 'true' : undefined"
+                    :aria-describedby="describedby"
                     autocomplete="off"
+                    spellcheck="false"
+                    autocapitalize="off"
+                    v-bind="inputAttrs()"
                     :class="[
                         inputClasses,
-                        'w-full bg-white text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 placeholder:text-zinc-400 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-zinc-500 dark:focus:outline-brand-400',
+                        'w-full bg-white text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 placeholder:text-zinc-400 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 disabled:cursor-not-allowed disabled:opacity-60 aria-invalid:outline-2 aria-invalid:-outline-offset-2 aria-invalid:outline-rose-500 aria-invalid:focus:outline-rose-500 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-zinc-500 dark:focus:outline-brand-400 dark:aria-invalid:outline-rose-400 dark:aria-invalid:focus:outline-rose-400',
                     ]"
                     @change="query = $event.target.value"
                 />
 
                 <ComboboxButton
+                    aria-label="Mostrar opções"
                     :class="[
                         buttonClasses,
-                        'absolute inset-y-0 right-0 flex items-center rounded-r-xl focus:outline-none',
+                        'absolute inset-y-0 right-0 flex items-center rounded-r-xl focus:outline-hidden pointer-coarse:pl-3',
                     ]"
                 >
                     <ChevronsUpDown
@@ -218,13 +266,13 @@ onBeforeUnmount(() => watchViewport(false));
                 >
                     <ComboboxOptions
                         static
-                        class="max-h-64 w-full overflow-auto rounded-xl bg-white p-1.5 text-sm shadow-xl ring-1 ring-zinc-900/10 focus:outline-none dark:bg-zinc-900 dark:ring-white/10"
+                        class="max-h-64 w-full overflow-auto overscroll-contain rounded-xl bg-white p-1.5 text-sm shadow-xl ring-1 ring-zinc-900/10 focus:outline-hidden dark:bg-zinc-900 dark:ring-white/10"
                     >
                         <p
                             v-if="filtered.length === 0"
-                            class="px-2.5 py-2 text-sm text-zinc-500 dark:text-zinc-400"
+                            class="px-2.5 py-2 text-sm [overflow-wrap:anywhere] text-zinc-500 dark:text-zinc-400"
                         >
-                            Sem resultados para “{{ query }}”.
+                            Sem resultados para “{{ echoedQuery }}”.
                         </p>
 
                         <ComboboxOption

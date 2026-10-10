@@ -51,21 +51,18 @@ function saveSelection(): void {
 
 <template>
     <Transition
-        enter-active-class="transition ease-out duration-300"
-        enter-from-class="translate-y-4 opacity-0"
-        enter-to-class="translate-y-0 opacity-100"
-        leave-active-class="transition ease-in duration-200"
+        leave-active-class="transition ease-out duration-150"
         leave-from-class="opacity-100"
         leave-to-class="opacity-0"
     >
         <div
             v-if="visible"
-            class="fixed inset-x-0 bottom-0 z-[70] p-4 sm:p-6"
+            class="fixed inset-x-0 bottom-0 z-[70] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-6 sm:pb-[max(1.5rem,env(safe-area-inset-bottom))]"
             role="region"
             aria-label="Consentimento de cookies"
         >
             <div
-                class="mx-auto max-w-3xl rounded-2xl bg-white p-5 shadow-2xl ring-1 ring-zinc-900/10 dark:bg-zinc-900 dark:ring-white/10"
+                class="mx-auto max-h-[calc(100dvh-1rem-max(1rem,env(safe-area-inset-bottom)))] max-w-3xl overflow-y-auto overscroll-contain rounded-2xl bg-white p-5 shadow-2xl ring-1 ring-zinc-900/10 sm:max-h-[calc(100dvh-1.5rem-max(1.5rem,env(safe-area-inset-bottom)))] dark:bg-zinc-900 dark:ring-white/10"
             >
                 <div class="flex items-start gap-3">
                     <span
@@ -164,7 +161,7 @@ function saveSelection(): void {
                             <button
                                 type="button"
                                 :disabled="saving"
-                                class="inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
+                                class="tap-target inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                                 @click="acceptAll"
                             >
                                 Aceitar todos
@@ -172,7 +169,7 @@ function saveSelection(): void {
                             <button
                                 type="button"
                                 :disabled="saving"
-                                class="inline-flex h-10 items-center justify-center rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 disabled:opacity-60 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
+                                class="tap-target inline-flex h-10 items-center justify-center rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 disabled:opacity-60 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
                                 @click="rejectAll"
                             >
                                 Apenas essenciais
@@ -180,7 +177,7 @@ function saveSelection(): void {
                             <button
                                 v-if="!showChoices"
                                 type="button"
-                                class="rounded-xl px-4 py-2 text-sm font-medium text-zinc-600 focus-ring transition hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white"
+                                class="tap-target rounded-xl px-4 py-2 text-sm font-medium text-zinc-600 focus-ring transition hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white"
                                 @click="showChoices = true"
                             >
                                 Escolher
@@ -189,7 +186,7 @@ function saveSelection(): void {
                                 v-else
                                 type="button"
                                 :disabled="saving"
-                                class="rounded-xl px-4 py-2 text-sm font-medium text-zinc-600 focus-ring transition hover:text-zinc-950 disabled:opacity-60 dark:text-zinc-400 dark:hover:text-white"
+                                class="tap-target rounded-xl px-4 py-2 text-sm font-medium text-zinc-600 focus-ring transition hover:text-zinc-950 disabled:opacity-60 dark:text-zinc-400 dark:hover:text-white"
                                 @click="saveSelection"
                             >
                                 Guardar escolha

@@ -12,7 +12,7 @@ defineEmits<{ openNavigation: [] }>();
  * At rest the bar is the page's own ground, so a screen opens on its header
  * rather than on chrome; the hairline only appears once content slides under.
  */
-const scrolled = ref(false);
+const scrolled = ref(typeof window !== 'undefined' && window.scrollY > 4);
 
 function trackScroll(): void {
     scrolled.value = window.scrollY > 4;
@@ -30,10 +30,10 @@ onBeforeUnmount(() => {
 
 <template>
     <header
-        class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-3 border-b px-4 backdrop-blur-xl transition-[border-color,background-color] duration-200 sm:gap-4 sm:px-6 lg:px-8"
+        class="sticky inset-bs-[var(--impersonation-bar,0px)] z-40 flex h-16 shrink-0 items-center gap-3 border-b px-4 transition-[border-color,background-color] duration-200 sm:gap-4 sm:px-6 lg:px-8"
         :class="
             scrolled
-                ? 'border-zinc-900/[0.07] bg-stone-50/85 dark:border-white/10 dark:bg-zinc-950/85'
+                ? 'border-zinc-900/[0.07] bg-stone-50/85 backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/85'
                 : 'border-transparent bg-stone-50 dark:bg-zinc-950'
         "
     >

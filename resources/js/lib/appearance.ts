@@ -17,8 +17,22 @@ export function applyAppearance(appearance: Appearance): void {
     const isDark =
         appearance === 'dark' || (appearance === 'system' && prefersDark);
 
-    document.documentElement.classList.toggle('dark', isDark);
-    document.documentElement.dataset.appearance = appearance;
+    const root = document.documentElement;
+
+    // Switching the theme must be one instant repaint. Without this, elements
+    // with a colour transition fade while the ones without snap, and the page
+    // ghosts through a half-dark state. The rule lives in app.css.
+    if (root.classList.contains('dark') !== isDark) {
+        root.classList.add('theme-switching');
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                root.classList.remove('theme-switching');
+            });
+        });
+    }
+
+    root.classList.toggle('dark', isDark);
+    root.dataset.appearance = appearance;
 }
 
 export function storeAppearance(appearance: Appearance): void {

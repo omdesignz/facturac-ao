@@ -76,12 +76,17 @@ const valueTone = computed(
 </script>
 
 <template>
-    <div class="rounded-2xl surface p-4">
+    <div class="min-w-0 rounded-2xl surface p-4">
         <p class="eyebrow text-zinc-500">{{ label }}</p>
 
         <!-- Proportional figures on the headline number: tabular digits make a
              large standalone value look loose. -->
-        <p :class="[valueTone, 'mt-2 text-2xl font-semibold lining-nums']">
+        <p
+            :class="[
+                valueTone,
+                'mt-2 text-xl font-semibold [overflow-wrap:anywhere] lining-nums min-[360px]:text-2xl',
+            ]"
+        >
             {{ value }}
         </p>
 
@@ -102,6 +107,9 @@ const valueTone = computed(
                     class="size-3.5"
                     aria-hidden="true"
                 />
+                <span v-if="change.direction !== 'flat'" class="sr-only">{{
+                    change.direction === 'up' ? 'Subiu ' : 'Desceu '
+                }}</span>
                 {{
                     change.direction === 'flat'
                         ? 'sem variação'
@@ -118,7 +126,7 @@ const valueTone = computed(
 
             <span
                 v-if="comparisonLabel && (change || previous !== undefined)"
-                class="text-xs text-zinc-400 dark:text-zinc-500"
+                class="text-xs text-zinc-500 dark:text-zinc-400"
             >
                 vs {{ comparisonLabel.toLowerCase() }}
             </span>

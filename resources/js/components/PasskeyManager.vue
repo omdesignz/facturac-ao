@@ -2,7 +2,7 @@
 import { router } from '@inertiajs/vue3';
 import { usePasskeyRegister } from '@laravel/passkeys/vue';
 import { Fingerprint, LoaderCircle, Plus, Trash2 } from '@lucide/vue';
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import { confirmAction } from '@/lib/confirm';
 import { destroy as destroyPasskey } from '@/routes/passkey';
@@ -35,11 +35,13 @@ const {
     },
 });
 
-const suggestedName = computed(() => {
-    if (typeof navigator === 'undefined') {
-        return 'Este dispositivo';
-    }
+/**
+ * Worked out after mount: the server render cannot see the browser, and a
+ * placeholder that changes between the two would be a hydration mismatch.
+ */
+const suggestedName = ref('Este dispositivo');
 
+function deviceName(): string {
     const ua = navigator.userAgent;
 
     if (/iPhone/i.test(ua)) {
@@ -63,7 +65,20 @@ const suggestedName = computed(() => {
     }
 
     return 'Este dispositivo';
+}
+
+onMounted(() => {
+    suggestedName.value = deviceName();
 });
+
+const shownError = computed(() => nameError.value ?? registerError.value);
+
+/** The hint is always read with the field; the error joins it when there is one. */
+const describedBy = computed(() =>
+    shownError.value
+        ? 'passkey-name-hint passkey-name-error'
+        : 'passkey-name-hint',
+);
 
 function formatDate(value: string | null): string {
     if (value === null) {
@@ -114,7 +129,7 @@ async function remove(passkey: Passkey): Promise<void> {
 </script>
 
 <template>
-    <section class="overflow-hidden rounded-2xl surface">
+    <section class="overflow-clip rounded-2xl surface">
         <div
             class="flex flex-col gap-5 border-b border-zinc-100 p-6 sm:flex-row sm:items-start sm:justify-between dark:border-white/10"
         >
@@ -185,7 +200,8 @@ async function remove(passkey: Passkey): Promise<void> {
                     </div>
                     <button
                         type="button"
-                        class="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-rose-700 focus-ring transition hover:bg-rose-50 disabled:opacity-50 dark:text-rose-400 dark:hover:bg-rose-400/10"
+                        :aria-label="`Remover a passkey ${passkey.name}`"
+                        class="tap-target inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-rose-700 focus-ring transition hover:bg-rose-50 disabled:opacity-50 dark:text-rose-400 dark:hover:bg-rose-400/10"
                         :disabled="deletingId === passkey.id"
                         @click="remove(passkey)"
                     >
@@ -212,8 +228,12 @@ async function remove(passkey: Passkey): Promise<void> {
                         id="passkey-name"
                         v-model="name"
                         type="text"
+                        name="passkey_name"
                         maxlength="60"
                         autocomplete="off"
+                        spellcheck="false"
+                        :aria-invalid="nameError ? 'true' : undefined"
+                        :aria-describedby="describedBy"
                         :placeholder="suggestedName"
                         class="block w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 sm:max-w-xs dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
                         @keydown.enter.prevent="submit"
@@ -233,14 +253,19 @@ async function remove(passkey: Passkey): Promise<void> {
                         Adicionar passkey
                     </button>
                 </div>
-                <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+                <p
+                    id="passkey-name-hint"
+                    class="mt-2 text-xs text-zinc-500 dark:text-zinc-400"
+                >
                     Deixe em branco para usar “{{ suggestedName }}”.
                 </p>
                 <p
-                    v-if="nameError ?? registerError"
+                    v-if="shownError"
+                    id="passkey-name-error"
                     class="mt-2 text-sm text-rose-600 dark:text-rose-400"
+                    role="alert"
                 >
-                    {{ nameError ?? registerError }}
+                    {{ shownError }}
                 </p>
             </div>
         </template>

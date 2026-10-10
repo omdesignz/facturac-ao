@@ -24,7 +24,7 @@ const showTable = ref(false);
 </script>
 
 <template>
-    <section class="viz overflow-hidden rounded-2xl surface">
+    <section class="viz overflow-clip rounded-2xl surface">
         <header
             class="flex flex-wrap items-start justify-between gap-3 border-b border-zinc-100 p-5 dark:border-white/10"
         >
@@ -47,7 +47,7 @@ const showTable = ref(false);
                     v-if="!empty"
                     type="button"
                     :aria-pressed="showTable"
-                    class="rounded-lg p-1.5 text-zinc-400 focus-ring transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-white/5 dark:hover:text-white"
+                    class="icon-button text-zinc-400 focus-ring hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-white/5 dark:hover:text-white"
                     :title="showTable ? 'Ver gráfico' : 'Ver tabela'"
                     @click="showTable = !showTable"
                 >
@@ -67,12 +67,16 @@ const showTable = ref(false);
         </div>
 
         <div v-else-if="showTable" class="overflow-x-auto">
-            <table class="min-w-full text-left text-sm">
+            <table
+                class="min-w-full text-left text-sm"
+                :aria-label="`${title}, em tabela`"
+            >
                 <thead class="border-b border-zinc-100 dark:border-white/10">
                     <tr>
                         <th
                             v-for="(column, index) in columns"
                             :key="column"
+                            scope="col"
                             :class="[
                                 index === 0 ? 'text-left' : 'text-right',
                                 'px-5 py-3 eyebrow text-zinc-500',

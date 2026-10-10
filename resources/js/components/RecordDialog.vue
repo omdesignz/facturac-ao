@@ -32,25 +32,25 @@ defineEmits<{ close: [] }>();
                 enter="ease-out duration-200"
                 enter-from="opacity-0"
                 enter-to="opacity-100"
-                leave="ease-in duration-150"
+                leave="ease-out duration-150"
                 leave-from="opacity-100"
                 leave-to="opacity-0"
             >
                 <div class="fixed inset-0 dialog-scrim" />
             </TransitionChild>
 
-            <div class="fixed inset-0 z-50 overflow-y-auto">
+            <div class="fixed inset-0 z-50 overflow-y-auto overscroll-contain">
                 <div
                     class="flex min-h-full items-end justify-center pt-10 sm:items-center sm:p-6"
                 >
                     <TransitionChild
                         as="template"
-                        enter="ease-out duration-200"
-                        enter-from="translate-y-3 opacity-0 sm:scale-95"
-                        enter-to="translate-y-0 opacity-100 sm:scale-100"
-                        leave="ease-in duration-150"
-                        leave-from="opacity-100 sm:scale-100"
-                        leave-to="opacity-0 sm:scale-95"
+                        enter="transition-[opacity,translate,scale] ease-out duration-200"
+                        enter-from="max-sm:translate-y-full sm:scale-95 sm:opacity-0"
+                        enter-to="max-sm:translate-y-0 sm:scale-100 sm:opacity-100"
+                        leave="transition-[opacity,translate,scale] ease-out duration-150"
+                        leave-from="max-sm:translate-y-0 sm:scale-100 sm:opacity-100"
+                        leave-to="max-sm:translate-y-full sm:scale-95 sm:opacity-0"
                     >
                         <DialogPanel
                             class="relative w-full max-w-2xl dialog-panel p-6 max-sm:rounded-b-none max-sm:pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-8"

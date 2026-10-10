@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { onClickOutside, useElementSize } from '@vueuse/core';
+import { computed, ref, watch } from 'vue';
 
 export interface TrendPoint {
     label: string;
@@ -20,7 +21,31 @@ const props = withDefaults(
 );
 
 const PADDING = { top: 16, right: 16, bottom: 26, left: 8 };
-const WIDTH = 720;
+
+/** What the chart is drawn at until the container has been measured. */
+const FALLBACK_WIDTH = 720;
+
+/** Room one x-axis label needs, so the stride can follow the real width. */
+const LABEL_SLOT = 56;
+
+/** The tooltip's own minimum width (`min-w-40`), used before it is measured. */
+const TOOLTIP_MIN = 160;
+
+const box = ref<HTMLElement | null>(null);
+const tooltip = ref<HTMLElement | null>(null);
+
+/**
+ * The viewBox follows the container's real pixel width, so a phone gets a
+ * chart drawn for a phone — 11px axis text stays 11px — instead of a 720-wide
+ * drawing shrunk to fit. Height is a prop and never changes, so there is no
+ * layout jump when the first measurement lands.
+ */
+const { width: measuredWidth } = useElementSize(box);
+const { width: tooltipWidth } = useElementSize(tooltip);
+
+const WIDTH = computed(() =>
+    measuredWidth.value > 0 ? measuredWidth.value : FALLBACK_WIDTH,
+);
 
 const hasComparison = computed(
     () =>
@@ -29,7 +54,7 @@ const hasComparison = computed(
 );
 
 const plotHeight = computed(() => props.height - PADDING.top - PADDING.bottom);
-const plotWidth = WIDTH - PADDING.left - PADDING.right;
+const plotWidth = computed(() => WIDTH.value - PADDING.left - PADDING.right);
 
 /**
  * The scale starts at zero and is rounded up to a clean number, so the axis
@@ -55,10 +80,10 @@ const maxValue = computed(() => {
 
 function x(index: number): number {
     if (props.points.length <= 1) {
-        return PADDING.left + plotWidth / 2;
+        return PADDING.left + plotWidth.value / 2;
     }
 
-    return PADDING.left + (index / (props.points.length - 1)) * plotWidth;
+    return PADDING.left + (index / (props.points.length - 1)) * plotWidth.value;
 }
 
 function y(value: number): number {
@@ -98,11 +123,25 @@ const hovered = computed(() =>
     hoverIndex.value === null ? null : props.points[hoverIndex.value],
 );
 
+/**
+ * The svg's left edge, read once per interaction instead of on every move:
+ * `getBoundingClientRect` forces layout, and a pointer fires dozens of moves a
+ * second. The width watcher below drops it when the chart is resized.
+ */
+let cachedLeft: number | null = null;
+
+watch(WIDTH, () => {
+    cachedLeft = null;
+});
+
 function trackPointer(event: PointerEvent): void {
-    const svg = event.currentTarget as SVGSVGElement;
-    const rect = svg.getBoundingClientRect();
-    const ratio = (event.clientX - rect.left) / rect.width;
-    const position = ratio * WIDTH;
+    if (cachedLeft === null) {
+        cachedLeft = (
+            event.currentTarget as SVGSVGElement
+        ).getBoundingClientRect().left;
+    }
+
+    const position = event.clientX - cachedLeft;
 
     let nearest = 0;
     let smallest = Number.POSITIVE_INFINITY;
@@ -119,34 +158,85 @@ function trackPointer(event: PointerEvent): void {
     hoverIndex.value = nearest;
 }
 
-/** Keeps the tooltip inside the plot instead of letting it hang off an edge. */
+function startPointer(event: PointerEvent): void {
+    // A fresh touch or press may follow a scroll or a layout shift.
+    cachedLeft = null;
+    trackPointer(event);
+}
+
+function clearHover(): void {
+    cachedLeft = null;
+    hoverIndex.value = null;
+}
+
+/** A mouse leaving ends the hover; a finger lifting leaves the reading up. */
+function leavePointer(event: PointerEvent): void {
+    if (event.pointerType === 'mouse') {
+        clearHover();
+    }
+}
+
+onClickOutside(box, clearHover);
+
+/**
+ * Keeps the tooltip inside the chart in pixels, using its measured width, so
+ * it can never hang off an edge however narrow the container is.
+ */
 const tooltipStyle = computed(() => {
     if (hoverIndex.value === null) {
         return {};
     }
 
-    const share = (x(hoverIndex.value) / WIDTH) * 100;
+    const half = Math.min(
+        Math.max(tooltipWidth.value, TOOLTIP_MIN) / 2,
+        WIDTH.value / 2,
+    );
+    const centre = Math.min(
+        WIDTH.value - half,
+        Math.max(half, x(hoverIndex.value)),
+    );
 
     return {
-        left: `${Math.min(88, Math.max(12, share))}%`,
+        left: `${centre}px`,
         transform: 'translateX(-50%)',
     };
 });
 
 /** Only every nth tick is drawn when the axis would otherwise collide. */
-const labelStride = computed(() => Math.ceil(props.points.length / 12));
+const labelStride = computed(() =>
+    Math.ceil(
+        props.points.length / Math.max(2, Math.floor(WIDTH.value / LABEL_SLOT)),
+    ),
+);
+
+const summary = computed(() => {
+    const first = props.points[0];
+    const last = props.points[props.points.length - 1];
+
+    if (first === undefined || last === undefined) {
+        return `${props.seriesLabel} ao longo do tempo`;
+    }
+
+    const peak = props.points.reduce((best, point) =>
+        point.value > best.value ? point : best,
+    );
+
+    return `${props.seriesLabel} ao longo do tempo: ${first.label}, ${props.format(first.value)}; ${last.label}, ${props.format(last.value)}; máximo ${props.format(peak.value)} em ${peak.label}. Ver tabela para todos os valores.`;
+});
 </script>
 
 <template>
-    <div class="relative">
+    <div ref="box" class="relative w-full min-w-0">
         <svg
             :viewBox="`0 0 ${WIDTH} ${height}`"
-            class="w-full touch-none"
+            class="block w-full touch-pan-y"
             :style="{ height: `${height}px` }"
             role="img"
-            :aria-label="`${seriesLabel} ao longo do tempo`"
+            :aria-label="summary"
+            @pointerdown="startPointer"
             @pointermove="trackPointer"
-            @pointerleave="hoverIndex = null"
+            @pointerleave="leavePointer"
+            @pointercancel="clearHover"
         >
             <!-- Solid hairlines, one step off the surface: present to read
                  against, never competing with the data. -->
@@ -167,6 +257,7 @@ const labelStride = computed(() => Math.ceil(props.points.length / 12));
                 fill="none"
                 stroke="var(--viz-comparison)"
                 stroke-width="2"
+                stroke-dasharray="5 4"
                 stroke-linejoin="round"
                 stroke-linecap="round"
             />
@@ -224,7 +315,8 @@ const labelStride = computed(() => Math.ceil(props.points.length / 12));
 
         <div
             v-if="hovered"
-            class="pointer-events-none absolute top-0 z-10 min-w-40 rounded-xl bg-white p-3 text-xs shadow-lg ring-1 ring-zinc-900/10 dark:bg-zinc-800 dark:ring-white/10"
+            ref="tooltip"
+            class="pointer-events-none absolute top-0 z-10 w-max max-w-full min-w-40 rounded-xl bg-white p-3 text-xs shadow-lg ring-1 ring-zinc-900/10 dark:bg-zinc-800 dark:ring-white/10"
             :style="tooltipStyle"
         >
             <p class="font-semibold text-zinc-950 dark:text-white">

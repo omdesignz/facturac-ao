@@ -8,7 +8,7 @@ import {
 } from '@headlessui/vue';
 import { usePage } from '@inertiajs/vue3';
 import { LoaderCircle, LogOut, Timer } from '@lucide/vue';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { formatCountdown, useWorkSession } from '@/lib/work-session';
 import { logout } from '@/routes';
 import { renew as renewRoute } from '@/routes/session';
@@ -42,13 +42,29 @@ const tone = computed(() => {
         return 'text-amber-600 dark:text-amber-400';
     }
 
-    return 'text-zinc-400 dark:text-zinc-500';
+    return 'text-zinc-500 dark:text-zinc-400';
 });
 
 /** Circumference of the r=7 ring below, so the dash offset can trace it. */
 const RING = 2 * Math.PI * 7;
 
 const ringOffset = computed(() => RING * elapsedFraction.value);
+
+const renewButton = ref<HTMLButtonElement | null>(null);
+
+/**
+ * What a screen reader hears about the countdown. The digits tick every second
+ * and are not a live region; this one only changes when the time crosses 60,
+ * 30 and 10 seconds, so the announcement is three sentences, not sixty.
+ */
+const announcement = computed(() => {
+    const seconds = remainingSeconds.value;
+    const threshold = [10, 30, 60].find((limit) => seconds <= limit);
+
+    return threshold === undefined
+        ? ''
+        : `Restam menos de ${threshold} segundos de sessão.`;
+});
 
 const label = computed(
     () =>
@@ -101,20 +117,27 @@ const label = computed(
         <TransitionRoot as="template" :show="warningVisible">
             <!-- Not closable by click-away or Escape: continuing has to be an
                  explicit choice, since nothing else can extend the block. -->
-            <Dialog class="relative z-[60]" :static="true" @close="() => {}">
+            <Dialog
+                class="relative z-[60]"
+                :static="true"
+                :initial-focus="renewButton"
+                @close="() => {}"
+            >
                 <TransitionChild
                     as="template"
                     enter="ease-out duration-200"
                     enter-from="opacity-0"
                     enter-to="opacity-100"
-                    leave="ease-in duration-150"
+                    leave="ease-out duration-150"
                     leave-from="opacity-100"
                     leave-to="opacity-0"
                 >
                     <div class="fixed inset-0 dialog-scrim" />
                 </TransitionChild>
 
-                <div class="fixed inset-0 z-[60] overflow-y-auto">
+                <div
+                    class="fixed inset-0 z-[60] overflow-y-auto overscroll-contain"
+                >
                     <div
                         class="flex min-h-full items-center justify-center p-4"
                     >
@@ -123,7 +146,7 @@ const label = computed(
                             enter="ease-out duration-200"
                             enter-from="translate-y-3 opacity-0 sm:scale-95"
                             enter-to="translate-y-0 opacity-100 sm:scale-100"
-                            leave="ease-in duration-150"
+                            leave="ease-out duration-150"
                             leave-from="opacity-100 sm:scale-100"
                             leave-to="opacity-0 sm:scale-95"
                         >
@@ -152,9 +175,11 @@ const label = computed(
                                 <p
                                     class="mt-5 numeric text-4xl font-semibold tracking-tight text-rose-600 dark:text-rose-400"
                                     role="timer"
-                                    aria-live="assertive"
                                 >
                                     {{ formatCountdown(remainingSeconds) }}
+                                </p>
+                                <p class="sr-only" role="status">
+                                    {{ announcement }}
                                 </p>
 
                                 <div
@@ -162,7 +187,7 @@ const label = computed(
                                 >
                                     <button
                                         type="button"
-                                        class="inline-flex h-10 items-center justify-center gap-2 rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
+                                        class="tap-target inline-flex h-10 items-center justify-center gap-2 rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
                                         @click="signOut"
                                     >
                                         <LogOut
@@ -172,18 +197,24 @@ const label = computed(
                                         Terminar agora
                                     </button>
                                     <button
+                                        ref="renewButton"
                                         type="button"
-                                        autofocus
                                         :disabled="renewing"
-                                        class="inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
+                                        :aria-busy="renewing"
+                                        class="tap-target relative inline-flex h-10 items-center justify-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                                         @click="renew"
                                     >
+                                        <!-- The spinner takes the label's place instead of
+                                             pushing it aside, so the button keeps its width. -->
                                         <LoaderCircle
                                             v-if="renewing"
-                                            class="size-4 animate-spin"
+                                            class="absolute inset-0 m-auto size-4 animate-spin"
                                             aria-hidden="true"
                                         />
-                                        Nova sessão
+                                        <span
+                                            :class="renewing ? 'opacity-0' : ''"
+                                            >Nova sessão</span
+                                        >
                                     </button>
                                 </div>
                             </DialogPanel>

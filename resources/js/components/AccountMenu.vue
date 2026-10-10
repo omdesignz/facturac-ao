@@ -93,7 +93,7 @@ onMounted(() => {
             enter-active-class="transition ease-out duration-100"
             enter-from-class="scale-95 opacity-0"
             enter-to-class="scale-100 opacity-100"
-            leave-active-class="transition ease-in duration-75"
+            leave-active-class="transition ease-out duration-75"
             leave-from-class="scale-100 opacity-100"
             leave-to-class="scale-95 opacity-0"
         >
@@ -132,7 +132,7 @@ onMounted(() => {
                             active
                                 ? 'bg-zinc-900/[0.04] dark:bg-white/[0.06]'
                                 : '',
-                            'flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-zinc-700 dark:text-zinc-200',
+                            'flex w-full items-center gap-2.5 menu-item py-2 text-sm text-zinc-700 dark:text-zinc-200',
                         ]"
                     >
                         <component
@@ -149,7 +149,7 @@ onMounted(() => {
                 />
 
                 <p
-                    class="px-3 pt-1 pb-2 eyebrow text-zinc-400 dark:text-zinc-500"
+                    class="px-3 pt-1 pb-2 eyebrow text-zinc-500 dark:text-zinc-400"
                 >
                     Aparência
                 </p>
@@ -173,7 +173,7 @@ onMounted(() => {
                                 active && appearance !== option.value
                                     ? 'text-zinc-900 dark:text-white'
                                     : '',
-                                'flex h-8 items-center justify-center gap-1.5 rounded-full text-xs font-medium transition',
+                                'tap-target flex h-8 items-center justify-center gap-1.5 rounded-full text-xs font-medium transition',
                             ]"
                             @click="changeAppearance(option.value)"
                         >
@@ -200,7 +200,7 @@ onMounted(() => {
                             active
                                 ? 'bg-zinc-900/[0.04] dark:bg-white/[0.06]'
                                 : '',
-                            'flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm text-zinc-700 dark:text-zinc-200',
+                            'flex w-full items-center gap-2.5 menu-item py-2 text-left text-sm text-zinc-700 dark:text-zinc-200',
                         ]"
                     >
                         <LogOut

@@ -69,7 +69,7 @@ function initials(name: string): string {
         <div
             class="flex h-[4.75rem] shrink-0 items-center justify-between gap-3 pt-1 pr-3 pl-5"
         >
-            <AppLogo />
+            <AppLogo aria-hidden="true" />
             <button
                 type="button"
                 class="icon-button rounded-full text-zinc-500 focus-ring transition hover:bg-zinc-900/[0.05] hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white"
@@ -81,15 +81,16 @@ function initials(name: string): string {
         </div>
 
         <div
-            class="flex min-h-0 flex-1 flex-col gap-y-6 overflow-y-auto px-4 pt-1 pb-6"
+            class="flex min-h-0 flex-1 flex-col gap-y-6 overflow-y-auto overscroll-contain px-4 pt-1 pb-6"
         >
             <Menu as="div" class="relative w-full">
                 <MenuButton
                     class="group flex w-full items-center gap-3 rounded-2xl bg-zinc-900/[0.04] p-3 text-left focus-ring transition hover:bg-zinc-900/[0.07] dark:bg-white/[0.05] dark:hover:bg-white/10"
+                    :aria-label="`Mudar de espaço de trabalho. Actual: ${displayName}`"
                 >
-                    <span class="sr-only">Mudar de espaço de trabalho</span>
                     <span
                         class="grid size-9 shrink-0 place-items-center rounded-xl bg-accent-400 text-sm font-bold text-brand-950"
+                        aria-hidden="true"
                         >{{ initials(displayName) }}</span
                     >
                     <span class="min-w-0 flex-1">
@@ -111,20 +112,23 @@ function initials(name: string): string {
                     enter-active-class="transition ease-out duration-100"
                     enter-from-class="scale-95 opacity-0"
                     enter-to-class="scale-100 opacity-100"
-                    leave-active-class="transition ease-in duration-75"
+                    leave-active-class="transition ease-out duration-75"
                     leave-from-class="scale-100 opacity-100"
                     leave-to-class="scale-95 opacity-0"
                 >
                     <MenuItems
-                        class="absolute left-0 z-30 mt-2 w-full origin-top menu-panel p-1.5"
+                        class="absolute left-0 z-30 mt-2 max-h-[min(24rem,calc(100dvh-2rem))] w-full origin-top overflow-y-auto overscroll-contain menu-panel p-1.5"
                     >
-                        <p class="px-2.5 pt-1.5 pb-2 eyebrow text-zinc-400">
+                        <p
+                            class="px-2.5 pt-1.5 pb-2 eyebrow text-zinc-500 dark:text-zinc-400"
+                        >
                             Espaços de trabalho
                         </p>
                         <MenuItem
                             v-for="workspace in page.props.auth.workspaces"
                             :key="workspace.public_id"
                             v-slot="{ active }"
+                            :disabled="workspace.current"
                         >
                             <Link
                                 as="button"
@@ -134,13 +138,17 @@ function initials(name: string): string {
                                 :disabled="workspace.current"
                                 :class="[
                                     active ? 'bg-zinc-100 dark:bg-white/5' : '',
-                                    'flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-sm disabled:cursor-default',
+                                    'flex w-full items-center gap-2 menu-item py-2 text-left text-sm disabled:cursor-default',
                                 ]"
                             >
                                 <span class="min-w-0 flex-1">
-                                    <span
-                                        class="block truncate font-semibold"
-                                        >{{ workspace.name }}</span
+                                    <span class="block truncate font-semibold"
+                                        >{{ workspace.name
+                                        }}<span
+                                            v-if="workspace.current"
+                                            class="sr-only"
+                                            >, actual</span
+                                        ></span
                                     >
                                     <span
                                         class="block truncate text-xs text-zinc-500 dark:text-zinc-400"
@@ -163,7 +171,7 @@ function initials(name: string): string {
                     <li v-for="group in groups" :key="group.key">
                         <p
                             v-if="group.items.length > 1"
-                            class="px-3 eyebrow text-zinc-400 dark:text-zinc-500"
+                            class="px-3 eyebrow text-zinc-500 dark:text-zinc-400"
                         >
                             {{ group.name }}
                         </p>

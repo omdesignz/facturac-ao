@@ -42,15 +42,22 @@ function share(value: number): number {
 }
 
 const hovered = ref<number | null>(null);
+
+/** Dimming the other bars is a pointer affordance; a tap would leave it stuck. */
+function highlight(event: PointerEvent, index: number): void {
+    if (event.pointerType === 'mouse') {
+        hovered.value = index;
+    }
+}
 </script>
 
 <template>
     <ul class="space-y-3">
         <li
             v-for="(bar, index) in bars"
-            :key="bar.label"
+            :key="`${index}-${bar.label}`"
             class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1"
-            @pointerenter="hovered = index"
+            @pointerenter="highlight($event, index)"
             @pointerleave="hovered = null"
         >
             <p
@@ -59,7 +66,7 @@ const hovered = ref<number | null>(null);
                 {{ bar.label }}
                 <span
                     v-if="bar.detail"
-                    class="text-zinc-400 dark:text-zinc-500"
+                    class="text-zinc-500 dark:text-zinc-400"
                 >
                     · {{ bar.detail }}
                 </span>
@@ -74,14 +81,14 @@ const hovered = ref<number | null>(null);
             </p>
 
             <div
-                class="col-span-2 h-2 w-full overflow-hidden rounded-full"
+                class="col-span-2 h-2 w-full overflow-clip rounded-full"
                 :style="{
                     background:
                         'color-mix(in srgb, var(--viz-grid) 60%, transparent)',
                 }"
             >
                 <div
-                    class="h-full rounded-full transition-[width] duration-500 ease-out"
+                    class="h-full rounded-full transition-[width] duration-200 ease-out"
                     :style="{
                         width: `${share(bar.value)}%`,
                         background: colour(bar, index),
