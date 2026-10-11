@@ -6,6 +6,7 @@ import {
     Package,
     Pencil,
     Plus,
+    ScanBarcode,
     Search,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
@@ -22,6 +23,7 @@ import type { SelectOption } from '@/types/select';
 interface CatalogueItem {
     public_id: string;
     code: string;
+    barcode: string | null;
     type: string;
     type_label: string;
     name: string;
@@ -95,6 +97,7 @@ watch(typeFilter, reload);
 
 const form = useForm({
     code: '',
+    barcode: '',
     type: 'service',
     name: '',
     description: '',
@@ -127,6 +130,7 @@ function openEdit(item: CatalogueItem): void {
     editing.value = item;
     form.clearErrors();
     form.code = item.code;
+    form.barcode = item.barcode ?? '';
     form.type = item.type;
     form.name = item.name;
     form.description = item.description ?? '';
@@ -319,6 +323,16 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                                         >
                                             {{ item.code }} ·
                                             {{ item.unit_of_measure }}
+                                        </p>
+                                        <p
+                                            v-if="item.barcode"
+                                            class="mt-0.5 flex items-center gap-1 font-mono numeric text-xs text-zinc-500 dark:text-zinc-400"
+                                        >
+                                            <ScanBarcode
+                                                class="size-3 shrink-0"
+                                                aria-hidden="true"
+                                            />
+                                            {{ item.barcode }}
                                         </p>
                                     </td>
                                     <td
@@ -566,6 +580,44 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                             class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 font-mono text-sm text-zinc-900 uppercase outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
                         />
                         <FormError :message="form.errors.tax_exemption_code" />
+                    </div>
+
+                    <div class="sm:col-span-3">
+                        <label
+                            for="item-barcode"
+                            class="block text-sm font-medium text-zinc-900 dark:text-white"
+                            >Código de barras
+                            <span class="text-zinc-400">(opcional)</span></label
+                        >
+                        <input
+                            id="item-barcode"
+                            v-model="form.barcode"
+                            type="text"
+                            autocapitalize="characters"
+                            spellcheck="false"
+                            autocomplete="off"
+                            maxlength="64"
+                            class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 font-mono text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                            :aria-invalid="
+                                form.errors.barcode ? 'true' : undefined
+                            "
+                            :aria-describedby="
+                                form.errors.barcode
+                                    ? 'item-barcode-hint item-barcode-error'
+                                    : 'item-barcode-hint'
+                            "
+                            @keydown.enter.prevent
+                        />
+                        <p
+                            id="item-barcode-hint"
+                            class="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400"
+                        >
+                            Leia o código com o leitor ou escreva-o.
+                        </p>
+                        <FormError
+                            id="item-barcode-error"
+                            :message="form.errors.barcode"
+                        />
                     </div>
                 </div>
 

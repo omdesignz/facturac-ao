@@ -6,6 +6,7 @@
  */
 dataset('navigable pages', [
     'dashboard' => 'dashboard.url()',
+    'point of sale' => 'posShow.url()',
     'documents' => 'documentsIndex.url()',
     'quotes' => 'quotesIndex.url()',
     'transport documents' => 'transportDocumentsIndex.url()',

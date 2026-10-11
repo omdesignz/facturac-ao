@@ -21,11 +21,15 @@ defineProps<{
     eyebrow?: string;
 }>();
 
-defineEmits<{ close: [] }>();
+defineEmits<{ close: []; afterLeave: [] }>();
 </script>
 
 <template>
-    <TransitionRoot as="template" :show="open">
+    <TransitionRoot
+        as="template"
+        :show="open"
+        @after-leave="$emit('afterLeave')"
+    >
         <Dialog class="relative z-50" @close="$emit('close')">
             <TransitionChild
                 as="template"

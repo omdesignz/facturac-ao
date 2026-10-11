@@ -16,6 +16,7 @@ import {
     LayoutDashboard,
     LifeBuoy,
     Package,
+    ScanBarcode,
     Settings2,
     ShieldCheck,
     SlidersHorizontal,
@@ -40,6 +41,7 @@ import { index as documentsIndex } from '@/routes/documents';
 import { index as establishmentsIndex } from '@/routes/establishments';
 import { index as helpIndex } from '@/routes/help';
 import { index as importIndex } from '@/routes/imports';
+import { show as posShow } from '@/routes/pos';
 import { index as priceListsIndex } from '@/routes/price-lists';
 import { index as quotesIndex } from '@/routes/quotes';
 import { index as recurringIndex } from '@/routes/recurring';
@@ -101,6 +103,12 @@ const baseGroups: NavigationGroup[] = [
         icon: Files,
         href: documentsIndex.url(),
         items: [
+            {
+                name: 'Ponto de venda',
+                href: posShow.url(),
+                match: '/ponto-de-venda',
+                icon: ScanBarcode,
+            },
             {
                 name: 'Documentos fiscais',
                 href: documentsIndex.url(),

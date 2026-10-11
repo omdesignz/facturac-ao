@@ -40,6 +40,9 @@ test('the screens that used a banner now use the shared page header', function (
     'Quotes/Index',
     'TransportDocuments/Index',
     'Recurring/Index',
+    'Pos/Registers/Index',
+    'Pos/Sessions/Index',
+    'Pos/Sessions/Show',
 ]);
 
 test('the dashboard and the debts page colour debt age the same way', function (string $page) {
@@ -164,4 +167,41 @@ test('the phone menu is a floating panel that closes from inside itself', functi
         ->toContain('menu-panel')
         ->and((string) file_get_contents(resource_path('js/layouts/AppLayout.vue')))
         ->not->toContain('Fechar navegação');
+});
+
+test('the till keeps one key per sale, so a retry can never charge twice', function () {
+    $payment = (string) file_get_contents(resource_path('js/components/pos/PosPaymentDialog.vue'));
+    $arithmetic = (string) file_get_contents(resource_path('js/lib/pos.ts'));
+
+    expect($payment)
+        ->toContain('attemptFor(')
+        ->toContain('http.client_key = attempt.key')
+        ->toContain('expected_total_minor')
+        // A dialog that is charging cannot be dismissed from the keyboard or the scrim.
+        ->toContain('if (isSending.value)')
+        ->and($arithmetic)
+        ->toContain('export function newClientKey')
+        ->toContain("from './fiscal-rounding.ts'");
+});
+
+test('the till does not animate the things done hundreds of times a day', function () {
+    foreach (['PosCatalogue', 'PosCart'] as $component) {
+        $contents = (string) file_get_contents(resource_path("js/components/pos/{$component}.vue"));
+
+        expect($contents)
+            ->not->toContain('<TransitionGroup')
+            ->not->toContain('transition-all');
+    }
+});
+
+test('the till receipt is an 80mm roll in black on white that prints itself', function () {
+    $receipt = (string) file_get_contents(resource_path('js/pages/Pos/Receipt.vue'));
+
+    expect($receipt)
+        ->toContain('size: 80mm auto')
+        ->toContain('margin: 3mm')
+        ->toContain('document.fonts.ready')
+        ->toContain('window.print()')
+        ->toContain('v-html="document.authenticity.qr_svg"')
+        ->not->toContain('AppLayout');
 });
