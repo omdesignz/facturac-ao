@@ -158,3 +158,57 @@ test('the migration copy promises only what the import accepts', function () {
         ->toContain('Clientes e artigos ficam prontos para facturar')
         ->not->toContain('artigos e dívidas');
 });
+
+test('the counter section sells the till with four promises and nothing it cannot keep', function () {
+    $page = (string) file_get_contents(resource_path('js/pages/Landing.vue'));
+
+    expect($page)
+        ->toContain('id="balcao"')
+        ->toContain('<!-- ------------------------------------------------------- counter -->')
+        ->toContain('Ao balcão, é tocar e cobrar')
+        ->toContain('Toque no artigo ou leia o código de barras.')
+        ->toContain('Numerário com troco calculado, Multicaixa ou transferência.')
+        ->toContain('O stock desce sozinho a cada venda.')
+        ->toContain('Abre e fecha a caixa com a contagem do dinheiro.')
+        ->toContain('O talão sai em impressoras térmicas de 80 mm.')
+        ->toContain('Cobrar 139 080 Kz')
+        // The mock is decorative: nothing in it is read out or focusable.
+        ->toContain('aria-hidden="true"')
+        // The till is reachable from the footer, but the header keeps four links.
+        ->toContain("{ href: '#balcao', label: 'Ponto de venda' }")
+        ->toContain('v-for="section in footerSections"');
+
+    // Nothing the till cannot do today: no selling without a connection, and no
+    // card terminal wired into the sale. Multicaixa is recorded as a payment.
+    foreach (['offline', 'sem internet', 'TPA integrado'] as $claim) {
+        expect(mb_strtolower($page))->not->toContain(mb_strtolower($claim));
+    }
+});
+
+test('the counter shows up as a situation, a feature and a section that agree', function () {
+    $page = (string) file_get_contents(resource_path('js/pages/Landing.vue'));
+
+    expect($page)
+        // Second in the list of situations, after the invoice at the customer's side.
+        ->toContain("tag: 'PDV'")
+        ->toContain('Tem fila ao balcão e cada cliente quer o talão.')
+        ->toContain('O talão imprime numa impressora térmica de 80 mm.')
+        // Listed first under "A casa em ordem".
+        ->toContain("group: 'A casa em ordem',\n        items: [\n            'Ponto de venda com abertura e fecho de caixa',")
+        // The header links stay at four.
+        ->toContain("{ href: '#perguntas', label: 'Perguntas' },\n];");
+
+    expect(strpos($page, "tag: 'PDV'"))
+        ->toBeGreaterThan(strpos($page, "tag: 'FR'"))
+        ->toBeLessThan(strpos($page, "tag: 'Conta'"))
+        // The counter sits between the phone and the migration banner.
+        ->and(strpos($page, 'id="pequenos"'))->toBeLessThan(strpos($page, 'id="balcao"'))
+        ->and(strpos($page, 'id="balcao"'))->toBeLessThan(strpos($page, 'id="mudar"'));
+
+    // Every total in the selling screen is the hero document's own.
+    expect($page)
+        ->toContain('122 000,00')
+        ->toContain('17 080,00')
+        ->toContain('139 080,00')
+        ->toContain("{ name: 'Prateleira metálica', quantity: '2 × 32 000', total: '64 000' }");
+});

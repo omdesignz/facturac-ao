@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { ArrowRight, Menu, RotateCcw, X } from '@lucide/vue';
+import { ArrowRight, Menu, RotateCcw, Search, X } from '@lucide/vue';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import BrandWordmark from '@/components/BrandWordmark.vue';
 import CookieConsent from '@/components/CookieConsent.vue';
@@ -84,6 +84,16 @@ const sections = [
     { href: '#mudar', label: 'Mudar de programa' },
     { href: '#precos', label: 'Preços' },
     { href: '#perguntas', label: 'Perguntas' },
+];
+
+/**
+ * The footer lists every door the header does, plus the counter. The header
+ * stays at four links; the footer is where someone looking for the till goes.
+ */
+const footerSections = [
+    sections[0]!,
+    { href: '#balcao', label: 'Ponto de venda' },
+    ...sections.slice(1),
 ];
 
 /**
@@ -192,6 +202,24 @@ const moments: {
                 { label: 'Validação', value: '4192/AGT/2026' },
             ],
             note: 'PDF assinado, guardado e pronto para entregar ao cliente.',
+        },
+    },
+    {
+        tag: 'PDV',
+        situation: 'Tem fila ao balcão e cada cliente quer o talão.',
+        answer: 'Toca no artigo ou lê o código de barras. A venda sai como factura-recibo já comunicada à AGT, com o troco calculado.',
+        proof: {
+            eyebrow: 'Venda ao balcão',
+            title: 'FR LOJA2026/00185',
+            status: 'Comunicada à AGT',
+            tone: 'valid',
+            rows: [
+                { label: 'Cliente', value: 'Consumidor final' },
+                { label: 'Total', value: '139 080,00 Kz', numeric: true },
+                { label: 'Pagamento', value: 'Numerário' },
+                { label: 'Troco', value: '10 920,00 Kz', numeric: true },
+            ],
+            note: 'O talão imprime numa impressora térmica de 80 mm.',
         },
     },
     {
@@ -324,6 +352,14 @@ const forSmallBusiness = computed(() => [
     'Quem factura ao estrangeiro escolhe a moeda e o câmbio.',
 ]);
 
+/** What the till promises, in the order a sale happens. */
+const atTheCounter: string[] = [
+    'Toque no artigo ou leia o código de barras.',
+    'Numerário com troco calculado, Multicaixa ou transferência.',
+    'O stock desce sozinho a cada venda.',
+    'Abre e fecha a caixa com a contagem do dinheiro.',
+];
+
 /**
  * What is true about opening an account, price list or no price list.
  *
@@ -376,16 +412,17 @@ const included: { group: string; items: string[] }[] = [
             'Orçamentos que se convertem em factura',
             'Facturação periódica automática',
             'PDF com QR, assinatura e o seu logótipo',
+            'Envio dos documentos por email ao cliente',
         ],
     },
     {
         group: 'A casa em ordem',
         items: [
+            'Ponto de venda com abertura e fecho de caixa',
             'Clientes com prazos e limite de crédito',
             'Tabelas de preços e preços por cliente',
             'Artigos, inventário e movimentos de stock',
             'Vários estabelecimentos, cada um com a sua série',
-            'Envio dos documentos por email ao cliente',
             'Extractos, dívidas e análise de vendas',
         ],
     },
@@ -428,6 +465,55 @@ const exampleReceivables: {
         amount: '172 000',
         tone: 'bg-sky-100 text-sky-900',
     },
+];
+
+/** The same story as the hero document: the latest sale and the one before. */
+const exampleRecentDocuments: {
+    number: string;
+    customer: string;
+    amount: string;
+    status: string;
+    tone: string;
+}[] = [
+    {
+        number: 'FT LOJA2026/00041',
+        customer: 'Restaurante Mufete',
+        amount: '78 000',
+        status: 'Emitida',
+        tone: 'text-brand-500 dark:text-zinc-400',
+    },
+    {
+        number: 'FR LOJA2026/00184',
+        customer: 'Mercearia Kilamba',
+        amount: '139 080',
+        status: 'Validada',
+        tone: 'text-lime-800 dark:text-lime-300',
+    },
+];
+
+/**
+ * Illustration only: the selling screen shows what the till looks like. The
+ * three sold lines are the hero document's own, so every total on the page
+ * agrees (122 000 before tax, 17 080 of IVA, 139 080 to charge).
+ */
+const counterProducts: {
+    name: string;
+    price: string;
+    count?: number;
+    stock?: string;
+}[] = [
+    { name: 'Prateleira metálica', price: '32 000', count: 2 },
+    { name: 'Balança digital', price: '38 000' },
+    { name: 'Cesto de compras', price: '1 000' },
+    { name: 'Etiquetas de preço', price: '2 500' },
+    { name: 'Rolo térmico', price: '1 800', stock: '12 un.' },
+    { name: 'Saco de papel', price: '250' },
+];
+
+const counterSaleLines: { name: string; quantity: string; total: string }[] = [
+    { name: 'Prateleira metálica', quantity: '2 × 32 000', total: '64 000' },
+    { name: 'Balança digital', quantity: '1 × 38 000', total: '38 000' },
+    { name: 'Cesto de compras', quantity: '20 × 1 000', total: '20 000' },
 ];
 
 /** Moving over is a real sequence, so it is the one place numbers are used. */
@@ -955,7 +1041,7 @@ const questions: { question: string; answer: string }[] = [
                         role="tablist"
                         aria-label="Escolher um momento do negócio"
                         aria-orientation="vertical"
-                        class="border-t border-zinc-900/10 dark:border-white/10"
+                        class="border-bs border-zinc-900/10 lg:sticky lg:inset-bs-28 lg:self-start dark:border-white/10"
                     >
                         <button
                             v-for="(moment, index) in moments"
@@ -966,7 +1052,7 @@ const questions: { question: string; answer: string }[] = [
                             :aria-selected="index === selectedMomentIndex"
                             aria-controls="momento-detalhe"
                             :tabindex="index === selectedMomentIndex ? 0 : -1"
-                            class="flex w-full items-center justify-between gap-4 border-b border-zinc-900/10 px-1 py-4 text-left text-base/6 focus-ring transition dark:border-white/10"
+                            class="flex w-full items-center justify-between gap-4 border-be border-zinc-900/10 px-1 py-4 text-start text-base/6 focus-ring transition lg:py-6 dark:border-white/10"
                             :class="
                                 index === selectedMomentIndex
                                     ? 'font-semibold text-brand-950 dark:text-white'
@@ -1084,15 +1170,15 @@ const questions: { question: string; answer: string }[] = [
                 <!-- Example data only: the phone illustrates, it does not report. -->
                 <div
                     v-reveal="1"
-                    class="relative mx-auto aspect-[390/800] w-72 overflow-hidden rounded-[2.75rem] bg-white text-[0.78rem] text-brand-950 shadow-[0_0_0_9px_#1c1c1b,0_0_0_10px_#3a3a37,0_50px_80px_-40px_rgb(0_0_0/0.5)] dark:bg-zinc-950 dark:text-white"
+                    class="relative mx-auto flex aspect-[390/820] w-72 flex-col overflow-hidden rounded-[2.75rem] bg-white text-[0.78rem] text-brand-950 shadow-[0_0_0_9px_#1c1c1b,0_0_0_10px_#3a3a37,0_50px_80px_-40px_rgb(0_0_0/0.5)] dark:bg-zinc-950 dark:text-white"
                     role="img"
-                    aria-label="Exemplo do ecrã inicial no telemóvel: recebido este mês e facturas por receber"
+                    aria-label="Exemplo do ecrã inicial no telemóvel: recebido este mês, facturas por receber e últimos documentos"
                 >
                     <span
                         class="absolute top-2.5 left-1/2 h-7 w-24 -translate-x-1/2 rounded-full bg-black"
                     />
                     <p class="px-6 pt-4 text-xs font-semibold">9:41</p>
-                    <div class="px-4 pt-4">
+                    <div class="flex flex-1 flex-col px-4 pbe-6 pt-4">
                         <p
                             class="text-[0.58rem] font-medium tracking-[0.07em] text-brand-400 uppercase"
                         >
@@ -1161,6 +1247,202 @@ const questions: { question: string; answer: string }[] = [
                                     >Lembrar</span
                                 ></span
                             >
+                        </div>
+                        <div class="mbs-auto">
+                            <p
+                                class="mbs-3 text-[0.58rem] font-medium tracking-[0.07em] text-brand-500 uppercase dark:text-zinc-400"
+                            >
+                                Últimos documentos
+                            </p>
+                            <div
+                                v-for="doc in exampleRecentDocuments"
+                                :key="doc.number"
+                                class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2.5 border-be border-zinc-900/5 py-2 last:border-be-0 dark:border-white/10"
+                            >
+                                <span class="min-w-0">
+                                    <span
+                                        class="block truncate font-mono text-[0.66rem] font-medium"
+                                        >{{ doc.number }}</span
+                                    >
+                                    <span
+                                        class="block truncate text-[0.62rem] text-brand-500 dark:text-zinc-400"
+                                        >{{ doc.customer }}</span
+                                    >
+                                </span>
+                                <span
+                                    class="text-end numeric text-[0.72rem] font-semibold whitespace-nowrap"
+                                    >{{ doc.amount
+                                    }}<span
+                                        class="ms-1 text-[0.55rem] font-normal text-brand-500 dark:text-zinc-400"
+                                        >Kz</span
+                                    ><span
+                                        class="block text-[0.6rem] font-medium"
+                                        :class="doc.tone"
+                                        >{{ doc.status }}</span
+                                    ></span
+                                >
+                            </div>
+                        </div>
+                    </div>
+                    <span
+                        class="absolute inset-x-0 inset-be-1.5 mx-auto h-1 w-24 rounded-full bg-brand-950/85 dark:bg-white/80"
+                    />
+                </div>
+            </section>
+
+            <!-- ------------------------------------------------------- counter -->
+            <section
+                id="balcao"
+                class="mx-auto grid max-w-6xl items-center gap-14 px-5 pt-(--space-section) sm:px-8 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:gap-20"
+            >
+                <div>
+                    <h2 class="font-display text-section text-balance">
+                        Ao balcão, é tocar e cobrar
+                    </h2>
+                    <p class="mbs-4 text-lg text-brand-600 dark:text-zinc-400">
+                        Cada venda sai como factura-recibo, assinada e
+                        comunicada à AGT, enquanto o cliente guarda o troco.
+                    </p>
+                    <ul
+                        class="mbs-8 border-bs border-zinc-900/10 dark:border-white/10"
+                    >
+                        <li
+                            v-for="promise in atTheCounter"
+                            :key="promise"
+                            class="flex gap-4 border-be border-zinc-900/10 py-4 text-base dark:border-white/10"
+                        >
+                            <span
+                                class="mbs-2 size-2 shrink-0 rounded-full bg-accent-400"
+                                aria-hidden="true"
+                            />
+                            {{ promise }}
+                        </li>
+                    </ul>
+                    <p class="mbs-4 text-sm text-brand-500 dark:text-zinc-400">
+                        O talão sai em impressoras térmicas de 80 mm.
+                    </p>
+                </div>
+
+                <!--
+                    Example data only: the selling screen illustrates, it does
+                    not report. Paper like the hero document, so it stays white
+                    in both themes and its wells need no dark pair.
+                -->
+                <div
+                    v-reveal
+                    class="mx-auto w-full max-w-sm rounded-md bg-white p-3.5 text-[0.72rem]/[1.45] text-zinc-800 shadow-[0_2px_6px_rgb(23_23_22/0.06),0_40px_70px_-36px_rgb(23_23_22/0.38)] ring-1 ring-zinc-900/5 sm:max-w-xl sm:p-5 lg:order-first"
+                    aria-hidden="true"
+                >
+                    <div
+                        class="grid sm:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]"
+                    >
+                        <div class="flex min-w-0 flex-col sm:pe-5">
+                            <div
+                                class="flex h-9 items-center gap-2 rounded-full bg-zinc-900/[0.04] px-3 text-[0.68rem] text-zinc-500"
+                            >
+                                <Search class="size-3.5 shrink-0" />
+                                <span class="min-w-0 truncate"
+                                    >Nome, código ou código de barras…</span
+                                >
+                            </div>
+                            <div
+                                class="mbs-3 grid flex-1 auto-rows-fr grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))] gap-2"
+                            >
+                                <div
+                                    v-for="product in counterProducts"
+                                    :key="product.name"
+                                    class="relative flex min-h-[4.75rem] flex-col rounded-xl bg-zinc-900/[0.04] p-2"
+                                >
+                                    <span class="font-medium text-balance">{{
+                                        product.name
+                                    }}</span>
+                                    <span
+                                        v-if="product.stock"
+                                        class="text-[0.62rem] text-zinc-500"
+                                        >{{ product.stock }}</span
+                                    >
+                                    <span
+                                        class="mbs-auto flex items-baseline gap-1 pbs-1 numeric font-semibold whitespace-nowrap"
+                                        >{{ product.price
+                                        }}<span
+                                            class="text-[0.6rem] font-normal text-zinc-500"
+                                            >Kz</span
+                                        ></span
+                                    >
+                                    <span
+                                        v-if="product.count"
+                                        class="absolute -inset-e-1.5 -inset-bs-1.5 grid size-5 place-items-center rounded-full bg-brand-950 text-[0.62rem] font-semibold text-white ring-2 ring-white"
+                                        >{{ product.count }}</span
+                                    >
+                                </div>
+                            </div>
+                        </div>
+
+                        <div
+                            class="mbs-4 min-w-0 border-bs border-zinc-900/10 pbs-4 sm:mbs-0 sm:border-s sm:border-bs-0 sm:ps-5 sm:pbs-0"
+                        >
+                            <div
+                                class="flex items-center justify-between gap-2"
+                            >
+                                <p class="text-[0.8rem] font-semibold">Venda</p>
+                                <span
+                                    class="rounded-full bg-zinc-900/[0.06] px-2.5 py-1 text-[0.65rem] font-medium whitespace-nowrap text-zinc-600"
+                                    >Consumidor final</span
+                                >
+                            </div>
+                            <ul class="mbs-3 numeric">
+                                <li
+                                    v-for="line in counterSaleLines"
+                                    :key="line.name"
+                                    class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-be border-zinc-900/5 py-2"
+                                >
+                                    <span class="min-w-0">
+                                        <span class="block font-medium">{{
+                                            line.name
+                                        }}</span>
+                                        <span
+                                            class="block whitespace-nowrap text-zinc-500"
+                                            >{{ line.quantity }}</span
+                                        >
+                                    </span>
+                                    <span
+                                        class="font-semibold whitespace-nowrap"
+                                        >{{ line.total }}</span
+                                    >
+                                </li>
+                            </ul>
+                            <dl class="mbs-2 grid gap-1 numeric text-zinc-600">
+                                <div class="flex justify-between gap-3">
+                                    <dt>Ilíquido</dt>
+                                    <dd class="whitespace-nowrap">
+                                        122 000,00
+                                    </dd>
+                                </div>
+                                <div class="flex justify-between gap-3">
+                                    <dt>IVA 14%</dt>
+                                    <dd class="whitespace-nowrap">17 080,00</dd>
+                                </div>
+                            </dl>
+                            <div class="mbs-3 border-bs border-zinc-800 pbs-2">
+                                <p
+                                    class="text-[0.6rem] font-semibold tracking-[0.08em] text-zinc-500 uppercase"
+                                >
+                                    Total
+                                </p>
+                                <p
+                                    class="flex items-baseline gap-1.5 numeric text-2xl font-semibold tracking-[-0.03em] whitespace-nowrap"
+                                >
+                                    139 080,00<span
+                                        class="text-xs font-normal tracking-normal text-zinc-500"
+                                        >Kz</span
+                                    >
+                                </p>
+                            </div>
+                            <p
+                                class="mbs-3 grid h-11 place-items-center rounded-full bg-accent-400 text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1)]"
+                            >
+                                Cobrar 139 080 Kz
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -1470,7 +1752,10 @@ const questions: { question: string; answer: string }[] = [
                         Produto
                     </p>
                     <ul class="mt-3 grid gap-2 text-[0.95rem]">
-                        <li v-for="section in sections" :key="section.href">
+                        <li
+                            v-for="section in footerSections"
+                            :key="section.href"
+                        >
                             <a
                                 :href="section.href"
                                 class="rounded text-brand-600 focus-ring transition hover:text-brand-950 dark:text-zinc-400 dark:hover:text-white"
