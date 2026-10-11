@@ -217,10 +217,7 @@ async function remove(passkey: Passkey): Promise<void> {
             </ul>
 
             <div class="p-6">
-                <label
-                    for="passkey-name"
-                    class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
-                >
+                <label for="passkey-name" class="field-label">
                     Nome do dispositivo
                 </label>
                 <div class="mt-2 flex flex-col gap-3 sm:flex-row">
@@ -235,7 +232,7 @@ async function remove(passkey: Passkey): Promise<void> {
                         :aria-invalid="nameError ? 'true' : undefined"
                         :aria-describedby="describedBy"
                         :placeholder="suggestedName"
-                        class="block w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 sm:max-w-xs dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                        class="block form-input sm:max-w-xs"
                         @keydown.enter.prevent="submit"
                     />
                     <button

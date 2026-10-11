@@ -253,9 +253,7 @@ const whatsappHref = computed(
                     <form class="space-y-5 p-5" @submit.prevent="submit">
                         <div class="grid gap-5 sm:grid-cols-2">
                             <div class="sm:col-span-2">
-                                <label
-                                    class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
-                                >
+                                <label class="field-label">
                                     Assunto da reclamação
                                 </label>
                                 <div class="mt-2">
@@ -270,7 +268,7 @@ const whatsappHref = computed(
                             <div class="sm:col-span-2">
                                 <label
                                     for="complaint-subject"
-                                    class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
+                                    class="field-label"
                                 >
                                     Resumo
                                 </label>
@@ -280,16 +278,13 @@ const whatsappHref = computed(
                                     type="text"
                                     maxlength="150"
                                     placeholder="Ex.: a factura FT 2026/14 não foi comunicada"
-                                    class="mt-2 w-full rounded-xl border-0 bg-white px-3 py-2.5 text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring ring-inset placeholder:text-zinc-400 dark:bg-white/5 dark:text-white dark:ring-white/10"
+                                    class="mt-2 form-input"
                                 />
                                 <FormError :message="form.errors.subject" />
                             </div>
 
                             <div class="sm:col-span-2">
-                                <label
-                                    for="complaint-body"
-                                    class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
-                                >
+                                <label for="complaint-body" class="field-label">
                                     O que aconteceu
                                 </label>
                                 <textarea
@@ -298,23 +293,20 @@ const whatsappHref = computed(
                                     rows="5"
                                     maxlength="4000"
                                     placeholder="Descreva o que correu mal, quando, e o que já tentou."
-                                    class="mt-2 w-full rounded-xl border-0 bg-white px-3 py-2.5 text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring ring-inset placeholder:text-zinc-400 dark:bg-white/5 dark:text-white dark:ring-white/10"
+                                    class="mt-2 form-input [--form-rows:5]"
                                 />
                                 <FormError :message="form.errors.body" />
                             </div>
 
                             <div>
-                                <label
-                                    for="complaint-name"
-                                    class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
-                                >
+                                <label for="complaint-name" class="field-label">
                                     O seu nome
                                 </label>
                                 <input
                                     id="complaint-name"
                                     v-model="form.contact_name"
                                     type="text"
-                                    class="mt-2 w-full rounded-xl border-0 bg-white px-3 py-2.5 text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring ring-inset dark:bg-white/5 dark:text-white dark:ring-white/10"
+                                    class="mt-2 form-input"
                                 />
                                 <FormError
                                     :message="form.errors.contact_name"
@@ -324,7 +316,7 @@ const whatsappHref = computed(
                             <div>
                                 <label
                                     for="complaint-email"
-                                    class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
+                                    class="field-label"
                                 >
                                     Email para resposta
                                 </label>
@@ -332,7 +324,7 @@ const whatsappHref = computed(
                                     id="complaint-email"
                                     v-model="form.contact_email"
                                     type="email"
-                                    class="mt-2 w-full rounded-xl border-0 bg-white px-3 py-2.5 text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring ring-inset dark:bg-white/5 dark:text-white dark:ring-white/10"
+                                    class="mt-2 form-input"
                                 />
                                 <FormError
                                     :message="form.errors.contact_email"
@@ -342,10 +334,11 @@ const whatsappHref = computed(
                             <div>
                                 <label
                                     for="complaint-phone"
-                                    class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
+                                    class="field-label"
                                 >
                                     Telefone
-                                    <span class="text-zinc-400"
+                                    <span
+                                        class="font-normal text-zinc-500 dark:text-zinc-400"
                                         >(opcional)</span
                                     >
                                 </label>
@@ -353,7 +346,7 @@ const whatsappHref = computed(
                                     id="complaint-phone"
                                     v-model="form.contact_phone"
                                     type="tel"
-                                    class="mt-2 w-full rounded-xl border-0 bg-white px-3 py-2.5 text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring ring-inset dark:bg-white/5 dark:text-white dark:ring-white/10"
+                                    class="mt-2 form-input"
                                 />
                                 <FormError
                                     :message="form.errors.contact_phone"

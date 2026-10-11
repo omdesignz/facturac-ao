@@ -1,45 +1,22 @@
 <script setup lang="ts" generic="T extends string | number">
-import {
-    Combobox,
-    ComboboxButton,
-    ComboboxInput,
-    ComboboxOption,
-    ComboboxOptions,
-} from '@headlessui/vue';
 import { Check, ChevronsUpDown } from '@lucide/vue';
 import {
     computed,
-    defineComponent,
     nextTick,
     onBeforeUnmount,
     ref,
     useAttrs,
+    useId,
     watch,
 } from 'vue';
+import { useFloatingPanel } from '@/lib/floating-panel';
 import type { SelectOption } from '@/types/select';
 
 /**
- * Headless UI exposes `open` only through its default slot, so this renderless
- * child turns that slot value into an event the setup block can react to.
- */
-const OpenWatcher = defineComponent({
-    props: { open: { type: Boolean, required: true } },
-    emits: ['change'],
-    setup(watched, { emit }) {
-        watch(
-            () => watched.open,
-            (value) => emit('change', value),
-        );
-
-        return () => null;
-    },
-});
-
-/**
  * Attributes are routed on purpose. `class` and `style` describe the control as
- * a block in the page, so they go to the wrapper. Everything else (`autocomplete`,
- * `aria-*`, `data-*`, listeners…) describes the field, so it goes to the
- * combobox input, where assistive technology and form code look for it.
+ * a block in the page, so they go to the wrapper. Everything else (`id`-like
+ * helpers, `aria-*`, `data-*`, listeners…) describes the field, so it goes to
+ * the button, where assistive technology and form code look for it.
  */
 defineOptions({ inheritAttrs: false });
 
@@ -96,8 +73,25 @@ const emit = defineEmits<{
     change: [value: T];
 }>();
 
+/** A list longer than this gets a filter field at its top. */
+const FILTER_THRESHOLD = 8;
+const TYPEAHEAD_RESET_MS = 700;
+
+const uid = useId();
+const listId = `select-${uid}-list`;
+
+const open = ref(false);
 const query = ref('');
-const anchor = ref<HTMLElement | null>(null);
+const activeIndex = ref(-1);
+const openedByPointer = ref(false);
+const trigger = ref<HTMLButtonElement | null>(null);
+const panel = ref<HTMLElement | null>(null);
+const list = ref<HTMLElement | null>(null);
+const filterField = ref<HTMLInputElement | null>(null);
+const filterFocused = ref(false);
+
+let typeahead = '';
+let typeaheadTimer: ReturnType<typeof setTimeout> | undefined;
 
 /** Fold case and diacritics so "orcamento" still matches "Orçamento". */
 function fold(value: string): string {
@@ -107,18 +101,20 @@ function fold(value: string): string {
         .toLowerCase();
 }
 
-const filtered = computed(() => {
-    const q = fold(query.value.trim());
+const showFilter = computed(() => props.options.length > FILTER_THRESHOLD);
 
-    if (q === '') {
+const visible = computed(() => {
+    const needle = fold(query.value.trim());
+
+    if (needle === '') {
         return props.options;
     }
 
     return props.options.filter(
         (option) =>
-            fold(option.label).includes(q) ||
-            fold(option.hint ?? '').includes(q) ||
-            fold(String(option.value)).includes(q),
+            fold(option.label).includes(needle) ||
+            fold(option.hint ?? '').includes(needle) ||
+            fold(String(option.value)).includes(needle),
     );
 });
 
@@ -126,194 +122,508 @@ const selected = computed(() =>
     props.options.find((option) => option.value === props.modelValue),
 );
 
-function displayValue(): string {
-    return selected.value?.label ?? '';
+function optionId(index: number): string {
+    return `${listId}-option-${index}`;
 }
 
-const inputClasses = computed(() =>
-    props.size === 'sm'
-        ? 'rounded-lg py-2 pr-8 pl-2.5 text-xs'
-        : 'rounded-xl py-2.5 pr-9 pl-3 text-sm',
+const activeId = computed(() =>
+    open.value && activeIndex.value >= 0
+        ? optionId(activeIndex.value)
+        : undefined,
 );
 
-const buttonClasses = computed(() =>
-    props.size === 'sm' ? 'pr-2 pl-2' : 'pr-2.5 pl-2',
-);
-
-/** The query is echoed back in the empty message, so keep it from taking over. */
-const echoedQuery = computed(() => {
-    const trimmed = query.value.trim();
-
-    return trimmed.length > 40 ? `${trimmed.slice(0, 40)}…` : trimmed;
+const { style: floatingStyle } = useFloatingPanel({
+    anchor: trigger,
+    panel,
+    open,
+    minWidth: 176,
+    estimatedHeight: Math.min(
+        props.options.length * 44 + 12 + (showFilter.value ? 56 : 0),
+        340,
+    ),
 });
+
+function isCoarsePointer(): boolean {
+    return window.matchMedia('(pointer: coarse)').matches;
+}
+
+function enabled(index: number): boolean {
+    const option = visible.value[index];
+
+    return option !== undefined && !option.disabled;
+}
+
+/** The next enabled option from `from` in `step` direction, or -1. */
+function seek(from: number, step: 1 | -1): number {
+    for (
+        let index = from;
+        index >= 0 && index < visible.value.length;
+        index += step
+    ) {
+        if (enabled(index)) {
+            return index;
+        }
+    }
+
+    return -1;
+}
+
+function setActive(index: number): void {
+    if (index < 0) {
+        return;
+    }
+
+    activeIndex.value = index;
+    void nextTick(() =>
+        document
+            .getElementById(optionId(index))
+            ?.scrollIntoView({ block: 'nearest' }),
+    );
+}
+
+function move(step: 1 | -1, size = 1): void {
+    const count = visible.value.length;
+
+    if (count === 0) {
+        return;
+    }
+
+    const target = Math.min(
+        Math.max(activeIndex.value + step * size, 0),
+        count - 1,
+    );
+    // The nearest enabled row in the direction of travel, else the other way.
+    const index =
+        seek(target, step) >= 0
+            ? seek(target, step)
+            : seek(target, -step as 1 | -1);
+
+    if (index >= 0) {
+        setActive(index);
+    }
+}
 
 function update(value: T): void {
     emit('update:modelValue', value);
     emit('change', value);
 }
 
-/*
- * The options list is teleported to <body> and positioned with `fixed`.
- * Rendering it in place meant any ancestor with `overflow-hidden` — which is
- * most of the surface cards — clipped it, and any ancestor stacking context
- * could bury it. Teleporting removes both failure modes at once.
+function close(returnFocus: boolean): void {
+    if (!open.value) {
+        return;
+    }
+
+    open.value = false;
+    filterFocused.value = false;
+    typeahead = '';
+
+    if (returnFocus) {
+        void nextTick(() => trigger.value?.focus({ preventScroll: true }));
+    }
+}
+
+function openList(
+    byPointer: boolean,
+    start: 'selected' | 'first' | 'last' = 'selected',
+): void {
+    if (props.disabled || open.value) {
+        return;
+    }
+
+    query.value = '';
+    openedByPointer.value = byPointer;
+    open.value = true;
+
+    const selectedIndex = props.options.findIndex(
+        (option) => option.value === props.modelValue,
+    );
+
+    activeIndex.value =
+        start === 'last'
+            ? seek(props.options.length - 1, -1)
+            : start === 'selected' && selectedIndex >= 0
+              ? selectedIndex
+              : seek(0, 1);
+
+    void nextTick(() => {
+        if (activeIndex.value >= 0) {
+            document
+                .getElementById(optionId(activeIndex.value))
+                ?.scrollIntoView({ block: 'nearest' });
+        }
+
+        // A phone's keyboard would cover the list it was opened for, so the
+        // filter is only focused for a keyboard or a mouse.
+        if (showFilter.value && (!byPointer || !isCoarsePointer())) {
+            filterField.value?.focus({ preventScroll: true });
+        }
+    });
+}
+
+function choose(index: number): void {
+    const option = visible.value[index];
+
+    if (!option || option.disabled) {
+        return;
+    }
+
+    update(option.value);
+    close(true);
+}
+
+/** Jump to the next option whose label starts with what has been typed. */
+function runTypeahead(character: string): void {
+    typeahead += fold(character);
+    clearTimeout(typeaheadTimer);
+    typeaheadTimer = setTimeout(() => (typeahead = ''), TYPEAHEAD_RESET_MS);
+
+    const count = visible.value.length;
+    // One repeated letter cycles through the matches; a word keeps its match.
+    const from =
+        typeahead.length === 1 ? activeIndex.value + 1 : activeIndex.value;
+
+    for (let offset = 0; offset < count; offset += 1) {
+        const index = (Math.max(from, 0) + offset) % count;
+
+        if (
+            enabled(index) &&
+            fold(visible.value[index].label).startsWith(typeahead)
+        ) {
+            setActive(index);
+
+            return;
+        }
+    }
+}
+
+function isPrintable(event: KeyboardEvent): boolean {
+    return (
+        event.key.length === 1 &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.altKey
+    );
+}
+
+function onTriggerKeydown(event: KeyboardEvent): void {
+    if (props.disabled) {
+        return;
+    }
+
+    switch (event.key) {
+        case 'ArrowDown':
+        case 'ArrowUp':
+            event.preventDefault();
+
+            if (!open.value) {
+                openList(false, event.key === 'ArrowUp' ? 'last' : 'selected');
+            } else {
+                move(event.key === 'ArrowDown' ? 1 : -1);
+            }
+
+            return;
+        case 'Enter':
+        case ' ':
+            if (open.value && event.key === ' ' && typeahead !== '') {
+                event.preventDefault();
+                runTypeahead(' ');
+
+                return;
+            }
+
+            event.preventDefault();
+
+            if (open.value) {
+                choose(activeIndex.value);
+            } else {
+                openList(false);
+            }
+
+            return;
+        case 'Home':
+        case 'End':
+            if (open.value) {
+                event.preventDefault();
+                setActive(
+                    event.key === 'Home'
+                        ? seek(0, 1)
+                        : seek(visible.value.length - 1, -1),
+                );
+            }
+
+            return;
+        case 'PageDown':
+        case 'PageUp':
+            if (open.value) {
+                event.preventDefault();
+                move(event.key === 'PageDown' ? 1 : -1, 8);
+            }
+
+            return;
+        case 'Escape':
+            if (open.value) {
+                // The dialog the field may sit in must not close with it.
+                event.preventDefault();
+                close(true);
+            }
+
+            return;
+        case 'Tab':
+            close(false);
+
+            return;
+    }
+
+    if (!isPrintable(event)) {
+        return;
+    }
+
+    if (!open.value && showFilter.value) {
+        event.preventDefault();
+        openList(false);
+        query.value = event.key;
+        void nextTick(() => filterField.value?.focus({ preventScroll: true }));
+
+        return;
+    }
+
+    event.preventDefault();
+
+    if (!open.value) {
+        openList(false);
+    }
+
+    runTypeahead(event.key);
+}
+
+/**
+ * A mouse or a finger toggles the list. A click with no pointer behind it
+ * (`detail` is 0: a screen reader's, or voice control's) is a keyboard-style
+ * opening, so it gets no entrance animation.
  */
-const floating = ref({ top: '0px', left: '0px', width: '0px' });
-const openUpwards = ref(false);
-
-function reposition(): void {
-    const el = anchor.value;
-
-    if (!el) {
-        return;
-    }
-
-    const rect = el.getBoundingClientRect();
-    const maxHeight = 260;
-    const spaceBelow = window.innerHeight - rect.bottom;
-
-    openUpwards.value = spaceBelow < maxHeight && rect.top > spaceBelow;
-
-    floating.value = {
-        top: openUpwards.value ? `${rect.top - 6}px` : `${rect.bottom + 6}px`,
-        left: `${rect.left}px`,
-        width: `${rect.width}px`,
-    };
-}
-
-function watchViewport(active: boolean): void {
-    const method = active ? 'addEventListener' : 'removeEventListener';
-    // `true` captures scrolls on inner containers, not just the window.
-    window[method]('scroll', reposition, true);
-    window[method]('resize', reposition);
-}
-
-function onOpenChange(open: boolean): void {
-    if (open) {
-        query.value = '';
-        void nextTick(reposition);
-        watchViewport(true);
+function onTriggerClick(event: MouseEvent): void {
+    if (open.value) {
+        close(true);
 
         return;
     }
 
-    watchViewport(false);
+    openList(event.detail !== 0);
 }
 
-onBeforeUnmount(() => watchViewport(false));
+function onFilterKeydown(event: KeyboardEvent): void {
+    switch (event.key) {
+        case 'ArrowDown':
+        case 'ArrowUp':
+            event.preventDefault();
+            move(event.key === 'ArrowDown' ? 1 : -1);
+
+            return;
+        case 'PageDown':
+        case 'PageUp':
+            event.preventDefault();
+            move(event.key === 'PageDown' ? 1 : -1, 8);
+
+            return;
+        case 'Enter':
+            event.preventDefault();
+            choose(activeIndex.value);
+
+            return;
+        case 'Escape':
+            event.preventDefault();
+            close(true);
+
+            return;
+        case 'Tab':
+            // Back to the button first, so Tab carries on from there.
+            close(true);
+            trigger.value?.focus({ preventScroll: true });
+    }
+}
+
+function onFilterInput(): void {
+    // The first match is the one Enter takes.
+    activeIndex.value = seek(0, 1);
+}
+
+function onPointerDownOutside(event: PointerEvent): void {
+    const target = event.target;
+
+    if (
+        !(target instanceof Node) ||
+        trigger.value?.contains(target) ||
+        panel.value?.contains(target)
+    ) {
+        return;
+    }
+
+    close(false);
+}
+
+watch(open, (isOpen) => {
+    if (isOpen) {
+        document.addEventListener('pointerdown', onPointerDownOutside, true);
+
+        return;
+    }
+
+    document.removeEventListener('pointerdown', onPointerDownOutside, true);
+});
+
+watch(
+    () => props.disabled,
+    (disabled) => {
+        if (disabled) {
+            close(false);
+        }
+    },
+);
+
+onBeforeUnmount(() => {
+    document.removeEventListener('pointerdown', onPointerDownOutside, true);
+    clearTimeout(typeaheadTimer);
+});
+
+const triggerClasses = computed(() =>
+    props.size === 'sm' ? 'form-input form-input-sm' : 'form-input',
+);
 </script>
 
 <template>
-    <Combobox
-        :model-value="modelValue"
-        :disabled="disabled"
-        as="div"
-        v-bind="wrapperAttrs()"
-        @update:model-value="update"
-    >
-        <template #default="{ open }">
-            <OpenWatcher :open="open" @change="onOpenChange" />
+    <div v-bind="wrapperAttrs()">
+        <input v-if="name" type="hidden" :name="name" :value="modelValue" />
 
-            <div ref="anchor" class="relative">
-                <input
-                    v-if="name"
-                    type="hidden"
-                    :name="name"
-                    :value="modelValue"
-                />
+        <button
+            :id="id"
+            ref="trigger"
+            type="button"
+            role="combobox"
+            aria-haspopup="listbox"
+            :aria-label="ariaLabel"
+            :aria-expanded="open"
+            :aria-controls="open ? listId : undefined"
+            :aria-activedescendant="filterFocused ? undefined : activeId"
+            :aria-required="required || undefined"
+            :aria-invalid="invalid ? 'true' : undefined"
+            :aria-describedby="describedby"
+            :disabled="disabled"
+            v-bind="inputAttrs()"
+            :class="[
+                triggerClasses,
+                'flex cursor-pointer items-center gap-2 text-start',
+            ]"
+            @click="onTriggerClick"
+            @keydown="onTriggerKeydown"
+            @keyup.space.prevent
+        >
+            <span
+                :class="[
+                    'min-w-0 flex-1 truncate',
+                    selected ? '' : 'text-zinc-500 dark:text-zinc-400',
+                ]"
+                >{{ selected ? selected.label : placeholder }}</span
+            >
+            <ChevronsUpDown
+                class="size-4 shrink-0 text-zinc-500 dark:text-zinc-400"
+                aria-hidden="true"
+            />
+        </button>
 
-                <ComboboxInput
-                    :id="id"
-                    :aria-label="ariaLabel"
-                    :display-value="displayValue"
-                    :placeholder="placeholder"
-                    :required="required || undefined"
-                    :aria-invalid="invalid ? 'true' : undefined"
-                    :aria-describedby="describedby"
-                    autocomplete="off"
-                    spellcheck="false"
-                    autocapitalize="off"
-                    v-bind="inputAttrs()"
-                    :class="[
-                        inputClasses,
-                        'w-full bg-white text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 placeholder:text-zinc-400 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 disabled:cursor-not-allowed disabled:opacity-60 aria-invalid:outline-2 aria-invalid:-outline-offset-2 aria-invalid:outline-rose-500 aria-invalid:focus:outline-rose-500 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-zinc-500 dark:focus:outline-brand-400 dark:aria-invalid:outline-rose-400 dark:aria-invalid:focus:outline-rose-400',
-                    ]"
-                    @change="query = $event.target.value"
-                />
-
-                <ComboboxButton
-                    aria-label="Mostrar opções"
-                    :class="[
-                        buttonClasses,
-                        'absolute inset-y-0 right-0 flex items-center rounded-r-xl focus:outline-hidden pointer-coarse:pl-3',
-                    ]"
-                >
-                    <ChevronsUpDown
-                        class="size-4 text-zinc-400"
-                        aria-hidden="true"
+        <Teleport to="body">
+            <div
+                v-if="open"
+                ref="panel"
+                :style="floatingStyle"
+                :data-menu-motion="openedByPointer ? 'true' : undefined"
+                class="z-[100] flex flex-col overflow-clip menu-panel text-sm"
+            >
+                <div v-if="showFilter" class="shrink-0 p-1.5 pb-0">
+                    <input
+                        ref="filterField"
+                        v-model="query"
+                        type="text"
+                        role="combobox"
+                        aria-label="Filtrar opções"
+                        aria-autocomplete="list"
+                        aria-expanded="true"
+                        :aria-controls="listId"
+                        :aria-activedescendant="activeId"
+                        placeholder="Filtrar…"
+                        autocomplete="off"
+                        autocapitalize="off"
+                        spellcheck="false"
+                        enterkeyhint="done"
+                        class="form-input"
+                        @focus="filterFocused = true"
+                        @blur="filterFocused = false"
+                        @input="onFilterInput"
+                        @keydown="onFilterKeydown"
                     />
-                </ComboboxButton>
-            </div>
-
-            <Teleport to="body">
-                <div
-                    v-if="open"
-                    :style="floating"
-                    :class="[
-                        openUpwards ? '-translate-y-full' : '',
-                        'fixed z-[100]',
-                    ]"
-                >
-                    <ComboboxOptions
-                        static
-                        class="max-h-64 w-full overflow-auto overscroll-contain rounded-xl bg-white p-1.5 text-sm shadow-xl ring-1 ring-zinc-900/10 focus:outline-hidden dark:bg-zinc-900 dark:ring-white/10"
-                    >
-                        <p
-                            v-if="filtered.length === 0"
-                            class="px-2.5 py-2 text-sm [overflow-wrap:anywhere] text-zinc-500 dark:text-zinc-400"
-                        >
-                            Sem resultados para “{{ echoedQuery }}”.
-                        </p>
-
-                        <ComboboxOption
-                            v-for="option in filtered"
-                            v-slot="{ active, selected: isSelected }"
-                            :key="option.value"
-                            :value="option.value"
-                            :disabled="option.disabled"
-                            as="template"
-                        >
-                            <li
-                                :class="[
-                                    active ? 'bg-zinc-100 dark:bg-white/5' : '',
-                                    option.disabled ? 'opacity-50' : '',
-                                    'flex cursor-default items-start gap-2 rounded-lg px-2.5 py-2 text-zinc-900 select-none dark:text-white',
-                                ]"
-                            >
-                                <span class="min-w-0 flex-1">
-                                    <span
-                                        :class="[
-                                            isSelected ? 'font-semibold' : '',
-                                            'block truncate',
-                                        ]"
-                                        >{{ option.label }}</span
-                                    >
-                                    <span
-                                        v-if="option.hint"
-                                        class="mt-0.5 block truncate text-xs text-zinc-500 dark:text-zinc-400"
-                                        >{{ option.hint }}</span
-                                    >
-                                </span>
-                                <Check
-                                    v-if="isSelected"
-                                    class="mt-0.5 size-4 shrink-0 text-brand-700 dark:text-brand-300"
-                                    aria-hidden="true"
-                                />
-                            </li>
-                        </ComboboxOption>
-                    </ComboboxOptions>
                 </div>
-            </Teleport>
-        </template>
-    </Combobox>
+
+                <ul
+                    v-show="visible.length > 0"
+                    :id="listId"
+                    ref="list"
+                    role="listbox"
+                    :aria-label="ariaLabel ?? 'Opções'"
+                    class="max-h-[min(20rem,50dvh)] min-h-0 flex-1 overflow-y-auto overscroll-contain p-1.5"
+                    @mousedown.prevent
+                >
+                    <li
+                        v-for="(option, index) in visible"
+                        :id="optionId(index)"
+                        :key="option.value"
+                        role="option"
+                        :aria-selected="option.value === modelValue"
+                        :aria-disabled="option.disabled ? 'true' : undefined"
+                        :class="[
+                            'flex min-h-10 cursor-default items-start gap-2 menu-item py-2 text-zinc-900 select-none dark:text-white pointer-coarse:min-h-11',
+                            index === activeIndex
+                                ? 'bg-zinc-900/[0.06] dark:bg-white/10'
+                                : '',
+                            option.disabled ? 'opacity-50' : '',
+                        ]"
+                        @click="choose(index)"
+                        @pointermove="
+                            enabled(index) && activeIndex !== index
+                                ? (activeIndex = index)
+                                : undefined
+                        "
+                    >
+                        <span class="min-w-0 flex-1 [overflow-wrap:anywhere]">
+                            <span
+                                :class="[
+                                    'block',
+                                    option.value === modelValue
+                                        ? 'font-semibold'
+                                        : '',
+                                ]"
+                                >{{ option.label }}</span
+                            >
+                            <span
+                                v-if="option.hint"
+                                class="mt-0.5 block text-xs text-zinc-500 dark:text-zinc-400"
+                                >{{ option.hint }}</span
+                            >
+                        </span>
+                        <Check
+                            v-if="option.value === modelValue"
+                            class="mt-0.5 size-4 shrink-0 text-brand-700 dark:text-brand-300"
+                            aria-hidden="true"
+                        />
+                    </li>
+                </ul>
+
+                <p
+                    v-if="visible.length === 0"
+                    role="status"
+                    class="px-3 py-3 text-sm text-zinc-500 dark:text-zinc-400"
+                >
+                    Nenhum resultado
+                </p>
+            </div>
+        </Teleport>
+    </div>
 </template>

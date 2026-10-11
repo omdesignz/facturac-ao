@@ -15,6 +15,7 @@ import PageHeader from '@/components/PageHeader.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
+import ToggleSwitch from '@/components/ToggleSwitch.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { confirmAction } from '@/lib/confirm';
 import { destroy, store, update } from '@/routes/catalogue';
@@ -218,17 +219,17 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                     <div
                         class="flex flex-col gap-3 border-b border-zinc-900/[0.07] p-4 sm:flex-row sm:items-center dark:border-white/10"
                     >
-                        <label class="relative w-full sm:max-w-xs">
+                        <label class="field-adorned w-full sm:max-w-xs">
                             <span class="sr-only">Procurar artigos</span>
                             <Search
-                                class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-zinc-400"
+                                class="field-adornment-start size-4"
                                 aria-hidden="true"
                             />
                             <input
                                 v-model="search"
                                 type="search"
                                 placeholder="Nome, código ou descrição…"
-                                class="block w-full rounded-xl bg-white py-2.5 pr-3 pl-9 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 placeholder:text-zinc-400 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                class="form-input"
                             />
                         </label>
                         <SelectInput
@@ -451,9 +452,7 @@ async function deactivate(item: CatalogueItem): Promise<void> {
             <form class="space-y-5" @submit.prevent="submit">
                 <div class="grid gap-5 sm:grid-cols-6">
                     <div class="sm:col-span-2">
-                        <label
-                            for="item-code"
-                            class="block text-sm font-medium text-zinc-900 dark:text-white"
+                        <label for="item-code" class="field-label"
                             >Código</label
                         >
                         <input
@@ -461,17 +460,13 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                             v-model="form.code"
                             type="text"
                             required
-                            class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 font-mono text-sm text-zinc-900 uppercase outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                            class="mt-2 block form-input font-mono uppercase"
                         />
                         <FormError :message="form.errors.code" />
                     </div>
 
                     <div class="sm:col-span-2">
-                        <label
-                            for="item-type"
-                            class="block text-sm font-medium text-zinc-900 dark:text-white"
-                            >Tipo</label
-                        >
+                        <label for="item-type" class="field-label">Tipo</label>
                         <SelectInput
                             id="item-type"
                             v-model="form.type"
@@ -482,9 +477,7 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                     </div>
 
                     <div class="sm:col-span-2">
-                        <label
-                            for="item-unit"
-                            class="block text-sm font-medium text-zinc-900 dark:text-white"
+                        <label for="item-unit" class="field-label"
                             >Unidade</label
                         >
                         <input
@@ -493,15 +486,13 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                             type="text"
                             required
                             placeholder="UN"
-                            class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 uppercase outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                            class="mt-2 block form-input uppercase"
                         />
                         <FormError :message="form.errors.unit_of_measure" />
                     </div>
 
                     <div class="sm:col-span-6">
-                        <label
-                            for="item-name"
-                            class="block text-sm font-medium text-zinc-900 dark:text-white"
+                        <label for="item-name" class="field-label"
                             >Designação</label
                         >
                         <input
@@ -509,15 +500,13 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                             v-model="form.name"
                             type="text"
                             required
-                            class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                            class="mt-2 block form-input"
                         />
                         <FormError :message="form.errors.name" />
                     </div>
 
                     <div class="sm:col-span-3">
-                        <label
-                            for="item-price"
-                            class="block text-sm font-medium text-zinc-900 dark:text-white"
+                        <label for="item-price" class="field-label"
                             >Preço unitário ({{ currencyCode }})</label
                         >
                         <input
@@ -526,15 +515,13 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                             type="text"
                             inputmode="decimal"
                             required
-                            class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-right font-mono numeric text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                            class="mt-2 block form-input text-right font-mono numeric"
                         />
                         <FormError :message="form.errors.unit_price" />
                     </div>
 
                     <div class="sm:col-span-3">
-                        <label
-                            for="item-tax"
-                            class="block text-sm font-medium text-zinc-900 dark:text-white"
+                        <label for="item-tax" class="field-label"
                             >IVA (%)</label
                         >
                         <input
@@ -543,31 +530,30 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                             type="text"
                             inputmode="decimal"
                             required
-                            class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-right font-mono numeric text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                            class="mt-2 block form-input text-right font-mono numeric"
                         />
                         <FormError :message="form.errors.tax_percentage" />
                     </div>
 
                     <div class="sm:col-span-6">
-                        <label
-                            for="item-description"
-                            class="block text-sm font-medium text-zinc-900 dark:text-white"
+                        <label for="item-description" class="field-label"
                             >Descrição
-                            <span class="text-zinc-400">(opcional)</span></label
+                            <span
+                                class="font-normal text-zinc-500 dark:text-zinc-400"
+                                >(opcional)</span
+                            ></label
                         >
                         <textarea
                             id="item-description"
                             v-model="form.description"
                             rows="2"
-                            class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                            class="mt-2 block form-input [--form-rows:2]"
                         />
                         <FormError :message="form.errors.description" />
                     </div>
 
                     <div class="sm:col-span-3">
-                        <label
-                            for="item-exemption"
-                            class="block text-sm font-medium text-zinc-900 dark:text-white"
+                        <label for="item-exemption" class="field-label"
                             >Código de isenção
                             <span class="text-zinc-400"
                                 >(se aplicável)</span
@@ -577,17 +563,18 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                             id="item-exemption"
                             v-model="form.tax_exemption_code"
                             type="text"
-                            class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 font-mono text-sm text-zinc-900 uppercase outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                            class="mt-2 block form-input font-mono uppercase"
                         />
                         <FormError :message="form.errors.tax_exemption_code" />
                     </div>
 
                     <div class="sm:col-span-3">
-                        <label
-                            for="item-barcode"
-                            class="block text-sm font-medium text-zinc-900 dark:text-white"
+                        <label for="item-barcode" class="field-label"
                             >Código de barras
-                            <span class="text-zinc-400">(opcional)</span></label
+                            <span
+                                class="font-normal text-zinc-500 dark:text-zinc-400"
+                                >(opcional)</span
+                            ></label
                         >
                         <input
                             id="item-barcode"
@@ -597,7 +584,7 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                             spellcheck="false"
                             autocomplete="off"
                             maxlength="64"
-                            class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 font-mono text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                            class="mt-2 block form-input font-mono"
                             :aria-invalid="
                                 form.errors.barcode ? 'true' : undefined
                             "
@@ -608,10 +595,7 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                             "
                             @keydown.enter.prevent
                         />
-                        <p
-                            id="item-barcode-hint"
-                            class="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400"
-                        >
+                        <p id="item-barcode-hint" class="field-hint">
                             Leia o código com o leitor ou escreva-o.
                         </p>
                         <FormError
@@ -621,16 +605,9 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                     </div>
                 </div>
 
-                <label
-                    class="flex w-fit items-center gap-3 text-sm text-zinc-700 dark:text-zinc-300"
-                >
-                    <input
-                        v-model="form.is_active"
-                        type="checkbox"
-                        class="size-4 rounded border-zinc-300 text-brand-700 focus-ring dark:border-white/15 dark:bg-white/5"
-                    />
-                    Disponível ao criar facturas
-                </label>
+                <ToggleSwitch v-model="form.is_active">
+                    <template #label>Disponível ao criar facturas</template>
+                </ToggleSwitch>
 
                 <!-- A service has no warehouse balance to draw down, so the
                      option only appears for products. -->
@@ -638,30 +615,23 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                     v-if="form.type === 'product'"
                     class="rounded-xl bg-zinc-50 p-4 dark:bg-white/5"
                 >
-                    <label
-                        class="flex w-fit items-center gap-3 text-sm text-zinc-700 dark:text-zinc-300"
-                    >
-                        <input
-                            v-model="form.tracks_stock"
-                            type="checkbox"
-                            class="size-4 rounded border-zinc-300 text-brand-700 focus-ring dark:border-white/15 dark:bg-white/5"
-                        />
-                        Controlar o inventário deste artigo
-                    </label>
-                    <p
-                        class="ms-7 mt-1.5 text-xs text-zinc-500 dark:text-zinc-400"
-                    >
-                        Emitir uma factura dá baixa; uma nota de crédito
-                        devolve.
-                    </p>
-
-                    <div v-if="form.tracks_stock" class="ms-7 mt-4 max-w-xs">
-                        <label
-                            for="item-reorder"
-                            class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
+                    <ToggleSwitch v-model="form.tracks_stock">
+                        <template #label
+                            >Controlar o inventário deste artigo</template
                         >
+                        <template #description
+                            >Emitir uma factura dá baixa; uma nota de crédito
+                            devolve.</template
+                        >
+                    </ToggleSwitch>
+
+                    <div v-if="form.tracks_stock" class="mt-4 max-w-xs">
+                        <label for="item-reorder" class="field-label">
                             Nível mínimo
-                            <span class="text-zinc-400">(opcional)</span>
+                            <span
+                                class="font-normal text-zinc-500 dark:text-zinc-400"
+                                >(opcional)</span
+                            >
                         </label>
                         <input
                             id="item-reorder"
@@ -669,11 +639,9 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                             type="text"
                             inputmode="decimal"
                             placeholder="0,000"
-                            class="mt-2 w-full rounded-xl border-0 bg-white px-3 py-2.5 numeric text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring ring-inset dark:bg-white/5 dark:text-white dark:ring-white/10"
+                            class="mt-2 form-input numeric"
                         />
-                        <p
-                            class="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400"
-                        >
+                        <p class="field-hint">
                             Avisamos quando o saldo chegar a este valor.
                         </p>
                         <FormError :message="form.errors.reorder_level" />

@@ -99,7 +99,7 @@ function saveSelection(): void {
                                     type="checkbox"
                                     checked
                                     disabled
-                                    class="mt-0.5 size-4 rounded border-zinc-300 text-brand-700 dark:border-white/20"
+                                    class="form-checkbox mt-0.5"
                                 />
                                 <span class="text-sm">
                                     <span
@@ -120,7 +120,7 @@ function saveSelection(): void {
                                 <input
                                     v-model="preferences"
                                     type="checkbox"
-                                    class="mt-0.5 size-4 rounded border-zinc-300 text-brand-700 focus-ring dark:border-white/20"
+                                    class="form-checkbox mt-0.5"
                                 />
                                 <span class="text-sm">
                                     <span
@@ -141,7 +141,7 @@ function saveSelection(): void {
                                 <input
                                     v-model="analytics"
                                     type="checkbox"
-                                    class="mt-0.5 size-4 rounded border-zinc-300 text-brand-700 focus-ring dark:border-white/20"
+                                    class="form-checkbox mt-0.5"
                                 />
                                 <span class="text-sm">
                                     <span

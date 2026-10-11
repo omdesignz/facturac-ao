@@ -17,6 +17,7 @@ import {
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import DateInput from '@/components/DateInput.vue';
+import FileInput from '@/components/FileInput.vue';
 import FormError from '@/components/FormError.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import SelectInput from '@/components/SelectInput.vue';
@@ -87,7 +88,7 @@ const taxRegime = ref(props.company.tax_regime);
 
 const provinceCode = ref(props.company.province_code);
 
-const logoInput = ref<HTMLInputElement | null>(null);
+const logoInput = ref<InstanceType<typeof FileInput> | null>(null);
 const logoForm = useForm<{ logo: File | null }>({ logo: null });
 
 const logoUrl = computed(
@@ -105,9 +106,7 @@ function uploadLogo(event: Event): void {
     logoForm.post(storeCompanyLogo.url(), {
         preserveScroll: true,
         onFinish: () => {
-            if (logoInput.value) {
-                logoInput.value.value = '';
-            }
+            logoInput.value?.reset();
         },
     });
 }
@@ -328,9 +327,7 @@ const steps = computed(() => [
                                 class="grid grid-cols-1 gap-x-6 gap-y-6 p-5 disabled:opacity-70 sm:grid-cols-6 sm:p-7"
                             >
                                 <div class="sm:col-span-4">
-                                    <label
-                                        for="legal-name"
-                                        class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                    <label for="legal-name" class="field-label"
                                         >Denominação social</label
                                     >
                                     <input
@@ -340,14 +337,12 @@ const steps = computed(() => [
                                         autocomplete="organization"
                                         required
                                         :value="company.legal_name"
-                                        class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                        class="mt-2 block form-input"
                                     />
                                     <FormError :message="errors.legal_name" />
                                 </div>
                                 <div class="sm:col-span-2">
-                                    <label
-                                        for="tax-id"
-                                        class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                    <label for="tax-id" class="field-label"
                                         >NIF</label
                                     >
                                     <input
@@ -359,7 +354,7 @@ const steps = computed(() => [
                                         :value="
                                             company.tax_identification_number
                                         "
-                                        class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 font-mono text-sm text-zinc-900 uppercase outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                        class="mt-2 block form-input font-mono uppercase"
                                     />
                                     <FormError
                                         :message="
@@ -368,11 +363,10 @@ const steps = computed(() => [
                                     />
                                 </div>
                                 <div class="sm:col-span-3">
-                                    <label
-                                        for="trade-name"
-                                        class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                    <label for="trade-name" class="field-label"
                                         >Nome comercial
-                                        <span class="font-normal text-zinc-400"
+                                        <span
+                                            class="font-normal text-zinc-500 dark:text-zinc-400"
                                             >(opcional)</span
                                         ></label
                                     >
@@ -381,14 +375,12 @@ const steps = computed(() => [
                                         name="trade_name"
                                         type="text"
                                         :value="company.trade_name"
-                                        class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                        class="mt-2 block form-input"
                                     />
                                     <FormError :message="errors.trade_name" />
                                 </div>
                                 <div class="sm:col-span-3">
-                                    <label
-                                        for="tax-regime"
-                                        class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                    <label for="tax-regime" class="field-label"
                                         >Regime de IVA</label
                                     >
                                     <SelectInput
@@ -401,9 +393,7 @@ const steps = computed(() => [
                                     <FormError :message="errors.tax_regime" />
                                 </div>
                                 <div class="sm:col-span-3">
-                                    <label
-                                        for="cae"
-                                        class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                    <label for="cae" class="field-label"
                                         >CAE principal</label
                                     >
                                     <input
@@ -412,7 +402,7 @@ const steps = computed(() => [
                                         type="text"
                                         required
                                         :value="company.main_cae_code"
-                                        class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 font-mono text-sm text-zinc-900 uppercase outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                        class="mt-2 block form-input font-mono uppercase"
                                         placeholder="Ex.: 62010"
                                     />
                                     <FormError
@@ -454,7 +444,7 @@ const steps = computed(() => [
                                 <div class="sm:col-span-2">
                                     <label
                                         for="establishment-code"
-                                        class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                        class="field-label"
                                         >Código interno</label
                                     >
                                     <input
@@ -463,7 +453,7 @@ const steps = computed(() => [
                                         type="text"
                                         required
                                         :value="company.establishment_code"
-                                        class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 font-mono text-sm text-zinc-900 uppercase outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                        class="mt-2 block form-input font-mono uppercase"
                                     />
                                     <FormError
                                         :message="errors.establishment_code"
@@ -472,7 +462,7 @@ const steps = computed(() => [
                                 <div class="sm:col-span-4">
                                     <label
                                         for="establishment-name"
-                                        class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                        class="field-label"
                                         >Nome do estabelecimento</label
                                     >
                                     <input
@@ -481,7 +471,7 @@ const steps = computed(() => [
                                         type="text"
                                         required
                                         :value="company.establishment_name"
-                                        class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                        class="mt-2 block form-input"
                                     />
                                     <FormError
                                         :message="errors.establishment_name"
@@ -490,7 +480,7 @@ const steps = computed(() => [
                                 <div class="sm:col-span-6">
                                     <label
                                         for="address-line"
-                                        class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                        class="field-label"
                                         >Morada</label
                                     >
                                     <input
@@ -500,14 +490,14 @@ const steps = computed(() => [
                                         autocomplete="street-address"
                                         required
                                         :value="company.address_line"
-                                        class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                        class="mt-2 block form-input"
                                     />
                                     <FormError :message="errors.address_line" />
                                 </div>
                                 <div class="sm:col-span-4">
                                     <label
                                         for="municipality"
-                                        class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                        class="field-label"
                                         >Município</label
                                     >
                                     <input
@@ -516,14 +506,14 @@ const steps = computed(() => [
                                         type="text"
                                         required
                                         :value="company.municipality"
-                                        class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                        class="mt-2 block form-input"
                                     />
                                     <FormError :message="errors.municipality" />
                                 </div>
                                 <div class="sm:col-span-2">
                                     <label
                                         for="province-code"
-                                        class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                        class="field-label"
                                         >Província</label
                                     >
                                     <SelectInput
@@ -617,11 +607,10 @@ const steps = computed(() => [
                                         class="h-12 w-auto rounded-lg bg-white object-contain p-1 ring-1 ring-zinc-200 dark:ring-white/10"
                                     />
 
-                                    <input
+                                    <FileInput
                                         ref="logoInput"
-                                        type="file"
+                                        aria-label="Escolher o logótipo"
                                         accept="image/png,image/jpeg"
-                                        class="block text-sm text-zinc-600 file:mr-3 file:rounded-xl file:border-0 file:bg-zinc-900 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white dark:text-zinc-400 dark:file:bg-white dark:file:text-zinc-950"
                                         @change="uploadLogo"
                                     />
 

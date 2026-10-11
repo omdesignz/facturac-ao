@@ -261,17 +261,17 @@ function isInbound(quantity: string): boolean {
                     <div
                         class="flex flex-col gap-3 border-b border-zinc-900/[0.07] p-4 sm:flex-row sm:items-center dark:border-white/10"
                     >
-                        <label class="relative w-full sm:max-w-xs">
+                        <label class="field-adorned w-full sm:max-w-xs">
                             <span class="sr-only">Procurar artigo</span>
                             <Search
-                                class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-zinc-400"
+                                class="field-adornment-start size-4"
                                 aria-hidden="true"
                             />
                             <input
                                 v-model="search"
                                 type="search"
                                 placeholder="Nome ou código…"
-                                class="w-full rounded-xl border-0 bg-zinc-50 py-2.5 pr-3 pl-9 text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring ring-inset placeholder:text-zinc-400 dark:bg-white/5 dark:text-white dark:ring-white/10"
+                                class="form-input"
                             />
                         </label>
 
@@ -288,7 +288,7 @@ function isInbound(quantity: string): boolean {
                             <input
                                 v-model="lowOnly"
                                 type="checkbox"
-                                class="size-4 rounded border-zinc-300 text-brand-700 focus-ring dark:border-white/20"
+                                class="form-checkbox"
                             />
                             Só abaixo do mínimo
                         </label>
@@ -502,11 +502,7 @@ function isInbound(quantity: string): boolean {
             <form class="space-y-5" @submit.prevent="submit">
                 <div class="grid gap-5 sm:grid-cols-2">
                     <div class="sm:col-span-2">
-                        <label
-                            class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
-                        >
-                            Artigo
-                        </label>
+                        <label class="field-label"> Artigo </label>
                         <div class="mt-2">
                             <SelectInput
                                 v-model="form.catalogue_item"
@@ -517,11 +513,7 @@ function isInbound(quantity: string): boolean {
                     </div>
 
                     <div>
-                        <label
-                            class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
-                        >
-                            Tipo de movimento
-                        </label>
+                        <label class="field-label"> Tipo de movimento </label>
                         <div class="mt-2">
                             <SelectInput
                                 v-model="form.type"
@@ -532,11 +524,7 @@ function isInbound(quantity: string): boolean {
                     </div>
 
                     <div>
-                        <label
-                            class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
-                        >
-                            Estabelecimento
-                        </label>
+                        <label class="field-label"> Estabelecimento </label>
                         <div class="mt-2">
                             <SelectInput
                                 v-model="form.establishment"
@@ -547,11 +535,7 @@ function isInbound(quantity: string): boolean {
                     </div>
 
                     <div v-if="selectedType?.is_transfer" class="sm:col-span-2">
-                        <label
-                            class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
-                        >
-                            Destino
-                        </label>
+                        <label class="field-label"> Destino </label>
                         <div class="mt-2">
                             <SelectInput
                                 v-model="form.destination_establishment"
@@ -564,10 +548,7 @@ function isInbound(quantity: string): boolean {
                     </div>
 
                     <div>
-                        <label
-                            for="movement-quantity"
-                            class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
-                        >
+                        <label for="movement-quantity" class="field-label">
                             Quantidade
                         </label>
                         <input
@@ -576,16 +557,13 @@ function isInbound(quantity: string): boolean {
                             type="text"
                             inputmode="decimal"
                             placeholder="0,000"
-                            class="mt-2 w-full rounded-xl border-0 bg-white px-3 py-2.5 numeric text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring ring-inset dark:bg-white/5 dark:text-white dark:ring-white/10"
+                            class="mt-2 form-input numeric"
                         />
                         <FormError :message="form.errors.quantity" />
                     </div>
 
                     <div v-if="selectedType?.carries_cost">
-                        <label
-                            for="movement-cost"
-                            class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
-                        >
+                        <label for="movement-cost" class="field-label">
                             Custo unitário
                         </label>
                         <input
@@ -594,23 +572,21 @@ function isInbound(quantity: string): boolean {
                             type="text"
                             inputmode="decimal"
                             placeholder="0,00"
-                            class="mt-2 w-full rounded-xl border-0 bg-white px-3 py-2.5 numeric text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring ring-inset dark:bg-white/5 dark:text-white dark:ring-white/10"
+                            class="mt-2 form-input numeric"
                         />
-                        <p
-                            class="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400"
-                        >
+                        <p class="field-hint">
                             Entra na média ponderada que valoriza o armazém.
                         </p>
                         <FormError :message="form.errors.unit_cost" />
                     </div>
 
                     <div class="sm:col-span-2">
-                        <label
-                            for="movement-note"
-                            class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
-                        >
+                        <label for="movement-note" class="field-label">
                             Nota
-                            <span class="text-zinc-400">(opcional)</span>
+                            <span
+                                class="font-normal text-zinc-500 dark:text-zinc-400"
+                                >(opcional)</span
+                            >
                         </label>
                         <input
                             id="movement-note"
@@ -618,7 +594,7 @@ function isInbound(quantity: string): boolean {
                             type="text"
                             maxlength="500"
                             placeholder="Ex.: guia do fornecedor n.º 88"
-                            class="mt-2 w-full rounded-xl border-0 bg-white px-3 py-2.5 text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring ring-inset dark:bg-white/5 dark:text-white dark:ring-white/10"
+                            class="mt-2 form-input"
                         />
                         <FormError :message="form.errors.note" />
                     </div>

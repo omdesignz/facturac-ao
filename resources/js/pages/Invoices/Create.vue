@@ -1414,10 +1414,7 @@ function confirmIssue(): void {
                             class="grid grid-cols-1 gap-6 p-5 sm:grid-cols-6 sm:p-6"
                         >
                             <div class="sm:col-span-3">
-                                <label
-                                    for="document-type"
-                                    class="block text-sm font-medium text-zinc-900 dark:text-white"
-                                >
+                                <label for="document-type" class="field-label">
                                     Tipo de documento
                                 </label>
                                 <SelectInput
@@ -1439,7 +1436,7 @@ function confirmIssue(): void {
                             <div v-if="isAdjustment" class="sm:col-span-3">
                                 <label
                                     for="references-document"
-                                    class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                    class="field-label"
                                 >
                                     Documento corrigido
                                 </label>
@@ -1484,7 +1481,7 @@ function confirmIssue(): void {
                             <div v-if="isAdjustment" class="sm:col-span-6">
                                 <label
                                     for="adjustment-reason"
-                                    class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                    class="field-label"
                                 >
                                     Motivo da
                                     {{
@@ -1503,11 +1500,9 @@ function confirmIssue(): void {
                                     type="text"
                                     maxlength="200"
                                     placeholder="Ex.: devolução parcial da mercadoria"
-                                    class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 placeholder:text-zinc-400 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-zinc-500 dark:focus:outline-brand-400"
+                                    class="mt-2 block form-input"
                                 />
-                                <p
-                                    class="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400"
-                                >
+                                <p class="field-hint">
                                     A AGT exige um motivo em cada documento de
                                     correcção.
                                 </p>
@@ -1518,10 +1513,7 @@ function confirmIssue(): void {
                             </div>
 
                             <div v-if="isReceipt" class="sm:col-span-3">
-                                <label
-                                    for="payment-method"
-                                    class="block text-sm font-medium text-zinc-900 dark:text-white"
-                                >
+                                <label for="payment-method" class="field-label">
                                     Meio de pagamento
                                 </label>
                                 <SelectInput
@@ -1541,10 +1533,7 @@ function confirmIssue(): void {
                             </div>
 
                             <div v-if="isReceipt" class="sm:col-span-3">
-                                <label
-                                    for="payment-date"
-                                    class="block text-sm font-medium text-zinc-900 dark:text-white"
-                                >
+                                <label for="payment-date" class="field-label">
                                     Data do pagamento
                                 </label>
                                 <DateInput
@@ -1566,10 +1555,7 @@ function confirmIssue(): void {
                             </div>
 
                             <div class="sm:col-span-3">
-                                <label
-                                    for="establishment"
-                                    class="block text-sm font-medium text-zinc-900 dark:text-white"
-                                >
+                                <label for="establishment" class="field-label">
                                     Local de emissão
                                 </label>
                                 <SelectInput
@@ -1597,10 +1583,7 @@ function confirmIssue(): void {
                             </div>
 
                             <div class="sm:col-span-3">
-                                <label
-                                    for="currency"
-                                    class="block text-sm font-medium text-zinc-900 dark:text-white"
-                                >
+                                <label for="currency" class="field-label">
                                     Moeda
                                 </label>
                                 <SelectInput
@@ -1620,10 +1603,7 @@ function confirmIssue(): void {
                             </div>
 
                             <div v-if="isForeignCurrency" class="sm:col-span-3">
-                                <label
-                                    for="exchange-rate"
-                                    class="block text-sm font-medium text-zinc-900 dark:text-white"
-                                >
+                                <label for="exchange-rate" class="field-label">
                                     Câmbio
                                 </label>
                                 <input
@@ -1634,11 +1614,9 @@ function confirmIssue(): void {
                                     "
                                     v-model="form.exchange_rate"
                                     inputmode="decimal"
-                                    class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 numeric text-sm text-zinc-900 focus-ring outline-1 -outline-offset-1 outline-zinc-200 dark:bg-white/[0.03] dark:text-white dark:outline-white/10"
+                                    class="mt-2 block form-input numeric"
                                 />
-                                <p
-                                    class="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400"
-                                >
+                                <p class="field-hint">
                                     Kwanzas por 1 {{ form.currency_code }}. É
                                     este o valor que a AGT recebe convertido.
                                 </p>
@@ -1649,10 +1627,7 @@ function confirmIssue(): void {
                             </div>
 
                             <div class="sm:col-span-3">
-                                <label
-                                    for="document-date"
-                                    class="block text-sm font-medium text-zinc-900 dark:text-white"
-                                >
+                                <label for="document-date" class="field-label">
                                     Data do documento
                                 </label>
                                 <DateInput
@@ -1674,12 +1649,10 @@ function confirmIssue(): void {
                             </div>
 
                             <div class="sm:col-span-3">
-                                <label
-                                    for="due-date"
-                                    class="block text-sm font-medium text-zinc-900 dark:text-white"
-                                >
+                                <label for="due-date" class="field-label">
                                     Data de vencimento
-                                    <span class="font-normal text-zinc-400"
+                                    <span
+                                        class="font-normal text-zinc-500 dark:text-zinc-400"
                                         >(opcional)</span
                                     >
                                 </label>
@@ -1741,10 +1714,7 @@ function confirmIssue(): void {
                             class="grid grid-cols-1 gap-6 p-5 sm:grid-cols-6 sm:p-6"
                         >
                             <div class="sm:col-span-6">
-                                <label
-                                    for="saved-customer"
-                                    class="block text-sm font-medium text-zinc-900 dark:text-white"
-                                >
+                                <label for="saved-customer" class="field-label">
                                     Procurar nos clientes guardados
                                 </label>
                                 <SelectInput
@@ -1765,10 +1735,7 @@ function confirmIssue(): void {
                             </div>
 
                             <div class="sm:col-span-4">
-                                <label
-                                    for="customer-name"
-                                    class="block text-sm font-medium text-zinc-900 dark:text-white"
-                                >
+                                <label for="customer-name" class="field-label">
                                     Nome ou denominação
                                 </label>
                                 <input
@@ -1780,7 +1747,7 @@ function confirmIssue(): void {
                                     v-model="form.customer.name"
                                     :readonly="Boolean(selectedCustomer)"
                                     autocomplete="off"
-                                    class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 read-only:bg-zinc-50 read-only:text-zinc-600 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:read-only:bg-white/[0.03] dark:read-only:text-zinc-300 dark:focus:outline-brand-400"
+                                    class="mt-2 block form-input"
                                 />
                                 <FormError
                                     :id="errorId('customer.name')"
@@ -1789,10 +1756,7 @@ function confirmIssue(): void {
                             </div>
 
                             <div class="sm:col-span-2">
-                                <label
-                                    for="customer-nif"
-                                    class="block text-sm font-medium text-zinc-900 dark:text-white"
-                                >
+                                <label for="customer-nif" class="field-label">
                                     NIF
                                 </label>
                                 <input
@@ -1815,7 +1779,7 @@ function confirmIssue(): void {
                                         form.customer.tax_identification_number
                                     "
                                     :readonly="Boolean(selectedCustomer)"
-                                    class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 font-mono text-sm text-zinc-900 uppercase outline-1 -outline-offset-1 outline-zinc-300 read-only:bg-zinc-50 read-only:text-zinc-600 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:read-only:bg-white/[0.03] dark:read-only:text-zinc-300 dark:focus:outline-brand-400"
+                                    class="mt-2 block form-input font-mono uppercase"
                                 />
                                 <FormError
                                     :id="
@@ -1834,7 +1798,7 @@ function confirmIssue(): void {
                             <div class="sm:col-span-2">
                                 <label
                                     for="customer-country"
-                                    class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                    class="field-label"
                                 >
                                     País
                                 </label>
@@ -1851,7 +1815,7 @@ function confirmIssue(): void {
                                     v-model="form.customer.country_code"
                                     :readonly="Boolean(selectedCustomer)"
                                     maxlength="2"
-                                    class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 font-mono text-sm text-zinc-900 uppercase outline-1 -outline-offset-1 outline-zinc-300 read-only:bg-zinc-50 read-only:text-zinc-600 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:read-only:bg-white/[0.03] dark:read-only:text-zinc-300 dark:focus:outline-brand-400"
+                                    class="mt-2 block form-input font-mono uppercase"
                                 />
                                 <FormError
                                     :id="errorId('customer.country_code')"
@@ -1862,7 +1826,7 @@ function confirmIssue(): void {
                             <div class="sm:col-span-4">
                                 <label
                                     for="customer-address"
-                                    class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                    class="field-label"
                                 >
                                     Morada
                                 </label>
@@ -1877,7 +1841,7 @@ function confirmIssue(): void {
                                     v-model="form.customer.address_line"
                                     :readonly="Boolean(selectedCustomer)"
                                     autocomplete="off"
-                                    class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 read-only:bg-zinc-50 read-only:text-zinc-600 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:read-only:bg-white/[0.03] dark:read-only:text-zinc-300 dark:focus:outline-brand-400"
+                                    class="mt-2 block form-input"
                                 />
                                 <FormError
                                     :id="errorId('customer.address_line')"
@@ -1958,7 +1922,7 @@ function confirmIssue(): void {
                             <div>
                                 <label
                                     :for="`settlement-doc-${index}`"
-                                    class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                    class="field-label"
                                 >
                                     Factura
                                 </label>
@@ -2000,7 +1964,7 @@ function confirmIssue(): void {
                             <div>
                                 <label
                                     :for="`settlement-amount-${index}`"
-                                    class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                    class="field-label"
                                 >
                                     Valor liquidado
                                 </label>
@@ -2018,7 +1982,7 @@ function confirmIssue(): void {
                                     v-model="row.amount"
                                     type="text"
                                     inputmode="decimal"
-                                    class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-right font-mono numeric text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                    class="mt-2 block form-input text-right font-mono numeric"
                                 />
                                 <FormError
                                     :id="errorId(`settlements.${index}.amount`)"
@@ -2123,7 +2087,7 @@ function confirmIssue(): void {
                             <div>
                                 <label
                                     :for="`withholding-type-${index}`"
-                                    class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                    class="field-label"
                                 >
                                     Imposto retido
                                 </label>
@@ -2157,7 +2121,7 @@ function confirmIssue(): void {
                             <div>
                                 <label
                                     :for="`withholding-rate-${index}`"
-                                    class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                    class="field-label"
                                 >
                                     Taxa (%)
                                 </label>
@@ -2177,7 +2141,7 @@ function confirmIssue(): void {
                                     v-model="row.rate_percentage"
                                     type="text"
                                     inputmode="decimal"
-                                    class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-right font-mono numeric text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                    class="mt-2 block form-input text-right font-mono numeric"
                                 />
                                 <FormError
                                     :id="
@@ -2322,7 +2286,7 @@ function confirmIssue(): void {
                             <div v-if="catalogueItems.length > 0">
                                 <label
                                     :for="`mobile-catalogue-${line.key}`"
-                                    class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                    class="field-label"
                                 >
                                     Do catálogo
                                 </label>
@@ -2340,7 +2304,7 @@ function confirmIssue(): void {
                                 <div class="sm:col-span-1">
                                     <label
                                         :for="`mobile-code-${line.key}`"
-                                        class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                        class="field-label"
                                     >
                                         Código
                                     </label>
@@ -2358,7 +2322,7 @@ function confirmIssue(): void {
                                             )
                                         "
                                         v-model="line.product_code"
-                                        class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 font-mono text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                        class="mt-2 block form-input font-mono"
                                     />
                                     <FormError
                                         :id="
@@ -2377,7 +2341,7 @@ function confirmIssue(): void {
                                 <div class="sm:col-span-2">
                                     <label
                                         :for="`mobile-description-${line.key}`"
-                                        class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                        class="field-label"
                                     >
                                         Descrição
                                     </label>
@@ -2395,7 +2359,7 @@ function confirmIssue(): void {
                                             )
                                         "
                                         v-model="line.product_description"
-                                        class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                        class="mt-2 block form-input"
                                     />
                                     <FormError
                                         :id="
@@ -2416,7 +2380,7 @@ function confirmIssue(): void {
                             <div>
                                 <label
                                     :for="`mobile-operation-${line.key}`"
-                                    class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                    class="field-label"
                                 >
                                     Tipo de operação
                                 </label>
@@ -2453,7 +2417,7 @@ function confirmIssue(): void {
                             <div v-if="requiresLineOperationDate">
                                 <label
                                     :for="`mobile-operation-date-${line.key}`"
-                                    class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                    class="field-label"
                                 >
                                     Data da operação
                                 </label>
@@ -2493,7 +2457,7 @@ function confirmIssue(): void {
                                 <div>
                                     <label
                                         :for="`mobile-quantity-${line.key}`"
-                                        class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                        class="field-label"
                                     >
                                         Quantidade
                                     </label>
@@ -2511,7 +2475,7 @@ function confirmIssue(): void {
                                         v-model="line.quantity"
                                         type="text"
                                         inputmode="decimal"
-                                        class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-right font-mono text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                        class="mt-2 block form-input text-right font-mono"
                                     />
                                     <FormError
                                         :id="
@@ -2528,7 +2492,7 @@ function confirmIssue(): void {
                                 <div>
                                     <label
                                         :for="`mobile-unit-${line.key}`"
-                                        class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                        class="field-label"
                                     >
                                         Unidade
                                     </label>
@@ -2546,7 +2510,7 @@ function confirmIssue(): void {
                                             )
                                         "
                                         v-model="line.unit_of_measure"
-                                        class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                        class="mt-2 block form-input"
                                     />
                                     <FormError
                                         :id="
@@ -2565,11 +2529,13 @@ function confirmIssue(): void {
                                 <div>
                                     <label
                                         :for="`mobile-price-${line.key}`"
-                                        class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                        class="field-label"
                                     >
                                         Preço unitário
                                     </label>
-                                    <div class="relative mt-2">
+                                    <div
+                                        class="field-adorned mt-2 [--field-adorn-end:2.25rem]"
+                                    >
                                         <input
                                             :id="`mobile-price-${line.key}`"
                                             :aria-invalid="
@@ -2586,10 +2552,9 @@ function confirmIssue(): void {
                                             v-model="line.unit_price"
                                             type="text"
                                             inputmode="decimal"
-                                            class="block w-full rounded-xl bg-white py-2.5 pr-9 pl-3 text-right font-mono text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                            class="block form-input form-input-sm text-right font-mono text-sm"
                                         />
-                                        <span
-                                            class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-zinc-400"
+                                        <span class="field-adornment-end"
                                             >Kz</span
                                         >
                                     </div>
@@ -2610,11 +2575,13 @@ function confirmIssue(): void {
                                 <div>
                                     <label
                                         :for="`mobile-discount-${line.key}`"
-                                        class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                        class="field-label"
                                     >
                                         Desconto
                                     </label>
-                                    <div class="relative mt-2">
+                                    <div
+                                        class="field-adorned mt-2 [--field-adorn-end:2rem]"
+                                    >
                                         <input
                                             :id="`mobile-discount-${line.key}`"
                                             :aria-invalid="
@@ -2631,10 +2598,9 @@ function confirmIssue(): void {
                                             v-model="line.discount_percentage"
                                             type="text"
                                             inputmode="decimal"
-                                            class="block w-full rounded-xl bg-white py-2.5 pr-8 pl-3 text-right font-mono text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                            class="block form-input form-input-sm text-right font-mono text-sm"
                                         />
-                                        <span
-                                            class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-zinc-400"
+                                        <span class="field-adornment-end"
                                             >%</span
                                         >
                                     </div>
@@ -2657,7 +2623,7 @@ function confirmIssue(): void {
                             <div>
                                 <label
                                     :for="`mobile-tax-${line.key}`"
-                                    class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                    class="field-label"
                                 >
                                     Tratamento fiscal
                                 </label>
@@ -2863,7 +2829,7 @@ function confirmIssue(): void {
                                                     "
                                                     v-model="line.product_code"
                                                     placeholder="Código"
-                                                    class="block w-full rounded-lg bg-white px-2.5 py-2 font-mono text-xs text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                                    class="block form-input form-input-sm font-mono"
                                                 />
                                             </div>
                                             <div>
@@ -2889,7 +2855,7 @@ function confirmIssue(): void {
                                                         line.product_description
                                                     "
                                                     placeholder="Descrição do artigo ou serviço"
-                                                    class="block w-full rounded-lg bg-white px-2.5 py-2 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                                    class="block form-input form-input-sm text-sm"
                                                 />
                                             </div>
                                         </div>
@@ -3012,7 +2978,7 @@ function confirmIssue(): void {
                                                     `lines.${index}.quantity`,
                                                 )
                                             "
-                                            class="block w-full rounded-lg bg-white px-2.5 py-2 text-right font-mono text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                            class="block form-input form-input-sm text-right font-mono text-sm"
                                         />
                                         <input
                                             v-model="line.unit_of_measure"
@@ -3029,7 +2995,7 @@ function confirmIssue(): void {
                                                 )
                                             "
                                             placeholder="un"
-                                            class="mt-2 block w-full rounded-lg bg-white px-2.5 py-2 text-xs text-zinc-700 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-zinc-200 dark:outline-white/10 dark:focus:outline-brand-400"
+                                            class="mt-2 block form-input form-input-sm"
                                         />
                                         <FormError
                                             :id="
@@ -3057,7 +3023,9 @@ function confirmIssue(): void {
                                         />
                                     </td>
                                     <td class="px-3 py-4">
-                                        <div class="relative">
+                                        <div
+                                            class="field-adorned [--field-adorn-end:2rem]"
+                                        >
                                             <input
                                                 v-model="line.unit_price"
                                                 type="text"
@@ -3074,10 +3042,9 @@ function confirmIssue(): void {
                                                         `lines.${index}.unit_price`,
                                                     )
                                                 "
-                                                class="block w-full rounded-lg bg-white py-2 pr-8 pl-2.5 text-right font-mono text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                                class="block form-input form-input-sm text-right font-mono text-sm"
                                             />
-                                            <span
-                                                class="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-xs text-zinc-400"
+                                            <span class="field-adornment-end"
                                                 >Kz</span
                                             >
                                         </div>
@@ -3095,7 +3062,9 @@ function confirmIssue(): void {
                                         />
                                     </td>
                                     <td class="px-3 py-4">
-                                        <div class="relative">
+                                        <div
+                                            class="field-adorned [--field-adorn-end:1.75rem]"
+                                        >
                                             <input
                                                 v-model="
                                                     line.discount_percentage
@@ -3114,10 +3083,9 @@ function confirmIssue(): void {
                                                         `lines.${index}.discount_percentage`,
                                                     )
                                                 "
-                                                class="block w-full rounded-lg bg-white py-2 pr-7 pl-2.5 text-right font-mono text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                                class="block form-input form-input-sm text-right font-mono text-sm"
                                             />
-                                            <span
-                                                class="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-xs text-zinc-400"
+                                            <span class="field-adornment-end"
                                                 >%</span
                                             >
                                         </div>
@@ -3274,7 +3242,8 @@ function confirmIssue(): void {
                                 class="block text-sm font-semibold text-zinc-950 dark:text-white"
                             >
                                 Observações
-                                <span class="font-normal text-zinc-400"
+                                <span
+                                    class="font-normal text-zinc-500 dark:text-zinc-400"
                                     >(opcional)</span
                                 >
                             </label>
@@ -3285,7 +3254,7 @@ function confirmIssue(): void {
                                 v-model="form.notes"
                                 rows="3"
                                 placeholder="Instruções de entrega ou referência interna…"
-                                class="mt-2 block w-full resize-y rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 placeholder:text-zinc-400 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-zinc-500 dark:focus:outline-brand-400"
+                                class="mt-2 block form-input [--form-resize:vertical]"
                             />
                             <FormError
                                 :id="errorId('notes')"

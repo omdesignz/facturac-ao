@@ -629,12 +629,12 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
 
                     <div class="flex flex-wrap items-center gap-2.5">
                         <form
-                            class="relative w-full sm:w-80"
+                            class="field-adorned w-full [--field-adorn-start:2.5rem] sm:w-80"
                             role="search"
                             @submit.prevent="applyFilters"
                         >
                             <Search
-                                class="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-zinc-400"
+                                class="field-adornment-start size-4"
                                 aria-hidden="true"
                             />
                             <label for="register-search" class="sr-only"
@@ -648,7 +648,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                 autocomplete="off"
                                 spellcheck="false"
                                 enterkeyhint="search"
-                                class="h-10 w-full rounded-full bg-zinc-900/[0.045] pr-4 pl-10 text-sm text-zinc-950 focus-ring placeholder:text-zinc-400 focus:bg-white dark:bg-white/[0.06] dark:text-white dark:focus:bg-zinc-900 pointer-coarse:h-11"
+                                class="form-search"
                             />
                         </form>
 

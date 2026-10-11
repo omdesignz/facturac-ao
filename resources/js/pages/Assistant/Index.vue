@@ -564,7 +564,7 @@ const suggestionClasses =
                                     : undefined
                             "
                             placeholder="Por exemplo: Quanto facturei este mês?"
-                            class="field-sizing-content max-h-[12lh] min-h-[3lh] form-input resize-none"
+                            class="form-input field-sizing-content max-h-[12lh] min-h-[3lh] resize-none"
                             @keydown.meta.enter.prevent="submitFromKeyboard"
                             @keydown.ctrl.enter.prevent="submitFromKeyboard"
                         />

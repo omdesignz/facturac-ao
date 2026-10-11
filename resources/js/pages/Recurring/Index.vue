@@ -17,6 +17,7 @@ import PageHeader from '@/components/PageHeader.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
+import ToggleSwitch from '@/components/ToggleSwitch.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { confirmAction } from '@/lib/confirm';
 import { localIsoDate } from '@/lib/dates';
@@ -431,9 +432,7 @@ const dueCount = computed(
             <form class="space-y-5" @submit.prevent="submit">
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div class="sm:col-span-2">
-                        <label
-                            for="profile-name"
-                            class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
+                        <label for="profile-name" class="field-label"
                             >Nome da avença</label
                         >
                         <input
@@ -441,16 +440,13 @@ const dueCount = computed(
                             v-model="form.name"
                             type="text"
                             placeholder="Ex.: manutenção mensal"
-                            class="mt-2 w-full rounded-xl border-0 bg-white px-3 py-2.5 text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring ring-inset dark:bg-white/5 dark:text-white dark:ring-white/10"
+                            class="mt-2 form-input"
                         />
                         <FormError :message="form.errors.name" />
                     </div>
 
                     <div>
-                        <label
-                            class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
-                            >Cliente</label
-                        >
+                        <label class="field-label">Cliente</label>
                         <div class="mt-2">
                             <SelectInput
                                 v-model="form.customer_public_id"
@@ -461,10 +457,7 @@ const dueCount = computed(
                     </div>
 
                     <div>
-                        <label
-                            class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
-                            >Estabelecimento</label
-                        >
+                        <label class="field-label">Estabelecimento</label>
                         <div class="mt-2">
                             <SelectInput
                                 v-model="form.establishment_public_id"
@@ -474,10 +467,7 @@ const dueCount = computed(
                     </div>
 
                     <div>
-                        <label
-                            class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
-                            >Frequência</label
-                        >
+                        <label class="field-label">Frequência</label>
                         <div class="mt-2">
                             <SelectInput
                                 v-model="form.frequency"
@@ -487,10 +477,7 @@ const dueCount = computed(
                     </div>
 
                     <div>
-                        <label
-                            class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
-                            >Documento a emitir</label
-                        >
+                        <label class="field-label">Documento a emitir</label>
                         <div class="mt-2">
                             <SelectInput
                                 v-model="form.document_type"
@@ -500,9 +487,7 @@ const dueCount = computed(
                     </div>
 
                     <div>
-                        <label
-                            for="profile-start"
-                            class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
+                        <label for="profile-start" class="field-label"
                             >Começa em</label
                         >
                         <DateInput
@@ -516,11 +501,12 @@ const dueCount = computed(
                     </div>
 
                     <div>
-                        <label
-                            for="profile-end"
-                            class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
+                        <label for="profile-end" class="field-label"
                             >Termina em
-                            <span class="text-zinc-400">(opcional)</span></label
+                            <span
+                                class="font-normal text-zinc-500 dark:text-zinc-400"
+                                >(opcional)</span
+                            ></label
                         >
                         <DateInput
                             id="profile-end"
@@ -555,7 +541,7 @@ const dueCount = computed(
                                 v-model="line.product_description"
                                 type="text"
                                 placeholder="Descrição"
-                                class="mt-2 w-full rounded-xl border-0 bg-white px-3 py-2.5 text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring ring-inset dark:bg-white/5 dark:text-white dark:ring-white/10"
+                                class="mt-2 form-input"
                             />
                             <FormError
                                 :message="
@@ -571,7 +557,7 @@ const dueCount = computed(
                                 type="text"
                                 inputmode="decimal"
                                 placeholder="Qtd."
-                                class="w-full rounded-xl border-0 bg-white px-3 py-2.5 numeric text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring ring-inset dark:bg-white/5 dark:text-white dark:ring-white/10"
+                                class="form-input numeric"
                             />
                         </div>
                         <div class="sm:col-span-3">
@@ -580,7 +566,7 @@ const dueCount = computed(
                                 type="text"
                                 inputmode="decimal"
                                 placeholder="Preço"
-                                class="w-full rounded-xl border-0 bg-white px-3 py-2.5 numeric text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring ring-inset dark:bg-white/5 dark:text-white dark:ring-white/10"
+                                class="form-input numeric"
                             />
                         </div>
                         <div class="flex items-start sm:col-span-1">
@@ -606,16 +592,9 @@ const dueCount = computed(
                     </button>
                 </div>
 
-                <label
-                    class="flex w-fit items-center gap-3 text-sm text-zinc-700 dark:text-zinc-300"
-                >
-                    <input
-                        v-model="form.is_active"
-                        type="checkbox"
-                        class="size-4 rounded border-zinc-300 text-brand-700 focus-ring dark:border-white/15 dark:bg-white/5"
-                    />
-                    Activa
-                </label>
+                <ToggleSwitch v-model="form.is_active">
+                    <template #label>Activa</template>
+                </ToggleSwitch>
 
                 <label
                     class="flex w-fit items-start gap-3 text-sm text-zinc-700 dark:text-zinc-300"
@@ -623,7 +602,7 @@ const dueCount = computed(
                     <input
                         v-model="form.auto_issue"
                         type="checkbox"
-                        class="mt-0.5 size-4 rounded border-zinc-300 text-brand-700 focus-ring dark:border-white/15 dark:bg-white/5"
+                        class="form-checkbox mt-0.5"
                     />
                     <span>
                         Autorizar emissão automática por 30 dias

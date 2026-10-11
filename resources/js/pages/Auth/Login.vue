@@ -141,7 +141,7 @@ const flash = computed(
                     required
                     :aria-invalid="errors.email ? 'true' : undefined"
                     :aria-describedby="errors.email ? 'email-error' : undefined"
-                    class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-base text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 placeholder:text-zinc-400 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 sm:text-sm dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-zinc-500 dark:focus:outline-brand-400"
+                    class="mt-2 block form-input"
                     placeholder="nome@empresa.ao"
                 />
                 <FormError id="email-error" :message="errors.email" />
@@ -172,7 +172,7 @@ const flash = computed(
                     :aria-describedby="
                         errors.password ? 'password-error' : undefined
                     "
-                    class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-base text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 sm:text-sm dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                    class="mt-2 block form-input"
                 />
                 <FormError id="password-error" :message="errors.password" />
             </div>
@@ -180,27 +180,12 @@ const flash = computed(
             <label
                 class="flex min-h-11 w-fit items-center gap-3 py-2 text-sm/6 text-zinc-700 dark:text-zinc-300"
             >
-                <span class="group grid size-4 grid-cols-1">
-                    <input
-                        name="remember"
-                        type="checkbox"
-                        value="1"
-                        class="col-start-1 row-start-1 appearance-none rounded border border-zinc-300 bg-white focus-ring checked:border-brand-950 checked:bg-brand-950 dark:border-white/15 dark:bg-white/5 dark:checked:border-brand-500 dark:checked:bg-brand-500"
-                    />
-                    <svg
-                        class="pointer-events-none col-start-1 row-start-1 size-3.5 self-center justify-self-center stroke-white opacity-0 group-has-checked:opacity-100"
-                        viewBox="0 0 14 14"
-                        fill="none"
-                        aria-hidden="true"
-                    >
-                        <path
-                            d="M3 8L6 11L11 3.5"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                        />
-                    </svg>
-                </span>
+                <input
+                    name="remember"
+                    type="checkbox"
+                    value="1"
+                    class="form-checkbox"
+                />
                 Manter sessão neste dispositivo
             </label>
 

@@ -55,7 +55,7 @@ const status = computed(() => (page.props.flash as { status?: string }).status);
                     autofocus
                     :aria-invalid="errors.email ? 'true' : undefined"
                     :aria-describedby="errors.email ? 'email-error' : undefined"
-                    class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-base text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 sm:text-sm dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                    class="mt-2 block form-input"
                     placeholder="nome@empresa.ao"
                 />
                 <FormError id="email-error" :message="errors.email" />

@@ -665,7 +665,7 @@ const methodPill =
                                                 autocomplete="off"
                                                 spellcheck="false"
                                                 enterkeyhint="done"
-                                                class="block h-14 form-input pe-14 text-end numeric text-2xl"
+                                                class="block form-input h-14 pe-14 text-end numeric text-2xl"
                                                 :aria-invalid="
                                                     tenderedMinor === null
                                                         ? 'true'

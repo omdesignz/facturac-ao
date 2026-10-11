@@ -301,7 +301,7 @@ watch(
                         <div class="w-full sm:max-w-xs">
                             <label
                                 for="work-session-minutes"
-                                class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                class="field-label"
                             >
                                 Duração
                             </label>
@@ -415,7 +415,7 @@ watch(
                                             "
                                             type="checkbox"
                                             :aria-label="`${topic.label} na aplicação`"
-                                            class="size-4 rounded border-zinc-300 text-brand-700 focus-ring dark:border-white/15 dark:bg-white/5"
+                                            class="form-checkbox"
                                         />
                                     </td>
                                     <td class="px-6 py-3 text-center">
@@ -427,7 +427,7 @@ watch(
                                             "
                                             type="checkbox"
                                             :aria-label="`${topic.label} por email`"
-                                            class="size-4 rounded border-zinc-300 text-brand-700 focus-ring dark:border-white/15 dark:bg-white/5"
+                                            class="form-checkbox"
                                         />
                                     </td>
                                 </tr>
@@ -692,7 +692,7 @@ watch(
                                         autocomplete="one-time-code"
                                         maxlength="6"
                                         required
-                                        class="block w-full rounded-xl bg-white px-3 py-2.5 text-center font-mono text-lg tracking-[0.3em] text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                        class="block form-input text-center font-mono text-lg tracking-[0.3em]"
                                         placeholder="000000"
                                     />
                                     <FormError :message="errors.code" />

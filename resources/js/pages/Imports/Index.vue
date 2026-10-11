@@ -7,7 +7,6 @@ import {
     CircleAlert,
     Database,
     Download,
-    FileSpreadsheet,
     FileUp,
     History,
     LoaderCircle,
@@ -18,7 +17,8 @@ import {
     Trash2,
     Users,
 } from '@lucide/vue';
-import { computed, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
+import FileInput from '@/components/FileInput.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageStat from '@/components/PageStat.vue';
 import SelectInput from '@/components/SelectInput.vue';
@@ -169,9 +169,8 @@ const selectedTemplate = computed(
         props.types.find((type) => type.value === uploadForm.type) ??
         props.types[0],
 );
-const selectedFileName = computed(
-    () => uploadForm.file?.name ?? 'Nenhum ficheiro seleccionado',
-);
+const fileField = ref<InstanceType<typeof FileInput> | null>(null);
+
 const canValidate = computed(
     () =>
         props.selected?.permissions.map === true &&
@@ -246,7 +245,10 @@ function submitUpload(): void {
     uploadForm.post(store.url(), {
         forceFormData: true,
         preserveScroll: true,
-        onSuccess: () => uploadForm.reset('file'),
+        onSuccess: () => {
+            uploadForm.reset('file');
+            fileField.value?.reset();
+        },
     });
 }
 
@@ -1191,30 +1193,18 @@ function historyUrl(publicId: string): string {
                                 </label>
                             </div>
 
-                            <label
-                                class="relative block w-full cursor-pointer rounded-lg border-2 border-dashed border-zinc-300 p-8 text-center transition focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-brand-600 hover:border-zinc-400 dark:border-white/15 dark:focus-within:outline-amber-300 dark:hover:border-white/25"
-                            >
-                                <input
-                                    type="file"
-                                    class="sr-only"
+                            <div>
+                                <FileInput
+                                    ref="fileField"
+                                    aria-label="Escolher o ficheiro a importar"
                                     accept=".xlsx,.xls,.csv"
                                     @change="chooseFile"
                                 />
-                                <FileSpreadsheet
-                                    class="mx-auto size-11 text-zinc-400 dark:text-zinc-500"
-                                    aria-hidden="true"
-                                />
-                                <span
-                                    class="mt-3 block text-sm font-semibold text-zinc-900 dark:text-white"
-                                    >{{ selectedFileName }}</span
-                                >
-                                <span
-                                    class="mt-1 block text-xs text-zinc-500 dark:text-zinc-400"
-                                >
+                                <p class="field-hint">
                                     XLSX, XLS ou CSV · até
                                     {{ guardrails.maximum_file_size_mb }} MB
-                                </span>
-                            </label>
+                                </p>
+                            </div>
 
                             <p
                                 v-if="uploadForm.errors.file"

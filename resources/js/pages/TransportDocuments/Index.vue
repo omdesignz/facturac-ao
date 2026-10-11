@@ -225,17 +225,17 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                         class="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(15rem,1.5fr)_repeat(3,minmax(10rem,1fr))]"
                         @submit.prevent="applyFilters"
                     >
-                        <label class="relative block">
+                        <label class="field-adorned">
                             <span class="sr-only">Pesquisar guias</span>
                             <Search
-                                class="pointer-events-none absolute top-3 left-3 size-4 text-zinc-400"
+                                class="field-adornment-start size-4"
                                 aria-hidden="true"
                             />
                             <input
                                 v-model="search"
                                 type="search"
                                 placeholder="Número, destinatário, NIF ou matrícula"
-                                class="w-full rounded-xl bg-white py-2.5 pr-3 pl-9 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 placeholder:text-zinc-400 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                class="form-input"
                             />
                         </label>
                         <SelectInput

@@ -769,9 +769,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                         @submit.prevent="addPrice"
                     >
                         <div class="min-w-0 flex-1">
-                            <label
-                                for="agreed-catalogue"
-                                class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
+                            <label for="agreed-catalogue" class="field-label"
                                 >Artigo</label
                             >
                             <div class="mt-2">
@@ -794,9 +792,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                         </div>
 
                         <div class="sm:w-40">
-                            <label
-                                for="agreed-price"
-                                class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
+                            <label for="agreed-price" class="field-label"
                                 >Preço</label
                             >
                             <input
@@ -815,7 +811,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                         ? 'agreed-price-error'
                                         : undefined
                                 "
-                                class="mt-2 w-full rounded-xl border-0 bg-white px-3 py-2.5 numeric text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring ring-inset dark:bg-white/5 dark:text-white dark:ring-white/10"
+                                class="mt-2 form-input numeric"
                             />
                             <FormError
                                 id="agreed-price-error"

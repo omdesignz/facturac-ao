@@ -134,7 +134,7 @@ function submit(): void {
                         inputmode="decimal"
                         autocomplete="off"
                         spellcheck="false"
-                        class="block h-14 form-input pe-14 text-end numeric text-2xl"
+                        class="block form-input h-14 pe-14 text-end numeric text-2xl"
                         :aria-invalid="countedError ? 'true' : undefined"
                         :aria-describedby="
                             countedError

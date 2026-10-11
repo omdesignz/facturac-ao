@@ -301,7 +301,7 @@ function submit(): void {
                             inputmode="decimal"
                             autocomplete="off"
                             spellcheck="false"
-                            class="block h-12 form-input pe-12 text-end numeric text-lg"
+                            class="block form-input h-12 pe-12 text-end numeric text-lg"
                             :aria-invalid="floatError ? 'true' : undefined"
                             :aria-describedby="
                                 floatError

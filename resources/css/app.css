@@ -1,5 +1,4 @@
 @import 'tailwindcss';
-@import '@vuepic/vue-datepicker/dist/main.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
@@ -354,125 +353,901 @@ input[type='search']::-webkit-search-decoration {
     @apply focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-400;
 }
 
-/** Text fields used in dense fiscal forms. */
+/*
+ * The form family.
+ *
+ * Every control the product asks a person to fill in is one of the utilities
+ * below, so a field looks and behaves the same on every screen: text fields
+ * and the select's button (`form-input`), search wells (`form-search`),
+ * adornments (`field-adorned`), ticks (`form-checkbox`, `form-radio`), the
+ * label and hint around them, and the date picker's popup. The invalid look
+ * belongs to the control: a page marks a field with `aria-invalid="true"` and
+ * nothing else.
+ */
+
+/**
+ * Text fields, textareas and the select's button. 40px tall (44px under a
+ * coarse pointer), a 1px outline at rest, a darker one on hover where hovering
+ * exists, a 2px brand one on focus, and a rose one when the field is invalid —
+ * at rest and focused. Disabled and read-only look different from each other:
+ * disabled is muted and not-allowed, read-only is quiet but still focusable.
+ */
 @utility form-input {
-    @apply w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 placeholder:text-zinc-400 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-zinc-500 dark:focus:outline-brand-400;
+    width: 100%;
+    min-block-size: 2.5rem;
+    border-radius: 0.75rem;
+    padding-block: 0.625rem;
+    padding-inline: 0.75rem;
+    background-color: #fff;
+    color: var(--color-zinc-900);
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color-scheme: light;
+    outline: 1px solid var(--color-zinc-300);
+    outline-offset: -1px;
+    transition-property: outline-color, background-color;
+    transition-duration: var(--duration-fast);
+    transition-timing-function: var(--ease-out);
+
+    &::placeholder {
+        color: var(--color-zinc-500);
+        opacity: 1;
+    }
+
+    &:focus,
+    &:is(button, [aria-haspopup='dialog'])[aria-expanded='true'] {
+        outline: 2px solid var(--color-brand-600);
+        outline-offset: -2px;
+    }
+
+    &[aria-invalid='true'],
+    &[aria-invalid='true']:focus,
+    &[aria-invalid='true']:is(
+            button,
+            [aria-haspopup='dialog']
+        )[aria-expanded='true'] {
+        outline: 2px solid var(--color-rose-500);
+        outline-offset: -2px;
+    }
+
+    &:disabled {
+        cursor: not-allowed;
+        background-color: var(--color-zinc-100);
+        color: var(--color-zinc-500);
+        outline-color: var(--color-zinc-200);
+    }
+
+    &[readonly]:not(:disabled) {
+        background-color: var(--color-zinc-50);
+        color: var(--color-zinc-700);
+        outline-color: var(--color-zinc-200);
+    }
+
+    &:-webkit-autofill,
+    &:-webkit-autofill:hover,
+    &:-webkit-autofill:focus {
+        -webkit-text-fill-color: var(--color-zinc-900);
+        caret-color: var(--color-zinc-900);
+        box-shadow: 0 0 0 100rem #fff inset;
+    }
+
+    &:autofill {
+        box-shadow: 0 0 0 100rem #fff inset;
+        color: var(--color-zinc-900);
+    }
+
+    /* Auto-growing, from three lines up to twelve; a page asks for more or
+       fewer with --form-rows / --form-max-rows, and for vertical resizing with
+       --form-resize. Browsers without field-sizing keep the `rows` attribute. */
+    &:where(textarea) {
+        resize: var(--form-resize, none);
+        max-block-size: calc(var(--form-max-rows, 12) * 1lh + 1.25rem);
+    }
+
+    @supports (field-sizing: content) {
+        &:where(textarea) {
+            field-sizing: content;
+            min-block-size: calc(var(--form-rows, 3) * 1lh + 1.25rem);
+        }
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        &:hover:not(
+                :focus,
+                :disabled,
+                [readonly],
+                [aria-invalid='true'],
+                :is(button, [aria-haspopup='dialog'])[aria-expanded='true']
+            ) {
+            outline-color: var(--color-zinc-400);
+        }
+    }
+
+    @media (pointer: coarse) {
+        &:not(textarea) {
+            min-block-size: 2.75rem;
+        }
+    }
+
+    @variant dark {
+        background-color: rgb(255 255 255 / 0.05);
+        color: #fff;
+        color-scheme: dark;
+        outline-color: rgb(255 255 255 / 0.1);
+
+        &::placeholder {
+            color: var(--color-zinc-400);
+        }
+
+        &:focus,
+        &:is(button, [aria-haspopup='dialog'])[aria-expanded='true'] {
+            outline-color: var(--color-brand-400);
+        }
+
+        &[aria-invalid='true'],
+        &[aria-invalid='true']:focus,
+        &[aria-invalid='true']:is(
+                button,
+                [aria-haspopup='dialog']
+            )[aria-expanded='true'] {
+            outline-color: var(--color-rose-400);
+        }
+
+        &:disabled {
+            background-color: rgb(255 255 255 / 0.03);
+            color: var(--color-zinc-500);
+            outline-color: rgb(255 255 255 / 0.06);
+        }
+
+        &[readonly]:not(:disabled) {
+            background-color: rgb(255 255 255 / 0.025);
+            color: var(--color-zinc-300);
+            outline-color: rgb(255 255 255 / 0.08);
+        }
+
+        &:-webkit-autofill,
+        &:-webkit-autofill:hover,
+        &:-webkit-autofill:focus {
+            -webkit-text-fill-color: #fff;
+            caret-color: #fff;
+            box-shadow: 0 0 0 100rem #232326 inset;
+        }
+
+        &:autofill {
+            box-shadow: 0 0 0 100rem #232326 inset;
+            color: #fff;
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+            &:hover:not(
+                    :focus,
+                    :disabled,
+                    [readonly],
+                    [aria-invalid='true'],
+                    :is(button, [aria-haspopup='dialog'])[aria-expanded='true']
+                ) {
+                outline-color: rgb(255 255 255 / 0.2);
+            }
+        }
+    }
 }
 
+/** The compact field of a table row: 36px, 44px under a coarse pointer. */
 @utility form-input-sm {
-    @apply rounded-lg px-2.5 py-2 text-xs;
+    min-block-size: 2.25rem;
+    border-radius: 0.5rem;
+    padding-block: 0.5rem;
+    padding-inline: 0.625rem;
+    font-size: 0.75rem;
+    line-height: 1rem;
+
+    @media (pointer: coarse) {
+        min-block-size: 2.75rem;
+        line-height: 1.25rem;
+    }
 }
 
 /**
- * @vuepic/vue-datepicker, retuned to the app's tokens. The popup teleports to
- * <body>, so these live at the top level rather than in the component — and the
- * dark rules key off `.dark` on <html>, which is an ancestor either way.
+ * A text field with something drawn inside it: a leading icon (search), or a
+ * trailing unit («Kz», «%»). Wrap the field, then add the adornment as a
+ * sibling. The wrapper makes room for it, so no page sets padding by hand; a
+ * wide unit asks for more with --field-adorn-end.
  */
-.dp--theme-light,
-.dp--theme-dark {
-    --dp-font-family: var(--font-sans);
-    --dp-font-size: 0.875rem;
-    --dp-border-radius: 0.75rem;
-    --dp-cell-border-radius: 0.5rem;
-    --dp-cell-size: 34px;
-    --dp-background-color: #fff;
-    --dp-text-color: var(--color-zinc-900);
-    --dp-border-color: var(--color-zinc-300);
-    --dp-border-color-hover: var(--color-zinc-400);
-    --dp-border-color-focus: var(--color-brand-600);
-    --dp-menu-border-color: color-mix(
-        in srgb,
-        var(--color-zinc-900) 10%,
-        transparent
-    );
-    --dp-hover-color: var(--color-zinc-100);
-    --dp-hover-text-color: var(--color-zinc-900);
-    --dp-icon-color: var(--color-zinc-400);
-    --dp-hover-icon-color: var(--color-zinc-600);
-    --dp-primary-color: var(--color-brand-700);
-    --dp-primary-text-color: #fff;
-    --dp-primary-disabled-color: var(--color-brand-300);
-    --dp-secondary-color: var(--color-zinc-400);
-    --dp-disabled-color: var(--color-zinc-100);
-    --dp-disabled-color-text: var(--color-zinc-400);
-    --dp-highlight-color: color-mix(
-        in srgb,
-        var(--color-accent-400) 22%,
-        transparent
-    );
-    --dp-marker-color: var(--color-accent-500);
-    --dp-range-between-dates-background-color: var(--color-brand-100);
-    --dp-range-between-dates-text-color: var(--color-brand-900);
-    --dp-danger-color: var(--color-rose-600);
-    --dp-success-color: var(--color-emerald-600);
+@utility field-adorned {
+    position: relative;
+    display: block;
+
+    &:has(> .field-adornment-start) > :is(.form-input, .form-search) {
+        padding-inline-start: var(--field-adorn-start, 2.25rem);
+    }
+
+    &:has(> .field-adornment-end) > :is(.form-input, .form-search) {
+        padding-inline-end: var(--field-adorn-end, 2.5rem);
+    }
 }
 
-.dark .dp--theme-light,
-.dark .dp--theme-dark {
-    --dp-background-color: var(--color-zinc-900);
-    --dp-text-color: #fff;
-    --dp-border-color: color-mix(in srgb, #fff 10%, transparent);
-    --dp-border-color-hover: color-mix(in srgb, #fff 20%, transparent);
-    --dp-border-color-focus: var(--color-brand-400);
-    --dp-menu-border-color: color-mix(in srgb, #fff 10%, transparent);
-    --dp-hover-color: color-mix(in srgb, #fff 8%, transparent);
-    --dp-hover-text-color: #fff;
-    --dp-icon-color: var(--color-zinc-500);
-    --dp-hover-icon-color: var(--color-zinc-300);
-    --dp-primary-color: var(--color-accent-400);
-    --dp-primary-text-color: var(--color-brand-950);
-    --dp-primary-disabled-color: var(--color-accent-800);
-    --dp-secondary-color: var(--color-zinc-500);
-    --dp-disabled-color: color-mix(in srgb, #fff 4%, transparent);
-    --dp-disabled-color-text: var(--color-zinc-600);
-    --dp-highlight-color: color-mix(
-        in srgb,
-        var(--color-accent-400) 18%,
-        transparent
-    );
-    --dp-range-between-dates-background-color: color-mix(
-        in srgb,
-        var(--color-accent-400) 14%,
-        transparent
-    );
-    --dp-range-between-dates-text-color: #fff;
+@utility field-adornment-start {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 0.75rem;
+    translate: 0 -50%;
+    pointer-events: none;
+    color: var(--color-zinc-500);
+    font-size: 0.75rem;
+    line-height: 1;
+
+    @variant dark {
+        color: var(--color-zinc-400);
+    }
 }
 
-/* Match the trigger to the app's other inputs rather than the library default. */
-.vap-datepicker .dp--input {
-    background-color: #fff;
-    padding-block: 0.625rem;
-    padding-inline: 2.25rem 0.75rem;
-    outline: 1px solid var(--color-zinc-300);
-    outline-offset: -1px;
-    border: 0;
+@utility field-adornment-end {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-end: 0.75rem;
+    translate: 0 -50%;
+    pointer-events: none;
+    color: var(--color-zinc-500);
+    font-size: 0.75rem;
+    line-height: 1;
+
+    @variant dark {
+        color: var(--color-zinc-400);
+    }
+}
+
+/**
+ * The search well in a page header: a pill, quiet until it is used. It takes
+ * the same adornments as a form-input.
+ */
+@utility form-search {
+    width: 100%;
+    min-block-size: 2.5rem;
+    appearance: none;
+    border-radius: 9999px;
+    padding-block: 0.5rem;
+    padding-inline: 1rem var(--field-adorn-end, 1rem);
+    background-color: rgb(24 24 27 / 0.045);
+    color: var(--color-zinc-950);
+    font-size: 0.875rem;
     line-height: 1.25rem;
+    outline: 2px solid transparent;
+    outline-offset: 0;
+    transition-property: outline-color, background-color;
+    transition-duration: var(--duration-fast);
+    transition-timing-function: var(--ease-out);
+
+    &::placeholder {
+        color: var(--color-zinc-500);
+        opacity: 1;
+    }
+
+    &::-webkit-search-cancel-button {
+        display: none;
+    }
+
+    &:focus {
+        background-color: #fff;
+        outline-color: var(--color-brand-950);
+    }
+
+    @media (pointer: coarse) {
+        min-block-size: 2.75rem;
+    }
+
+    @variant dark {
+        background-color: rgb(255 255 255 / 0.06);
+        color: #fff;
+        color-scheme: dark;
+
+        &::placeholder {
+            color: var(--color-zinc-400);
+        }
+
+        &:focus {
+            background-color: var(--color-zinc-900);
+            outline-color: var(--color-zinc-200);
+        }
+    }
 }
 
-.dark .vap-datepicker .dp--input {
-    background-color: color-mix(in srgb, #fff 5%, transparent);
-    outline-color: color-mix(in srgb, #fff 10%, transparent);
+/**
+ * Drawn checkbox and radio: an 18px box, ink when checked with a crisp glyph,
+ * a hover and a focus ring, and an invalid look. The label is the hit area; a
+ * lone box widens its own with a pseudo-element, to 30px and to 44px on touch.
+ * Windows high-contrast falls back to the native control.
+ */
+@utility form-checkbox {
+    --form-tick-glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4.75 9.5l2.75 2.75 5.75-6.5'/%3E%3C/svg%3E");
+    --form-dash-glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M5 9h8'/%3E%3C/svg%3E");
+    appearance: none;
+    position: relative;
+    display: inline-block;
+    flex: none;
+    inline-size: 1.125rem;
+    block-size: 1.125rem;
+    margin: 0;
+    vertical-align: middle;
+    border: 1px solid var(--color-zinc-500);
+    border-radius: 0.3125rem;
+    background-color: #fff;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    color-scheme: light;
+    cursor: pointer;
+    transition-property: background-color, border-color;
+    transition-duration: var(--duration-fast);
+    transition-timing-function: var(--ease-out);
+
+    &::after {
+        content: '';
+        position: absolute;
+        inset: -0.375rem;
+    }
+
+    &:checked {
+        border-color: var(--color-brand-950);
+        background-color: var(--color-brand-950);
+        background-image: var(--form-tick-glyph);
+    }
+
+    &:indeterminate {
+        border-color: var(--color-brand-950);
+        background-color: var(--color-brand-950);
+        background-image: var(--form-dash-glyph);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--color-brand-600);
+        outline-offset: 2px;
+    }
+
+    &[aria-invalid='true'] {
+        border-color: var(--color-rose-500);
+        box-shadow: 0 0 0 1px var(--color-rose-500);
+    }
+
+    &:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        &:hover:not(:disabled, :checked, :indeterminate) {
+            border-color: var(--color-zinc-700);
+        }
+
+        &:hover:is(:checked, :indeterminate):not(:disabled) {
+            background-color: var(--color-brand-800);
+        }
+    }
+
+    @media (pointer: coarse) {
+        &::after {
+            inset: -0.8125rem;
+        }
+    }
+
+    @variant dark {
+        --form-tick-glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18' fill='none' stroke='%23171716' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4.75 9.5l2.75 2.75 5.75-6.5'/%3E%3C/svg%3E");
+        --form-dash-glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18' fill='none' stroke='%23171716' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M5 9h8'/%3E%3C/svg%3E");
+        border-color: rgb(255 255 255 / 0.4);
+        background-color: rgb(255 255 255 / 0.05);
+        color-scheme: dark;
+
+        &:checked,
+        &:indeterminate {
+            border-color: var(--color-zinc-100);
+            background-color: var(--color-zinc-100);
+        }
+
+        &:focus-visible {
+            outline-color: var(--color-brand-300);
+        }
+
+        &[aria-invalid='true'] {
+            border-color: var(--color-rose-400);
+            box-shadow: 0 0 0 1px var(--color-rose-400);
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+            &:hover:not(:disabled, :checked, :indeterminate) {
+                border-color: rgb(255 255 255 / 0.7);
+            }
+
+            &:hover:is(:checked, :indeterminate):not(:disabled) {
+                background-color: #fff;
+            }
+        }
+    }
+
+    @media (forced-colors: active) {
+        appearance: auto;
+        inline-size: 1.125rem;
+        block-size: 1.125rem;
+        border: revert;
+        border-radius: revert;
+        background: revert;
+        box-shadow: none;
+    }
 }
 
-.vap-datepicker .dp--input:focus,
-.vap-datepicker .dp--input-focus {
+@utility form-radio {
+    --form-dot-glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Ccircle cx='9' cy='9' r='3.25' fill='%23fff'/%3E%3C/svg%3E");
+    appearance: none;
+    position: relative;
+    display: inline-block;
+    flex: none;
+    inline-size: 1.125rem;
+    block-size: 1.125rem;
+    margin: 0;
+    vertical-align: middle;
+    border: 1px solid var(--color-zinc-500);
+    border-radius: 9999px;
+    background-color: #fff;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    color-scheme: light;
+    cursor: pointer;
+    transition-property: background-color, border-color;
+    transition-duration: var(--duration-fast);
+    transition-timing-function: var(--ease-out);
+
+    &::after {
+        content: '';
+        position: absolute;
+        inset: -0.375rem;
+        border-radius: 9999px;
+    }
+
+    &:checked {
+        border-color: var(--color-brand-950);
+        background-color: var(--color-brand-950);
+        background-image: var(--form-dot-glyph);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--color-brand-600);
+        outline-offset: 2px;
+    }
+
+    &[aria-invalid='true'] {
+        border-color: var(--color-rose-500);
+        box-shadow: 0 0 0 1px var(--color-rose-500);
+    }
+
+    &:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        &:hover:not(:disabled, :checked) {
+            border-color: var(--color-zinc-700);
+        }
+
+        &:hover:checked:not(:disabled) {
+            background-color: var(--color-brand-800);
+        }
+    }
+
+    @media (pointer: coarse) {
+        &::after {
+            inset: -0.8125rem;
+        }
+    }
+
+    @variant dark {
+        --form-dot-glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Ccircle cx='9' cy='9' r='3.25' fill='%23171716'/%3E%3C/svg%3E");
+        border-color: rgb(255 255 255 / 0.4);
+        background-color: rgb(255 255 255 / 0.05);
+        color-scheme: dark;
+
+        &:checked {
+            border-color: var(--color-zinc-100);
+            background-color: var(--color-zinc-100);
+        }
+
+        &:focus-visible {
+            outline-color: var(--color-brand-300);
+        }
+
+        &[aria-invalid='true'] {
+            border-color: var(--color-rose-400);
+            box-shadow: 0 0 0 1px var(--color-rose-400);
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+            &:hover:not(:disabled, :checked) {
+                border-color: rgb(255 255 255 / 0.7);
+            }
+
+            &:hover:checked:not(:disabled) {
+                background-color: #fff;
+            }
+        }
+    }
+
+    @media (forced-colors: active) {
+        appearance: auto;
+        inline-size: 1.125rem;
+        block-size: 1.125rem;
+        border: revert;
+        background: revert;
+        box-shadow: none;
+    }
+}
+
+/* A row that holds a tick is a 44px target under a coarse pointer. */
+@media (pointer: coarse) {
+    label:has(> :is(.form-checkbox, .form-radio)) {
+        min-block-size: 2.75rem;
+        align-items: center;
+    }
+}
+
+label:has(> :is(.form-checkbox, .form-radio):not(:disabled)) {
+    cursor: pointer;
+}
+
+/**
+ * The label and the hint around a field keep one rhythm: 8px from the label to
+ * the control (mt-2 on the control), 6px from the control to what follows (the
+ * hint, and FormError). «(opcional)» is written inside the label in a muted
+ * span; the product marks the optional fields, never the required ones.
+ */
+@utility field-label {
+    display: block;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    font-weight: 500;
+    color: var(--color-zinc-900);
+
+    @variant dark {
+        color: #fff;
+    }
+}
+
+@utility field-hint {
+    margin-block-start: 0.375rem;
+    font-size: 0.75rem;
+    line-height: 1.25;
+    color: var(--color-zinc-500);
+
+    @variant dark {
+        color: var(--color-zinc-400);
+    }
+}
+
+/**
+ * The date picker's popup. DateInput.vue draws it; this is its theme. The
+ * panel itself is a `menu-panel`. Cells are 40px, 44px under a coarse pointer,
+ * where the panel also becomes a bottom sheet that fits 320px. Today wears a
+ * gold ring, never a fill; the chosen day is an ink circle.
+ */
+.date-panel {
+    --date-cell-size: 2.5rem;
+    inline-size: calc(var(--date-cell-size) * 7 + 1.5rem);
+    max-inline-size: calc(100vw - 1rem);
+    padding: 0.75rem;
+    color: var(--color-zinc-900);
+    color-scheme: light;
+    overscroll-behavior: contain;
+}
+
+.dark .date-panel {
+    color: #fff;
+    color-scheme: dark;
+}
+
+@media (pointer: coarse) {
+    .date-panel {
+        --date-cell-size: 2.75rem;
+    }
+}
+
+.date-sheet {
+    inline-size: auto;
+    max-inline-size: none;
+    max-block-size: 90dvh;
+    overflow-y: auto;
+    border-end-start-radius: 0;
+    border-end-end-radius: 0;
+    padding-block-end: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+.date-sheet .date-grid,
+.date-sheet .date-weekdays {
+    inline-size: 100%;
+    max-inline-size: 24rem;
+    margin-inline: auto;
+}
+
+.date-head {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-block-end: 0.5rem;
+}
+
+.date-title {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    min-inline-size: 0;
+}
+
+.date-title-button {
+    min-block-size: 2.5rem;
+    border-radius: 0.5rem;
+    padding-inline: 0.5rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: inherit;
+}
+
+.date-title-button:hover {
+    background-color: rgb(24 24 27 / 0.06);
+}
+
+.dark .date-title-button:hover {
+    background-color: rgb(255 255 255 / 0.08);
+}
+
+@media (pointer: coarse) {
+    .date-title-button {
+        min-block-size: 2.75rem;
+    }
+}
+
+.date-weekdays,
+.date-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.date-weekdays {
+    margin-block-end: 0.25rem;
+    color: var(--color-zinc-500);
+    text-align: center;
+}
+
+.dark .date-weekdays {
+    color: var(--color-zinc-400);
+}
+
+.date-weekdays > * {
+    display: grid;
+    min-block-size: 1.75rem;
+    place-items: center;
+}
+
+.date-cell {
+    display: grid;
+    place-items: center;
+    inline-size: 100%;
+    max-inline-size: var(--date-cell-size);
+    block-size: var(--date-cell-size);
+    margin-inline: auto;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums lining-nums;
+    color: inherit;
+    cursor: pointer;
+}
+
+.date-cell[data-outside='true'] {
+    color: var(--color-zinc-500);
+}
+
+.dark .date-cell[data-outside='true'] {
+    color: var(--color-zinc-400);
+}
+
+.date-cell[data-today='true'] {
+    box-shadow: inset 0 0 0 2px var(--color-accent-400);
+    font-weight: 600;
+}
+
+.date-cell[data-selected='true'] {
+    background-color: var(--color-brand-950);
+    color: #fff;
+    font-weight: 600;
+}
+
+.dark .date-cell[data-selected='true'] {
+    background-color: var(--color-zinc-100);
+    color: var(--color-brand-950);
+}
+
+.date-cell:focus-visible {
+    outline: 2px solid var(--color-brand-600);
+    outline-offset: 2px;
+}
+
+.dark .date-cell:focus-visible {
+    outline-color: var(--color-brand-300);
+}
+
+.date-cell[aria-disabled='true'] {
+    cursor: not-allowed;
+    color: var(--color-zinc-400);
+    text-decoration: line-through;
+}
+
+.dark .date-cell[aria-disabled='true'] {
+    color: var(--color-zinc-600);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .date-cell:hover:not([data-selected='true'], [aria-disabled='true']) {
+        background-color: rgb(24 24 27 / 0.06);
+    }
+
+    .dark .date-cell:hover:not([data-selected='true'], [aria-disabled='true']) {
+        background-color: rgb(255 255 255 / 0.08);
+    }
+}
+
+.date-cell:active:not([data-selected='true'], [aria-disabled='true']) {
+    background-color: rgb(24 24 27 / 0.1);
+}
+
+.dark .date-cell:active:not([data-selected='true'], [aria-disabled='true']) {
+    background-color: rgb(255 255 255 / 0.12);
+}
+
+.date-choice-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.25rem;
+    max-block-size: calc(var(--date-cell-size) * 6.5);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.date-choice {
+    min-block-size: var(--date-cell-size);
+    border-radius: 0.75rem;
+    padding-inline: 0.5rem;
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums lining-nums;
+    cursor: pointer;
+}
+
+.date-choice[data-selected='true'] {
+    background-color: var(--color-brand-950);
+    color: #fff;
+    font-weight: 600;
+}
+
+.dark .date-choice[data-selected='true'] {
+    background-color: var(--color-zinc-100);
+    color: var(--color-brand-950);
+}
+
+.date-choice[data-today='true'] {
+    box-shadow: inset 0 0 0 2px var(--color-accent-400);
+}
+
+.date-choice:focus-visible {
     outline: 2px solid var(--color-brand-600);
     outline-offset: -2px;
 }
 
-.dark .vap-datepicker .dp--input:focus,
-.dark .vap-datepicker .dp--input-focus {
-    outline-color: var(--color-brand-400);
+.dark .date-choice:focus-visible {
+    outline-color: var(--color-brand-300);
 }
 
-.vap-datepicker .dp--input-icon {
-    inset-inline-start: 0.75rem;
+@media (hover: hover) and (pointer: fine) {
+    .date-choice:hover:not([data-selected='true']) {
+        background-color: rgb(24 24 27 / 0.06);
+    }
+
+    .dark .date-choice:hover:not([data-selected='true']) {
+        background-color: rgb(255 255 255 / 0.08);
+    }
 }
 
-.dp--menu {
-    box-shadow:
-        0 1px 2px rgb(0 0 0 / 5%),
-        0 20px 40px -24px rgb(0 0 0 / 45%);
+.date-foot {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-block-start: 0.5rem;
+    padding-block-start: 0.5rem;
+    border-block-start: 1px solid rgb(24 24 27 / 0.08);
+}
+
+.dark .date-foot {
+    border-block-start-color: rgb(255 255 255 / 0.1);
+}
+
+.date-foot-button {
+    min-block-size: 2.5rem;
+    border-radius: 0.5rem;
+    padding-inline: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-zinc-700);
+}
+
+.dark .date-foot-button {
+    color: var(--color-zinc-300);
+}
+
+.date-foot-button:hover {
+    background-color: rgb(24 24 27 / 0.06);
+}
+
+.dark .date-foot-button:hover {
+    background-color: rgb(255 255 255 / 0.08);
+}
+
+@media (pointer: coarse) {
+    .date-foot-button {
+        min-block-size: 2.75rem;
+    }
+}
+
+.date-time {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-block-start: 0.5rem;
+    padding-block-start: 0.5rem;
+    border-block-start: 1px solid rgb(24 24 27 / 0.08);
+}
+
+.dark .date-time {
+    border-block-start-color: rgb(255 255 255 / 0.1);
+}
+
+.date-time-segment {
+    display: grid;
+    justify-items: center;
+    gap: 0.125rem;
+}
+
+.date-time-field {
+    inline-size: 3.5rem;
+    text-align: center;
+    font-variant-numeric: tabular-nums lining-nums;
+    font-size: 1.125rem;
+}
+
+@media (forced-colors: active) {
+    .date-cell[data-selected='true'],
+    .date-choice[data-selected='true'] {
+        forced-color-adjust: none;
+        background-color: Highlight;
+        color: HighlightText;
+    }
+
+    .date-cell[data-today='true'],
+    .date-choice[data-today='true'] {
+        box-shadow: none;
+        outline: 2px solid CanvasText;
+        outline-offset: -2px;
+    }
+}
+
+/* Only a list opened by the pointer animates, and only briefly. */
+@keyframes menu-in {
+    from {
+        opacity: 0;
+        scale: 0.98;
+    }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    [data-menu-motion='true'] {
+        animation: menu-in var(--duration-fast) var(--ease-out);
+    }
 }
 
 .fiscal-grid {
@@ -831,8 +1606,7 @@ input[type='search']::-webkit-search-decoration {
         [type='hidden']
     ),
     textarea,
-    select,
-    .dp--input {
+    select {
         font-size: max(16px, 1rem);
     }
 }

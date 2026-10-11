@@ -489,8 +489,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
 
                             <div class="mt-4 grid gap-5 sm:grid-cols-2">
                                 <div>
-                                    <label
-                                        class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
+                                    <label class="field-label"
                                         >Estabelecimento</label
                                     >
                                     <div class="mt-2">
@@ -509,10 +508,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                 </div>
 
                                 <div>
-                                    <label
-                                        class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
-                                        >Cliente</label
-                                    >
+                                    <label class="field-label">Cliente</label>
                                     <div class="mt-2">
                                         <SelectInput
                                             v-model="form.customer_public_id"
@@ -525,14 +521,14 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                 <div>
                                     <label
                                         for="quote-customer-name"
-                                        class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
+                                        class="field-label"
                                         >Nome no orçamento</label
                                     >
                                     <input
                                         id="quote-customer-name"
                                         v-model="form.customer.name"
                                         type="text"
-                                        class="mt-2 w-full rounded-xl border-0 bg-white px-3 py-2.5 text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring ring-inset dark:bg-white/5 dark:text-white dark:ring-white/10"
+                                        class="mt-2 form-input"
                                     />
                                     <FormError
                                         :message="form.errors['customer.name']"
@@ -542,9 +538,10 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                 <div>
                                     <label
                                         for="quote-customer-nif"
-                                        class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
+                                        class="field-label"
                                         >NIF
-                                        <span class="text-zinc-400"
+                                        <span
+                                            class="font-normal text-zinc-500 dark:text-zinc-400"
                                             >(opcional)</span
                                         ></label
                                     >
@@ -555,14 +552,12 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                                 .tax_identification_number
                                         "
                                         type="text"
-                                        class="mt-2 w-full rounded-xl border-0 bg-white px-3 py-2.5 numeric text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring ring-inset dark:bg-white/5 dark:text-white dark:ring-white/10"
+                                        class="mt-2 form-input numeric"
                                     />
                                 </div>
 
                                 <div>
-                                    <label
-                                        for="quote-issue"
-                                        class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
+                                    <label for="quote-issue" class="field-label"
                                         >Data</label
                                     >
                                     <DateInput
@@ -578,9 +573,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                 </div>
 
                                 <div>
-                                    <label
-                                        for="quote-valid"
-                                        class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
+                                    <label for="quote-valid" class="field-label"
                                         >Válido até</label
                                     >
                                     <DateInput
@@ -649,7 +642,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                             v-model="line.product_description"
                                             type="text"
                                             placeholder="Descrição"
-                                            class="mt-2 w-full rounded-xl border-0 bg-white px-3 py-2.5 text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring ring-inset dark:bg-white/5 dark:text-white dark:ring-white/10"
+                                            class="mt-2 form-input"
                                         />
                                         <FormError
                                             :message="
@@ -669,7 +662,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                             v-model="line.quantity"
                                             type="text"
                                             inputmode="decimal"
-                                            class="mt-1.5 w-full rounded-xl border-0 bg-white px-3 py-2.5 numeric text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring ring-inset dark:bg-white/5 dark:text-white dark:ring-white/10"
+                                            class="mt-1.5 form-input numeric"
                                         />
                                         <FormError
                                             :message="
@@ -687,7 +680,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                             v-model="line.unit_price"
                                             type="text"
                                             inputmode="decimal"
-                                            class="mt-1.5 w-full rounded-xl border-0 bg-white px-3 py-2.5 numeric text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring ring-inset dark:bg-white/5 dark:text-white dark:ring-white/10"
+                                            class="mt-1.5 form-input numeric"
                                         />
                                         <FormError
                                             :message="
@@ -705,7 +698,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                             v-model="line.discount_rate"
                                             type="text"
                                             inputmode="decimal"
-                                            class="mt-1.5 w-full rounded-xl border-0 bg-white px-3 py-2.5 numeric text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring ring-inset dark:bg-white/5 dark:text-white dark:ring-white/10"
+                                            class="mt-1.5 form-input numeric"
                                         />
                                         <FormError
                                             :message="
@@ -866,9 +859,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                         </section>
 
                         <section class="rounded-2xl surface p-5">
-                            <label
-                                for="quote-notes"
-                                class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
+                            <label for="quote-notes" class="field-label"
                                 >Notas
                                 <span class="text-zinc-400"
                                     >(aparecem no orçamento)</span
@@ -878,7 +869,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                 id="quote-notes"
                                 v-model="form.notes"
                                 rows="3"
-                                class="mt-2 w-full rounded-xl border-0 bg-white px-3 py-2.5 text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring ring-inset dark:bg-white/5 dark:text-white dark:ring-white/10"
+                                class="mt-2 form-input"
                             />
                         </section>
                     </fieldset>

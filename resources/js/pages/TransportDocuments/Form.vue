@@ -517,8 +517,7 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                                 class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-5"
                             >
                                 <div>
-                                    <label
-                                        class="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                                    <label class="mb-2 field-label"
                                         >Tipo de guia</label
                                     >
                                     <SelectInput
@@ -531,8 +530,7 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                                     />
                                 </div>
                                 <div class="xl:col-span-2">
-                                    <label
-                                        class="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                                    <label class="mb-2 field-label"
                                         >Estabelecimento emissor</label
                                     >
                                     <SelectInput
@@ -550,8 +548,7 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                                     />
                                 </div>
                                 <div>
-                                    <label
-                                        class="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                                    <label class="mb-2 field-label"
                                         >Data do movimento</label
                                     >
                                     <DateInput
@@ -564,8 +561,7 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                                     />
                                 </div>
                                 <div>
-                                    <label
-                                        class="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                                    <label class="mb-2 field-label"
                                         >Início</label
                                     >
                                     <DateInput
@@ -583,10 +579,10 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                                 <div
                                     class="sm:col-span-2 xl:col-span-2 xl:col-start-4"
                                 >
-                                    <label
-                                        class="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                                    <label class="mb-2 field-label"
                                         >Fim previsto
-                                        <span class="font-normal text-zinc-400"
+                                        <span
+                                            class="font-normal text-zinc-500 dark:text-zinc-400"
                                             >(opcional)</span
                                         ></label
                                     >
@@ -637,8 +633,7 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                                 </div>
                                 <div class="mt-5 space-y-4">
                                     <div v-if="!isReturnNote">
-                                        <label
-                                            class="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                                        <label class="mb-2 field-label"
                                             >Cliente guardado</label
                                         >
                                         <SelectInput
@@ -993,7 +988,7 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                                             ><input
                                                 v-model="line.product_code"
                                                 type="text"
-                                                class="form-input form-input-sm numeric" /><FormError
+                                                class="form-input numeric" /><FormError
                                                 :message="
                                                     fieldError(
                                                         `lines.${index}.product_code`,
@@ -1009,7 +1004,7 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                                                     line.product_description
                                                 "
                                                 type="text"
-                                                class="form-input form-input-sm" /><FormError
+                                                class="form-input" /><FormError
                                                 :message="
                                                     fieldError(
                                                         `lines.${index}.product_description`,
@@ -1023,7 +1018,7 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                                             ><input
                                                 v-model="line.quantity"
                                                 inputmode="decimal"
-                                                class="form-input form-input-sm text-right numeric" /><FormError
+                                                class="form-input text-right numeric" /><FormError
                                                 :message="
                                                     fieldError(
                                                         `lines.${index}.quantity`,
@@ -1037,7 +1032,7 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                                             ><input
                                                 v-model="line.unit_of_measure"
                                                 type="text"
-                                                class="form-input form-input-sm text-center uppercase"
+                                                class="form-input text-center uppercase"
                                         /></label>
                                         <div
                                             class="flex items-end justify-end lg:col-span-1"
@@ -1065,7 +1060,7 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                                             ><input
                                                 v-model="line.unit_price"
                                                 inputmode="decimal"
-                                                class="form-input form-input-sm text-right numeric" /><FormError
+                                                class="form-input text-right numeric" /><FormError
                                                 :message="
                                                     fieldError(
                                                         `lines.${index}.unit_price`,
@@ -1203,7 +1198,7 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                                     ><textarea
                                         v-model="form.notes"
                                         rows="7"
-                                        class="form-input resize-y"
+                                        class="form-input [--form-resize:vertical] [--form-rows:7]"
                                         placeholder="Instruções de entrega, referência interna ou condição da mercadoria."
                                     />
                                 </label>
@@ -1307,7 +1302,7 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                         v-model="cancelForm.reason"
                         rows="3"
                         maxlength="50"
-                        class="form-input resize-none"
+                        class="form-input"
                         placeholder="Ex.: Transporte cancelado pelo destinatário" /><FormError
                         :message="cancelForm.errors.reason"
                 /></label>

@@ -17,6 +17,7 @@ import FormError from '@/components/FormError.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
+import ToggleSwitch from '@/components/ToggleSwitch.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { confirmAction } from '@/lib/confirm';
 import { show as agtConnection } from '@/routes/agt/connection';
@@ -408,10 +409,7 @@ const withoutSeries = computed(() =>
             <form class="space-y-5" @submit.prevent="submit">
                 <div class="grid gap-5 sm:grid-cols-2">
                     <div>
-                        <label
-                            for="establishment-code"
-                            class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
-                        >
+                        <label for="establishment-code" class="field-label">
                             Código
                         </label>
                         <input
@@ -420,16 +418,13 @@ const withoutSeries = computed(() =>
                             type="text"
                             required
                             placeholder="LOJA2"
-                            class="mt-2 w-full rounded-xl bg-white px-3.5 py-2.5 numeric text-sm text-zinc-950 uppercase ring-1 ring-zinc-200 focus-ring transition dark:bg-white/5 dark:text-white dark:ring-white/15"
+                            class="mt-2 form-input numeric uppercase"
                         />
                         <FormError :message="form.errors.code" />
                     </div>
 
                     <div>
-                        <label
-                            for="establishment-name"
-                            class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
-                        >
+                        <label for="establishment-name" class="field-label">
                             Nome
                         </label>
                         <input
@@ -438,16 +433,13 @@ const withoutSeries = computed(() =>
                             type="text"
                             required
                             placeholder="Loja do Kilamba"
-                            class="mt-2 w-full rounded-xl bg-white px-3.5 py-2.5 text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring transition dark:bg-white/5 dark:text-white dark:ring-white/15"
+                            class="mt-2 form-input"
                         />
                         <FormError :message="form.errors.name" />
                     </div>
 
                     <div class="sm:col-span-2">
-                        <label
-                            for="establishment-address"
-                            class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
-                        >
+                        <label for="establishment-address" class="field-label">
                             Morada
                         </label>
                         <input
@@ -456,7 +448,7 @@ const withoutSeries = computed(() =>
                             type="text"
                             required
                             placeholder="Rua 21 de Janeiro, n.º 4"
-                            class="mt-2 w-full rounded-xl bg-white px-3.5 py-2.5 text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring transition dark:bg-white/5 dark:text-white dark:ring-white/15"
+                            class="mt-2 form-input"
                         />
                         <FormError :message="form.errors.address_line" />
                     </div>
@@ -464,27 +456,26 @@ const withoutSeries = computed(() =>
                     <div>
                         <label
                             for="establishment-municipality"
-                            class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
+                            class="field-label"
                         >
                             Município
-                            <span class="text-zinc-400">(opcional)</span>
+                            <span
+                                class="font-normal text-zinc-500 dark:text-zinc-400"
+                                >(opcional)</span
+                            >
                         </label>
                         <input
                             id="establishment-municipality"
                             v-model="form.municipality"
                             type="text"
                             placeholder="Belas"
-                            class="mt-2 w-full rounded-xl bg-white px-3.5 py-2.5 text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring transition dark:bg-white/5 dark:text-white dark:ring-white/15"
+                            class="mt-2 form-input"
                         />
                         <FormError :message="form.errors.municipality" />
                     </div>
 
                     <div>
-                        <label
-                            class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
-                        >
-                            Província
-                        </label>
+                        <label class="field-label"> Província </label>
                         <div class="mt-2">
                             <SelectInput
                                 v-model="form.province_code"
@@ -503,22 +494,17 @@ const withoutSeries = computed(() =>
                         v-model="form.is_head_office"
                         type="checkbox"
                         :disabled="editing?.is_head_office"
-                        class="size-4 rounded border-zinc-300 text-brand-700 focus-ring disabled:opacity-60 dark:border-white/15 dark:bg-white/5"
+                        class="form-checkbox"
                     />
                     É a sede da empresa
                 </label>
 
-                <label
-                    class="flex w-fit items-center gap-3 text-sm text-zinc-700 dark:text-zinc-300"
+                <ToggleSwitch
+                    v-model="form.is_active"
+                    :disabled="editing?.is_head_office"
                 >
-                    <input
-                        v-model="form.is_active"
-                        type="checkbox"
-                        :disabled="editing?.is_head_office"
-                        class="size-4 rounded border-zinc-300 text-brand-700 focus-ring disabled:opacity-60 dark:border-white/15 dark:bg-white/5"
-                    />
-                    Disponível ao emitir documentos
-                </label>
+                    <template #label>Disponível ao emitir documentos</template>
+                </ToggleSwitch>
 
                 <p
                     v-if="editing?.is_head_office"

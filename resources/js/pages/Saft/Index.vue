@@ -201,17 +201,11 @@ function inspectPeriod(): void {
                         class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-[1fr_1fr_1.5fr_auto] xl:items-end"
                     >
                         <div>
-                            <label
-                                class="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
-                                >Data inicial</label
-                            >
+                            <label class="mb-2 field-label">Data inicial</label>
                             <DateInput v-model="from" :clearable="false" />
                         </div>
                         <div>
-                            <label
-                                class="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
-                                >Data final</label
-                            >
+                            <label class="mb-2 field-label">Data final</label>
                             <DateInput
                                 v-model="to"
                                 :clearable="false"
@@ -219,10 +213,7 @@ function inspectPeriod(): void {
                             />
                         </div>
                         <div>
-                            <label
-                                class="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
-                                >Âmbito</label
-                            >
+                            <label class="mb-2 field-label">Âmbito</label>
                             <SelectInput
                                 v-model="establishment"
                                 :options="establishments"

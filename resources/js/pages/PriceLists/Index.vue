@@ -14,6 +14,7 @@ import FlashBanner from '@/components/FlashBanner.vue';
 import FormError from '@/components/FormError.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
+import ToggleSwitch from '@/components/ToggleSwitch.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { confirmAction } from '@/lib/confirm';
 import {
@@ -561,7 +562,7 @@ function toggleDefault(): void {
                                                     placeholder="—"
                                                     :disabled="!canManage"
                                                     :aria-label="`Preço de ${row.name} nesta tabela`"
-                                                    class="w-28 rounded-lg bg-white px-3 py-1.5 text-right numeric text-zinc-950 ring-1 ring-zinc-200 focus-ring transition disabled:opacity-60 dark:bg-white/5 dark:text-white dark:ring-white/15"
+                                                    class="form-input w-28 form-input-sm text-right numeric text-sm"
                                                 />
                                             </td>
                                             <td
@@ -653,10 +654,7 @@ function toggleDefault(): void {
         >
             <form class="space-y-5" @submit.prevent="createList">
                 <div>
-                    <label
-                        for="price-list-name"
-                        class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
-                    >
+                    <label for="price-list-name" class="field-label">
                         Nome
                     </label>
                     <input
@@ -665,38 +663,34 @@ function toggleDefault(): void {
                         type="text"
                         required
                         placeholder="Revenda"
-                        class="mt-2 w-full rounded-xl bg-white px-3.5 py-2.5 text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring transition dark:bg-white/5 dark:text-white dark:ring-white/15"
+                        class="mt-2 form-input"
                     />
                     <FormError :message="listForm.errors.name" />
                 </div>
 
                 <div>
-                    <label
-                        for="price-list-description"
-                        class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
-                    >
-                        Descrição <span class="text-zinc-400">(opcional)</span>
+                    <label for="price-list-description" class="field-label">
+                        Descrição
+                        <span
+                            class="font-normal text-zinc-500 dark:text-zinc-400"
+                            >(opcional)</span
+                        >
                     </label>
                     <input
                         id="price-list-description"
                         v-model="listForm.description"
                         type="text"
                         placeholder="Quem compra em quantidade"
-                        class="mt-2 w-full rounded-xl bg-white px-3.5 py-2.5 text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring transition dark:bg-white/5 dark:text-white dark:ring-white/15"
+                        class="mt-2 form-input"
                     />
                     <FormError :message="listForm.errors.description" />
                 </div>
 
-                <label
-                    class="flex w-fit items-center gap-3 text-sm text-zinc-700 dark:text-zinc-300"
-                >
-                    <input
-                        v-model="listForm.is_default"
-                        type="checkbox"
-                        class="size-4 rounded border-zinc-300 text-brand-700 focus-ring dark:border-white/15 dark:bg-white/5"
-                    />
-                    Usar esta tabela nos clientes novos
-                </label>
+                <ToggleSwitch v-model="listForm.is_default">
+                    <template #label
+                        >Usar esta tabela nos clientes novos</template
+                    >
+                </ToggleSwitch>
 
                 <div class="flex justify-end gap-3 pt-2">
                     <button

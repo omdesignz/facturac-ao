@@ -22,10 +22,11 @@ import {
     ShieldOff,
     TriangleAlert,
 } from '@lucide/vue';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import FormError from '@/components/FormError.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageStat from '@/components/PageStat.vue';
+import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { update } from '@/routes/agt/connection';
@@ -127,6 +128,22 @@ const props = defineProps<{
         private_keys_in_database: boolean;
     };
 }>();
+
+const seriesDocumentType = ref(props.seriesRequest.default_document_type);
+const seriesYear = ref<number>(props.seriesRequest.years[0] ?? 0);
+
+const seriesDocumentTypeOptions = computed(() =>
+    props.seriesRequest.document_types.map((documentType) => ({
+        value: documentType.value,
+        label: `${documentType.value} · ${documentType.label}`,
+    })),
+);
+const seriesYearOptions = computed(() =>
+    props.seriesRequest.years.map((year) => ({
+        value: year,
+        label: String(year),
+    })),
+);
 
 const page = usePage();
 const flashSuccess = computed(() => page.props.flash.success);
@@ -350,7 +367,7 @@ function formatDate(value: string | null): string {
                                 <div class="sm:col-span-3">
                                     <label
                                         for="agt-username"
-                                        class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                        class="field-label"
                                         >Utilizador AGT</label
                                     >
                                     <input
@@ -365,7 +382,7 @@ function formatDate(value: string | null): string {
                                             connection.credential_identity ??
                                             'Utilizador de homologação'
                                         "
-                                        class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 placeholder:text-zinc-400 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                        class="mt-2 block form-input"
                                     />
                                     <FormError
                                         :message="errors.basic_auth_username"
@@ -374,7 +391,7 @@ function formatDate(value: string | null): string {
                                 <div class="sm:col-span-3">
                                     <label
                                         for="agt-password"
-                                        class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                        class="field-label"
                                         >Palavra-passe / token</label
                                     >
                                     <input
@@ -390,7 +407,7 @@ function formatDate(value: string | null): string {
                                                 ? '••••••••••••••••'
                                                 : 'Credencial fornecida pela AGT'
                                         "
-                                        class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 placeholder:text-zinc-400 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                        class="mt-2 block form-input"
                                     />
                                     <FormError
                                         :message="errors.basic_auth_password"
@@ -431,9 +448,7 @@ function formatDate(value: string | null): string {
                                 class="grid grid-cols-1 gap-x-6 gap-y-6 p-5 disabled:opacity-65 sm:grid-cols-6 sm:p-7"
                             >
                                 <div class="sm:col-span-3">
-                                    <label
-                                        for="product-id"
-                                        class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                    <label for="product-id" class="field-label"
                                         >Nome do produto</label
                                     >
                                     <input
@@ -443,14 +458,14 @@ function formatDate(value: string | null): string {
                                         required
                                         :value="connection.product_id"
                                         placeholder="facturac.ao"
-                                        class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                        class="mt-2 block form-input"
                                     />
                                     <FormError :message="errors.product_id" />
                                 </div>
                                 <div class="sm:col-span-3">
                                     <label
                                         for="product-version"
-                                        class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                        class="field-label"
                                         >Versão</label
                                     >
                                     <input
@@ -460,7 +475,7 @@ function formatDate(value: string | null): string {
                                         required
                                         :value="connection.product_version"
                                         placeholder="1.0.0"
-                                        class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 font-mono text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                        class="mt-2 block form-input font-mono"
                                     />
                                     <FormError
                                         :message="errors.product_version"
@@ -469,7 +484,7 @@ function formatDate(value: string | null): string {
                                 <div class="sm:col-span-3">
                                     <label
                                         for="validation-number"
-                                        class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                        class="field-label"
                                         >Número de validação</label
                                     >
                                     <input
@@ -481,7 +496,7 @@ function formatDate(value: string | null): string {
                                             connection.software_validation_number
                                         "
                                         placeholder="Número atribuído ao software"
-                                        class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 font-mono text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                        class="mt-2 block form-input font-mono"
                                     />
                                     <FormError
                                         :message="
@@ -492,7 +507,7 @@ function formatDate(value: string | null): string {
                                 <div class="sm:col-span-3">
                                     <label
                                         for="establishment-number"
-                                        class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                        class="field-label"
                                         >Número do estabelecimento AGT</label
                                     >
                                     <input
@@ -502,7 +517,7 @@ function formatDate(value: string | null): string {
                                         required
                                         :value="connection.establishment_number"
                                         placeholder="Identificador da sede na AGT"
-                                        class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 font-mono text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                        class="mt-2 block form-input font-mono"
                                     />
                                     <FormError
                                         :message="errors.establishment_number"
@@ -545,7 +560,7 @@ function formatDate(value: string | null): string {
                                 <div class="sm:col-span-3">
                                     <label
                                         for="software-key"
-                                        class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                        class="field-label"
                                         >Chave privada do software</label
                                     >
                                     <input
@@ -557,7 +572,7 @@ function formatDate(value: string | null): string {
                                             connection.software_key_reference
                                         "
                                         placeholder="software/vap-hml"
-                                        class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 font-mono text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                        class="mt-2 block form-input font-mono"
                                     />
                                     <FormError
                                         :message="errors.software_key_reference"
@@ -577,7 +592,7 @@ function formatDate(value: string | null): string {
                                 <div class="sm:col-span-3">
                                     <label
                                         for="taxpayer-key"
-                                        class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                        class="field-label"
                                         >Chave privada do contribuinte</label
                                     >
                                     <input
@@ -589,7 +604,7 @@ function formatDate(value: string | null): string {
                                             connection.taxpayer_key_reference
                                         "
                                         placeholder="taxpayer/nif-hml"
-                                        class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 font-mono text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
+                                        class="mt-2 block form-input font-mono"
                                     />
                                     <FormError
                                         :message="errors.taxpayer_key_reference"
@@ -903,26 +918,16 @@ function formatDate(value: string | null): string {
                                 >
                                     Tipo de documento
                                 </label>
-                                <select
+                                <SelectInput
                                     id="series-document-type"
+                                    v-model="seriesDocumentType"
                                     name="document_type"
                                     required
+                                    class="mt-2"
+                                    :options="seriesDocumentTypeOptions"
                                     :disabled="processing"
-                                    class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 disabled:opacity-60 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
-                                >
-                                    <option
-                                        v-for="documentType in seriesRequest.document_types"
-                                        :key="documentType.value"
-                                        :value="documentType.value"
-                                        :selected="
-                                            documentType.value ===
-                                            seriesRequest.default_document_type
-                                        "
-                                    >
-                                        {{ documentType.value }} ·
-                                        {{ documentType.label }}
-                                    </option>
-                                </select>
+                                    :invalid="!!errors.document_type"
+                                />
                                 <FormError :message="errors.document_type" />
                             </div>
                             <div>
@@ -932,21 +937,16 @@ function formatDate(value: string | null): string {
                                 >
                                     Ano
                                 </label>
-                                <select
+                                <SelectInput
                                     id="series-year"
+                                    v-model="seriesYear"
                                     name="series_year"
                                     required
+                                    class="mt-2"
+                                    :options="seriesYearOptions"
                                     :disabled="processing"
-                                    class="mt-2 block w-full rounded-xl bg-white px-3 py-2.5 text-sm text-zinc-900 outline-1 -outline-offset-1 outline-zinc-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-600 disabled:opacity-60 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-brand-400"
-                                >
-                                    <option
-                                        v-for="seriesYear in seriesRequest.years"
-                                        :key="seriesYear"
-                                        :value="seriesYear"
-                                    >
-                                        {{ seriesYear }}
-                                    </option>
-                                </select>
+                                    :invalid="!!errors.series_year"
+                                />
                                 <FormError :message="errors.series_year" />
                             </div>
                             <button

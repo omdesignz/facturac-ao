@@ -17,6 +17,7 @@ import PageHeader from '@/components/PageHeader.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
+import ToggleSwitch from '@/components/ToggleSwitch.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { confirmAction } from '@/lib/confirm';
 import { destroy, index, show, store, update } from '@/routes/customers';
@@ -260,11 +261,15 @@ async function deactivate(customer: Customer): Promise<void> {
                     description="Quem factura com mais frequência. Guarde uma vez e escolha na factura, sem voltar a escrever o NIF."
                 >
                     <template #actions>
-                        <div class="relative w-full sm:w-72">
-                            <label>
+                        <div
+                            class="relative w-full [--field-adorn-end:2.5rem] sm:w-72"
+                        >
+                            <label
+                                class="field-adorned [--field-adorn-start:2.5rem]"
+                            >
                                 <span class="sr-only">Procurar clientes</span>
                                 <Search
-                                    class="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-zinc-400"
+                                    class="field-adornment-start size-4"
                                     aria-hidden="true"
                                 />
                                 <input
@@ -275,7 +280,7 @@ async function deactivate(customer: Customer): Promise<void> {
                                     spellcheck="false"
                                     enterkeyhint="search"
                                     placeholder="Nome, NIF ou email"
-                                    class="h-10 w-full [appearance:none] rounded-full bg-zinc-900/[0.045] pr-10 pl-10 text-sm text-zinc-950 outline-hidden placeholder:text-zinc-500 focus:bg-white focus:ring-2 focus:ring-brand-950 dark:bg-white/[0.06] dark:text-white dark:placeholder:text-zinc-400 dark:focus:bg-zinc-900 dark:focus:ring-zinc-200 [&::-webkit-search-cancel-button]:hidden"
+                                    class="form-search"
                                 />
                             </label>
                             <button
@@ -592,9 +597,7 @@ async function deactivate(customer: Customer): Promise<void> {
             <form class="space-y-5" @submit.prevent="submit">
                 <div class="grid gap-5 sm:grid-cols-2">
                     <div class="sm:col-span-2">
-                        <label
-                            for="customer-name"
-                            class="block text-sm font-medium text-zinc-900 dark:text-white"
+                        <label for="customer-name" class="field-label"
                             >Nome ou denominação</label
                         >
                         <input
@@ -620,9 +623,7 @@ async function deactivate(customer: Customer): Promise<void> {
                     </div>
 
                     <div>
-                        <label
-                            for="customer-nif"
-                            class="block text-sm font-medium text-zinc-900 dark:text-white"
+                        <label for="customer-nif" class="field-label"
                             >NIF</label
                         >
                         <input
@@ -652,9 +653,7 @@ async function deactivate(customer: Customer): Promise<void> {
                     </div>
 
                     <div>
-                        <label
-                            for="customer-country"
-                            class="block text-sm font-medium text-zinc-900 dark:text-white"
+                        <label for="customer-country" class="field-label"
                             >País</label
                         >
                         <SelectInput
@@ -676,9 +675,7 @@ async function deactivate(customer: Customer): Promise<void> {
                     </div>
 
                     <div class="sm:col-span-2">
-                        <label
-                            for="customer-address"
-                            class="block text-sm font-medium text-zinc-900 dark:text-white"
+                        <label for="customer-address" class="field-label"
                             >Morada
                             <span class="text-zinc-500 dark:text-zinc-400"
                                 >(opcional)</span
@@ -706,9 +703,7 @@ async function deactivate(customer: Customer): Promise<void> {
                     </div>
 
                     <div>
-                        <label
-                            for="customer-email"
-                            class="block text-sm font-medium text-zinc-900 dark:text-white"
+                        <label for="customer-email" class="field-label"
                             >Email
                             <span class="text-zinc-500 dark:text-zinc-400"
                                 >(opcional)</span
@@ -738,9 +733,7 @@ async function deactivate(customer: Customer): Promise<void> {
                     </div>
 
                     <div>
-                        <label
-                            for="customer-phone"
-                            class="block text-sm font-medium text-zinc-900 dark:text-white"
+                        <label for="customer-phone" class="field-label"
                             >Telefone
                             <span class="text-zinc-500 dark:text-zinc-400"
                                 >(opcional)</span
@@ -781,10 +774,7 @@ async function deactivate(customer: Customer): Promise<void> {
 
                     <div class="mt-4 grid gap-4 sm:grid-cols-2">
                         <div>
-                            <label
-                                for="customer-terms"
-                                class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
-                            >
+                            <label for="customer-terms" class="field-label">
                                 Prazo de pagamento
                             </label>
                             <div class="mt-2 flex items-center gap-2">
@@ -811,9 +801,7 @@ async function deactivate(customer: Customer): Promise<void> {
                                     >dias</span
                                 >
                             </div>
-                            <p
-                                class="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400"
-                            >
+                            <p class="field-hint">
                                 Zero significa pronto pagamento.
                             </p>
                             <FormError
@@ -823,10 +811,7 @@ async function deactivate(customer: Customer): Promise<void> {
                         </div>
 
                         <div>
-                            <label
-                                for="customer-limit"
-                                class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
-                            >
+                            <label for="customer-limit" class="field-label">
                                 Limite de crédito
                                 <span class="text-zinc-500 dark:text-zinc-400"
                                     >(opcional)</span
@@ -850,9 +835,7 @@ async function deactivate(customer: Customer): Promise<void> {
                                         : undefined
                                 "
                             />
-                            <p
-                                class="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400"
-                            >
+                            <p class="field-hint">
                                 Avisamos quando a dívida se aproximar deste
                                 valor.
                             </p>
@@ -865,7 +848,7 @@ async function deactivate(customer: Customer): Promise<void> {
                         <div class="sm:col-span-2">
                             <label
                                 for="customer-price-list"
-                                class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
+                                class="field-label"
                             >
                                 Tabela de preços
                             </label>
@@ -883,9 +866,7 @@ async function deactivate(customer: Customer): Promise<void> {
                                     "
                                 />
                             </div>
-                            <p
-                                class="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400"
-                            >
+                            <p class="field-hint">
                                 <template v-if="priceLists.length === 0">
                                     Ainda não há tabelas.
                                     <Link
@@ -910,7 +891,7 @@ async function deactivate(customer: Customer): Promise<void> {
                         <div class="sm:col-span-2">
                             <label
                                 for="customer-withholding"
-                                class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
+                                class="field-label"
                             >
                                 Retenção habitual
                             </label>
@@ -949,9 +930,7 @@ async function deactivate(customer: Customer): Promise<void> {
                                     "
                                 />
                             </div>
-                            <p
-                                class="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400"
-                            >
+                            <p class="field-hint">
                                 Para clientes que entregam o imposto
                                 directamente à AGT — o Estado, grandes
                                 contribuintes, bancos. Fica sugerida em cada
@@ -968,28 +947,20 @@ async function deactivate(customer: Customer): Promise<void> {
                         </div>
                     </div>
 
-                    <label
-                        class="mt-4 flex w-fit items-center gap-3 text-sm text-zinc-700 dark:text-zinc-300"
+                    <ToggleSwitch
+                        v-model="form.auto_send_documents"
+                        class="mt-4"
                     >
-                        <input
-                            v-model="form.auto_send_documents"
-                            type="checkbox"
-                            class="size-4 rounded border-zinc-300 text-brand-700 focus-ring dark:border-white/15 dark:bg-white/5"
-                        />
-                        Enviar os documentos por email assim que forem emitidos
-                    </label>
+                        <template #label
+                            >Enviar os documentos por email assim que forem
+                            emitidos</template
+                        >
+                    </ToggleSwitch>
                 </div>
 
-                <label
-                    class="flex w-fit items-center gap-3 text-sm text-zinc-700 dark:text-zinc-300"
-                >
-                    <input
-                        v-model="form.is_active"
-                        type="checkbox"
-                        class="size-4 rounded border-zinc-300 text-brand-700 focus-ring dark:border-white/15 dark:bg-white/5"
-                    />
-                    Disponível ao criar facturas
-                </label>
+                <ToggleSwitch v-model="form.is_active">
+                    <template #label>Disponível ao criar facturas</template>
+                </ToggleSwitch>
 
                 <div class="flex justify-end gap-3 pt-2">
                     <button
