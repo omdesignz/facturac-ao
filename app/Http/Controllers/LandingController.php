@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PlatformSetting;
+use App\Models\SubscriptionPackage;
 use App\Models\SubscriptionPlan;
 use App\Province;
 use Illuminate\Http\RedirectResponse;
@@ -28,6 +29,7 @@ class LandingController extends Controller
 
         return Inertia::render('Landing', [
             'plans' => $this->plans(),
+            'packages' => $this->packages(),
             // Counted rather than written down, so the page cannot go stale the
             // next time the map changes.
             'provinceCount' => count(array_filter(
@@ -78,5 +80,48 @@ class LandingController extends Controller
         }
 
         return $plans;
+    }
+
+    /**
+     * The packages on sale, each with its prices by payment period.
+     *
+     * Read from the same rows that are charged, for the same reason as the
+     * plans above.
+     *
+     * @return list<array{name: string, summary: string|null, features: list<string>, trial_days: int, is_featured: bool, prices: list<array{interval: string, interval_label: string, period_label: string, months: int, amount: string, currency: string, monthly_equivalent: string, saving_percentage: int|null}>}>
+     */
+    private function packages(): array
+    {
+        $packages = [];
+
+        foreach (SubscriptionPackage::offered() as $package) {
+            $prices = [];
+
+            foreach ($package->plans as $plan) {
+                $months = $plan->interval->months();
+
+                $prices[] = [
+                    'interval' => $plan->interval->value,
+                    'interval_label' => $plan->interval->label(),
+                    'period_label' => $plan->interval->periodLabel(),
+                    'months' => $months,
+                    'amount' => number_format($plan->amount_minor / 100, 0, ',', ' '),
+                    'currency' => $plan->currency_code,
+                    'monthly_equivalent' => number_format(intdiv($plan->amount_minor, $months) / 100, 0, ',', ' '),
+                    'saving_percentage' => $package->savingPercentage($plan),
+                ];
+            }
+
+            $packages[] = [
+                'name' => $package->name,
+                'summary' => $package->summary,
+                'features' => $package->featureList(),
+                'trial_days' => $package->trial_days,
+                'is_featured' => $package->is_featured,
+                'prices' => $prices,
+            ];
+        }
+
+        return $packages;
     }
 }

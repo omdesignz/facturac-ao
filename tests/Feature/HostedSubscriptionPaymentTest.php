@@ -2,6 +2,7 @@
 
 use App\Actions\AcceptWiPayCallback;
 use App\Actions\FulfillHostedPayment;
+use App\Actions\SaveSubscriptionPackage;
 use App\Actions\StartWiPaySubscriptionCheckout;
 use App\Billing\Contracts\WiPayTokenStore;
 use App\Billing\Data\GatewayAccessTokenData;
@@ -10,6 +11,7 @@ use App\Jobs\FulfillPayment;
 use App\Models\Payment;
 use App\Models\PaymentEvent;
 use App\Models\SubscriptionCharge;
+use App\Models\SubscriptionPackage;
 use App\Models\SubscriptionPlan;
 use App\Models\User;
 use App\Models\Workspace;
@@ -366,4 +368,97 @@ test('callback timestamps preserve their instant when the provider uses a differ
     sendHostedCallback(hostedCallback($payment, ['status_datetime' => $occurredAt->toIso8601String()]))->assertAccepted();
     expect($payment->fresh()->paid_at->getTimestamp())->toBe($occurredAt->getTimestamp())
         ->and($payment->events()->where('event_type', 'callback-accepted')->sole()->occurred_at->getTimestamp())->toBe($occurredAt->getTimestamp());
+});
+
+test('each hosted payment period ends exactly where it always did for monthly and annual plans', function (SubscriptionInterval $interval, string $endsAt) {
+    fakeHostedProvider();
+    $this->travelTo(CarbonImmutable::parse('2027-01-31 10:00:00', 'Africa/Luanda'));
+    $company = hostedBillingCompany();
+    $company['plan']->update(['interval' => $interval]);
+    $payment = startHostedTestPayment($company);
+    sendHostedCallback(hostedCallback($payment))->assertAccepted();
+    app(FulfillHostedPayment::class)->execute($payment);
+
+    expect(SubscriptionCharge::query()->sole()->period_ends_at->equalTo(CarbonImmutable::parse($endsAt, 'Africa/Luanda')))->toBeTrue()
+        ->and(WorkspaceSubscription::query()->sole()->current_period_ends_at->equalTo(CarbonImmutable::parse($endsAt, 'Africa/Luanda')))->toBeTrue();
+})->with([
+    'monthly from 31 January stops at the end of February' => [SubscriptionInterval::Monthly, '2027-02-28 10:00:00'],
+    'annual from 31 January' => [SubscriptionInterval::Annual, '2028-01-31 10:00:00'],
+]);
+
+test('a quarterly or semi-annual plan is paid online and activated for the whole period', function (SubscriptionInterval $interval, string $endsAt) {
+    fakeHostedProvider();
+    $this->travelTo(CarbonImmutable::parse('2027-01-31 10:00:00', 'Africa/Luanda'));
+    $company = hostedBillingCompany();
+    $company['plan']->update(['interval' => $interval, 'amount_minor' => 7_000_000]);
+    $payment = startHostedTestPayment($company);
+    $expectedEnd = CarbonImmutable::parse($endsAt, 'Africa/Luanda');
+
+    expect(SubscriptionCharge::query()->sole()->period_ends_at->equalTo($expectedEnd))->toBeTrue();
+
+    sendHostedCallback(hostedCallback($payment))->assertAccepted();
+    app(FulfillHostedPayment::class)->execute($payment);
+    app(FulfillHostedPayment::class)->execute($payment);
+
+    $subscription = WorkspaceSubscription::query()->sole();
+
+    expect($subscription->status)->toBe(WorkspaceSubscriptionStatus::Active)
+        ->and($subscription->subscription_plan_id)->toBe($company['plan']->id)
+        ->and($subscription->current_period_ends_at->equalTo($expectedEnd))->toBeTrue()
+        ->and(SubscriptionCharge::query()->sole()->status)->toBe(SubscriptionChargeStatus::Paid)
+        ->and(SubscriptionCharge::query()->sole()->period_ends_at->equalTo($expectedEnd))->toBeTrue();
+})->with([
+    'quarterly from 31 January' => [SubscriptionInterval::Quarterly, '2027-04-30 10:00:00'],
+    'semi-annual from 31 January' => [SubscriptionInterval::Semiannual, '2027-07-31 10:00:00'],
+]);
+
+test('a renewal early in the paid period keeps its quarterly length after the plan is edited', function () {
+    fakeHostedProvider();
+    $company = hostedBillingCompany();
+    $company['plan']->update(['interval' => SubscriptionInterval::Quarterly]);
+    $oldStart = now()->subDays(10)->startOfSecond();
+    $oldEnd = now()->addDays(20)->startOfSecond();
+    WorkspaceSubscription::factory()->create([
+        'workspace_id' => $company['workspace']->id, 'subscription_plan_id' => $company['plan']->id,
+        'status' => WorkspaceSubscriptionStatus::Active, 'current_period_started_at' => $oldStart, 'current_period_ends_at' => $oldEnd,
+    ]);
+    $payment = startHostedTestPayment($company);
+    $company['plan']->update(['interval' => SubscriptionInterval::Monthly, 'amount_minor' => 1_000_000]);
+    sendHostedCallback(hostedCallback($payment))->assertAccepted();
+    app(FulfillHostedPayment::class)->execute($payment);
+
+    expect(WorkspaceSubscription::query()->sole()->current_period_ends_at)->toEqual($oldEnd->toImmutable()->addMonthsNoOverflow(3))
+        ->and(SubscriptionCharge::query()->sole()->amount_minor)->toBe(2_500_000);
+});
+
+test('changing a package price after checkout started does not touch the charge or its payment', function () {
+    fakeHostedProvider();
+    $actor = User::factory()->supportStaff()->create();
+    $company = hostedBillingCompany();
+    $package = SubscriptionPackage::factory()->withPlans(['monthly' => 2_500_000])->create(['code' => 'ajuste-wipay']);
+    $company['plan'] = $package->plans->first();
+    $payment = startHostedTestPayment($company);
+
+    app(SaveSubscriptionPackage::class)->execute($package, [
+        'name' => $package->name,
+        'summary' => $package->summary,
+        'features' => $package->features,
+        'trial_days' => $package->trial_days,
+        'currency_code' => 'AOA',
+        'is_active' => true,
+        'is_featured' => false,
+        'sort_order' => $package->sort_order,
+        'periods' => [['interval' => SubscriptionInterval::Monthly, 'amount_minor' => 4_000_000, 'is_active' => true]],
+    ], $actor);
+
+    expect($company['plan']->fresh()->amount_minor)->toBe(4_000_000)
+        ->and(SubscriptionCharge::query()->sole()->amount_minor)->toBe(2_500_000)
+        ->and($payment->fresh()->amount_minor)->toBe(2_500_000);
+
+    sendHostedCallback(hostedCallback($payment))->assertAccepted();
+    app(FulfillHostedPayment::class)->execute($payment);
+
+    expect(SubscriptionCharge::query()->sole()->status)->toBe(SubscriptionChargeStatus::Paid)
+        ->and(SubscriptionCharge::query()->sole()->amount_minor)->toBe(2_500_000)
+        ->and(WorkspaceSubscription::query()->sole()->status)->toBe(WorkspaceSubscriptionStatus::Active);
 });

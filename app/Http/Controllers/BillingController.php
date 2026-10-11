@@ -7,6 +7,7 @@ use App\EmisPaymentReferenceStatus;
 use App\Models\EmisPaymentReference;
 use App\Models\Payment;
 use App\Models\SubscriptionCharge;
+use App\Models\SubscriptionPackage;
 use App\Models\SubscriptionPlan;
 use App\Models\Workspace;
 use App\Models\WorkspaceSubscription;
@@ -68,6 +69,10 @@ class BillingController extends Controller
                 ->orderBy('amount_minor')
                 ->get()
                 ->map(fn (SubscriptionPlan $plan): array => $this->planProps($plan)),
+            'packages' => SubscriptionPackage::offered()
+                ->map(fn (SubscriptionPackage $package): array => $this->packageProps($package))
+                ->values()
+                ->all(),
             'subscription' => $subscription === null ? null : [
                 'public_id' => $subscription->public_id,
                 'status' => $subscription->status->value,
@@ -118,6 +123,26 @@ class BillingController extends Controller
             ],
             'canManage' => $request->user()?->can('update', $workspace) === true,
         ]);
+    }
+
+    /** @return array<string, mixed> */
+    private function packageProps(SubscriptionPackage $package): array
+    {
+        return [
+            'public_id' => $package->public_id,
+            'name' => $package->name,
+            'summary' => $package->summary,
+            'features' => $package->featureList(),
+            'trial_days' => $package->trial_days,
+            'is_featured' => $package->is_featured,
+            'plans' => $package->plans->map(fn (SubscriptionPlan $plan): array => [
+                ...$this->planProps($plan),
+                'months' => $plan->interval->months(),
+                'period_label' => $plan->interval->periodLabel(),
+                'monthly_equivalent_minor' => intdiv($plan->amount_minor, $plan->interval->months()),
+                'saving_percentage' => $package->savingPercentage($plan),
+            ])->values()->all(),
+        ];
     }
 
     /** @return array<string, mixed> */

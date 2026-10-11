@@ -1,10 +1,12 @@
 <?php
 
 use App\Actions\ConfirmEmisPayment;
+use App\Actions\SaveSubscriptionPackage;
 use App\BillingPaymentEventType;
 use App\EmisPaymentReferenceStatus;
 use App\Models\EmisPaymentReference;
 use App\Models\SubscriptionCharge;
+use App\Models\SubscriptionPackage;
 use App\Models\SubscriptionPlan;
 use App\Models\User;
 use App\Models\Workspace;
@@ -315,4 +317,102 @@ test('non-simulation environments fail closed until the merchant API contract is
 
     expect(EmisPaymentReference::query()->doesntExist())->toBeTrue()
         ->and(SubscriptionCharge::query()->firstOrFail()->status)->toBe(SubscriptionChargeStatus::Failed);
+});
+
+test('each payment period ends exactly where it always did for monthly and annual plans', function (SubscriptionInterval $interval, string $endsAt) {
+    $this->travelTo(CarbonImmutable::parse('2027-01-31 10:00:00', 'Africa/Luanda'));
+    $company = phaseFiveBillingCompany();
+    $company['plan']->update(['interval' => $interval]);
+
+    $this->actingAs($company['user'])
+        ->withSession(['auth.password_confirmed_at' => now()->timestamp])
+        ->post(route('billing.checkout'), ['plan_public_id' => $company['plan']->public_id])
+        ->assertSessionHasNoErrors();
+
+    expect(SubscriptionCharge::query()->sole()->period_ends_at->equalTo(CarbonImmutable::parse($endsAt, 'Africa/Luanda')))->toBeTrue();
+})->with([
+    'monthly from 31 January stops at the end of February' => [SubscriptionInterval::Monthly, '2027-02-28 10:00:00'],
+    'annual from 31 January' => [SubscriptionInterval::Annual, '2028-01-31 10:00:00'],
+]);
+
+test('a quarterly or semi-annual plan is checked out, paid and activated for the whole period', function (SubscriptionInterval $interval, string $endsAt) {
+    Notification::fake();
+    $this->travelTo(CarbonImmutable::parse('2027-01-31 10:00:00', 'Africa/Luanda'));
+    $company = phaseFiveBillingCompany();
+    $plan = SubscriptionPlan::factory()->create([
+        'code' => $interval->value.'-'.$company['workspace']->id,
+        'amount_minor' => 70_000_00,
+        'interval' => $interval,
+    ]);
+
+    $this->actingAs($company['user'])
+        ->withSession(['auth.password_confirmed_at' => now()->timestamp])
+        ->post(route('billing.checkout'), ['plan_public_id' => $plan->public_id])
+        ->assertSessionHasNoErrors();
+
+    $charge = SubscriptionCharge::query()->sole();
+    $expectedEnd = CarbonImmutable::parse($endsAt, 'Africa/Luanda');
+
+    expect($charge->subscription_plan_id)->toBe($plan->id)
+        ->and($charge->amount_minor)->toBe(70_000_00)
+        ->and($charge->period_ends_at->equalTo($expectedEnd))->toBeTrue();
+
+    $this->actingAs($company['user'])
+        ->withSession(['auth.password_confirmed_at' => now()->timestamp])
+        ->post(route('billing.references.simulate', EmisPaymentReference::query()->sole()))
+        ->assertSessionHasNoErrors();
+
+    $subscription = WorkspaceSubscription::query()->sole();
+
+    expect($subscription->status)->toBe(WorkspaceSubscriptionStatus::Active)
+        ->and($subscription->subscription_plan_id)->toBe($plan->id)
+        ->and($subscription->current_period_ends_at->equalTo($expectedEnd))->toBeTrue()
+        ->and($charge->fresh()->status)->toBe(SubscriptionChargeStatus::Paid)
+        ->and($charge->fresh()->period_ends_at->equalTo($expectedEnd))->toBeTrue();
+})->with([
+    'quarterly from 31 January' => [SubscriptionInterval::Quarterly, '2027-04-30 10:00:00'],
+    'semi-annual from 31 January' => [SubscriptionInterval::Semiannual, '2027-07-31 10:00:00'],
+]);
+
+test('changing a package price leaves a pending charge at the amount it was created with', function () {
+    $actor = User::factory()->supportStaff()->create();
+    $company = phaseFiveBillingCompany();
+    $package = SubscriptionPackage::factory()->withPlans(['monthly' => 25_000_00, 'annual' => 250_000_00])->create(['code' => 'ajuste']);
+    $plan = $package->plans->first();
+
+    $this->actingAs($company['user'])
+        ->withSession(phaseFivePasswordSession())
+        ->post(route('billing.checkout'), ['plan_public_id' => $plan->public_id])
+        ->assertSessionHasNoErrors();
+
+    app(SaveSubscriptionPackage::class)->execute($package, [
+        'name' => $package->name,
+        'summary' => $package->summary,
+        'features' => $package->features,
+        'trial_days' => $package->trial_days,
+        'currency_code' => 'AOA',
+        'is_active' => true,
+        'is_featured' => false,
+        'sort_order' => $package->sort_order,
+        'periods' => [
+            ['interval' => SubscriptionInterval::Monthly, 'amount_minor' => 40_000_00, 'is_active' => true],
+            ['interval' => SubscriptionInterval::Annual, 'amount_minor' => 250_000_00, 'is_active' => true],
+        ],
+    ], $actor);
+
+    $charge = SubscriptionCharge::query()->sole();
+    $reference = EmisPaymentReference::query()->sole();
+
+    expect($plan->fresh()->amount_minor)->toBe(40_000_00)
+        ->and($charge->amount_minor)->toBe(25_000_00)
+        ->and($reference->amount_minor)->toBe(25_000_00);
+
+    $this->actingAs($company['user'])
+        ->withSession(phaseFivePasswordSession())
+        ->post(route('billing.references.simulate', $reference))
+        ->assertSessionHasNoErrors();
+
+    expect($charge->fresh()->status)->toBe(SubscriptionChargeStatus::Paid)
+        ->and($charge->fresh()->amount_minor)->toBe(25_000_00)
+        ->and(WorkspaceSubscription::query()->sole()->status)->toBe(WorkspaceSubscriptionStatus::Active);
 });

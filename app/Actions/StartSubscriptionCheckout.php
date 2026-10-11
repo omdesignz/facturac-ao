@@ -14,7 +14,6 @@ use App\Models\Workspace;
 use App\Models\WorkspaceSubscription;
 use App\Pay4AllEnvironment;
 use App\SubscriptionChargeStatus;
-use App\SubscriptionInterval;
 use App\WorkspaceSubscriptionStatus;
 use Carbon\CarbonImmutable;
 use DomainException;
@@ -181,7 +180,7 @@ final readonly class StartSubscriptionCheckout
                 ->lockForUpdate()
                 ->first();
             $periodStartsAt = $this->periodStartsAt($subscription, $plan);
-            $periodEndsAt = $this->periodEndsAt($periodStartsAt, $plan->interval);
+            $periodEndsAt = $plan->interval->advance($periodStartsAt);
             $feeBasisPoints = max(
                 0,
                 min(10_000, (int) config('billing.pay4all.transaction_fee_basis_points', 100)),
@@ -324,15 +323,5 @@ final readonly class StartSubscriptionCheckout
         }
 
         return $now;
-    }
-
-    private function periodEndsAt(
-        CarbonImmutable $periodStartsAt,
-        SubscriptionInterval $interval,
-    ): CarbonImmutable {
-        return match ($interval) {
-            SubscriptionInterval::Monthly => $periodStartsAt->addMonthNoOverflow(),
-            SubscriptionInterval::Annual => $periodStartsAt->addYear(),
-        };
     }
 }

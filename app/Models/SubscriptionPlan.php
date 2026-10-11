@@ -8,11 +8,13 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
  * @property string $public_id
+ * @property int|null $subscription_package_id
  * @property string $code
  * @property string $name
  * @property string|null $summary
@@ -26,6 +28,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $sort_order
  */
 #[Fillable([
+    'subscription_package_id',
     'code',
     'name',
     'summary',
@@ -52,6 +55,12 @@ class SubscriptionPlan extends Model
     public function getRouteKeyName(): string
     {
         return 'public_id';
+    }
+
+    /** @return BelongsTo<SubscriptionPackage, $this> */
+    public function package(): BelongsTo
+    {
+        return $this->belongsTo(SubscriptionPackage::class, 'subscription_package_id');
     }
 
     /** @return HasMany<WorkspaceSubscription, $this> */

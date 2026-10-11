@@ -60,6 +60,7 @@ use App\Http\Controllers\SessionController;
 use App\Http\Controllers\SimulateEmisPaymentController;
 use App\Http\Controllers\SocialAuthenticationController;
 use App\Http\Controllers\StockController;
+use App\Http\Controllers\SubscriptionPackageController;
 use App\Http\Controllers\SupportComplaintController;
 use App\Http\Controllers\SupportController;
 use App\Http\Controllers\TermsAcceptanceController;
@@ -136,6 +137,19 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::put('/definicoes', [PlatformSettingController::class, 'update'])
             ->middleware('password.confirm')
             ->name('support.settings.update');
+
+        Route::get('/pacotes', [SubscriptionPackageController::class, 'index'])
+            ->middleware('cache.headers:private;no_store')
+            ->name('support.packages.index');
+        Route::post('/pacotes', [SubscriptionPackageController::class, 'store'])
+            ->middleware('password.confirm')
+            ->name('support.packages.store');
+        Route::put('/pacotes/{package}', [SubscriptionPackageController::class, 'update'])
+            ->middleware('password.confirm')
+            ->name('support.packages.update');
+        Route::delete('/pacotes/{package}', [SubscriptionPackageController::class, 'destroy'])
+            ->middleware('password.confirm')
+            ->name('support.packages.destroy');
     });
 
     Route::post('/termos/aceitar', [TermsAcceptanceController::class, 'store'])

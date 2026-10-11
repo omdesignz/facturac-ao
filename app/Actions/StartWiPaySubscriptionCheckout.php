@@ -11,7 +11,6 @@ use App\Models\Workspace;
 use App\PaymentEnvironment;
 use App\PaymentStatus;
 use App\SubscriptionChargeStatus;
-use App\SubscriptionInterval;
 use Carbon\CarbonImmutable;
 use DomainException;
 use Illuminate\Support\Facades\DB;
@@ -65,8 +64,7 @@ final readonly class StartWiPaySubscriptionCheckout
                 'estimated_provider_fee_minor' => 0,
                 'status' => SubscriptionChargeStatus::Creating,
                 'period_starts_at' => $startsAt,
-                'period_ends_at' => $plan->interval === SubscriptionInterval::Monthly
-                    ? $startsAt->addMonthNoOverflow() : $startsAt->addYear(),
+                'period_ends_at' => $plan->interval->advance($startsAt),
                 'due_at' => $startsAt->addMinutes(max(5, (int) config('billing.wipay.review_after_minutes'))),
             ]);
 

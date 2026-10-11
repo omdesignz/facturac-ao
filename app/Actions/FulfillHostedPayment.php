@@ -70,7 +70,7 @@ final class FulfillHostedPayment
                 $subscriptionStartsAt = $subscription->current_period_started_at ?? $subscriptionStartsAt;
             }
 
-            $endsAt = $this->purchasedInterval($charge) === SubscriptionInterval::Monthly ? $startsAt->addMonthNoOverflow() : $startsAt->addYear();
+            $endsAt = $this->purchasedInterval($charge)->advance($startsAt);
             $subscription ??= new WorkspaceSubscription(['workspace_id' => $locked->workspace_id]);
             $subscription->fill([
                 'subscription_plan_id' => $charge->subscription_plan_id, 'status' => WorkspaceSubscriptionStatus::Active,
@@ -98,10 +98,12 @@ final class FulfillHostedPayment
     /** Determine the purchased interval from frozen charge dates, not the mutable plan. */
     private function purchasedInterval(SubscriptionCharge $charge): SubscriptionInterval
     {
-        return match (true) {
-            $charge->period_ends_at->equalTo($charge->period_starts_at->addMonthNoOverflow()) => SubscriptionInterval::Monthly,
-            $charge->period_ends_at->equalTo($charge->period_starts_at->addYear()) => SubscriptionInterval::Annual,
-            default => throw new DomainException('O período comprado não corresponde a uma assinatura válida.'),
-        };
+        foreach (SubscriptionInterval::ordered() as $interval) {
+            if ($charge->period_ends_at->equalTo($interval->advance($charge->period_starts_at))) {
+                return $interval;
+            }
+        }
+
+        throw new DomainException('O período comprado não corresponde a uma assinatura válida.');
     }
 }
