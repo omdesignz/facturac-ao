@@ -29,10 +29,18 @@ import {
     X,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import PeriodSwitch from '@/components/billing/PeriodSwitch.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageStat from '@/components/PageStat.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
+import {
+    formatMinor,
+    formatMinorWhole,
+    initialPeriod,
+    periodOptions,
+} from '@/lib/packages';
+import { currencyLabel } from '@/lib/pos-ui';
 import { checkout } from '@/routes/billing';
 import { resume } from '@/routes/billing/payments';
 import { refresh, simulate } from '@/routes/billing/references';
@@ -52,6 +60,24 @@ interface SubscriptionPlan {
     trial_days: number;
     features: string[];
     limits: Record<string, unknown>;
+}
+
+/** A plan row as a package offers it: one price for one payment period. */
+interface PackagePlan extends SubscriptionPlan {
+    months: number;
+    period_label: string;
+    monthly_equivalent_minor: number;
+    saving_percentage: number | null;
+}
+
+interface BillingPackage {
+    public_id: string;
+    name: string;
+    summary: string | null;
+    features: string[];
+    trial_days: number;
+    is_featured: boolean;
+    plans: PackagePlan[];
 }
 
 interface PaymentReference {
@@ -118,6 +144,7 @@ interface Gateway {
 
 const props = defineProps<{
     plans: SubscriptionPlan[];
+    packages: BillingPackage[];
     subscription: Subscription | null;
     activeReference: PaymentReference | null;
     activePayment: HostedPayment | null;
@@ -150,6 +177,85 @@ const canStartCheckout = computed(
         props.activeReference === null &&
         props.activePayment === null,
 );
+
+/*
+ * Packages: one card each, priced for the payment period chosen in the switch.
+ * Only the periods some package sells are offered, and the person starts on the
+ * one they already pay for.
+ */
+const periods = computed(() =>
+    periodOptions(props.packages.flatMap((offer) => offer.plans)),
+);
+const chosenPeriod = ref(
+    initialPeriod(periods.value, props.subscription?.plan.interval ?? null) ??
+        '',
+);
+// A reload can take the chosen period off sale; fall back rather than show nothing.
+const activePeriod = computed(() =>
+    periods.value.some((option) => option.value === chosenPeriod.value)
+        ? chosenPeriod.value
+        : (initialPeriod(
+              periods.value,
+              props.subscription?.plan.interval ?? null,
+          ) ?? ''),
+);
+const periodAnnouncement = ref('');
+
+function choosePeriod(value: string): void {
+    chosenPeriod.value = value;
+
+    const option = periods.value.find((candidate) => candidate.value === value);
+
+    periodAnnouncement.value = option ? `Preços: ${option.label}.` : '';
+}
+
+interface PackageCard {
+    offer: BillingPackage;
+    /** The plan row for the chosen period, or null when this package has none. */
+    plan: PackagePlan | null;
+    /** The plan row the workspace pays for today is this very one. */
+    isCurrentPlan: boolean;
+    /** The workspace pays for another period of this package. */
+    isCurrentPackage: boolean;
+}
+
+const packageCards = computed<PackageCard[]>(() =>
+    props.packages.map((offer) => {
+        const plan =
+            offer.plans.find(
+                (candidate) => candidate.interval === activePeriod.value,
+            ) ?? null;
+        const currentId = props.subscription?.plan.public_id;
+
+        return {
+            offer,
+            plan,
+            isCurrentPlan: plan !== null && plan.public_id === currentId,
+            isCurrentPackage: offer.plans.some(
+                (candidate) => candidate.public_id === currentId,
+            ),
+        };
+    }),
+);
+
+function packageButtonLabel(card: PackageCard): string {
+    if (props.activeReference || props.activePayment) {
+        return 'Conclua o pagamento activo';
+    }
+
+    if (card.isCurrentPlan) {
+        return 'Renovar este plano';
+    }
+
+    return card.isCurrentPackage ? 'Mudar para este período' : 'Escolher plano';
+}
+
+function chooseCardPlan(card: PackageCard): void {
+    if (card.plan !== null) {
+        openCheckout(card.plan);
+    }
+}
+
 const { start: startPaymentPolling, stop: stopPaymentPolling } = usePoll(
     5000,
     { only: ['activePayment', 'subscription', 'charges'] },
@@ -981,8 +1087,271 @@ function copyPaymentInstruction(): void {
                         </p>
                     </div>
 
+                    <template v-if="packages.length > 0">
+                        <div
+                            v-if="periods.length > 1"
+                            class="mt-8 flex justify-center"
+                        >
+                            <PeriodSwitch
+                                :model-value="activePeriod"
+                                :options="periods"
+                                label="Período de pagamento"
+                                @update:model-value="choosePeriod"
+                            />
+                        </div>
+                        <p class="sr-only" role="status" aria-live="polite">
+                            {{ periodAnnouncement }}
+                        </p>
+
+                        <div
+                            class="mx-auto mt-8 grid max-w-7xl grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),26rem))] items-stretch justify-center gap-5"
+                        >
+                            <article
+                                v-for="card in packageCards"
+                                :key="card.offer.public_id"
+                                :aria-labelledby="`package-${card.offer.public_id}`"
+                                :class="[
+                                    card.isCurrentPlan
+                                        ? 'bg-brand-950 text-white shadow-2xl dark:bg-brand-900'
+                                        : 'bg-white text-zinc-950 shadow-sm dark:bg-zinc-900 dark:text-white',
+                                    card.offer.is_featured
+                                        ? 'ring-[1.5px] ring-accent-400'
+                                        : card.isCurrentPlan
+                                          ? 'ring-1 ring-brand-950 dark:ring-brand-700'
+                                          : 'ring-1 ring-zinc-900/10 dark:ring-white/10',
+                                    'relative flex rounded-3xl p-7 sm:p-8',
+                                ]"
+                            >
+                                <!-- On the card's top edge, so it adds nothing to the flow and the cards stay aligned. -->
+                                <p
+                                    v-if="card.offer.is_featured"
+                                    :class="[
+                                        card.isCurrentPlan
+                                            ? 'bg-brand-950 text-accent-300 dark:bg-brand-900'
+                                            : 'bg-white text-zinc-800 dark:bg-zinc-900 dark:text-accent-300',
+                                        'absolute start-7 -top-3 rounded-full px-2.5 py-0.5 text-xs font-semibold ring-[1.5px] ring-accent-400 sm:start-8',
+                                    ]"
+                                >
+                                    Mais escolhido
+                                </p>
+                                <div class="flex w-full min-w-0 flex-col">
+                                    <div
+                                        class="flex items-start justify-between gap-4"
+                                    >
+                                        <div class="min-w-0">
+                                            <h3
+                                                :id="`package-${card.offer.public_id}`"
+                                                :class="[
+                                                    card.isCurrentPlan
+                                                        ? 'text-accent-400'
+                                                        : 'text-brand-700 dark:text-brand-300',
+                                                    'text-base font-semibold [overflow-wrap:anywhere]',
+                                                ]"
+                                            >
+                                                {{ card.offer.name }}
+                                            </h3>
+                                        </div>
+                                        <StatusBadge
+                                            v-if="card.isCurrentPlan"
+                                            label="Plano actual"
+                                            tone="success"
+                                        />
+                                        <StatusBadge
+                                            v-else-if="card.isCurrentPackage"
+                                            label="O seu pacote"
+                                            tone="neutral"
+                                        />
+                                    </div>
+
+                                    <!--
+                                        The price block keeps one height whatever
+                                        the period: tabular figures, the period on
+                                        its own line, and room for two lines of
+                                        saving, so switching never moves the card.
+                                    -->
+                                    <div class="mt-5 min-h-[7.25rem]">
+                                        <template v-if="card.plan">
+                                            <p
+                                                class="flex items-baseline gap-x-2"
+                                            >
+                                                <span
+                                                    class="numeric text-4xl leading-10 font-semibold tracking-tight [overflow-wrap:anywhere]"
+                                                >
+                                                    {{
+                                                        formatMinor(
+                                                            card.plan
+                                                                .amount_minor,
+                                                        )
+                                                    }}
+                                                </span>
+                                                <span
+                                                    :class="[
+                                                        card.isCurrentPlan
+                                                            ? 'text-brand-100/70'
+                                                            : 'text-zinc-500 dark:text-zinc-400',
+                                                        'text-sm font-medium',
+                                                    ]"
+                                                >
+                                                    {{
+                                                        currencyLabel(
+                                                            card.plan
+                                                                .currency_code,
+                                                        )
+                                                    }}
+                                                </span>
+                                            </p>
+                                            <p
+                                                :class="[
+                                                    card.isCurrentPlan
+                                                        ? 'text-brand-100/70'
+                                                        : 'text-zinc-500 dark:text-zinc-400',
+                                                    'mt-1 text-sm/5',
+                                                ]"
+                                            >
+                                                {{ card.plan.period_label }}
+                                            </p>
+                                            <p
+                                                :class="[
+                                                    card.isCurrentPlan
+                                                        ? 'text-brand-100/70'
+                                                        : 'text-zinc-600 dark:text-zinc-300',
+                                                    'mt-2 min-h-10 numeric text-sm/5',
+                                                ]"
+                                            >
+                                                <template
+                                                    v-if="card.plan.months > 1"
+                                                >
+                                                    ≈
+                                                    {{
+                                                        formatMinorWhole(
+                                                            card.plan
+                                                                .monthly_equivalent_minor,
+                                                        )
+                                                    }}
+                                                    {{
+                                                        currencyLabel(
+                                                            card.plan
+                                                                .currency_code,
+                                                        )
+                                                    }}
+                                                    por mês<template
+                                                        v-if="
+                                                            card.plan
+                                                                .saving_percentage !==
+                                                            null
+                                                        "
+                                                    >
+                                                        · poupa
+                                                        {{
+                                                            card.plan
+                                                                .saving_percentage
+                                                        }}%</template
+                                                    >
+                                                </template>
+                                            </p>
+                                        </template>
+                                        <p
+                                            v-else
+                                            :id="`package-${card.offer.public_id}-unavailable`"
+                                            :class="[
+                                                card.isCurrentPlan
+                                                    ? 'text-brand-100/70'
+                                                    : 'text-zinc-600 dark:text-zinc-300',
+                                                'text-sm/6 font-medium',
+                                            ]"
+                                        >
+                                            Não disponível neste período
+                                        </p>
+                                    </div>
+
+                                    <p
+                                        :class="[
+                                            card.isCurrentPlan
+                                                ? 'text-brand-100/70'
+                                                : 'text-zinc-600 dark:text-zinc-300',
+                                            'mt-3 text-sm/6 [overflow-wrap:anywhere]',
+                                        ]"
+                                    >
+                                        {{
+                                            card.offer.summary ??
+                                            'Facturação electrónica preparada para crescer consigo.'
+                                        }}
+                                    </p>
+                                    <ul
+                                        role="list"
+                                        :class="[
+                                            card.isCurrentPlan
+                                                ? 'text-brand-50/85'
+                                                : 'text-zinc-600 dark:text-zinc-300',
+                                            'mt-6 flex-1 space-y-3 text-sm/6',
+                                        ]"
+                                    >
+                                        <li
+                                            v-for="feature in card.offer
+                                                .features"
+                                            :key="feature"
+                                            class="flex gap-x-3"
+                                        >
+                                            <CheckCircle2
+                                                :class="[
+                                                    card.isCurrentPlan
+                                                        ? 'text-accent-400'
+                                                        : 'text-emerald-600 dark:text-emerald-400',
+                                                    'mt-0.5 size-5 shrink-0',
+                                                ]"
+                                                aria-hidden="true"
+                                            />
+                                            <span
+                                                class="min-w-0 [overflow-wrap:anywhere]"
+                                                >{{ feature }}</span
+                                            >
+                                        </li>
+                                    </ul>
+                                    <p
+                                        v-if="card.offer.trial_days > 0"
+                                        :class="[
+                                            card.isCurrentPlan
+                                                ? 'text-brand-100/70'
+                                                : 'text-zinc-600 dark:text-zinc-300',
+                                            'mt-6 text-sm/6 font-medium',
+                                        ]"
+                                    >
+                                        {{
+                                            card.offer.trial_days === 1
+                                                ? '1 dia de experiência'
+                                                : `${card.offer.trial_days} dias de experiência`
+                                        }}
+                                    </p>
+                                    <button
+                                        type="button"
+                                        :aria-describedby="
+                                            card.plan === null
+                                                ? `package-${card.offer.public_id}-unavailable`
+                                                : `package-${card.offer.public_id}`
+                                        "
+                                        :aria-disabled="card.plan === null"
+                                        :disabled="!canStartCheckout"
+                                        :class="[
+                                            card.isCurrentPlan
+                                                ? 'bg-accent-400 text-brand-950 hover:bg-accent-300 focus-visible:outline-amber-300'
+                                                : 'bg-brand-950 text-white hover:bg-brand-800 focus-visible:outline-brand-600 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white',
+                                            'mt-8 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full px-[1.125rem] text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-45 aria-disabled:cursor-not-allowed aria-disabled:opacity-45',
+                                        ]"
+                                        @click="chooseCardPlan(card)"
+                                    >
+                                        <CreditCard
+                                            class="size-4"
+                                            aria-hidden="true"
+                                        />
+                                        {{ packageButtonLabel(card) }}
+                                    </button>
+                                </div>
+                            </article>
+                        </div>
+                    </template>
+
                     <div
-                        v-if="plans.length > 0"
+                        v-else-if="plans.length > 0"
                         class="mx-auto mt-8 grid max-w-7xl grid-cols-1 items-stretch gap-5 lg:grid-cols-3"
                     >
                         <article
@@ -1515,7 +1884,7 @@ function copyPaymentInstruction(): void {
                                         maxlength="9"
                                         pattern="9[0-9]{8}"
                                         required
-                                        class="mt-2 block w-full rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-zinc-950 focus-ring disabled:opacity-50 dark:border-white/15 dark:bg-white/5 dark:text-white"
+                                        class="mt-2 form-input numeric"
                                         placeholder="9xxxxxxxx"
                                         :disabled="checkoutForm.processing"
                                         :aria-invalid="

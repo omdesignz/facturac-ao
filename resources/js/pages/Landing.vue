@@ -2,8 +2,11 @@
 import { Head, Link } from '@inertiajs/vue3';
 import { ArrowRight, Menu, RotateCcw, Search, X } from '@lucide/vue';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
+import PeriodSwitch from '@/components/billing/PeriodSwitch.vue';
 import BrandWordmark from '@/components/BrandWordmark.vue';
 import CookieConsent from '@/components/CookieConsent.vue';
+import { initialPeriod, periodOptions } from '@/lib/packages';
+import { currencyLabel } from '@/lib/pos-ui';
 import { vReveal } from '@/lib/reveal';
 import { login, register } from '@/routes';
 import { show as legalShow } from '@/routes/legal';
@@ -18,11 +21,74 @@ const props = defineProps<{
         trial_days: number;
         features: string[];
     }[];
+    /** Every figure arrives formatted by the server; the page only chooses which to show. */
+    packages: {
+        name: string;
+        summary: string | null;
+        features: string[];
+        trial_days: number;
+        is_featured: boolean;
+        prices: {
+            interval: string;
+            interval_label: string;
+            period_label: string;
+            months: number;
+            amount: string;
+            currency: string;
+            monthly_equivalent: string;
+            saving_percentage: number | null;
+        }[];
+    }[];
     provinceCount: number;
     contact: { support_email: string | null; company: string | null };
 }>();
 
 const menuOpen = ref(false);
+
+/*
+ * Packages are priced for one payment period at a time. Only the periods some
+ * package sells are offered, starting on monthly (or the first on offer).
+ */
+const periods = computed(() =>
+    periodOptions(
+        props.packages.flatMap((offer) =>
+            offer.prices.map((price) => ({
+                interval: price.interval,
+                interval_label: price.interval_label,
+                months: price.months,
+                saving_percentage: price.saving_percentage,
+            })),
+        ),
+    ),
+);
+const chosenPeriod = ref(initialPeriod(periods.value, null) ?? '');
+const activePeriod = computed(() =>
+    periods.value.some((option) => option.value === chosenPeriod.value)
+        ? chosenPeriod.value
+        : (initialPeriod(periods.value, null) ?? ''),
+);
+const periodAnnouncement = ref('');
+
+function choosePeriod(value: string): void {
+    chosenPeriod.value = value;
+
+    const option = periods.value.find((candidate) => candidate.value === value);
+
+    periodAnnouncement.value = option ? `Preços: ${option.label}.` : '';
+}
+
+const packageCards = computed(() =>
+    props.packages.map((offer) => ({
+        offer,
+        price:
+            offer.prices.find(
+                (candidate) => candidate.interval === activePeriod.value,
+            ) ?? null,
+        otherPeriods: offer.prices
+            .map((candidate) => candidate.interval_label.toLowerCase())
+            .join(', '),
+    })),
+);
 const menuButton = ref<HTMLButtonElement | null>(null);
 const selectedMomentIndex = ref(0);
 const selectedLifecycleIndex = ref(0);
@@ -1571,8 +1637,167 @@ const questions: { question: string; answer: string }[] = [
                     says what is true about opening an account instead, rather
                     than showing a price nobody agreed to charge.
                 -->
+                <template v-if="packages.length > 0">
+                    <div v-if="periods.length > 1" class="mt-10">
+                        <PeriodSwitch
+                            :model-value="activePeriod"
+                            :options="periods"
+                            label="Período de pagamento"
+                            @update:model-value="choosePeriod"
+                        />
+                    </div>
+                    <p class="sr-only" role="status" aria-live="polite">
+                        {{ periodAnnouncement }}
+                    </p>
+
+                    <div
+                        :class="[
+                            periods.length > 1 ? 'mt-8' : 'mt-12',
+                            'grid gap-4 md:grid-cols-2 lg:grid-cols-3',
+                        ]"
+                    >
+                        <article
+                            v-for="(card, index) in packageCards"
+                            :key="card.offer.name"
+                            v-reveal="index"
+                            :aria-labelledby="`pacote-${index}`"
+                            :class="[
+                                card.offer.is_featured
+                                    ? 'ring-[1.5px] ring-accent-400'
+                                    : '',
+                                'relative flex min-w-0 flex-col rounded-3xl bg-brand-50 p-7 dark:bg-white/5',
+                            ]"
+                        >
+                            <!-- On the card's top edge, so it adds nothing to the flow and the cards stay aligned. -->
+                            <p
+                                v-if="card.offer.is_featured"
+                                class="absolute start-7 -top-3 rounded-full bg-white px-2.5 py-0.5 text-xs font-semibold text-brand-950 ring-[1.5px] ring-accent-400 dark:bg-zinc-950 dark:text-accent-300"
+                            >
+                                Mais escolhido
+                            </p>
+                            <h3
+                                :id="`pacote-${index}`"
+                                class="font-display text-2xl tracking-[-0.02em] [overflow-wrap:anywhere]"
+                            >
+                                {{ card.offer.name }}
+                            </h3>
+
+                            <!--
+                                One height whatever the period: tabular figures,
+                                the period on its own line, room for two lines of
+                                saving. Switching moves nothing.
+                            -->
+                            <div class="mt-5 min-h-[7.5rem]">
+                                <template v-if="card.price">
+                                    <p class="flex items-baseline gap-2">
+                                        <span
+                                            class="font-display numeric text-[2.6rem] leading-none tracking-[-0.03em] [overflow-wrap:anywhere]"
+                                            >{{ card.price.amount }}</span
+                                        >
+                                        <span
+                                            class="text-sm font-medium text-brand-500 dark:text-zinc-400"
+                                            >{{
+                                                currencyLabel(
+                                                    card.price.currency,
+                                                )
+                                            }}</span
+                                        >
+                                    </p>
+                                    <p
+                                        class="mt-1.5 text-sm text-brand-600 dark:text-zinc-400"
+                                    >
+                                        {{ card.price.period_label }}
+                                    </p>
+                                    <p
+                                        class="mt-2 min-h-10 numeric text-sm text-brand-600 dark:text-zinc-400"
+                                    >
+                                        <template v-if="card.price.months > 1">
+                                            ≈
+                                            {{ card.price.monthly_equivalent }}
+                                            {{
+                                                currencyLabel(
+                                                    card.price.currency,
+                                                )
+                                            }}
+                                            por mês<template
+                                                v-if="
+                                                    card.price
+                                                        .saving_percentage !==
+                                                    null
+                                                "
+                                            >
+                                                · poupa
+                                                {{
+                                                    card.price
+                                                        .saving_percentage
+                                                }}%</template
+                                            >
+                                        </template>
+                                    </p>
+                                </template>
+                                <template v-else>
+                                    <p class="text-base font-medium">
+                                        Não disponível neste período
+                                    </p>
+                                    <p
+                                        class="mt-1.5 text-sm text-brand-600 dark:text-zinc-400"
+                                    >
+                                        Disponível: {{ card.otherPeriods }}.
+                                    </p>
+                                </template>
+                            </div>
+
+                            <p
+                                v-if="card.offer.summary"
+                                class="mt-3 text-[0.95rem] text-brand-600 dark:text-zinc-400"
+                            >
+                                {{ card.offer.summary }}
+                            </p>
+                            <ul
+                                v-if="card.offer.features.length > 0"
+                                class="mt-5 grid gap-2 text-[0.95rem] text-brand-700 dark:text-zinc-300"
+                            >
+                                <li
+                                    v-for="feature in card.offer.features"
+                                    :key="feature"
+                                    class="flex gap-3"
+                                >
+                                    <span
+                                        class="mt-2.5 size-1.5 shrink-0 rounded-full bg-accent-400"
+                                        aria-hidden="true"
+                                    />
+                                    <span
+                                        class="min-w-0 [overflow-wrap:anywhere]"
+                                        >{{ feature }}</span
+                                    >
+                                </li>
+                            </ul>
+                            <p
+                                v-if="card.offer.trial_days > 0"
+                                class="mt-5 text-[0.95rem] font-medium"
+                            >
+                                {{
+                                    card.offer.trial_days === 1
+                                        ? '1 dia de experiência'
+                                        : `${card.offer.trial_days} dias de experiência`
+                                }}
+                            </p>
+                            <div class="mt-auto pt-7">
+                                <Link
+                                    :href="register.url()"
+                                    class="flex h-11 items-center justify-center rounded-full bg-brand-950 px-5 text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 dark:bg-white dark:text-brand-950 dark:hover:bg-zinc-200"
+                                >
+                                    Abrir conta<span class="sr-only">
+                                        com o pacote {{ card.offer.name }}</span
+                                    >
+                                </Link>
+                            </div>
+                        </article>
+                    </div>
+                </template>
+
                 <div
-                    v-if="plans.length > 0"
+                    v-else-if="plans.length > 0"
                     class="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3"
                 >
                     <article

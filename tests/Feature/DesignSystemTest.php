@@ -43,6 +43,7 @@ test('the screens that used a banner now use the shared page header', function (
     'Pos/Registers/Index',
     'Pos/Sessions/Index',
     'Pos/Sessions/Show',
+    'Support/Packages',
 ]);
 
 test('the dashboard and the debts page colour debt age the same way', function (string $page) {
@@ -204,4 +205,87 @@ test('the till receipt is an 80mm roll in black on white that prints itself', fu
         ->toContain('window.print()')
         ->toContain('v-html="document.authenticity.qr_svg"')
         ->not->toContain('AppLayout');
+});
+
+test('the form family is declared once, in the stylesheet', function () {
+    $css = (string) file_get_contents(resource_path('css/app.css'));
+
+    foreach (['form-input', 'form-input-sm', 'form-search', 'form-checkbox', 'form-radio', 'field-adorned', 'field-adornment-start', 'field-adornment-end', 'field-label', 'field-hint'] as $utility) {
+        expect($css)->toContain("@utility {$utility} {");
+    }
+
+    // Text fields are 40px, and 44px under a coarse pointer.
+    expect($css)->toMatch('/@utility form-input \{\s*width: 100%;\s*min-block-size: 2\.5rem;/')
+        ->toContain('min-block-size: 2.75rem;');
+});
+
+test('the package screens use the shared controls, wayfinder routes and the one period switch', function () {
+    $screen = (string) file_get_contents(resource_path('js/pages/Support/Packages.vue'));
+
+    expect($screen)
+        ->toContain("import RecordDialog from '@/components/RecordDialog.vue';")
+        ->toContain("import ToggleSwitch from '@/components/ToggleSwitch.vue';")
+        ->toContain("import FormError from '@/components/FormError.vue';")
+        ->toContain("import StatusBadge from '@/components/StatusBadge.vue';")
+        ->toContain("from '@/routes/support/packages'")
+        ->toContain('confirmAction(')
+        ->toContain('focusFirstInvalid(')
+        ->toContain('aria-invalid')
+        // Money travels as a decimal string, never as a float.
+        ->toContain('parseAmount(')
+        ->not->toContain('/support/pacotes');
+
+    // One switch, native radios, shared by the customer's billing page and the public page.
+    $switch = (string) file_get_contents(resource_path('js/components/billing/PeriodSwitch.vue'));
+
+    expect($switch)->toContain('role="radiogroup"')->toContain('type="radio"');
+
+    foreach (['Billing/Show', 'Landing'] as $page) {
+        expect((string) file_get_contents(resource_path("js/pages/{$page}.vue")))
+            ->toContain("import PeriodSwitch from '@/components/billing/PeriodSwitch.vue';")
+            ->toContain('<PeriodSwitch');
+    }
+});
+
+test('the package screens keep to the motion and logical-property rules', function () {
+    foreach ([
+        'pages/Support/Packages.vue',
+        'components/billing/PeriodSwitch.vue',
+        'lib/packages.ts',
+    ] as $file) {
+        $contents = (string) file_get_contents(resource_path("js/{$file}"));
+
+        expect($contents)
+            ->not->toContain('transition-all')
+            ->not->toContain('ease-in ')
+            ->not->toMatch('/\b(?:ml|mr|pl|pr|left|right)-(?:\d|\[|auto)/')
+            ->not->toMatch('/\bh-screen\b|\bmin-h-screen\b/');
+    }
+
+    // The pure helper stays loadable by node's test runner: no imports at all.
+    expect((string) file_get_contents(resource_path('js/lib/packages.ts')))->not->toContain('import ');
+});
+
+test('a package draft survives the password confirmation but is never saved by itself', function () {
+    $screen = (string) file_get_contents(resource_path('js/pages/Support/Packages.vue'));
+
+    $restore = substr($screen, (int) strpos($screen, 'function restoreDraft'), 2600);
+
+    expect($screen)
+        ->toContain("const DRAFT_KEY = 'support-package-draft';")
+        // Stored just before the save is sent, so a bounce to the confirmation keeps it.
+        ->and(strpos($screen, 'storeDraft();'))->toBeLessThan(strpos($screen, 'form.post(storePackage.url()'))
+        // Removed when the save settles here, when a validation error comes back,
+        // when the dialog is closed, and whenever a success flash arrives.
+        ->and($screen)
+        ->toContain("page.component === 'Support/Packages'")
+        ->toContain('flash?.success')
+        ->toContain('restoredDraft.value')
+        ->toContain('Confirmou a palavra-passe. Reveja e guarde outra vez.')
+        // Restoring only refills the dialog: the save stays a deliberate click.
+        ->and($restore)
+        ->toContain('openEdit(row)')
+        ->not->toContain('submit(')
+        ->not->toContain('form.post(')
+        ->not->toContain('form.put(');
 });

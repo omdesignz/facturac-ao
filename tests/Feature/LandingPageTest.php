@@ -3,6 +3,7 @@
 use App\DataImportType;
 use App\LegalDocumentType;
 use App\Models\LegalDocument;
+use App\Models\SubscriptionPackage;
 use App\Models\SubscriptionPlan;
 use App\Models\User;
 use App\Province;
@@ -211,4 +212,68 @@ test('the counter shows up as a situation, a feature and a section that agree', 
         ->toContain('17 080,00')
         ->toContain('139 080,00')
         ->toContain("{ name: 'Prateleira metálica', quantity: '2 × 32 000', total: '64 000' }");
+});
+
+test('no package is advertised while none is published', function () {
+    $this->get('/')
+        ->assertInertia(fn (Assert $page) => $page->where('packages', [])->etc());
+});
+
+test('a published package reaches the page with prices already worked out by the server', function () {
+    SubscriptionPackage::factory()->featured()->withPlans([
+        'monthly' => 12_500_00,
+        'quarterly' => 34_875_00,
+        'annual' => 127_500_00,
+    ])->create(['name' => 'Essencial', 'trial_days' => 14, 'features' => ['Facturas ilimitadas']]);
+
+    $this->get('/')
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('packages.0.name', 'Essencial')
+            ->where('packages.0.is_featured', true)
+            ->where('packages.0.trial_days', 14)
+            ->where('packages.0.features', ['Facturas ilimitadas'])
+            ->where('packages.0.prices.0.amount', '12 500')
+            ->where('packages.0.prices.1.amount', '34 875')
+            ->where('packages.0.prices.1.monthly_equivalent', '11 625')
+            ->where('packages.0.prices.1.saving_percentage', 7)
+            ->where('packages.0.prices.2.period_label', 'por ano')
+            ->where('packages.0.prices.2.saving_percentage', 15)
+            ->etc()
+        );
+});
+
+test('the page offers only the payment periods a package really sells', function () {
+    SubscriptionPackage::factory()->withPlans(['monthly' => 10_000_00, 'annual' => 100_000_00])->create();
+
+    $this->get('/')
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('packages.0.prices', 2)
+            ->where('packages.0.prices.0.interval', 'monthly')
+            ->where('packages.0.prices.1.interval', 'annual')
+            ->etc()
+        );
+});
+
+test('a withdrawn package is not advertised', function () {
+    SubscriptionPackage::factory()->inactive()->withPlans()->create();
+
+    $this->get('/')
+        ->assertInertia(fn (Assert $page) => $page->where('packages', [])->etc());
+});
+
+test('the pricing section shows packages with the shared period switch and keeps its honest fallback', function () {
+    $page = (string) file_get_contents(resource_path('js/pages/Landing.vue'));
+
+    expect($page)
+        ->toContain('id="precos"')
+        ->toContain('<PeriodSwitch')
+        ->toContain('v-if="packages.length > 0"')
+        ->toContain('v-else-if="plans.length > 0"')
+        // The fallback that states what is true when no price is published is untouched.
+        ->toContain('v-for="assurance in openingAnAccount"')
+        ->toContain('Mais escolhido')
+        // Prices come formatted by the server; the page never works one out.
+        ->toContain('card.price.amount')
+        ->toContain('card.price.monthly_equivalent')
+        ->not->toContain('amount_minor');
 });

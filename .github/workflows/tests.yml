@@ -40,8 +40,14 @@ jobs:
       - name: Calendar date arithmetic gate
         run: node --test tests/payment-terms.test.mjs
 
+      - name: Date and time field gate
+        run: node --test tests/date-input.test.mjs
+
       - name: Point of sale cart arithmetic gate
         run: node --test tests/pos-cart.test.mjs
+
+      - name: Subscription package pricing gate
+        run: node --test tests/packages.test.mjs
 
       - name: Run CI Checks
         run: composer ci:check

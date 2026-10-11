@@ -13,6 +13,7 @@ import {
     FileUp,
     HandCoins,
     Landmark,
+    Layers,
     LayoutDashboard,
     LifeBuoy,
     Package,
@@ -50,6 +51,7 @@ import { account as accountSettings, security } from '@/routes/settings';
 import { index as stockIndex } from '@/routes/stock';
 import { index as supportIndex } from '@/routes/support';
 import { index as supportComplaints } from '@/routes/support/complaints';
+import { index as supportPackages } from '@/routes/support/packages';
 import { edit as supportSettings } from '@/routes/support/settings';
 import { index as transportDocumentsIndex } from '@/routes/transport-documents';
 
@@ -291,6 +293,12 @@ const internalGroup: NavigationGroup = {
             href: supportComplaints.url(),
             match: '/support/reclamacoes',
             icon: ClipboardList,
+        },
+        {
+            name: 'Pacotes',
+            href: supportPackages.url(),
+            match: '/support/pacotes',
+            icon: Layers,
         },
         {
             name: 'Definições',

@@ -29,6 +29,7 @@ dataset('navigable pages', [
     'help' => 'helpIndex.url()',
     'support console' => 'supportIndex.url()',
     'support complaints' => 'supportComplaints.url()',
+    'support packages' => 'supportPackages.url()',
     'support settings' => 'supportSettings.url()',
 ]);
 
