@@ -84,11 +84,18 @@ class CatalogueItemController extends Controller
 
         if ($request->validated('type') === 'service') {
             $values = $request->validated();
-            unset($values['type'], $values['tracks_stock'], $values['reorder_level']);
-            app(ServiceCommands::class)->create(
+            $barcode = $values['barcode'] ?? null;
+            // The service command accepts a fixed set of fields; the barcode
+            // is added to the article once it exists.
+            unset($values['type'], $values['tracks_stock'], $values['reorder_level'], $values['barcode']);
+            $item = app(ServiceCommands::class)->create(
                 HumanServiceCommandContext::resolve($request->user(), $legalEntity),
                 ServiceCreateInput::human($values),
             );
+
+            if ($barcode !== null) {
+                $item->update(['barcode' => $barcode]);
+            }
         } else {
             $legalEntity->catalogueItems()->create([
                 ...$this->attributes($request),
@@ -150,6 +157,7 @@ class CatalogueItemController extends Controller
         return [
             'public_id' => $item->public_id,
             'code' => $item->code,
+            'barcode' => $item->barcode,
             'type' => $item->type->value,
             'type_label' => $item->type->label(),
             'name' => $item->name,

@@ -42,6 +42,13 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\NotificationPreferenceController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\PlatformSettingController;
+use App\Http\Controllers\PosCashMovementController;
+use App\Http\Controllers\PosController;
+use App\Http\Controllers\PosRegisterController;
+use App\Http\Controllers\PosSaleController;
+use App\Http\Controllers\PosSaleReceiptController;
+use App\Http\Controllers\PosSessionCloseController;
+use App\Http\Controllers\PosSessionController;
 use App\Http\Controllers\PriceListController;
 use App\Http\Controllers\QuoteController;
 use App\Http\Controllers\RecurringInvoiceController;
@@ -344,6 +351,42 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::post('/documents/invoices/{fiscalDocument}/issue', FiscalDocumentIssueController::class)
             ->middleware(['mfa', 'password.confirm', 'throttle:10,1'])
             ->name('invoices.issue');
+        // Ponto de venda. Opening a shift is the moment of password
+        // confirmation; an open shift is then the standing authority to sell,
+        // so a sale asks for MFA but not the password again.
+        Route::get('/ponto-de-venda', [PosController::class, 'show'])
+            ->middleware('cache.headers:private;no_store')
+            ->name('pos.show');
+        Route::post('/ponto-de-venda/turnos', [PosSessionController::class, 'store'])
+            ->middleware(['mfa', 'password.confirm'])
+            ->name('pos.sessions.store');
+        Route::get('/ponto-de-venda/turnos', [PosSessionController::class, 'index'])
+            ->middleware('cache.headers:private;no_store')
+            ->name('pos.sessions.index');
+        Route::get('/ponto-de-venda/turnos/{posSession}', [PosSessionController::class, 'show'])
+            ->middleware('cache.headers:private;no_store')
+            ->name('pos.sessions.show');
+        Route::post('/ponto-de-venda/turnos/{posSession}/fecho', PosSessionCloseController::class)
+            ->middleware('mfa')
+            ->name('pos.sessions.close');
+        Route::post('/ponto-de-venda/turnos/{posSession}/movimentos', [PosCashMovementController::class, 'store'])
+            ->middleware('mfa')
+            ->name('pos.cash-movements.store');
+        Route::post('/ponto-de-venda/turnos/{posSession}/vendas', [PosSaleController::class, 'store'])
+            ->middleware(['mfa', 'throttle:120,1'])
+            ->name('pos.sales.store');
+        Route::get('/ponto-de-venda/vendas/{posSale}/talao', PosSaleReceiptController::class)
+            ->middleware('cache.headers:private;no_store')
+            ->name('pos.sales.receipt');
+        Route::get('/ponto-de-venda/caixas', [PosRegisterController::class, 'index'])
+            ->middleware('cache.headers:private;no_store')
+            ->name('pos.registers.index');
+        Route::post('/ponto-de-venda/caixas', [PosRegisterController::class, 'store'])
+            ->name('pos.registers.store');
+        Route::put('/ponto-de-venda/caixas/{posRegister}', [PosRegisterController::class, 'update'])
+            ->name('pos.registers.update');
+        Route::delete('/ponto-de-venda/caixas/{posRegister}', [PosRegisterController::class, 'destroy'])
+            ->name('pos.registers.destroy');
         Route::get('/agt/connection', [AgtConnectionController::class, 'show'])
             ->middleware('cache.headers:private;no_store')
             ->name('agt.connection.show');

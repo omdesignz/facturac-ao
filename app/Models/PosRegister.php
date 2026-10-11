@@ -2,61 +2,40 @@
 
 namespace App\Models;
 
-use App\CatalogueItemType;
-use Database\Factories\CatalogueItemFactory;
+use Database\Factories\PosRegisterFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
+ * A till at an establishment.
+ *
  * @property int $id
  * @property string $public_id
  * @property int $workspace_id
  * @property int $legal_entity_id
- * @property string $code
- * @property string|null $barcode
- * @property CatalogueItemType $type
+ * @property int $establishment_id
  * @property string $name
- * @property string|null $description
- * @property string $unit_of_measure
- * @property int $unit_price_minor
- * @property string $currency_code
- * @property string $tax_type
- * @property string|null $tax_code
- * @property string $tax_percentage
- * @property string|null $tax_exemption_code
  * @property bool $is_active
- * @property bool $tracks_stock
- * @property int $stock_scale
- * @property int|null $reorder_level_units
+ * @property-read Establishment $establishment
+ * @property-read PosSession|null $openSession
  */
 #[Fillable([
     'workspace_id',
     'legal_entity_id',
-    'code',
-    'barcode',
-    'type',
+    'establishment_id',
     'name',
-    'description',
-    'unit_of_measure',
-    'unit_price_minor',
-    'currency_code',
-    'tax_type',
-    'tax_code',
-    'tax_percentage',
-    'tax_exemption_code',
     'is_active',
-    'tracks_stock',
-    'reorder_level_units',
 ])]
-class CatalogueItem extends Model
+class PosRegister extends Model
 {
-    /** @use HasFactory<CatalogueItemFactory> */
+    /** @use HasFactory<PosRegisterFactory> */
     use HasFactory, HasUlids, LogsActivity;
 
     /** @return array<int, string> */
@@ -82,16 +61,28 @@ class CatalogueItem extends Model
         return $this->belongsTo(LegalEntity::class);
     }
 
-    /** @return HasMany<TransportDocumentLine, $this> */
-    public function transportDocumentLines(): HasMany
+    /** @return BelongsTo<Establishment, $this> */
+    public function establishment(): BelongsTo
     {
-        return $this->hasMany(TransportDocumentLine::class);
+        return $this->belongsTo(Establishment::class);
+    }
+
+    /** @return HasMany<PosSession, $this> */
+    public function sessions(): HasMany
+    {
+        return $this->hasMany(PosSession::class);
+    }
+
+    /** @return HasOne<PosSession, $this> */
+    public function openSession(): HasOne
+    {
+        return $this->hasOne(PosSession::class)->where('status', 'open');
     }
 
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->useLogName('catalogue-item')
+            ->useLogName('pos-register')
             ->logFillable()
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
@@ -101,12 +92,7 @@ class CatalogueItem extends Model
     protected function casts(): array
     {
         return [
-            'type' => CatalogueItemType::class,
-            'unit_price_minor' => 'integer',
-            'tax_percentage' => 'decimal:2',
             'is_active' => 'boolean',
-            'tracks_stock' => 'boolean',
-            'stock_scale' => 'integer',
         ];
     }
 }

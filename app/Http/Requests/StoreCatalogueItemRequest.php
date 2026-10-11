@@ -29,6 +29,19 @@ class StoreCatalogueItemRequest extends FormRequest
                     ->where('legal_entity_id', $this->legalEntityId())
                     ->ignore($item instanceof CatalogueItem ? $item->id : null),
             ],
+            /*
+             * What a till scans to find the article. Optional, and unique within
+             * the company so a scan can never be ambiguous.
+             */
+            'barcode' => [
+                'nullable',
+                'string',
+                'max:64',
+                'regex:/\A[A-Za-z0-9-]+\z/',
+                Rule::unique('catalogue_items', 'barcode')
+                    ->where('legal_entity_id', $this->legalEntityId())
+                    ->ignore($item instanceof CatalogueItem ? $item->id : null),
+            ],
             'type' => ['required', Rule::enum(CatalogueItemType::class)],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:500'],
@@ -54,6 +67,8 @@ class StoreCatalogueItemRequest extends FormRequest
         return [
             'code.unique' => 'Já existe um artigo com este código.',
             'code.regex' => 'O código só pode ter letras maiúsculas, números, ponto, hífen ou underscore.',
+            'barcode.unique' => 'Já existe um artigo com este código de barras.',
+            'barcode.regex' => 'O código de barras só pode ter letras, números e hífen.',
         ];
     }
 
@@ -113,6 +128,8 @@ class StoreCatalogueItemRequest extends FormRequest
 
         $this->merge([
             'code' => strtoupper(trim((string) $this->input('code'))),
+            // A blank field means "no barcode", not a barcode of nothing.
+            'barcode' => $this->normaliseBarcode($this->input('barcode')),
             'unit_of_measure' => strtoupper(trim((string) $this->input('unit_of_measure', 'UN'))),
             'tax_type' => $taxProfile['type'] ?? $taxType,
             'tax_code' => $taxProfile !== null ? $taxProfile['code'] : $taxCode,
@@ -132,6 +149,17 @@ class StoreCatalogueItemRequest extends FormRequest
         }
 
         $value = mb_strtoupper(trim($value));
+
+        return $value === '' ? null : $value;
+    }
+
+    private function normaliseBarcode(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $value = trim($value);
 
         return $value === '' ? null : $value;
     }

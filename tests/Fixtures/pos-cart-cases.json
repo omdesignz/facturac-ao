@@ -1,0 +1,635 @@
+{
+    "description": "Carts for the point of sale with the totals the server's FiscalCalculator produces for a Factura/Recibo. Prices and totals are integer minor units (cêntimos). Rules: the line net is the price times the quantity times one minus the discount, rounded down; tax on the line is the net times the rate, rounded up; the line gross is net plus tax; document totals are the sums of the lines. The server test and the Vue cart tests read this same file.",
+    "cases": [
+        {
+            "name": "one article at normal VAT",
+            "lines": [
+                {
+                    "unit_price_minor": 10000,
+                    "quantity": "1",
+                    "discount_percentage": "0",
+                    "tax": {
+                        "type": "IVA",
+                        "code": "NOR",
+                        "percentage": "14.00",
+                        "exemption_code": null
+                    }
+                }
+            ],
+            "expected": {
+                "settlement_total_minor": 0,
+                "net_total_minor": 10000,
+                "tax_payable_minor": 1400,
+                "gross_total_minor": 11400,
+                "lines": [
+                    {
+                        "net_minor": 10000,
+                        "tax_minor": 1400,
+                        "gross_minor": 11400
+                    }
+                ]
+            }
+        },
+        {
+            "name": "two of the same, no discount",
+            "lines": [
+                {
+                    "unit_price_minor": 10000,
+                    "quantity": "2",
+                    "discount_percentage": "0",
+                    "tax": {
+                        "type": "IVA",
+                        "code": "NOR",
+                        "percentage": "14.00",
+                        "exemption_code": null
+                    }
+                }
+            ],
+            "expected": {
+                "settlement_total_minor": 0,
+                "net_total_minor": 20000,
+                "tax_payable_minor": 2800,
+                "gross_total_minor": 22800,
+                "lines": [
+                    {
+                        "net_minor": 20000,
+                        "tax_minor": 2800,
+                        "gross_minor": 22800
+                    }
+                ]
+            }
+        },
+        {
+            "name": "exempt article",
+            "lines": [
+                {
+                    "unit_price_minor": 12345,
+                    "quantity": "3",
+                    "discount_percentage": "0",
+                    "tax": {
+                        "type": "IVA",
+                        "code": "ISE",
+                        "percentage": "0.00",
+                        "exemption_code": "M00"
+                    }
+                }
+            ],
+            "expected": {
+                "settlement_total_minor": 0,
+                "net_total_minor": 37035,
+                "tax_payable_minor": 0,
+                "gross_total_minor": 37035,
+                "lines": [
+                    {
+                        "net_minor": 37035,
+                        "tax_minor": 0,
+                        "gross_minor": 37035
+                    }
+                ]
+            }
+        },
+        {
+            "name": "not subject to VAT",
+            "lines": [
+                {
+                    "unit_price_minor": 5000,
+                    "quantity": "1",
+                    "discount_percentage": "0",
+                    "tax": {
+                        "type": "NS",
+                        "code": null,
+                        "percentage": "0.00",
+                        "exemption_code": "M02"
+                    }
+                }
+            ],
+            "expected": {
+                "settlement_total_minor": 0,
+                "net_total_minor": 5000,
+                "tax_payable_minor": 0,
+                "gross_total_minor": 5000,
+                "lines": [
+                    {
+                        "net_minor": 5000,
+                        "tax_minor": 0,
+                        "gross_minor": 5000
+                    }
+                ]
+            }
+        },
+        {
+            "name": "mixed rates in one cart",
+            "lines": [
+                {
+                    "unit_price_minor": 10000,
+                    "quantity": "2",
+                    "discount_percentage": "0",
+                    "tax": {
+                        "type": "IVA",
+                        "code": "NOR",
+                        "percentage": "14.00",
+                        "exemption_code": null
+                    }
+                },
+                {
+                    "unit_price_minor": 2550,
+                    "quantity": "4",
+                    "discount_percentage": "0",
+                    "tax": {
+                        "type": "IVA",
+                        "code": "ISE",
+                        "percentage": "0.00",
+                        "exemption_code": "M00"
+                    }
+                },
+                {
+                    "unit_price_minor": 99900,
+                    "quantity": "1",
+                    "discount_percentage": "0",
+                    "tax": {
+                        "type": "NS",
+                        "code": null,
+                        "percentage": "0.00",
+                        "exemption_code": "M02"
+                    }
+                }
+            ],
+            "expected": {
+                "settlement_total_minor": 0,
+                "net_total_minor": 130100,
+                "tax_payable_minor": 2800,
+                "gross_total_minor": 132900,
+                "lines": [
+                    {
+                        "net_minor": 20000,
+                        "tax_minor": 2800,
+                        "gross_minor": 22800
+                    },
+                    {
+                        "net_minor": 10200,
+                        "tax_minor": 0,
+                        "gross_minor": 10200
+                    },
+                    {
+                        "net_minor": 99900,
+                        "tax_minor": 0,
+                        "gross_minor": 99900
+                    }
+                ]
+            }
+        },
+        {
+            "name": "fractional weight rounds the net down",
+            "lines": [
+                {
+                    "unit_price_minor": 45050,
+                    "quantity": "0.5",
+                    "discount_percentage": "0",
+                    "tax": {
+                        "type": "IVA",
+                        "code": "NOR",
+                        "percentage": "14.00",
+                        "exemption_code": null
+                    }
+                },
+                {
+                    "unit_price_minor": 12999,
+                    "quantity": "2.5",
+                    "discount_percentage": "0",
+                    "tax": {
+                        "type": "IVA",
+                        "code": "NOR",
+                        "percentage": "14.00",
+                        "exemption_code": null
+                    }
+                }
+            ],
+            "expected": {
+                "settlement_total_minor": 0,
+                "net_total_minor": 55022,
+                "tax_payable_minor": 7704,
+                "gross_total_minor": 62726,
+                "lines": [
+                    {
+                        "net_minor": 22525,
+                        "tax_minor": 3154,
+                        "gross_minor": 25679
+                    },
+                    {
+                        "net_minor": 32497,
+                        "tax_minor": 4550,
+                        "gross_minor": 37047
+                    }
+                ]
+            }
+        },
+        {
+            "name": "four-decimal quantity",
+            "lines": [
+                {
+                    "unit_price_minor": 9999,
+                    "quantity": "0.3333",
+                    "discount_percentage": "0",
+                    "tax": {
+                        "type": "IVA",
+                        "code": "NOR",
+                        "percentage": "14.00",
+                        "exemption_code": null
+                    }
+                }
+            ],
+            "expected": {
+                "settlement_total_minor": 0,
+                "net_total_minor": 3332,
+                "tax_payable_minor": 467,
+                "gross_total_minor": 3799,
+                "lines": [
+                    {
+                        "net_minor": 3332,
+                        "tax_minor": 467,
+                        "gross_minor": 3799
+                    }
+                ]
+            }
+        },
+        {
+            "name": "discount that leaves a fraction of a cêntimo",
+            "lines": [
+                {
+                    "unit_price_minor": 3333,
+                    "quantity": "3",
+                    "discount_percentage": "15",
+                    "tax": {
+                        "type": "IVA",
+                        "code": "NOR",
+                        "percentage": "14.00",
+                        "exemption_code": null
+                    }
+                }
+            ],
+            "expected": {
+                "settlement_total_minor": 1500,
+                "net_total_minor": 8499,
+                "tax_payable_minor": 1190,
+                "gross_total_minor": 9689,
+                "lines": [
+                    {
+                        "net_minor": 8499,
+                        "tax_minor": 1190,
+                        "gross_minor": 9689
+                    }
+                ]
+            }
+        },
+        {
+            "name": "two-decimal discount",
+            "lines": [
+                {
+                    "unit_price_minor": 1234,
+                    "quantity": "1.2345",
+                    "discount_percentage": "7.77",
+                    "tax": {
+                        "type": "IVA",
+                        "code": "NOR",
+                        "percentage": "14.00",
+                        "exemption_code": null
+                    }
+                }
+            ],
+            "expected": {
+                "settlement_total_minor": 118,
+                "net_total_minor": 1405,
+                "tax_payable_minor": 197,
+                "gross_total_minor": 1602,
+                "lines": [
+                    {
+                        "net_minor": 1405,
+                        "tax_minor": 197,
+                        "gross_minor": 1602
+                    }
+                ]
+            }
+        },
+        {
+            "name": "thirty-three percent off",
+            "lines": [
+                {
+                    "unit_price_minor": 99999,
+                    "quantity": "1",
+                    "discount_percentage": "33.33",
+                    "tax": {
+                        "type": "IVA",
+                        "code": "NOR",
+                        "percentage": "14.00",
+                        "exemption_code": null
+                    }
+                },
+                {
+                    "unit_price_minor": 100,
+                    "quantity": "1",
+                    "discount_percentage": "33.33",
+                    "tax": {
+                        "type": "IVA",
+                        "code": "ISE",
+                        "percentage": "0.00",
+                        "exemption_code": "M00"
+                    }
+                }
+            ],
+            "expected": {
+                "settlement_total_minor": 33364,
+                "net_total_minor": 66735,
+                "tax_payable_minor": 9334,
+                "gross_total_minor": 76069,
+                "lines": [
+                    {
+                        "net_minor": 66669,
+                        "tax_minor": 9334,
+                        "gross_minor": 76003
+                    },
+                    {
+                        "net_minor": 66,
+                        "tax_minor": 0,
+                        "gross_minor": 66
+                    }
+                ]
+            }
+        },
+        {
+            "name": "tax is rounded up per line, so ten cheap lines add up to more than one dear one",
+            "lines": [
+                {
+                    "unit_price_minor": 99,
+                    "quantity": "1",
+                    "discount_percentage": "0",
+                    "tax": {
+                        "type": "IVA",
+                        "code": "NOR",
+                        "percentage": "14.00",
+                        "exemption_code": null
+                    }
+                },
+                {
+                    "unit_price_minor": 99,
+                    "quantity": "1",
+                    "discount_percentage": "0",
+                    "tax": {
+                        "type": "IVA",
+                        "code": "NOR",
+                        "percentage": "14.00",
+                        "exemption_code": null
+                    }
+                },
+                {
+                    "unit_price_minor": 99,
+                    "quantity": "1",
+                    "discount_percentage": "0",
+                    "tax": {
+                        "type": "IVA",
+                        "code": "NOR",
+                        "percentage": "14.00",
+                        "exemption_code": null
+                    }
+                },
+                {
+                    "unit_price_minor": 99,
+                    "quantity": "1",
+                    "discount_percentage": "0",
+                    "tax": {
+                        "type": "IVA",
+                        "code": "NOR",
+                        "percentage": "14.00",
+                        "exemption_code": null
+                    }
+                },
+                {
+                    "unit_price_minor": 99,
+                    "quantity": "1",
+                    "discount_percentage": "0",
+                    "tax": {
+                        "type": "IVA",
+                        "code": "NOR",
+                        "percentage": "14.00",
+                        "exemption_code": null
+                    }
+                },
+                {
+                    "unit_price_minor": 99,
+                    "quantity": "1",
+                    "discount_percentage": "0",
+                    "tax": {
+                        "type": "IVA",
+                        "code": "NOR",
+                        "percentage": "14.00",
+                        "exemption_code": null
+                    }
+                },
+                {
+                    "unit_price_minor": 99,
+                    "quantity": "1",
+                    "discount_percentage": "0",
+                    "tax": {
+                        "type": "IVA",
+                        "code": "NOR",
+                        "percentage": "14.00",
+                        "exemption_code": null
+                    }
+                },
+                {
+                    "unit_price_minor": 99,
+                    "quantity": "1",
+                    "discount_percentage": "0",
+                    "tax": {
+                        "type": "IVA",
+                        "code": "NOR",
+                        "percentage": "14.00",
+                        "exemption_code": null
+                    }
+                },
+                {
+                    "unit_price_minor": 99,
+                    "quantity": "1",
+                    "discount_percentage": "0",
+                    "tax": {
+                        "type": "IVA",
+                        "code": "NOR",
+                        "percentage": "14.00",
+                        "exemption_code": null
+                    }
+                },
+                {
+                    "unit_price_minor": 99,
+                    "quantity": "1",
+                    "discount_percentage": "0",
+                    "tax": {
+                        "type": "IVA",
+                        "code": "NOR",
+                        "percentage": "14.00",
+                        "exemption_code": null
+                    }
+                }
+            ],
+            "expected": {
+                "settlement_total_minor": 0,
+                "net_total_minor": 990,
+                "tax_payable_minor": 140,
+                "gross_total_minor": 1130,
+                "lines": [
+                    {
+                        "net_minor": 99,
+                        "tax_minor": 14,
+                        "gross_minor": 113
+                    },
+                    {
+                        "net_minor": 99,
+                        "tax_minor": 14,
+                        "gross_minor": 113
+                    },
+                    {
+                        "net_minor": 99,
+                        "tax_minor": 14,
+                        "gross_minor": 113
+                    },
+                    {
+                        "net_minor": 99,
+                        "tax_minor": 14,
+                        "gross_minor": 113
+                    },
+                    {
+                        "net_minor": 99,
+                        "tax_minor": 14,
+                        "gross_minor": 113
+                    },
+                    {
+                        "net_minor": 99,
+                        "tax_minor": 14,
+                        "gross_minor": 113
+                    },
+                    {
+                        "net_minor": 99,
+                        "tax_minor": 14,
+                        "gross_minor": 113
+                    },
+                    {
+                        "net_minor": 99,
+                        "tax_minor": 14,
+                        "gross_minor": 113
+                    },
+                    {
+                        "net_minor": 99,
+                        "tax_minor": 14,
+                        "gross_minor": 113
+                    },
+                    {
+                        "net_minor": 99,
+                        "tax_minor": 14,
+                        "gross_minor": 113
+                    }
+                ]
+            }
+        },
+        {
+            "name": "smallest price still pays a whole cêntimo of tax",
+            "lines": [
+                {
+                    "unit_price_minor": 1,
+                    "quantity": "1",
+                    "discount_percentage": "0",
+                    "tax": {
+                        "type": "IVA",
+                        "code": "NOR",
+                        "percentage": "14.00",
+                        "exemption_code": null
+                    }
+                }
+            ],
+            "expected": {
+                "settlement_total_minor": 0,
+                "net_total_minor": 1,
+                "tax_payable_minor": 1,
+                "gross_total_minor": 2,
+                "lines": [
+                    {
+                        "net_minor": 1,
+                        "tax_minor": 1,
+                        "gross_minor": 2
+                    }
+                ]
+            }
+        },
+        {
+            "name": "a free line beside a paid one",
+            "lines": [
+                {
+                    "unit_price_minor": 5000,
+                    "quantity": "1",
+                    "discount_percentage": "100",
+                    "tax": {
+                        "type": "IVA",
+                        "code": "NOR",
+                        "percentage": "14.00",
+                        "exemption_code": null
+                    }
+                },
+                {
+                    "unit_price_minor": 7500,
+                    "quantity": "2",
+                    "discount_percentage": "0",
+                    "tax": {
+                        "type": "IVA",
+                        "code": "NOR",
+                        "percentage": "14.00",
+                        "exemption_code": null
+                    }
+                }
+            ],
+            "expected": {
+                "settlement_total_minor": 5000,
+                "net_total_minor": 15000,
+                "tax_payable_minor": 2100,
+                "gross_total_minor": 17100,
+                "lines": [
+                    {
+                        "net_minor": 0,
+                        "tax_minor": 0,
+                        "gross_minor": 0
+                    },
+                    {
+                        "net_minor": 15000,
+                        "tax_minor": 2100,
+                        "gross_minor": 17100
+                    }
+                ]
+            }
+        },
+        {
+            "name": "large amount",
+            "lines": [
+                {
+                    "unit_price_minor": 199999999,
+                    "quantity": "7.5",
+                    "discount_percentage": "2.5",
+                    "tax": {
+                        "type": "IVA",
+                        "code": "NOR",
+                        "percentage": "14.00",
+                        "exemption_code": null
+                    }
+                }
+            ],
+            "expected": {
+                "settlement_total_minor": 37500000,
+                "net_total_minor": 1462499992,
+                "tax_payable_minor": 204749999,
+                "gross_total_minor": 1667249991,
+                "lines": [
+                    {
+                        "net_minor": 1462499992,
+                        "tax_minor": 204749999,
+                        "gross_minor": 1667249991
+                    }
+                ]
+            }
+        }
+    ]
+}

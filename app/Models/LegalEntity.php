@@ -87,6 +87,18 @@ class LegalEntity extends Model
         return $this->hasMany(CatalogueItem::class);
     }
 
+    /** @return HasMany<PosRegister, $this> */
+    public function posRegisters(): HasMany
+    {
+        return $this->hasMany(PosRegister::class);
+    }
+
+    /** @return HasMany<PosSession, $this> */
+    public function posSessions(): HasMany
+    {
+        return $this->hasMany(PosSession::class);
+    }
+
     /** @return HasMany<DataImport, $this> */
     public function dataImports(): HasMany
     {
