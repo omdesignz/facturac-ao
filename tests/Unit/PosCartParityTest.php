@@ -6,7 +6,7 @@ use App\FiscalDocumentType;
 /**
  * The carts in tests/Fixtures/pos-cart-cases.json are the contract between the
  * till's arithmetic and the server's. The Vue cart tests read the same file, so
- * if it drifts from what a Factura/Recibo really comes to, this fails first.
+ * if it drifts from what a Factura/Recibo or Talão de Venda really comes to, this fails first.
  *
  * @return list<array{name: string, lines: list<array<string, mixed>>, expected: array<string, mixed>}>
  */
@@ -29,7 +29,7 @@ test('the shared cart fixture holds a spread of carts', function () {
         )))->not->toHaveCount(1);
 });
 
-test('the server calculates every shared cart to the cêntimo', function (array $case) {
+test('the server calculates every shared cart to the cêntimo', function (array $case, FiscalDocumentType $type) {
     $lines = array_map(function (array $line): array {
         $minor = $line['unit_price_minor'];
 
@@ -48,7 +48,7 @@ test('the server calculates every shared cart to the cêntimo', function (array 
         ];
     }, $case['lines']);
 
-    $calculation = (new FiscalCalculator)->calculate($lines, FiscalDocumentType::InvoiceReceipt);
+    $calculation = (new FiscalCalculator)->calculate($lines, $type);
     $expected = $case['expected'];
 
     expect($calculation->settlementTotalMinor)->toBe($expected['settlement_total_minor'])
@@ -63,4 +63,4 @@ test('the server calculates every shared cart to the cêntimo', function (array 
 })->with(fn (): array => array_combine(
     array_column(posCartCases(), 'name'),
     array_map(fn (array $case): array => [$case], posCartCases()),
-));
+))->with([FiscalDocumentType::InvoiceReceipt, FiscalDocumentType::SalesTicket]);

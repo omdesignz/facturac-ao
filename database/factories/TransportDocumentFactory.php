@@ -32,6 +32,7 @@ class TransportDocumentFactory extends Factory
             'updated_by_user_id' => User::factory(),
             'document_type' => TransportDocumentType::TransportGuide,
             'status' => TransportDocumentStatus::Draft,
+            'movement_direction' => 'outgoing',
             'movement_date' => now()->toDateString(),
             'movement_start_at' => now()->addHour(),
             'recipient_name' => fake()->company(),

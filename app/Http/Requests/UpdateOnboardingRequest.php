@@ -94,6 +94,7 @@ class UpdateOnboardingRequest extends FormRequest
                     ->ignore($legalEntityId),
             ],
             'tax_regime' => ['required', Rule::enum(TaxRegime::class)],
+            'tax_regime_confirmed' => ['accepted'],
             'main_cae_code' => ['required', 'string', 'regex:/^[A-Z0-9]{3,16}$/'],
             'establishment_code' => ['required', 'string', 'regex:/^[A-Z0-9][A-Z0-9_-]{1,31}$/'],
             'establishment_name' => ['required', 'string', 'min:2', 'max:255'],
@@ -106,6 +107,12 @@ class UpdateOnboardingRequest extends FormRequest
              */
             'province_code' => ['required', new Enum(Province::class)],
         ];
+    }
+
+    /** @return array<string, string> */
+    public function messages(): array
+    {
+        return ['tax_regime_confirmed.accepted' => 'Confirme o regime que consta do seu cadastro fiscal. Se tiver dúvidas, consulte a AGT ou o seu contabilista.'];
     }
 
     protected function prepareForValidation(): void

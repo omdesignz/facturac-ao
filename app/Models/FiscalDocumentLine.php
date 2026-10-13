@@ -19,6 +19,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $workspace_id
  * @property int $legal_entity_id
  * @property int $fiscal_document_id
+ * @property list<array{document_no: string, document_date: string}>|null $order_references
+ * @property int|null $origin_transport_line_id
+ * @property-read TransportDocumentLine|null $originTransportLine
+ * @property int|null $reference_line_number
  * @property int $line_number
  * @property FiscalOperationType $operation_type
  * @property CarbonImmutable|null $operation_date
@@ -42,6 +46,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'legal_entity_id',
     'fiscal_document_id',
     'line_number',
+    'reference_line_number',
+    'order_references',
+    'origin_transport_line_id',
     'operation_type',
     'operation_date',
     'product_code',
@@ -84,6 +91,12 @@ class FiscalDocumentLine extends Model
         return $this->belongsTo(FiscalDocument::class);
     }
 
+    /** @return BelongsTo<TransportDocumentLine, $this> */
+    public function originTransportLine(): BelongsTo
+    {
+        return $this->belongsTo(TransportDocumentLine::class, 'origin_transport_line_id');
+    }
+
     /** @return HasMany<FiscalDocumentLineTax, $this> */
     public function taxes(): HasMany
     {
@@ -94,7 +107,10 @@ class FiscalDocumentLine extends Model
     protected function casts(): array
     {
         return [
+            'reference_line_number' => 'integer',
             'operation_type' => FiscalOperationType::class,
+            'order_references' => 'array',
+            'origin_transport_line_id' => 'integer',
             'operation_date' => 'immutable_date',
         ];
     }

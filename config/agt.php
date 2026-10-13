@@ -4,6 +4,10 @@ return [
     'default_environment' => env('AGT_DEFAULT_ENVIRONMENT', 'homologation'),
     'schema_version' => env('AGT_SCHEMA_VERSION', '2.0'),
 
+    // Inject only through the deployment secret store; never commit real entries.
+    'manual_setup_enabled' => (bool) env('AGT_MANUAL_SETUP_ENABLED', false),
+    'prepared_associations' => json_decode((string) env('AGT_PREPARED_ASSOCIATIONS', '[]'), true),
+
     'software' => [
         'product_name' => env('AGT_SOFTWARE_PRODUCT_NAME', 'facturac.ao'),
         'company_name' => env('AGT_SOFTWARE_COMPANY_NAME', 'VAP SOLUÇÕES, LDA'),
@@ -76,6 +80,12 @@ return [
             'typ' => 'JWT',
             'alg' => 'RS256',
         ],
+    ],
+
+    'saft_signing' => [
+        'key_path' => env('AGT_SAFT_SIGNING_KEY_PATH'),
+        'key_version' => env('AGT_SAFT_SIGNING_KEY_VERSION'),
+        'series_suffix' => env('AGT_SAFT_SERIES_SUFFIX', ''),
     ],
 
     'qr' => [

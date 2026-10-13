@@ -5,6 +5,7 @@ namespace App\Fiscal\Documents\V2_0;
 use App\Fiscal\Agt\Exceptions\UnsupportedAgtSchema;
 use App\Fiscal\Agt\Support\CanonicalNumber;
 use App\Fiscal\Calculation\FiscalCalculator;
+use App\Fiscal\Documents\AdjustmentLineReference;
 use App\FiscalDocumentType;
 use App\Models\FiscalDocument;
 use App\Models\FiscalDocumentLine;
@@ -15,7 +16,7 @@ use DomainException;
 
 final class FiscalDocumentPayloadBuilder
 {
-    public function __construct(private FiscalCalculator $calculator) {}
+    public function __construct(private FiscalCalculator $calculator, private AdjustmentLineReference $adjustmentLineReference) {}
 
     /** @return array<string, mixed> */
     public function signableObject(FiscalDocument $document): array
@@ -102,9 +103,9 @@ final class FiscalDocumentPayloadBuilder
     }
 
     /**
-     * @return array{referenceInfo: array{reference: string|null, reason: string|null}}|array{}
+     * @return array{referenceInfo: array{reference: string|null, reason: string|null, referenceItemLineNo: int}}|array{}
      */
-    private function adjustmentReference(FiscalDocument $document): array
+    private function adjustmentReference(FiscalDocument $document, FiscalDocumentLine $line): array
     {
         if (! $document->document_type->isAdjustment()) {
             return [];
@@ -114,6 +115,7 @@ final class FiscalDocumentPayloadBuilder
             'referenceInfo' => [
                 'reference' => $document->references_document_no,
                 'reason' => $document->adjustment_reason,
+                'referenceItemLineNo' => $this->adjustmentLineReference->resolve($document, $line->reference_line_number),
             ],
         ];
     }
@@ -140,7 +142,7 @@ final class FiscalDocumentPayloadBuilder
             'unitOfMeasure' => $line->unit_of_measure,
             'unitPriceBase' => CanonicalNumber::fromMinorUnits($line->unit_price_base_minor),
             'unitPrice' => CanonicalNumber::fromScaledInteger($line->unit_price_micros, 6),
-            ...$this->adjustmentReference($document),
+            ...$this->adjustmentReference($document, $line),
             $amountField => CanonicalNumber::fromMinorUnits($line->net_amount_minor),
             'taxes' => $line->taxes
                 ->map(fn (FiscalDocumentLineTax $tax): array => $this->tax($tax))
@@ -268,6 +270,12 @@ final class FiscalDocumentPayloadBuilder
             throw new DomainException(
                 'An adjustment document must reference the corrected document and state a reason.',
             );
+        }
+
+        if ($document->document_type->isAdjustment()) {
+            foreach ($document->lines as $line) {
+                $this->adjustmentLineReference->resolve($document, $line->reference_line_number);
+            }
         }
 
         if ($document->document_type->requiresLineOperationDate()

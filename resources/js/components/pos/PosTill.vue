@@ -507,6 +507,10 @@ const paymentLines = computed(() => cart.salePayloadLines());
             :customer-label="customerLabel"
             :lines="paymentLines"
             :payment-methods="paymentMethods"
+            :sales-ticket-series-available="
+                session.sales_ticket_series_available
+            "
+            :sales-ticket-bases="session.sales_ticket_bases"
             :currency-code="session.currency_code"
             @close="leavePayment"
             @review="reviewSale"

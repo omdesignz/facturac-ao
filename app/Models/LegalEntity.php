@@ -28,6 +28,10 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property string $country_code
  * @property string $currency_code
  * @property string|null $logo_path
+ * @property string|null $bank_name
+ * @property string|null $bank_account_holder
+ * @property string|null $bank_account_number
+ * @property string|null $bank_iban
  * @property string $timezone
  * @property CarbonImmutable|null $onboarding_completed_at
  */
@@ -42,6 +46,10 @@ use Spatie\Activitylog\Support\LogOptions;
     'country_code',
     'currency_code',
     'logo_path',
+    'bank_name',
+    'bank_account_holder',
+    'bank_account_number',
+    'bank_iban',
     'timezone',
     'onboarding_completed_at',
 ])]

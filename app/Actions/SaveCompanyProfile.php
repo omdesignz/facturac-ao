@@ -35,11 +35,11 @@ class SaveCompanyProfile
                 ->lockForUpdate()
                 ->first();
 
-            if ($legalEntity !== null && ! in_array($legalEntity->status, [
+            if ($legalEntity !== null && ($legalEntity->agtConnections()->exists() || ! in_array($legalEntity->status, [
                 LegalEntityStatus::Draft,
                 LegalEntityStatus::Configured,
-            ], true)) {
-                throw new LogicException('The legal entity profile is locked after homologation begins.');
+            ], true))) {
+                throw new LogicException('The legal entity profile is locked after AGT access is associated.');
             }
 
             $legalEntity ??= new LegalEntity([

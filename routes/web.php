@@ -13,6 +13,7 @@ use App\Http\Controllers\BillingCheckoutController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\BillingReferenceRefreshController;
 use App\Http\Controllers\CatalogueItemController;
+use App\Http\Controllers\CompanyBankDetailsController;
 use App\Http\Controllers\CompanyLogoController;
 use App\Http\Controllers\CookieConsentController;
 use App\Http\Controllers\CurrentWorkspaceController;
@@ -63,11 +64,14 @@ use App\Http\Controllers\StockController;
 use App\Http\Controllers\SubscriptionPackageController;
 use App\Http\Controllers\SupportComplaintController;
 use App\Http\Controllers\SupportController;
+use App\Http\Controllers\TaxpayerAssociationController;
 use App\Http\Controllers\TermsAcceptanceController;
+use App\Http\Controllers\TransactionReportController;
 use App\Http\Controllers\TransportDocumentCancellationController;
 use App\Http\Controllers\TransportDocumentController;
 use App\Http\Controllers\TransportDocumentIssueController;
 use App\Http\Controllers\TransportDocumentPrintController;
+use App\Http\Controllers\UserGuideController;
 use App\Http\Controllers\WorkSessionPreferenceController;
 use App\Http\Controllers\WorkspaceSetupController;
 use Illuminate\Http\RedirectResponse;
@@ -157,6 +161,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
     // Outside the workspace scope: someone whose workspace setup is stuck is
     // exactly the person who most needs to reach support.
+    Route::get('/ajuda/guia', [UserGuideController::class, 'index'])->name('help.guide.index');
+    Route::get('/ajuda/guia/pdf', [UserGuideController::class, 'pdf'])
+        ->middleware('throttle:10,1')->name('help.guide.pdf');
+
     Route::get('/ajuda', [HelpController::class, 'index'])->name('help.index');
     Route::post('/ajuda/reclamacoes', [HelpController::class, 'store'])
         ->middleware('throttle:5,1')
@@ -193,6 +201,11 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             ->middleware('throttle:90,1')
             ->name('search');
         Route::get('/analises', AnalyticsController::class)->name('analytics.index');
+        Route::get('/relatorios/exportar', [TransactionReportController::class, 'index'])->middleware('cache.headers:private;no_store')->name('transaction-reports.index');
+        Route::get('/relatorios/exportar/previa', [TransactionReportController::class, 'preview'])->middleware(['cache.headers:private;no_store', 'throttle:60,1'])->name('transaction-reports.preview');
+        Route::get('/relatorios/exportar/historico', [TransactionReportController::class, 'history'])->middleware('throttle:60,1')->name('transaction-reports.history');
+        Route::get('/relatorios/exportar/ficheiros/{transactionExport}', [TransactionReportController::class, 'file'])->middleware('throttle:30,1')->name('transaction-reports.file');
+        Route::post('/relatorios/exportar/excel', [TransactionReportController::class, 'download'])->middleware('throttle:6,1')->name('transaction-reports.download');
         Route::get('/onboarding', [OnboardingController::class, 'show'])->name('onboarding');
         Route::put('/onboarding', [OnboardingController::class, 'update'])->name('onboarding.update');
         Route::put('/current-workspace/{workspace}', [CurrentWorkspaceController::class, 'update'])
@@ -250,6 +263,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::get('/saft/exportar', SaftExportController::class)
             ->middleware('throttle:10,5')
             ->name('saft.export');
+
+        Route::put('/empresa/dados-bancarios', [CompanyBankDetailsController::class, 'update'])
+            ->name('company.bank-details.update');
 
         Route::get('/empresa/logotipo', [CompanyLogoController::class, 'show'])
             ->name('company.logo.show');
@@ -407,6 +423,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::put('/agt/connection', [AgtConnectionController::class, 'update'])
             ->middleware(['mfa', 'password.confirm', 'throttle:10,1'])
             ->name('agt.connection.update');
+        Route::post('/agt/connection/associate', TaxpayerAssociationController::class)
+            ->middleware(['mfa', 'password.confirm', 'throttle:3,1'])
+            ->name('agt.connection.associate');
         Route::post('/agt/connection/checks', [AgtConnectionCheckController::class, 'store'])
             ->middleware(['mfa', 'password.confirm', 'throttle:3,1'])
             ->name('agt.connection-checks.store');

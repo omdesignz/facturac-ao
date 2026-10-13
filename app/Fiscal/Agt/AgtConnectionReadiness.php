@@ -32,7 +32,7 @@ final readonly class AgtConnectionReadiness
         $items = [
             [
                 'key' => 'schema',
-                'label' => 'Contrato AGT 2.0',
+                'label' => 'Configuração compatível com a AGT',
                 'detail' => 'Configuração guardada no contrato actualmente aceite pela AGT.',
                 'done' => $connection?->schema_version === '2.0',
             ],
@@ -47,31 +47,31 @@ final readonly class AgtConnectionReadiness
                 'key' => 'establishment',
                 'label' => 'Estabelecimento',
                 'detail' => 'Sede local e número atribuído pela AGT identificados.',
-                'done' => $establishment !== null
+                'done' => $establishment?->is_active === true
                     && filled($connection?->establishment_number),
             ],
             [
                 'key' => 'credentials',
-                'label' => 'Credenciais de serviço',
-                'detail' => 'Utilizador e palavra-passe guardados de forma cifrada.',
+                'label' => 'Acesso API do produtor',
+                'detail' => 'Preparado pelo apoio Facturac. Não use a palavra-passe do Portal do Contribuinte.',
                 'done' => $connection?->hasBasicCredentials() === true,
             ],
             [
                 'key' => 'software',
-                'label' => 'Software certificado',
-                'detail' => 'Produto, versão e número de validação configurados.',
+                'label' => 'Identificação do software',
+                'detail' => 'Produto, versão e número de validação preparados pelo produtor. Não precisa de homologar o software.',
                 'done' => $softwareConfigured,
             ],
             [
                 'key' => 'software_key',
-                'label' => 'Chave do software',
-                'detail' => 'Referência resolve para uma chave RSA segura de, no mínimo, 2048 bits.',
+                'label' => 'Assinatura do Facturac',
+                'detail' => 'O apoio Facturac prepara e protege a assinatura do software.',
                 'done' => $this->keyIsAvailable($connection?->software_key_reference),
             ],
             [
                 'key' => 'taxpayer_key',
-                'label' => 'Chave do contribuinte',
-                'detail' => 'A chave fornecida pela AGT permanece no cofre local.',
+                'label' => 'Assinatura da empresa',
+                'detail' => 'O apoio confirma a chave emitida pela AGT para o seu NIF e guarda-a no cofre.',
                 'done' => $this->keyIsAvailable($connection?->taxpayer_key_reference),
             ],
             [
@@ -82,7 +82,7 @@ final readonly class AgtConnectionReadiness
             ],
             [
                 'key' => 'environment',
-                'label' => 'Ambiente isolado',
+                'label' => 'Modo de testes',
                 'detail' => 'Apenas homologação está autorizada nesta fase.',
                 'done' => $connection?->environment->isEnabled() === true
                     && $connection->environment->value === 'homologation',

@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Actions\SaveCompanyProfile;
 use App\AgtConnectionStatus;
 use App\AgtEnvironment;
+use App\Fiscal\Agt\CompanySetupProgress;
 use App\Http\Requests\UpdateOnboardingRequest;
+use App\Models\User;
 use App\Models\Workspace;
 use App\Province;
 use App\TaxRegime;
@@ -17,7 +19,7 @@ use Inertia\Response;
 
 class OnboardingController extends Controller
 {
-    public function show(Request $request): Response
+    public function show(Request $request, CompanySetupProgress $progress): Response
     {
         /** @var Workspace $workspace */
         $workspace = $request->attributes->get('currentWorkspace');
@@ -34,7 +36,7 @@ class OnboardingController extends Controller
             'legal_name' => '',
             'trade_name' => '',
             'tax_identification_number' => '',
-            'tax_regime' => TaxRegime::General->value,
+            'tax_regime' => '',
             'main_cae_code' => '',
             'status' => 'draft',
             'status_label' => 'Rascunho',
@@ -81,8 +83,19 @@ class OnboardingController extends Controller
             ->where('environment', AgtEnvironment::Homologation)
             ->first();
 
+        $user = $request->user();
+        abort_unless($user instanceof User, 401);
+
         return Inertia::render('Onboarding', [
+            'setupProgress' => $progress->evaluate($legalEntity, $establishment, $user),
             'company' => $company,
+            'bankDetails' => [
+                'bank_name' => $legalEntity->bank_name ?? '',
+                'bank_account_holder' => $legalEntity->bank_account_holder ?? '',
+                'bank_account_number' => $legalEntity->bank_account_number ?? '',
+                'bank_iban' => $legalEntity->bank_iban ?? '',
+            ],
+            'canUpdateBankDetails' => $legalEntity !== null && Gate::allows('updateBankDetails', $legalEntity),
             'taxRegimes' => array_map(
                 fn (TaxRegime $taxRegime): array => [
                     'value' => $taxRegime->value,

@@ -19,7 +19,8 @@ class UpdateAgtConnectionRequest extends FormRequest
     {
         $legalEntity = $this->currentLegalEntity();
 
-        return $legalEntity !== null
+        return (bool) config('agt.manual_setup_enabled', false)
+            && $legalEntity !== null
             && $this->user()?->can('manageAgtConnection', $legalEntity) === true;
     }
 

@@ -4,6 +4,7 @@ import { Printer, X } from '@lucide/vue';
 import { nextTick, onMounted } from 'vue';
 import { formatMinor, formatQuantity } from '@/lib/pos';
 import { buttonInk, buttonOutline } from '@/lib/pos-ui';
+import { printDocument as print } from '@/lib/print';
 
 /**
  * The till receipt: the fiscal document in 72mm, plus what changed hands.
@@ -43,6 +44,7 @@ const props = defineProps<{
         issued_at: string | null;
         currency_code: string;
         notes: string | null;
+        footer_text: string;
         payment_method_label: string | null;
         company: {
             legal_name: string;
@@ -134,7 +136,7 @@ let printed = false;
 
 /**
  * Print once, when the page can look its best: fonts loaded and the QR drawn.
- * The QR is inline SVG, so there is no image to wait for; a frame is enough.
+ * The inline QR embeds the official AGT logo, which must finish loading.
  */
 async function printOnce(): Promise<void> {
     if (printed) {
@@ -142,21 +144,13 @@ async function printOnce(): Promise<void> {
     }
 
     printed = true;
-    await document.fonts.ready;
     await nextTick();
-    await new Promise<void>((resolve) =>
-        requestAnimationFrame(() => resolve()),
-    );
-    window.print();
+    await print();
 }
 
 onMounted(() => {
     void printOnce();
 });
-
-function print(): void {
-    window.print();
-}
 
 function close(): void {
     window.close();
@@ -190,10 +184,10 @@ function close(): void {
         </div>
 
         <article
-            class="receipt mx-auto w-[72mm] max-w-full bg-white px-[3mm] py-[4mm] font-mono text-[11px]/[1.4] text-black shadow-sm print:p-0 print:shadow-none"
+            class="receipt mx-auto w-[72mm] max-w-full bg-white px-[3mm] py-[4mm] font-sans text-[12px]/[1.45] text-black tabular-nums shadow-sm print:p-0 print:shadow-none"
         >
             <header class="text-center">
-                <p class="text-[13px]/[1.3] font-semibold break-words">
+                <p class="text-[16px]/[1.25] font-semibold break-words">
                     {{
                         document.company.trade_name ??
                         document.company.legal_name
@@ -217,8 +211,10 @@ function close(): void {
             <hr class="rc-rule" />
 
             <section class="text-center">
-                <p class="uppercase">{{ document.document_type_label }}</p>
-                <p class="text-[13px]/[1.3] font-semibold break-words">
+                <p class="text-[14px]/[1.3] font-semibold">
+                    {{ document.document_type_label }}
+                </p>
+                <p class="text-[12px]/[1.4] break-words">
                     {{ document.document_no }}
                 </p>
                 <p v-if="document.agt_accepted">Aceite pela AGT</p>
@@ -275,13 +271,13 @@ function close(): void {
                     <p class="font-semibold break-words">
                         {{ line.product_description }}
                     </p>
-                    <p v-if="line.product_code" class="break-words text-[#333]">
+                    <p v-if="line.product_code" class="break-words text-black">
                         {{ line.product_code }}
                     </p>
-                    <p v-if="line.operation_date" class="text-[#333]">
+                    <p v-if="line.operation_date" class="text-black">
                         Operação · {{ formatDay(line.operation_date) }}
                     </p>
-                    <p v-if="line.tax_exemption_code" class="text-[#333]">
+                    <p v-if="line.tax_exemption_code" class="text-black">
                         Isento · {{ line.tax_exemption_code }}
                     </p>
                     <div class="rc-row">
@@ -294,7 +290,7 @@ function close(): void {
                             formatMinor(line.gross_amount_minor)
                         }}</span>
                     </div>
-                    <p class="text-[#333]">
+                    <p class="text-black">
                         Preço s/ IVA · IVA {{ line.tax_rate }}%<template
                             v-if="Number(line.discount_rate) > 0"
                         >
@@ -351,7 +347,7 @@ function close(): void {
                     <dd>{{ formatMinor(document.totals.tax_minor) }}</dd>
                 </div>
                 <div
-                    class="rc-row mt-1 border-t-2 border-black pt-1 text-[14px]/[1.3] font-semibold"
+                    class="rc-row mt-1 border-t-2 border-black pt-1 text-[17px]/[1.3] font-semibold"
                 >
                     <dt>Total</dt>
                     <dd>
@@ -396,18 +392,8 @@ function close(): void {
 
             <hr class="rc-rule" />
 
-            <footer class="text-center text-[10px]/[1.4]">
-                <p v-if="document.authenticity.software_validation_number">
-                    Processado por programa validado n.º
-                    {{ document.authenticity.software_validation_number }}/AGT
-                </p>
-                <p v-if="document.authenticity.digest" class="mt-1 break-words">
-                    Documento
-                    <span class="font-semibold">{{
-                        document.authenticity.digest
-                    }}</span>
-                    — confirme com o emissor em caso de dúvida.
-                </p>
+            <footer class="text-center text-[11px]/[1.45]">
+                <p class="break-words">{{ document.footer_text }}</p>
                 <p v-if="document.support_email" class="mt-1 break-words">
                     {{ document.support_email }}
                 </p>
@@ -446,15 +432,16 @@ body {
 }
 
 .receipt .rc-rule {
-    margin-block: 0.4rem;
+    margin-block: 0.65rem;
     border: 0;
-    border-top: 1px dashed #000;
+    border-block-start: 1px solid #000;
 }
 
 .receipt .rc-row {
     display: flex;
     justify-content: space-between;
     gap: 0.5rem;
+    padding-block: 0.125rem;
 }
 
 .receipt .rc-row > :last-child {
@@ -466,6 +453,7 @@ body {
     display: flex;
     justify-content: space-between;
     gap: 0.5rem;
+    padding-block: 0.125rem;
 }
 
 .receipt .rc-pairs > div > dd {

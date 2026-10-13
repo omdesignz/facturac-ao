@@ -505,6 +505,12 @@ export interface SaleLinePayload {
     discount_percentage: string;
 }
 
+export interface SaleDocumentChoice {
+    type: 'FR' | 'TV';
+    tvBasis: string | null;
+    confirmed: boolean;
+}
+
 /** One attempt to charge a given cart, kept so a retry reuses its key. */
 export interface SaleAttempt {
     key: string;
@@ -512,6 +518,7 @@ export interface SaleAttempt {
     signature: string;
     /** The last try got no answer, so the sale may or may not exist. */
     unanswered: boolean;
+    documentChoice?: SaleDocumentChoice;
 }
 
 /** The key to send for this cart: the old one while the cart is unchanged. */
@@ -534,6 +541,11 @@ export function saleSignature(
     lines: SaleLinePayload[],
     customer: { kind: string; id?: string; name?: string; nif?: string },
     expectedTotalMinor: number,
+    documentChoice: SaleDocumentChoice = {
+        type: 'FR',
+        tvBasis: null,
+        confirmed: false,
+    },
 ): string {
     return JSON.stringify([
         lines.map((line) => [
@@ -548,6 +560,9 @@ export function saleSignature(
             customer.nif ?? '',
         ],
         expectedTotalMinor,
+        ...(documentChoice.type === 'TV'
+            ? [['TV', documentChoice.tvBasis]]
+            : []),
     ]);
 }
 

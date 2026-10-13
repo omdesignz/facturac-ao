@@ -113,7 +113,7 @@ function submit(): void {
             <PageHeader
                 eyebrow="Vendas · Ponto de venda"
                 title="Ponto de venda"
-                description="Abra uma caixa para começar a vender. Cada venda sai como factura-recibo, já comunicada à AGT."
+                description="Abra uma caixa para começar a vender. Cada venda sai como factura-recibo por defeito, com envio para a AGT."
             >
                 <template #actions>
                     <Link :href="sessionsIndex.url()" :class="buttonOutline">

@@ -84,8 +84,9 @@ test('generic invoices are offered as issuable documents', function () {
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->where('document.document_type', 'GF')
-            ->where('documentTypes.2.value', 'GF')
-            ->where('documentTypes.2.requires_line_operation_date', true)
+            ->where('documentTypes', fn ($types): bool => collect($types)->contains(
+                fn ($type): bool => $type['value'] === 'GF' && $type['requires_line_operation_date'] === true,
+            ))
             ->where('document.lines.0.operation_date', now('Africa/Luanda')->toDateString())
         );
 });

@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Actions\SaveAgtConnection;
 use App\AgtEnvironment;
 use App\Fiscal\Agt\AgtConnectionReadiness;
+use App\Fiscal\Agt\CompanySetupProgress;
+use App\Fiscal\Agt\PreparedTaxpayerAssociation;
 use App\Fiscal\Documents\FiscalSeriesYearWindow;
 use App\FiscalDocumentType;
 use App\Http\Requests\UpdateAgtConnectionRequest;
@@ -28,6 +30,8 @@ class AgtConnectionController extends Controller
         Request $request,
         AgtConnectionReadiness $readiness,
         FiscalSeriesYearWindow $seriesYearWindow,
+        CompanySetupProgress $progress,
+        PreparedTaxpayerAssociation $association,
     ): Response|RedirectResponse {
         /** @var Workspace $workspace */
         $workspace = $request->attributes->get('currentWorkspace');
@@ -64,6 +68,8 @@ class AgtConnectionController extends Controller
         Inertia::encryptHistory();
 
         return Inertia::render('Agt/Connection/Show', [
+            'setupProgress' => $progress->evaluate($legalEntity, $establishment, $user),
+            'associationAvailable' => Gate::allows('manageAgtConnection', $legalEntity) && $association->available($legalEntity),
             'legalEntity' => [
                 'legal_name' => $legalEntity->legal_name,
                 'tax_identification_number' => $legalEntity->tax_identification_number,
@@ -112,6 +118,7 @@ class AgtConnectionController extends Controller
             ],
             'permissions' => [
                 'manage' => Gate::allows('manageAgtConnection', $legalEntity),
+                'manual_setup' => (bool) config('agt.manual_setup_enabled', false) && Gate::allows('manageAgtConnection', $legalEntity),
                 'test' => Gate::allows('testAgtConnection', $legalEntity),
                 'request_series' => Gate::allows('testAgtConnection', $legalEntity)
                     && $connection?->status->value === 'verified',
@@ -186,9 +193,9 @@ class AgtConnectionController extends Controller
             'product_version' => $connection->product_version ?? '',
             'software_validation_number' => $connection->software_validation_number ?? '',
             'establishment_number' => $connection->establishment_number ?? '',
-            'software_key_reference' => $connection->software_key_reference ?? '',
+            'software_key_reference' => config('agt.manual_setup_enabled', false) ? ($connection->software_key_reference ?? '') : '',
             'software_key_fingerprint' => $this->abbreviateFingerprint($connection->software_key_fingerprint),
-            'taxpayer_key_reference' => $connection->taxpayer_key_reference ?? '',
+            'taxpayer_key_reference' => config('agt.manual_setup_enabled', false) ? ($connection->taxpayer_key_reference ?? '') : '',
             'taxpayer_key_fingerprint' => $this->abbreviateFingerprint($connection->taxpayer_key_fingerprint),
             'configured_at' => $connection->configured_at?->toIso8601String(),
             'verified_at' => $connection->verified_at?->toIso8601String(),

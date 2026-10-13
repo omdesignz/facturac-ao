@@ -4,13 +4,14 @@ namespace App\Actions;
 
 use App\AgtConnectionStatus;
 use App\Exceptions\BillingActionRefused;
-use App\Fiscal\Agt\Support\CanonicalJson;
 use App\Fiscal\Documents\TransportDocumentNumber;
+use App\Fiscal\Saft\TransportDocumentSigner;
 use App\Models\AgtConnection;
 use App\Models\TransportDocument;
 use App\Models\TransportDocumentSequence;
 use App\Models\User;
 use App\TransportDocumentStatus;
+use App\TransportDocumentType;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -18,7 +19,7 @@ final readonly class IssueTransportDocument
 {
     public function __construct(
         private TransportDocumentNumber $documentNumber,
-        private CanonicalJson $canonicalJson,
+        private TransportDocumentSigner $signer,
     ) {}
 
     public function execute(
@@ -44,6 +45,17 @@ final readonly class IssueTransportDocument
 
             if ($document->lines->isEmpty()) {
                 throw BillingActionRefused::because('A guia precisa de pelo menos uma linha.');
+            }
+
+            if ($document->document_type === TransportDocumentType::Consignment) {
+                throw BillingActionRefused::because('A emissão de guias GC aguarda um esquema SAF-T aceite pela AGT. O esquema actual só aceita GR, GT, GA e GD.');
+            }
+
+            if ($document->currency_code !== 'AOA') {
+                throw BillingActionRefused::because('As guias devem ser valorizadas em AOA. Configure a moeda da empresa antes de emitir.');
+            }
+            if (! in_array($document->movement_direction, ['incoming', 'outgoing'], true)) {
+                throw BillingActionRefused::because('Indique se a guia acompanha uma entrada ou saída de mercadorias.');
             }
 
             $year = $document->movement_date->year;
@@ -92,18 +104,16 @@ final readonly class IssueTransportDocument
                 'software_product_version' => $connection->product_version
                     ?? (string) config('app.version', '1.0'),
                 'software_validation_number' => $connection?->software_validation_number,
-                'hash_control' => preg_match(
-                    '/^\\d+\/AGT\/\\d{4}$/',
-                    trim((string) $connection?->software_validation_number),
-                ) === 1 ? '1' : '0',
                 'system_entry_at' => $issuedAt,
                 'frozen_at' => $issuedAt,
                 'issued_at' => $issuedAt,
             ]);
-            $document->document_hash = hash(
-                'sha256',
-                $this->canonicalJson->encode($this->hashPayload($document)),
-            );
+            $previous = TransportDocument::query()
+                ->where('transport_document_sequence_id', $sequence->id)
+                ->whereNotNull('document_no')
+                ->orderByDesc('issue_sequence')
+                ->first();
+            $this->signer->sign($document, $previous);
             $document->save();
 
             $sequence->forceFill([
@@ -133,7 +143,13 @@ final readonly class IssueTransportDocument
         $code = Str::upper((string) Str::of($establishmentCode)->ascii()->replaceMatches('/[^A-Z0-9._-]+/i', ''));
         $code = $code === '' ? 'MOV' : $code;
 
-        return Str::limit("{$code}{$year}", 32, '');
+        $suffix = (string) config('agt.saft_signing.series_suffix', '');
+
+        if (preg_match('/^[A-Za-z0-9._-]{0,8}$/', $suffix) !== 1 || strlen($code) + 4 + strlen($suffix) > 32) {
+            throw BillingActionRefused::because('O código do estabelecimento e o sufixo da série SAF-T excedem o formato permitido.');
+        }
+
+        return "{$code}{$year}{$suffix}";
     }
 
     private function connection(TransportDocument $document): ?AgtConnection
@@ -156,28 +172,5 @@ final readonly class IssueTransportDocument
 
         return ($product === '' ? (string) config('app.name') : $product)
             .'/'.($company === '' ? 'VAP SOLUÇÕES, LDA' : $company);
-    }
-
-    /** @return array<string, mixed> */
-    private function hashPayload(TransportDocument $document): array
-    {
-        return [
-            'documentNo' => $document->document_no,
-            'movementDate' => $document->movement_date->toDateString(),
-            'movementStartAt' => $document->movement_start_at->format('Y-m-d\TH:i:s'),
-            'systemEntryAt' => $document->system_entry_at?->format('Y-m-d\TH:i:s'),
-            'recipientTaxID' => $document->recipient_tax_identification_number,
-            'origin' => $document->origin_address,
-            'destination' => $document->destination_address,
-            'grossTotalMinor' => $document->gross_total_minor,
-            'lines' => $document->lines->map(fn ($line): array => [
-                'number' => $line->line_number,
-                'code' => $line->product_code,
-                'description' => $line->product_description,
-                'quantityUnits' => $line->quantity_units,
-                'quantityScale' => $line->quantity_scale,
-                'unitPriceMinor' => $line->unit_price_minor,
-            ])->values()->all(),
-        ];
     }
 }

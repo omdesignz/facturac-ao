@@ -79,6 +79,8 @@ export interface PosSessionProps {
     register: { public_id: string; name: string };
     establishment: { public_id: string; name: string };
     series_available: boolean;
+    sales_ticket_series_available: boolean;
+    sales_ticket_bases: { value: string; label: string }[];
     summary: PosTillSummary;
     cash_movements: PosCashMovement[];
     recent_sales: PosSaleRow[];

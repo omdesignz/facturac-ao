@@ -216,6 +216,11 @@ const newDocumentTypes = [
         detail: 'Venda e pagamento no mesmo acto',
     },
     {
+        value: 'TV',
+        label: 'Talão de venda',
+        detail: 'Venda a pronto pagamento',
+    },
+    {
         value: 'GF',
         label: 'Factura genérica',
         detail: 'Operações agregadas com data por linha',
@@ -348,7 +353,7 @@ function finishLoading(): void {
 function applyFilters(): void {
     if (['FT', 'FR', 'GF'].includes(type.value)) {
         family.value = 'invoice';
-    } else if (['RC', 'RG'].includes(type.value)) {
+    } else if (['RC', 'RG', 'TV'].includes(type.value)) {
         family.value = 'receipt';
     } else if (['NC', 'ND'].includes(type.value)) {
         family.value = 'adjustment';

@@ -42,6 +42,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property string|null $document_no
  * @property int|null $issue_sequence
  * @property CarbonImmutable $document_date
+ * @property CarbonImmutable|null $goods_available_at
+ * @property string|null $goods_available_location
  * @property CarbonImmutable|null $due_date
  * @property string $currency_code
  * @property int $exchange_rate_micro
@@ -98,6 +100,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'issue_sequence',
     'document_date',
     'due_date',
+    'goods_available_at',
+    'goods_available_location',
     'currency_code',
     'exchange_rate_micro',
     'customer_name',
@@ -304,6 +308,7 @@ class FiscalDocument extends Model
             'status' => FiscalDocumentStatus::class,
             'document_jws' => 'encrypted',
             'document_date' => 'immutable_date',
+            'goods_available_at' => 'immutable_datetime',
             'due_date' => 'immutable_date',
             'system_entry_at' => 'immutable_datetime',
             'frozen_at' => 'immutable_datetime',

@@ -3,19 +3,16 @@ import { Form, Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import {
     Building2,
     Check,
-    ChevronRight,
-    CircleDashed,
-    KeyRound,
-    Landmark,
     Download,
     FileCode2,
     Image as ImageIcon,
     LoaderCircle,
     LockKeyhole,
     MapPin,
-    ShieldCheck,
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import CompanySetupProgress from '@/components/CompanySetupProgress.vue';
+import type { SetupProgress } from '@/components/CompanySetupProgress.vue';
 import DateInput from '@/components/DateInput.vue';
 import FileInput from '@/components/FileInput.vue';
 import FormError from '@/components/FormError.vue';
@@ -26,15 +23,15 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { confirmAction } from '@/lib/confirm';
 import { localIsoDate, startOfYearIsoDate } from '@/lib/dates';
 import { dashboard } from '@/routes';
-import { show as agtConnectionShow } from '@/routes/agt/connection';
+import { update as updateBankDetails } from '@/routes/company/bank-details';
 import {
     destroy as destroyCompanyLogo,
     show as showCompanyLogo,
     store as storeCompanyLogo,
 } from '@/routes/company/logo';
+import { index as userGuideIndex } from '@/routes/help/guide';
 import { update as onboardingUpdate } from '@/routes/onboarding';
 import { exportMethod as saftExport } from '@/routes/saft';
-import { security } from '@/routes/settings';
 
 interface CompanyProfile {
     legal_name: string;
@@ -66,12 +63,32 @@ interface AgtConnectionSummary {
 }
 
 const props = defineProps<{
+    setupProgress: SetupProgress;
     company: CompanyProfile;
     taxRegimes: TaxRegimeOption[];
     provinces: { value: string; label: string }[];
     canUpdate: boolean;
+    canUpdateBankDetails: boolean;
+    bankDetails: {
+        bank_name: string;
+        bank_account_holder: string;
+        bank_account_number: string;
+        bank_iban: string;
+    };
     agtConnection: AgtConnectionSummary;
 }>();
+
+const banking = useForm({ ...props.bankDetails });
+const bankFields = [
+    { name: 'bank_name', label: 'Banco', max: 120 },
+    { name: 'bank_account_holder', label: 'Titular da conta', max: 255 },
+    { name: 'bank_account_number', label: 'Número da conta', max: 64 },
+    { name: 'bank_iban', label: 'IBAN', max: 42 },
+] as const;
+
+function saveBankDetails(): void {
+    banking.put(updateBankDetails.url(), { preserveScroll: true });
+}
 
 const page = usePage();
 const flashSuccess = computed(
@@ -85,6 +102,7 @@ const profileIsConfigured = computed(
 );
 
 const taxRegime = ref(props.company.tax_regime);
+const regimeConfirmed = ref(false);
 
 const provinceCode = ref(props.company.province_code);
 
@@ -163,38 +181,6 @@ const taxRegimeOptions = computed(() =>
         label: regime.label,
     })),
 );
-
-const steps = computed(() => [
-    { name: 'Conta', detail: 'Email confirmado', status: 'complete' },
-    {
-        name: 'Empresa',
-        detail: 'Identidade e sede',
-        status: profileIsConfigured.value ? 'complete' : 'current',
-    },
-    {
-        name: 'Segurança',
-        detail: 'MFA recomendado',
-        status: page.props.auth.user?.two_factor_enabled
-            ? 'complete'
-            : profileIsConfigured.value
-              ? 'current'
-              : 'upcoming',
-    },
-    {
-        name: 'Ligação AGT',
-        detail: 'Credenciais e chaves',
-        status: props.agtConnection.configured
-            ? 'complete'
-            : profileIsConfigured.value
-              ? 'current'
-              : 'upcoming',
-    },
-    {
-        name: 'Homologação',
-        detail: 'Antes de produção',
-        status: props.agtConnection.verified ? 'complete' : 'upcoming',
-    },
-]);
 </script>
 
 <template>
@@ -216,6 +202,16 @@ const steps = computed(() => [
                     </template>
                     <template #actions>
                         <Link
+                            :href="
+                                userGuideIndex.url({
+                                    query: { chapter: 'empresa' },
+                                })
+                            "
+                            class="inline-flex min-h-10 items-center rounded-full px-4 text-sm font-semibold ring-1 ring-zinc-900/10 focus-ring active:opacity-75 dark:ring-white/15"
+                        >
+                            Guia passo a passo
+                        </Link>
+                        <Link
                             :href="dashboard.url()"
                             class="inline-flex h-10 items-center rounded-full bg-white px-[1.125rem] text-sm font-semibold text-zinc-900 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
                         >
@@ -224,56 +220,10 @@ const steps = computed(() => [
                     </template>
                 </PageHeader>
 
-                <nav
-                    aria-label="Progresso de configuração"
-                    class="overflow-hidden rounded-2xl surface"
-                >
-                    <ol
-                        role="list"
-                        class="grid grid-cols-1 divide-y divide-zinc-100 sm:grid-cols-5 sm:divide-x sm:divide-y-0 dark:divide-white/10"
-                    >
-                        <li
-                            v-for="(step, index) in steps"
-                            :key="step.name"
-                            class="relative px-4 py-4 sm:px-5"
-                        >
-                            <div class="flex items-center gap-3">
-                                <span
-                                    :class="[
-                                        step.status === 'complete'
-                                            ? 'bg-emerald-600 text-white'
-                                            : step.status === 'current'
-                                              ? 'bg-accent-400 text-brand-950 ring-4 ring-amber-100 dark:ring-amber-400/10'
-                                              : 'bg-zinc-100 text-zinc-400 dark:bg-white/5 dark:text-zinc-500',
-                                        'grid size-8 shrink-0 place-items-center rounded-full text-xs font-bold',
-                                    ]"
-                                >
-                                    <Check
-                                        v-if="step.status === 'complete'"
-                                        class="size-4"
-                                        aria-hidden="true"
-                                    />
-                                    <span v-else>{{ index + 1 }}</span>
-                                </span>
-                                <span class="min-w-0">
-                                    <span
-                                        class="block truncate text-sm font-semibold text-zinc-900 dark:text-white"
-                                        >{{ step.name }}</span
-                                    >
-                                    <span
-                                        class="block truncate text-xs text-zinc-500 dark:text-zinc-400"
-                                        >{{ step.detail }}</span
-                                    >
-                                </span>
-                            </div>
-                            <ChevronRight
-                                v-if="index < steps.length - 1"
-                                class="absolute top-1/2 -right-2 z-10 hidden size-4 -translate-y-1/2 text-zinc-300 sm:block dark:text-zinc-700"
-                                aria-hidden="true"
-                            />
-                        </li>
-                    </ol>
-                </nav>
+                <CompanySetupProgress
+                    :progress="setupProgress"
+                    on-company-page
+                />
 
                 <div
                     v-if="flashSuccess"
@@ -288,6 +238,7 @@ const steps = computed(() => [
                     class="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1fr)_22rem]"
                 >
                     <Form
+                        id="company-profile"
                         v-bind="onboardingUpdate.form()"
                         :options="{ preserveScroll: true }"
                         set-defaults-on-success
@@ -389,8 +340,45 @@ const steps = computed(() => [
                                         name="tax_regime"
                                         class="mt-2"
                                         :options="taxRegimeOptions"
+                                        placeholder="Escolha o regime do seu cadastro"
+                                        @update:model-value="
+                                            regimeConfirmed = false
+                                        "
                                     />
                                     <FormError :message="errors.tax_regime" />
+                                    <p
+                                        class="mt-2 text-xs/5 text-zinc-500 dark:text-zinc-400"
+                                    >
+                                        Consulte o seu cadastro no Portal do
+                                        Contribuinte. Não escolha pelo valor de
+                                        IVA que pretende cobrar; em caso de
+                                        dúvida, confirme com a AGT ou com o
+                                        contabilista.
+                                    </p>
+                                    <label
+                                        class="mt-3 flex items-start gap-3 text-sm/6"
+                                        for="tax-regime-confirmed"
+                                    >
+                                        <input
+                                            id="tax-regime-confirmed"
+                                            v-model="regimeConfirmed"
+                                            name="tax_regime_confirmed"
+                                            type="checkbox"
+                                            value="1"
+                                            required
+                                            class="mt-1 size-4 shrink-0"
+                                            :aria-invalid="
+                                                !!errors.tax_regime_confirmed
+                                            "
+                                            aria-describedby="tax-regime-confirmed-error"
+                                        />
+                                        Confirmo que este é o regime do meu
+                                        cadastro fiscal.
+                                    </label>
+                                    <FormError
+                                        id="tax-regime-confirmed-error"
+                                        :message="errors.tax_regime_confirmed"
+                                    />
                                 </div>
                                 <div class="sm:col-span-3">
                                     <label for="cae" class="field-label"
@@ -541,8 +529,9 @@ const steps = computed(() => [
                                         class="size-4"
                                         aria-hidden="true"
                                     />
-                                    O perfil está bloqueado porque a homologação
-                                    já começou.
+                                    Os dados fiscais estão protegidos após a
+                                    associação do acesso à AGT. Peça apoio para
+                                    corrigir o cadastro.
                                 </p>
                                 <p
                                     v-else
@@ -551,7 +540,7 @@ const steps = computed(() => [
                                     {{
                                         isDirty
                                             ? 'Existem alterações por guardar.'
-                                            : 'Todos os campos são guardados num único compromisso.'
+                                            : 'Confirme os dados e guarde para continuar.'
                                     }}
                                 </p>
                                 <button
@@ -574,239 +563,224 @@ const steps = computed(() => [
                             </div>
                         </section>
                     </Form>
-
-                    <section class="rounded-2xl surface p-5 sm:p-7">
-                        <div class="flex gap-4">
-                            <span
-                                class="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-100 text-brand-700 dark:bg-brand-400/10 dark:text-brand-300"
+                    <aside class="self-start">
+                        <details class="rounded-2xl surface p-5">
+                            <summary
+                                class="cursor-pointer text-sm font-semibold focus-ring"
                             >
-                                <ImageIcon class="size-5" aria-hidden="true" />
-                            </span>
-                            <div class="min-w-0 flex-1">
-                                <h2
-                                    class="font-semibold text-zinc-950 dark:text-white"
-                                >
-                                    Logótipo
-                                </h2>
-                                <p
-                                    class="mt-1 max-w-xl text-sm/6 text-zinc-500 dark:text-zinc-400"
-                                >
-                                    Aparece no cabeçalho das facturas e recibos.
-                                    PNG ou JPEG até 2 MB — cabe numa caixa de 45
-                                    × 18 mm, por isso uma marca larga sai melhor
-                                    que uma alta.
-                                </p>
-
-                                <div
-                                    class="mt-4 flex flex-wrap items-center gap-4"
-                                >
-                                    <img
-                                        v-if="company.has_logo"
-                                        :src="logoUrl"
-                                        alt="Logótipo actual"
-                                        class="h-12 w-auto rounded-lg bg-white object-contain p-1 ring-1 ring-zinc-200 dark:ring-white/10"
-                                    />
-
-                                    <FileInput
-                                        ref="logoInput"
-                                        aria-label="Escolher o logótipo"
-                                        accept="image/png,image/jpeg"
-                                        @change="uploadLogo"
-                                    />
-
-                                    <button
-                                        v-if="company.has_logo"
-                                        type="button"
-                                        class="rounded-xl px-3 py-2 text-sm font-semibold text-zinc-500 focus-ring transition hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-400/10 dark:hover:text-rose-300"
-                                        @click="removeLogo"
-                                    >
-                                        Remover
-                                    </button>
-                                </div>
-                                <FormError :message="logoForm.errors.logo" />
-                            </div>
-                        </div>
-                    </section>
-
-                    <section class="rounded-2xl surface p-5 sm:p-7">
-                        <div class="flex gap-4">
-                            <span
-                                class="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-100 text-brand-700 dark:bg-brand-400/10 dark:text-brand-300"
-                            >
-                                <FileCode2 class="size-5" aria-hidden="true" />
-                            </span>
-                            <div class="min-w-0 flex-1">
-                                <h2
-                                    class="font-semibold text-zinc-950 dark:text-white"
-                                >
-                                    Ficheiro SAF-T (AO)
-                                </h2>
-                                <p
-                                    class="mt-1 max-w-xl text-sm/6 text-zinc-500 dark:text-zinc-400"
-                                >
-                                    O ficheiro de auditoria que a AGT pede.
-                                    Escolha o período e guarde o XML.
-                                </p>
-
-                                <div
-                                    class="mt-4 flex flex-wrap items-end gap-3"
-                                >
-                                    <div class="w-40">
-                                        <label
-                                            class="block text-xs font-medium text-zinc-700 dark:text-zinc-300"
-                                            >De</label
-                                        >
-                                        <DateInput
-                                            v-model="saftFrom"
-                                            class="mt-1.5"
-                                            :clearable="false"
-                                            aria-label="Início do período SAF-T"
-                                        />
-                                    </div>
-                                    <div class="w-40">
-                                        <label
-                                            class="block text-xs font-medium text-zinc-700 dark:text-zinc-300"
-                                            >Até</label
-                                        >
-                                        <DateInput
-                                            v-model="saftTo"
-                                            class="mt-1.5"
-                                            :clearable="false"
-                                            :min-date="saftFrom"
-                                            aria-label="Fim do período SAF-T"
-                                        />
-                                    </div>
-                                    <a
-                                        :href="saftUrl"
-                                        class="inline-flex h-10 items-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
-                                    >
-                                        <Download
-                                            class="size-4"
-                                            aria-hidden="true"
-                                        />
-                                        Gerar SAF-T
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    <aside class="space-y-5">
-                        <section
-                            class="rounded-2xl bg-brand-950 p-5 text-white shadow-sm dark:bg-brand-950 dark:ring-1 dark:ring-white/10"
-                        >
-                            <div class="flex items-center gap-3">
-                                <span
-                                    class="grid size-10 place-items-center rounded-xl bg-white/10"
-                                >
-                                    <ShieldCheck
-                                        class="size-5 text-accent-400"
-                                        aria-hidden="true"
-                                    />
-                                </span>
-                                <div>
-                                    <p class="font-semibold">
-                                        O que já está feito
-                                    </p>
-                                    <p class="text-xs text-brand-100/65">
-                                        Antes de emitir a primeira factura
-                                    </p>
-                                </div>
-                            </div>
-
-                            <ul class="mt-5 space-y-4 text-sm">
-                                <li class="flex gap-3">
-                                    <Check
-                                        class="mt-0.5 size-4 shrink-0 text-emerald-300"
-                                        aria-hidden="true"
-                                    />
-                                    <span>Email do utilizador confirmado</span>
-                                </li>
-                                <li class="flex gap-3">
-                                    <component
-                                        :is="
-                                            profileIsConfigured
-                                                ? Check
-                                                : CircleDashed
-                                        "
-                                        class="mt-0.5 size-4 shrink-0"
-                                        :class="
-                                            profileIsConfigured
-                                                ? 'text-emerald-300'
-                                                : 'text-accent-400'
-                                        "
-                                        aria-hidden="true"
-                                    />
-                                    <span>Identidade da empresa e sede</span>
-                                </li>
-                                <li class="flex gap-3">
-                                    <component
-                                        :is="
-                                            page.props.auth.user
-                                                ?.two_factor_enabled
-                                                ? Check
-                                                : KeyRound
-                                        "
-                                        class="mt-0.5 size-4 shrink-0"
-                                        :class="
-                                            page.props.auth.user
-                                                ?.two_factor_enabled
-                                                ? 'text-emerald-300'
-                                                : 'text-accent-400'
-                                        "
-                                        aria-hidden="true"
-                                    />
-                                    <span>{{
-                                        page.props.auth.user?.two_factor_enabled
-                                            ? 'MFA activado'
-                                            : 'MFA ainda por activar'
-                                    }}</span>
-                                </li>
-                            </ul>
-
-                            <Link
-                                :href="security.url()"
-                                class="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-white px-3 py-2.5 text-sm font-semibold text-brand-950 transition hover:bg-brand-50"
-                            >
-                                <KeyRound class="size-4" aria-hidden="true" />
-                                Rever segurança
-                            </Link>
-                        </section>
-
-                        <section class="rounded-2xl surface p-5">
-                            <div class="flex items-center gap-3">
-                                <Landmark
-                                    class="size-5 text-zinc-400"
-                                    aria-hidden="true"
-                                />
-                                <p
-                                    class="font-semibold text-zinc-950 dark:text-white"
-                                >
-                                    Integração AGT
-                                </p>
-                            </div>
+                                Logótipo, banco e arquivo · opcionais
+                            </summary>
                             <p
                                 class="mt-3 text-sm/6 text-zinc-500 dark:text-zinc-400"
                             >
-                                As credenciais ficam cifradas e as chaves
-                                privadas nunca saem do cofre. Enquanto estiver
-                                em homologação, só consultamos as séries desse
-                                ambiente.
+                                Pode tratar destas opções mais tarde. Não
+                                impedem a preparação do acesso à AGT.
                             </p>
-                            <div
-                                class="mt-4 rounded-xl bg-zinc-50 p-3 text-xs font-medium text-zinc-500 dark:bg-white/5 dark:text-zinc-400"
-                            >
-                                Estado: {{ agtConnection.status_label }}
+                            <div class="mt-5 space-y-5">
+                                <section class="rounded-2xl surface p-5 sm:p-7">
+                                    <div class="flex gap-4">
+                                        <span
+                                            class="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-100 text-brand-700 dark:bg-brand-400/10 dark:text-brand-300"
+                                        >
+                                            <ImageIcon
+                                                class="size-5"
+                                                aria-hidden="true"
+                                            />
+                                        </span>
+                                        <div class="min-w-0 flex-1">
+                                            <h2
+                                                class="font-semibold text-zinc-950 dark:text-white"
+                                            >
+                                                Logótipo
+                                            </h2>
+                                            <p
+                                                class="mt-1 max-w-xl text-sm/6 text-zinc-500 dark:text-zinc-400"
+                                            >
+                                                Aparece no cabeçalho das
+                                                facturas e recibos. PNG ou JPEG
+                                                até 2 MB — cabe numa caixa de 45
+                                                × 18 mm, por isso uma marca
+                                                larga sai melhor que uma alta.
+                                            </p>
+
+                                            <div
+                                                class="mt-4 flex flex-wrap items-center gap-4"
+                                            >
+                                                <img
+                                                    v-if="company.has_logo"
+                                                    :src="logoUrl"
+                                                    alt="Logótipo actual"
+                                                    class="h-12 w-auto rounded-lg bg-white object-contain p-1 ring-1 ring-zinc-200 dark:ring-white/10"
+                                                />
+
+                                                <FileInput
+                                                    ref="logoInput"
+                                                    aria-label="Escolher o logótipo"
+                                                    accept="image/png,image/jpeg"
+                                                    @change="uploadLogo"
+                                                />
+
+                                                <button
+                                                    v-if="company.has_logo"
+                                                    type="button"
+                                                    class="rounded-xl px-3 py-2 text-sm font-semibold text-zinc-500 focus-ring transition hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-400/10 dark:hover:text-rose-300"
+                                                    @click="removeLogo"
+                                                >
+                                                    Remover
+                                                </button>
+                                            </div>
+                                            <FormError
+                                                :message="logoForm.errors.logo"
+                                            />
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section class="rounded-2xl surface p-5 sm:p-7">
+                                    <div class="flex gap-4">
+                                        <span
+                                            class="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-100 text-brand-700 dark:bg-brand-400/10 dark:text-brand-300"
+                                        >
+                                            <FileCode2
+                                                class="size-5"
+                                                aria-hidden="true"
+                                            />
+                                        </span>
+                                        <div class="min-w-0 flex-1">
+                                            <h2
+                                                class="font-semibold text-zinc-950 dark:text-white"
+                                            >
+                                                Ficheiro SAF-T (AO)
+                                            </h2>
+                                            <p
+                                                class="mt-1 max-w-xl text-sm/6 text-zinc-500 dark:text-zinc-400"
+                                            >
+                                                Exportação para arquivo e
+                                                revisão contabilística. Escolha
+                                                o período e guarde o XML.
+                                            </p>
+
+                                            <div
+                                                class="mt-4 flex flex-wrap items-end gap-3"
+                                            >
+                                                <div class="w-40">
+                                                    <label
+                                                        class="block text-xs font-medium text-zinc-700 dark:text-zinc-300"
+                                                        >De</label
+                                                    >
+                                                    <DateInput
+                                                        v-model="saftFrom"
+                                                        class="mt-1.5"
+                                                        :clearable="false"
+                                                        aria-label="Início do período SAF-T"
+                                                    />
+                                                </div>
+                                                <div class="w-40">
+                                                    <label
+                                                        class="block text-xs font-medium text-zinc-700 dark:text-zinc-300"
+                                                        >Até</label
+                                                    >
+                                                    <DateInput
+                                                        v-model="saftTo"
+                                                        class="mt-1.5"
+                                                        :clearable="false"
+                                                        :min-date="saftFrom"
+                                                        aria-label="Fim do período SAF-T"
+                                                    />
+                                                </div>
+                                                <a
+                                                    :href="saftUrl"
+                                                    class="inline-flex h-10 items-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
+                                                >
+                                                    <Download
+                                                        class="size-4"
+                                                        aria-hidden="true"
+                                                    />
+                                                    Gerar SAF-T
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section
+                                    class="rounded-2xl surface p-5 sm:p-7"
+                                    aria-labelledby="bank-details-heading"
+                                >
+                                    <h2
+                                        id="bank-details-heading"
+                                        class="font-semibold text-zinc-950 dark:text-white"
+                                    >
+                                        Dados bancários
+                                    </h2>
+                                    <p
+                                        class="mt-1 text-sm/6 text-zinc-500 dark:text-zinc-400"
+                                    >
+                                        Aparecem nas facturas e notas de débito
+                                        por pagar. Indique o IBAN ou o número da
+                                        conta. Alterações aplicam-se apenas aos
+                                        próximos documentos.
+                                    </p>
+                                    <form
+                                        class="mt-5 space-y-4"
+                                        @submit.prevent="saveBankDetails"
+                                    >
+                                        <div
+                                            v-for="field in bankFields"
+                                            :key="field.name"
+                                        >
+                                            <label
+                                                :for="field.name"
+                                                class="block text-sm font-medium"
+                                                >{{ field.label }}</label
+                                            >
+                                            <input
+                                                :id="field.name"
+                                                v-model="banking[field.name]"
+                                                :name="field.name"
+                                                :maxlength="field.max"
+                                                :disabled="
+                                                    !canUpdateBankDetails
+                                                "
+                                                type="text"
+                                                class="mt-2 block form-input"
+                                                :aria-invalid="
+                                                    !!banking.errors[field.name]
+                                                "
+                                                :aria-describedby="
+                                                    banking.errors[field.name]
+                                                        ? `${field.name}-error`
+                                                        : undefined
+                                                "
+                                            />
+                                            <FormError
+                                                :id="`${field.name}-error`"
+                                                :message="
+                                                    banking.errors[field.name]
+                                                "
+                                            />
+                                        </div>
+                                        <button
+                                            v-if="canUpdateBankDetails"
+                                            type="submit"
+                                            :disabled="banking.processing"
+                                            class="inline-flex min-h-10 items-center rounded-full bg-accent-400 px-5 text-sm font-semibold text-brand-950 focus-ring hover:bg-accent-300 active:bg-accent-500 disabled:opacity-50"
+                                        >
+                                            {{
+                                                banking.processing
+                                                    ? 'A guardar…'
+                                                    : 'Guardar dados bancários'
+                                            }}
+                                        </button>
+                                        <p v-else class="text-sm text-zinc-500">
+                                            Um administrador pode configurar os
+                                            dados bancários depois de guardar o
+                                            perfil da empresa.
+                                        </p>
+                                    </form>
+                                </section>
                             </div>
-                            <Link
-                                v-if="profileIsConfigured"
-                                :href="agtConnectionShow.url()"
-                                class="flex h-10 w-full items-center justify-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
-                            >
-                                <Landmark class="size-4" aria-hidden="true" />
-                                Preparar ligação AGT
-                            </Link>
-                        </section>
+                        </details>
                     </aside>
                 </div>
             </div>

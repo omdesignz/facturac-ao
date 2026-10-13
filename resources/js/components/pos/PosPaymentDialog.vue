@@ -7,7 +7,13 @@ import {
     TransitionRoot,
 } from '@headlessui/vue';
 import { useHttp } from '@inertiajs/vue3';
-import { CircleAlert, CircleCheck, LoaderCircle, Printer } from '@lucide/vue';
+import {
+    ChevronDown,
+    CircleAlert,
+    CircleCheck,
+    LoaderCircle,
+    Printer,
+} from '@lucide/vue';
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import {
     attemptFor,
@@ -46,6 +52,8 @@ const props = defineProps<{
     lines: SaleLinePayload[];
     paymentMethods: PosPaymentMethod[];
     currencyCode: string;
+    salesTicketSeriesAvailable: boolean;
+    salesTicketBases: { value: string; label: string }[];
 }>();
 
 const emit = defineEmits<{
@@ -62,6 +70,9 @@ const emit = defineEmits<{
 
 type SalePayload = {
     client_key: string;
+    document_type: 'FR' | 'TV';
+    tv_basis: string | null;
+    tv_conditions_confirmed: boolean;
     customer_public_id: string | null;
     customer: { name: string; tax_identification_number: string } | null;
     lines: SaleLinePayload[];
@@ -76,6 +87,9 @@ const CASH = 'NU';
 
 const http = useHttp<SalePayload, PosSaleResponse>({
     client_key: '',
+    document_type: 'FR',
+    tv_basis: null,
+    tv_conditions_confirmed: false,
     customer_public_id: null,
     customer: null,
     lines: [],
@@ -88,6 +102,10 @@ type Stage = 'form' | 'sending' | 'done';
 
 const stage = ref<Stage>('form');
 const method = ref(CASH);
+const documentType = ref<'FR' | 'TV'>('FR');
+const tvBasis = ref<string | null>(null);
+const tvConditionsConfirmed = ref(false);
+const documentChoiceLocked = ref(false);
 const tenderedText = ref('');
 const failure = ref<SaleFailure | null>(null);
 const mismatch = ref(false);
@@ -123,6 +141,10 @@ const tenderTooHigh = computed(
 const canConfirm = computed(
     () =>
         stage.value === 'form' &&
+        (documentType.value === 'FR' ||
+            ((props.salesTicketSeriesAvailable || documentChoiceLocked.value) &&
+                tvBasis.value !== null &&
+                tvConditionsConfirmed.value)) &&
         snapshot.value.total > 0 &&
         snapshot.value.total <= MAX_TOTAL_MINOR &&
         failure.value?.kind !== 'expired' &&
@@ -135,7 +157,9 @@ const canConfirm = computed(
 const confirmLabel = computed(() =>
     failure.value?.kind === 'unanswered'
         ? 'Tentar outra vez'
-        : 'Emitir factura-recibo',
+        : documentType.value === 'TV'
+          ? 'Emitir talão de venda'
+          : 'Emitir factura-recibo',
 );
 
 /* ------------------------------------------------------- the saved attempt */
@@ -159,6 +183,7 @@ function readAttempt(): SaleAttempt | null {
                 key: (parsed as SaleAttempt).key,
                 signature: (parsed as SaleAttempt).signature,
                 unanswered: (parsed as SaleAttempt).unanswered === true,
+                documentChoice: (parsed as SaleAttempt).documentChoice,
             };
         }
     } catch {
@@ -195,6 +220,11 @@ function currentSignature(): string {
             nif: props.customer.kind === 'final' ? '' : props.customer.nif,
         },
         snapshot.value.total,
+        {
+            type: documentType.value,
+            tvBasis: tvBasis.value,
+            confirmed: tvConditionsConfirmed.value,
+        },
     );
 }
 
@@ -224,8 +254,16 @@ watch(
         // The exact amount, selected: a customer who pays exactly needs only Enter.
         tenderedText.value = minorToInputString(props.totalMinor);
 
-        // A cart that is unchanged since an unanswered try keeps its key.
-        const chosen = attemptFor(readAttempt(), currentSignature());
+        const previous = readAttempt();
+        const choice = previous?.unanswered ? previous.documentChoice : null;
+        documentType.value = choice?.type === 'TV' ? 'TV' : 'FR';
+        tvBasis.value =
+            typeof choice?.tvBasis === 'string' ? choice.tvBasis : null;
+        tvConditionsConfirmed.value = choice?.confirmed === true;
+        documentChoiceLocked.value = previous?.unanswered === true;
+
+        // Restore the document choice too: retrying a TV must not turn it into FR.
+        const chosen = attemptFor(previous, currentSignature());
 
         attempt = chosen.attempt;
         doubt.value = chosen.priorUnanswered;
@@ -271,12 +309,39 @@ async function confirm(): Promise<void> {
         return;
     }
 
+    const chosen = attemptFor(attempt, currentSignature());
+
+    if (chosen.priorUnanswered) {
+        showFailure({
+            kind: 'unanswered',
+            message:
+                'Confirme primeiro a venda sem resposta antes de alterar o documento.',
+        });
+
+        return;
+    }
+
+    attempt = {
+        ...chosen.attempt,
+        unanswered: true,
+        documentChoice: {
+            type: documentType.value,
+            tvBasis: tvBasis.value,
+            confirmed: tvConditionsConfirmed.value,
+        },
+    };
+    documentChoiceLocked.value = true;
+    writeAttempt(attempt);
     stage.value = 'sending';
     failure.value = null;
     mismatch.value = false;
     timedOut = false;
 
     http.client_key = attempt.key;
+    http.document_type = documentType.value;
+    http.tv_basis = documentType.value === 'TV' ? tvBasis.value : null;
+    http.tv_conditions_confirmed =
+        documentType.value === 'TV' && tvConditionsConfirmed.value;
     http.customer_public_id =
         props.customer.kind === 'saved' ? props.customer.public_id : null;
     http.customer =
@@ -304,6 +369,7 @@ async function confirm(): Promise<void> {
             // 422: the server looked at the sale and refused it; nothing exists.
             const refusal = firstValidationMessage(http.errors);
 
+            documentChoiceLocked.value = false;
             attempt = { ...attempt, unanswered: false };
             writeAttempt(attempt);
             mismatch.value = refusal?.field === 'expected_total_minor';
@@ -320,6 +386,7 @@ async function confirm(): Promise<void> {
     } catch (error) {
         const reason = describeSaleFailure(error);
 
+        documentChoiceLocked.value = reason.kind === 'unanswered';
         attempt = { ...attempt, unanswered: reason.kind === 'unanswered' };
         writeAttempt(attempt);
         stage.value = 'form';
@@ -372,6 +439,16 @@ watch([tenderedMinor, method], () => {
                     : `Faltam ${formatMinor(-changeMinor.value)} ${suffix.value}.`;
     }, 600);
 });
+
+function chooseDocument(value: 'FR' | 'TV'): void {
+    if (documentChoiceLocked.value || isSending.value) {
+        return;
+    }
+
+    documentType.value = value;
+    tvBasis.value = null;
+    tvConditionsConfirmed.value = false;
+}
 
 function chooseMethod(value: string): void {
     method.value = value;
@@ -613,6 +690,127 @@ const methodPill =
                                                 : 'artigos'
                                         }}
                                     </p>
+
+                                    <fieldset
+                                        class="[margin-block-start:1.5rem] flex flex-col gap-3"
+                                        :disabled="
+                                            isSending || documentChoiceLocked
+                                        "
+                                    >
+                                        <legend class="eyebrow">
+                                            Documento
+                                        </legend>
+                                        <div class="flex flex-wrap gap-2">
+                                            <label
+                                                :class="methodPill"
+                                                class="has-disabled:cursor-not-allowed has-disabled:opacity-50"
+                                            >
+                                                <input
+                                                    type="radio"
+                                                    name="pos-document-type"
+                                                    class="sr-only"
+                                                    value="FR"
+                                                    :checked="
+                                                        documentType === 'FR'
+                                                    "
+                                                    @change="
+                                                        chooseDocument('FR')
+                                                    "
+                                                />
+                                                Factura-recibo
+                                            </label>
+                                            <label
+                                                :class="methodPill"
+                                                class="has-disabled:cursor-not-allowed has-disabled:opacity-50"
+                                            >
+                                                <input
+                                                    type="radio"
+                                                    name="pos-document-type"
+                                                    class="sr-only"
+                                                    value="TV"
+                                                    :checked="
+                                                        documentType === 'TV'
+                                                    "
+                                                    :disabled="
+                                                        !salesTicketSeriesAvailable
+                                                    "
+                                                    @change="
+                                                        chooseDocument('TV')
+                                                    "
+                                                />
+                                                Talão de venda
+                                            </label>
+                                        </div>
+                                        <p
+                                            v-if="!salesTicketSeriesAvailable"
+                                            class="text-sm"
+                                        >
+                                            TV requer uma série autorizada neste
+                                            estabelecimento.
+                                        </p>
+                                        <template v-if="documentType === 'TV'">
+                                            <label
+                                                for="pos-tv-basis"
+                                                class="text-sm font-medium"
+                                                >Operação abrangida pelo artigo
+                                                5.º</label
+                                            >
+                                            <div class="field-adorned">
+                                                <select
+                                                    id="pos-tv-basis"
+                                                    v-model="tvBasis"
+                                                    class="form-input appearance-none"
+                                                    @change="
+                                                        tvConditionsConfirmed = false
+                                                    "
+                                                >
+                                                    <option
+                                                        :value="null"
+                                                        disabled
+                                                    >
+                                                        Escolha a operação
+                                                    </option>
+                                                    <option
+                                                        v-for="basis in salesTicketBases"
+                                                        :key="basis.value"
+                                                        :value="basis.value"
+                                                    >
+                                                        {{ basis.label }}
+                                                    </option>
+                                                </select>
+                                                <ChevronDown
+                                                    class="field-adornment-end size-4"
+                                                    aria-hidden="true"
+                                                />
+                                            </div>
+                                            <label
+                                                class="flex min-h-11 items-start gap-3 text-sm"
+                                            >
+                                                <input
+                                                    v-model="
+                                                        tvConditionsConfirmed
+                                                    "
+                                                    type="checkbox"
+                                                    class="form-checkbox"
+                                                />
+                                                <span
+                                                    >Confirmo que o comprador é
+                                                    uma pessoa singular, a
+                                                    compra é pessoal, sem
+                                                    ligação a actividade
+                                                    profissional ou empresarial,
+                                                    e não foi solicitada
+                                                    factura-recibo.</span
+                                                >
+                                            </label>
+                                            <p class="text-sm">
+                                                Se o cliente solicitar
+                                                factura-recibo, ou a operação
+                                                não estiver abrangida, escolha
+                                                Factura-recibo.
+                                            </p>
+                                        </template>
+                                    </fieldset>
 
                                     <fieldset class="mt-6">
                                         <legend

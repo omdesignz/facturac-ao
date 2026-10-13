@@ -51,6 +51,7 @@ function billingIssueProfile(array $f, string $type = 'FT', string $date = '2024
         'notes' => null, 'references_document_public_id' => null, 'adjustment_reason' => in_array($type, ['NC', 'ND'], true) ? 'Adjustment' : null,
         'payment_method' => 'TB', 'payment_date' => $date,
         'lines' => [['operation_type' => 'SG', 'operation_date' => $date, 'product_code' => 'SERVICE', 'product_description' => 'Service',
+            'reference_line_number' => in_array($type, ['NC', 'ND'], true) ? 1 : null,
             'quantity' => '1', 'unit_of_measure' => 'UN', 'unit_price' => '100', 'discount_percentage' => '0',
             'tax_type' => 'IVA', 'tax_code' => 'NOR', 'tax_percentage' => '14', 'tax_exemption_code' => null]]];
 }

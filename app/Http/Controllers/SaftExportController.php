@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\BillingActionRefused;
 use App\Fiscal\Saft\SaftExporter;
 use App\Fiscal\Saft\SaftValidator;
 use App\Http\Requests\ExportSaftRequest;
@@ -36,6 +37,8 @@ class SaftExportController extends Controller
         try {
             $xml = $this->exporter->export($legalEntity, $from, $to, $establishment);
             $this->validator->assertValid($xml);
+        } catch (BillingActionRefused $exception) {
+            return back()->with('error', $exception->getMessage());
         } catch (RuntimeException $exception) {
             report($exception);
 

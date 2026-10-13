@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $public_id
  * @property int $transport_document_id
  * @property int|null $catalogue_item_id
+ * @property list<array{document_no: string, document_date: string}>|null $order_references
  * @property int $line_number
  * @property string $product_code
  * @property string $product_description
@@ -30,6 +31,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'transport_document_id',
     'catalogue_item_id',
     'line_number',
+    'order_references',
     'product_code',
     'product_description',
     'quantity_units',
@@ -74,6 +76,7 @@ class TransportDocumentLine extends Model
     protected function casts(): array
     {
         return [
+            'order_references' => 'array',
             'quantity_units' => 'integer',
             'quantity_scale' => 'integer',
             'unit_price_minor' => 'integer',

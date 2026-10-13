@@ -464,3 +464,17 @@ test('picks the first validation message of a refused sale', () => {
     assert.equal(firstValidationMessage({}), null);
     assert.equal(firstValidationMessage({ a: '' }), null);
 });
+
+test('a document choice distinguishes FR from TV and keeps TV retries on the same key', () => {
+    const lines = [{ catalogue_item_public_id: 'ITEM1', quantity: '1', discount_percentage: '0' }];
+    const customer = { kind: 'final' };
+    const choice = { type: 'TV', tvBasis: 'vending_machine', confirmed: true };
+    const signature = saleSignature(lines, customer, 11400, choice);
+    const previous = { key: 'same-sale-key', signature, unanswered: true, documentChoice: choice };
+    const replay = attemptFor(JSON.parse(JSON.stringify(previous)), signature);
+    assert.equal(replay.attempt.key, previous.key);
+    assert.deepEqual(replay.attempt.documentChoice, choice);
+    assert.notEqual(signature, saleSignature(lines, customer, 11400));
+    assert.notEqual(signature, saleSignature(lines, customer, 11400, { ...choice, tvBasis: 'licensed_vendor' }));
+    assert.equal(attemptFor(previous, saleSignature(lines, customer, 11400)).priorUnanswered, true);
+});

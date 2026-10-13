@@ -8,9 +8,6 @@ use App\Models\FiscalDocumentLine;
 use App\Models\LegalEntity;
 use App\Models\Quote;
 use App\Models\QuoteLine;
-use App\Models\TransportDocument;
-use App\Models\TransportDocumentLine;
-use App\TransportDocumentType;
 use Carbon\CarbonImmutable;
 
 final class SaftExportSummary
@@ -30,14 +27,6 @@ final class SaftExportSummary
             )
             ->whereNotNull('document_no')
             ->whereBetween('document_date', [$from->toDateString(), $to->toDateString()]);
-        $movement = TransportDocument::query()
-            ->where('legal_entity_id', $legalEntity->id)
-            ->when(
-                $establishment instanceof Establishment,
-                fn ($query) => $query->where('establishment_id', $establishment->id),
-            )
-            ->whereNotNull('document_no')
-            ->whereBetween('movement_date', [$from->toDateString(), $to->toDateString()]);
         $quotes = Quote::query()
             ->where('legal_entity_id', $legalEntity->id)
             ->when(
@@ -58,7 +47,6 @@ final class SaftExportSummary
                 ->whereIn('document_type', $paymentTypes)
                 ->whereDoesntHave('settlements')
                 ->pluck('document_no'))
-            ->merge((clone $movement)->whereDoesntHave('lines')->pluck('document_no'))
             ->merge((clone $quotes)->whereDoesntHave('lines')->pluck('reference'))
             ->filter()
             ->values();
@@ -69,20 +57,9 @@ final class SaftExportSummary
             ->merge((clone $fiscal)->whereNull('customer_id')->pluck('public_id')->map(
                 fn (string $publicId): string => "F{$publicId}",
             ))
-            ->merge((clone $movement)
-                ->where('document_type', '!=', TransportDocumentType::ReturnNote->value)
-                ->whereNull('customer_id')
-                ->pluck('public_id')
-                ->map(fn (string $publicId): string => "T{$publicId}"))
             ->merge((clone $quotes)->whereNull('customer_id')->pluck('public_id')->map(
                 fn (string $publicId): string => "Q{$publicId}",
             ))
-            ->unique()
-            ->count();
-        $supplierCount = (clone $movement)
-            ->where('document_type', TransportDocumentType::ReturnNote->value)
-            ->pluck('recipient_tax_identification_number')
-            ->map(fn (string $taxId): string => mb_strtoupper(trim($taxId)))
             ->unique()
             ->count();
         $productCodes = collect($legalEntity->catalogueItems()->pluck('code'))
@@ -91,9 +68,6 @@ final class SaftExportSummary
                     'fiscal_document_id',
                     (clone $fiscal)->whereNotIn('document_type', $paymentTypes)->select('id'),
                 )
-                ->pluck('product_code'))
-            ->merge(TransportDocumentLine::query()
-                ->whereIn('transport_document_id', (clone $movement)->select('id'))
                 ->pluck('product_code'))
             ->merge(QuoteLine::query()
                 ->whereIn('quote_id', (clone $quotes)->select('id'))
@@ -153,7 +127,7 @@ final class SaftExportSummary
                 'ready' => filled(($establishment
                     ?? $legalEntity->establishments()->where('is_head_office', true)->first())?->address_line),
                 'blocking' => false,
-                'detail' => 'A morada alimenta o cabeçalho e os locais de carga.',
+                'detail' => 'A morada identifica o estabelecimento no cabeçalho.',
             ],
         ];
 
@@ -166,11 +140,9 @@ final class SaftExportSummary
             ],
             'counts' => [
                 'sales_invoices' => $invoices,
-                'movement_of_goods' => $movement->count(),
                 'working_documents' => $quotes->count(),
                 'payments' => $payments,
                 'customers' => $customerCount,
-                'suppliers' => $supplierCount,
                 'products' => $productCodes,
             ],
             'readiness' => $readiness,

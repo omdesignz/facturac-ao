@@ -23,18 +23,22 @@ import {
     TriangleAlert,
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import CompanySetupProgress from '@/components/CompanySetupProgress.vue';
+import type { SetupProgress } from '@/components/CompanySetupProgress.vue';
 import FormError from '@/components/FormError.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageStat from '@/components/PageStat.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { update } from '@/routes/agt/connection';
+import { connectionRecovery } from '@/lib/connection-recovery';
+import { update, associate, show } from '@/routes/agt/connection';
 import { store as runConnectionCheck } from '@/routes/agt/connection-checks';
 import {
     store as requestSeries,
     sync as syncSeries,
 } from '@/routes/agt/series';
+import { index as helpIndex } from '@/routes/help';
 import { security } from '@/routes/settings';
 
 interface LegalEntity {
@@ -110,6 +114,8 @@ interface SeriesRequestOptions {
 }
 
 const props = defineProps<{
+    setupProgress: SetupProgress;
+    associationAvailable: boolean;
     legalEntity: LegalEntity;
     connection: AgtConnection;
     readiness: { complete: boolean; items: ReadinessItem[] };
@@ -118,6 +124,7 @@ const props = defineProps<{
     seriesRequest: SeriesRequestOptions;
     permissions: {
         manage: boolean;
+        manual_setup: boolean;
         test: boolean;
         request_series: boolean;
         sync_series: boolean;
@@ -129,6 +136,7 @@ const props = defineProps<{
     };
 }>();
 
+const technicalOpen = ref(false);
 const seriesDocumentType = ref(props.seriesRequest.default_document_type);
 const seriesYear = ref<number>(props.seriesRequest.years[0] ?? 0);
 
@@ -202,7 +210,7 @@ function formatDate(value: string | null): string {
                 <PageHeader
                     eyebrow="AGT · Ligação"
                     title="Ligação à AGT"
-                    description="Configure as credenciais, confirme a custódia das chaves e sincronize as séries autorizadas. A emissão continua separada e exige uma confirmação explícita."
+                    description="Associe o acesso da sua empresa, verifique a ligação e prepare a série da primeira factura. Não precisa de homologar o software."
                 >
                     <template #meta>
                         <StatusBadge
@@ -211,7 +219,7 @@ function formatDate(value: string | null): string {
                             :pulse="connection.status === 'ready'"
                         />
                         <StatusBadge
-                            :label="`${connection.environment_label} · schema ${connection.schema_version}`"
+                            :label="`${connection.environment_label} · testes`"
                             tone="neutral"
                         />
                     </template>
@@ -219,7 +227,7 @@ function formatDate(value: string | null): string {
                         <PageStat
                             label="Requisitos"
                             :value="`${completedRequirements}/${readiness.items.length}`"
-                            detail="para emitir em homologação"
+                            detail="para consultar a AGT em testes"
                         />
                         <PageStat
                             label="Última verificação"
@@ -228,6 +236,146 @@ function formatDate(value: string | null): string {
                         />
                     </template>
                 </PageHeader>
+
+                <CompanySetupProgress
+                    :progress="setupProgress"
+                    on-connection-page
+                />
+                <section
+                    id="taxpayer-association"
+                    class="scroll-mt-24 rounded-2xl surface p-5 sm:p-7"
+                    aria-labelledby="association-heading"
+                >
+                    <h2 id="association-heading" class="text-lg font-semibold">
+                        Associar o acesso da sua empresa
+                    </h2>
+                    <p class="mt-2 text-sm/6">
+                        {{ legalEntity.legal_name }} · NIF
+                        {{ legalEntity.tax_identification_number }}
+                    </p>
+                    <ol
+                        class="mt-4 list-decimal space-y-2 pl-5 text-sm/6 text-zinc-600 dark:text-zinc-400"
+                    >
+                        <li>
+                            Confirme o cadastro e obtenha a chave do
+                            contribuinte disponibilizada pela AGT no seu Portal.
+                            A palavra-passe de entrada no Portal fica consigo.
+                        </li>
+                        <li>
+                            Peça ao apoio Facturac a preparação da associação
+                            para este NIF e ambiente. Combine um procedimento de
+                            entrega segura; não envie chaves por email ou
+                            mensagens.
+                        </li>
+                        <li>
+                            Quando a preparação estiver disponível, confirme
+                            abaixo. A seguir, verifique a ligação e importe as
+                            séries.
+                        </li>
+                    </ol>
+                    <p class="mt-3 text-sm/6 text-zinc-500 dark:text-zinc-400">
+                        As credenciais API, a chave do software e a homologação
+                        são tratadas pelo produtor Facturac. Não são as
+                        credenciais pessoais do seu Portal.
+                    </p>
+                    <p
+                        v-if="connection.public_id"
+                        class="mt-5 text-sm font-semibold"
+                    >
+                        Já existe uma ligação guardada. Consulte os requisitos e
+                        verifique o acesso abaixo; não precisa de a associar
+                        novamente.
+                    </p>
+                    <p
+                        v-else-if="!permissions.manage"
+                        class="mt-5 text-sm font-semibold"
+                    >
+                        Peça ao proprietário ou administrador da empresa que
+                        confirme a associação.
+                    </p>
+                    <Link
+                        v-else-if="!guardrails.mfa_enabled"
+                        :href="security.url()"
+                        class="mt-5 inline-flex min-h-11 items-center rounded-full bg-accent-400 px-5 text-sm font-semibold text-brand-950 focus-ring"
+                        >Activar protecção de dois factores</Link
+                    >
+                    <Form
+                        v-else-if="associationAvailable"
+                        v-bind="associate.form()"
+                        :options="{ preserveScroll: true }"
+                        class="mt-5 space-y-4"
+                        #default="{ errors, processing }"
+                    >
+                        <input
+                            type="hidden"
+                            name="tax_identification_number"
+                            :value="legalEntity.tax_identification_number ?? ''"
+                        />
+                        <label
+                            for="association-confirmed"
+                            class="flex items-start gap-3 text-sm/6"
+                        >
+                            <input
+                                id="association-confirmed"
+                                type="checkbox"
+                                name="association_confirmed"
+                                value="1"
+                                required
+                                class="mt-1 size-4 shrink-0"
+                                :disabled="processing"
+                                :aria-invalid="!!errors.association_confirmed"
+                                aria-describedby="association-error"
+                            />
+                            Autorizo a associação do acesso preparado para esta
+                            empresa, em ambiente de testes.
+                        </label>
+                        <FormError
+                            id="association-error"
+                            :message="errors.association_confirmed"
+                        />
+                        <FormError
+                            :message="errors.tax_identification_number"
+                        />
+                        <button
+                            type="submit"
+                            :disabled="processing"
+                            class="inline-flex min-h-11 items-center rounded-full bg-brand-950 px-5 text-sm font-semibold text-white focus-ring disabled:opacity-50 dark:bg-white dark:text-brand-950"
+                        >
+                            {{
+                                processing
+                                    ? 'A associar…'
+                                    : 'Associar o meu acesso'
+                            }}
+                        </button>
+                        <p class="text-xs/5 text-zinc-500 dark:text-zinc-400">
+                            Poderá ser pedida a palavra-passe da sua conta
+                            Facturac para confirmar esta operação. Não é emitida
+                            nenhuma factura.
+                        </p>
+                    </Form>
+                    <p
+                        v-else
+                        class="mt-5 rounded-xl bg-amber-50 p-4 text-sm/6 text-amber-900 dark:bg-amber-400/10 dark:text-amber-200"
+                    >
+                        A preparação ainda não está disponível. Contacte o apoio
+                        Facturac pelos canais habituais, indicando apenas o nome
+                        e o NIF da empresa. Depois actualize esta página. Não
+                        cole chaves nem palavras-passe em pedidos de apoio.
+                    </p>
+                    <div class="mt-4 flex flex-wrap gap-3">
+                        <Link
+                            :href="helpIndex.url()"
+                            class="inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold ring-1 ring-zinc-900/10 focus-ring dark:ring-white/15"
+                            >Contactos de apoio</Link
+                        >
+                        <Link
+                            v-if="!connection.public_id"
+                            :href="show.url()"
+                            class="inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold ring-1 ring-zinc-900/10 focus-ring dark:ring-white/15"
+                            >Actualizar preparação</Link
+                        >
+                    </div>
+                </section>
 
                 <div
                     v-if="flashSuccess"
@@ -246,416 +394,509 @@ function formatDate(value: string | null): string {
                     {{ flashError }}
                 </div>
 
-                <section class="grid gap-4 md:grid-cols-3">
-                    <article class="rounded-2xl surface p-5">
-                        <div class="flex items-center justify-between gap-3">
-                            <span
-                                class="grid size-10 place-items-center rounded-xl bg-sky-50 text-sky-700 dark:bg-sky-400/10 dark:text-sky-300"
-                            >
-                                <Network class="size-5" aria-hidden="true" />
-                            </span>
-                            <StatusBadge label="Só homologação" tone="info" />
-                        </div>
-                        <p
-                            class="mt-5 text-sm font-semibold text-zinc-950 dark:text-white"
-                        >
-                            {{ connection.endpoint_host }}
-                        </p>
-                        <p
-                            class="mt-1 text-xs/5 text-zinc-500 dark:text-zinc-400"
-                        >
-                            Produção bloqueada até certificação e autorização
-                            explícita.
-                        </p>
-                    </article>
-                    <article class="rounded-2xl surface p-5">
-                        <div class="flex items-center justify-between gap-3">
-                            <span
-                                class="grid size-10 place-items-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300"
-                            >
-                                <DatabaseZap
-                                    class="size-5"
-                                    aria-hidden="true"
-                                />
-                            </span>
-                            <StatusBadge label="Cifrado" tone="success" />
-                        </div>
-                        <p
-                            class="mt-5 text-sm font-semibold text-zinc-950 dark:text-white"
-                        >
-                            Credenciais protegidas
-                        </p>
-                        <p
-                            class="mt-1 text-xs/5 text-zinc-500 dark:text-zinc-400"
-                        >
-                            {{
-                                connection.credential_identity ??
-                                'Ainda não configuradas'
-                            }}
-                        </p>
-                    </article>
-                    <article class="rounded-2xl surface p-5">
-                        <div class="flex items-center justify-between gap-3">
-                            <span
-                                class="grid size-10 place-items-center rounded-xl bg-amber-50 text-amber-800 dark:bg-amber-400/10 dark:text-amber-300"
-                            >
-                                <KeyRound class="size-5" aria-hidden="true" />
-                            </span>
-                            <StatusBadge
-                                label="Fora da base de dados"
-                                tone="warning"
-                            />
-                        </div>
-                        <p
-                            class="mt-5 text-sm font-semibold text-zinc-950 dark:text-white"
-                        >
-                            Chaves sob custódia local
-                        </p>
-                        <p
-                            class="mt-1 text-xs/5 text-zinc-500 dark:text-zinc-400"
-                        >
-                            Apenas referências e impressões SHA-256 são
-                            persistidas.
-                        </p>
-                    </article>
-                </section>
-
-                <div class="grid gap-8 xl:grid-cols-[minmax(0,1fr)_24rem]">
-                    <Form
-                        v-bind="update.form()"
-                        :options="{ preserveScroll: true }"
-                        :reset-on-success="[
-                            'basic_auth_username',
-                            'basic_auth_password',
-                        ]"
-                        :reset-on-error="['basic_auth_password']"
-                        class="space-y-8"
-                        #default="{ errors, processing, recentlySuccessful }"
+                <details class="rounded-2xl surface p-5">
+                    <summary
+                        class="cursor-pointer text-sm font-semibold focus-ring"
                     >
-                        <section class="rounded-2xl surface">
-                            <div
-                                class="flex gap-4 border-b border-zinc-100 p-5 sm:p-7 dark:border-white/10"
-                            >
-                                <span
-                                    class="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-100 text-brand-700 dark:bg-brand-400/10 dark:text-brand-300"
+                        Detalhes do ambiente e da custódia
+                    </summary>
+                    <div class="mt-4">
+                        <section class="grid gap-4 md:grid-cols-3">
+                            <article class="rounded-2xl surface p-5">
+                                <div
+                                    class="flex items-center justify-between gap-3"
                                 >
-                                    <LockKeyhole
-                                        class="size-5"
-                                        aria-hidden="true"
-                                    />
-                                </span>
-                                <div>
-                                    <h2
-                                        class="font-semibold text-zinc-950 dark:text-white"
+                                    <span
+                                        class="grid size-10 place-items-center rounded-xl bg-sky-50 text-sky-700 dark:bg-sky-400/10 dark:text-sky-300"
                                     >
-                                        Acesso ao serviço AGT
-                                    </h2>
-                                    <p
-                                        class="mt-1 text-sm/6 text-zinc-500 dark:text-zinc-400"
-                                    >
-                                        A palavra-passe nunca regressa ao
-                                        navegador. Deixe os campos em branco
-                                        para conservar as credenciais
-                                        existentes.
-                                    </p>
-                                </div>
-                            </div>
-                            <fieldset
-                                :disabled="!permissions.manage || processing"
-                                class="grid grid-cols-1 gap-x-6 gap-y-6 p-5 disabled:opacity-65 sm:grid-cols-6 sm:p-7"
-                            >
-                                <div class="sm:col-span-3">
-                                    <label
-                                        for="agt-username"
-                                        class="field-label"
-                                        >Utilizador AGT</label
-                                    >
-                                    <input
-                                        id="agt-username"
-                                        name="basic_auth_username"
-                                        type="text"
-                                        autocomplete="off"
-                                        :required="
-                                            !connection.has_basic_credentials
-                                        "
-                                        :placeholder="
-                                            connection.credential_identity ??
-                                            'Utilizador de homologação'
-                                        "
-                                        class="mt-2 block form-input"
-                                    />
-                                    <FormError
-                                        :message="errors.basic_auth_username"
+                                        <Network
+                                            class="size-5"
+                                            aria-hidden="true"
+                                        />
+                                    </span>
+                                    <StatusBadge
+                                        label="Só homologação"
+                                        tone="info"
                                     />
                                 </div>
-                                <div class="sm:col-span-3">
-                                    <label
-                                        for="agt-password"
-                                        class="field-label"
-                                        >Palavra-passe / token</label
-                                    >
-                                    <input
-                                        id="agt-password"
-                                        name="basic_auth_password"
-                                        type="password"
-                                        autocomplete="new-password"
-                                        :required="
-                                            !connection.has_basic_credentials
-                                        "
-                                        :placeholder="
-                                            connection.has_basic_credentials
-                                                ? '••••••••••••••••'
-                                                : 'Credencial fornecida pela AGT'
-                                        "
-                                        class="mt-2 block form-input"
-                                    />
-                                    <FormError
-                                        :message="errors.basic_auth_password"
-                                    />
-                                </div>
-                            </fieldset>
-                        </section>
-
-                        <section class="rounded-2xl surface">
-                            <div
-                                class="flex gap-4 border-b border-zinc-100 p-5 sm:p-7 dark:border-white/10"
-                            >
-                                <span
-                                    class="grid size-10 shrink-0 place-items-center rounded-xl bg-sky-100 text-sky-700 dark:bg-sky-400/10 dark:text-sky-300"
+                                <p
+                                    class="mt-5 text-sm font-semibold text-zinc-950 dark:text-white"
                                 >
-                                    <ServerCog
-                                        class="size-5"
-                                        aria-hidden="true"
-                                    />
-                                </span>
-                                <div>
-                                    <h2
-                                        class="font-semibold text-zinc-950 dark:text-white"
-                                    >
-                                        Identidade do software
-                                    </h2>
-                                    <p
-                                        class="mt-1 text-sm/6 text-zinc-500 dark:text-zinc-400"
-                                    >
-                                        Dados assinados no contrato AGT e
-                                        identificador do estabelecimento
-                                        emissor.
-                                    </p>
-                                </div>
-                            </div>
-                            <fieldset
-                                :disabled="!permissions.manage || processing"
-                                class="grid grid-cols-1 gap-x-6 gap-y-6 p-5 disabled:opacity-65 sm:grid-cols-6 sm:p-7"
-                            >
-                                <div class="sm:col-span-3">
-                                    <label for="product-id" class="field-label"
-                                        >Nome do produto</label
-                                    >
-                                    <input
-                                        id="product-id"
-                                        name="product_id"
-                                        type="text"
-                                        required
-                                        :value="connection.product_id"
-                                        placeholder="facturac.ao"
-                                        class="mt-2 block form-input"
-                                    />
-                                    <FormError :message="errors.product_id" />
-                                </div>
-                                <div class="sm:col-span-3">
-                                    <label
-                                        for="product-version"
-                                        class="field-label"
-                                        >Versão</label
-                                    >
-                                    <input
-                                        id="product-version"
-                                        name="product_version"
-                                        type="text"
-                                        required
-                                        :value="connection.product_version"
-                                        placeholder="1.0.0"
-                                        class="mt-2 block form-input font-mono"
-                                    />
-                                    <FormError
-                                        :message="errors.product_version"
-                                    />
-                                </div>
-                                <div class="sm:col-span-3">
-                                    <label
-                                        for="validation-number"
-                                        class="field-label"
-                                        >Número de validação</label
-                                    >
-                                    <input
-                                        id="validation-number"
-                                        name="software_validation_number"
-                                        type="text"
-                                        required
-                                        :value="
-                                            connection.software_validation_number
-                                        "
-                                        placeholder="Número atribuído ao software"
-                                        class="mt-2 block form-input font-mono"
-                                    />
-                                    <FormError
-                                        :message="
-                                            errors.software_validation_number
-                                        "
-                                    />
-                                </div>
-                                <div class="sm:col-span-3">
-                                    <label
-                                        for="establishment-number"
-                                        class="field-label"
-                                        >Número do estabelecimento AGT</label
-                                    >
-                                    <input
-                                        id="establishment-number"
-                                        name="establishment_number"
-                                        type="text"
-                                        required
-                                        :value="connection.establishment_number"
-                                        placeholder="Identificador da sede na AGT"
-                                        class="mt-2 block form-input font-mono"
-                                    />
-                                    <FormError
-                                        :message="errors.establishment_number"
-                                    />
-                                </div>
-                            </fieldset>
-                        </section>
-
-                        <section class="rounded-2xl surface">
-                            <div
-                                class="flex gap-4 border-b border-zinc-100 p-5 sm:p-7 dark:border-white/10"
-                            >
-                                <span
-                                    class="grid size-10 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-800 dark:bg-amber-400/10 dark:text-amber-300"
+                                    {{ connection.endpoint_host }}
+                                </p>
+                                <p
+                                    class="mt-1 text-xs/5 text-zinc-500 dark:text-zinc-400"
                                 >
-                                    <Fingerprint
-                                        class="size-5"
-                                        aria-hidden="true"
+                                    Produção bloqueada até certificação e
+                                    autorização explícita.
+                                </p>
+                            </article>
+                            <article class="rounded-2xl surface p-5">
+                                <div
+                                    class="flex items-center justify-between gap-3"
+                                >
+                                    <span
+                                        class="grid size-10 place-items-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300"
+                                    >
+                                        <DatabaseZap
+                                            class="size-5"
+                                            aria-hidden="true"
+                                        />
+                                    </span>
+                                    <StatusBadge
+                                        label="Cifrado"
+                                        tone="success"
                                     />
-                                </span>
-                                <div>
-                                    <h2
-                                        class="font-semibold text-zinc-950 dark:text-white"
-                                    >
-                                        Referências das chaves
-                                    </h2>
-                                    <p
-                                        class="mt-1 text-sm/6 text-zinc-500 dark:text-zinc-400"
-                                    >
-                                        Indique nomes relativos no cofre. Não
-                                        cole PEM, conteúdo de chave ou caminhos
-                                        absolutos.
-                                    </p>
                                 </div>
-                            </div>
-                            <fieldset
-                                :disabled="!permissions.manage || processing"
-                                class="grid grid-cols-1 gap-x-6 gap-y-6 p-5 disabled:opacity-65 sm:grid-cols-6 sm:p-7"
-                            >
-                                <div class="sm:col-span-3">
-                                    <label
-                                        for="software-key"
-                                        class="field-label"
-                                        >Chave privada do software</label
+                                <p
+                                    class="mt-5 text-sm font-semibold text-zinc-950 dark:text-white"
+                                >
+                                    Credenciais protegidas
+                                </p>
+                                <p
+                                    class="mt-1 text-xs/5 text-zinc-500 dark:text-zinc-400"
+                                >
+                                    {{
+                                        connection.credential_identity ??
+                                        'Ainda não configuradas'
+                                    }}
+                                </p>
+                            </article>
+                            <article class="rounded-2xl surface p-5">
+                                <div
+                                    class="flex items-center justify-between gap-3"
+                                >
+                                    <span
+                                        class="grid size-10 place-items-center rounded-xl bg-amber-50 text-amber-800 dark:bg-amber-400/10 dark:text-amber-300"
                                     >
-                                    <input
-                                        id="software-key"
-                                        name="software_key_reference"
-                                        type="text"
-                                        required
-                                        :value="
-                                            connection.software_key_reference
-                                        "
-                                        placeholder="software/vap-hml"
-                                        class="mt-2 block form-input font-mono"
+                                        <KeyRound
+                                            class="size-5"
+                                            aria-hidden="true"
+                                        />
+                                    </span>
+                                    <StatusBadge
+                                        label="Fora da base de dados"
+                                        tone="warning"
                                     />
-                                    <FormError
-                                        :message="errors.software_key_reference"
-                                    />
-                                    <p
-                                        v-if="
-                                            connection.software_key_fingerprint
-                                        "
-                                        class="mt-2 font-mono text-xs text-zinc-500 dark:text-zinc-400"
-                                    >
-                                        SHA-256
-                                        {{
-                                            connection.software_key_fingerprint
-                                        }}
-                                    </p>
                                 </div>
-                                <div class="sm:col-span-3">
-                                    <label
-                                        for="taxpayer-key"
-                                        class="field-label"
-                                        >Chave privada do contribuinte</label
-                                    >
-                                    <input
-                                        id="taxpayer-key"
-                                        name="taxpayer_key_reference"
-                                        type="text"
-                                        required
-                                        :value="
-                                            connection.taxpayer_key_reference
-                                        "
-                                        placeholder="taxpayer/nif-hml"
-                                        class="mt-2 block form-input font-mono"
-                                    />
-                                    <FormError
-                                        :message="errors.taxpayer_key_reference"
-                                    />
-                                    <p
-                                        v-if="
-                                            connection.taxpayer_key_fingerprint
-                                        "
-                                        class="mt-2 font-mono text-xs text-zinc-500 dark:text-zinc-400"
-                                    >
-                                        SHA-256
-                                        {{
-                                            connection.taxpayer_key_fingerprint
-                                        }}
-                                    </p>
-                                </div>
-                            </fieldset>
+                                <p
+                                    class="mt-5 text-sm font-semibold text-zinc-950 dark:text-white"
+                                >
+                                    Chaves sob custódia local
+                                </p>
+                                <p
+                                    class="mt-1 text-xs/5 text-zinc-500 dark:text-zinc-400"
+                                >
+                                    Apenas referências e impressões SHA-256 são
+                                    persistidas.
+                                </p>
+                            </article>
                         </section>
+                    </div>
+                </details>
 
-                        <div
-                            class="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end"
+                <div
+                    class="grid gap-8"
+                    :class="
+                        permissions.manual_setup
+                            ? 'xl:grid-cols-[minmax(0,1fr)_24rem]'
+                            : 'max-w-3xl'
+                    "
+                >
+                    <details
+                        v-if="permissions.manual_setup"
+                        :open="technicalOpen"
+                        class="rounded-2xl surface p-5"
+                        @toggle="
+                            technicalOpen = (
+                                $event.target as HTMLDetailsElement
+                            ).open
+                        "
+                    >
+                        <summary
+                            class="cursor-pointer text-sm font-semibold focus-ring"
                         >
-                            <span
-                                v-if="recentlySuccessful"
-                                class="inline-flex items-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-300"
+                            Configuração técnica assistida · apenas com o apoio
+                            Facturac
+                        </summary>
+                        <p class="my-4 text-sm/6 text-zinc-500">
+                            O percurso acima usa uma associação preparada. Estes
+                            campos são para manutenção técnica acompanhada; não
+                            precisa de os preencher para continuar se já tem
+                            acesso associado.
+                        </p>
+                        <Form
+                            v-bind="update.form()"
+                            :options="{ preserveScroll: true }"
+                            :reset-on-success="[
+                                'basic_auth_username',
+                                'basic_auth_password',
+                            ]"
+                            :reset-on-error="['basic_auth_password']"
+                            class="space-y-8"
+                            #default="{
+                                errors,
+                                processing,
+                                recentlySuccessful,
+                            }"
+                        >
+                            <section class="rounded-2xl surface">
+                                <div
+                                    class="flex gap-4 border-b border-zinc-100 p-5 sm:p-7 dark:border-white/10"
+                                >
+                                    <span
+                                        class="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-100 text-brand-700 dark:bg-brand-400/10 dark:text-brand-300"
+                                    >
+                                        <LockKeyhole
+                                            class="size-5"
+                                            aria-hidden="true"
+                                        />
+                                    </span>
+                                    <div>
+                                        <h2
+                                            class="font-semibold text-zinc-950 dark:text-white"
+                                        >
+                                            Credenciais API do produtor
+                                        </h2>
+                                        <p
+                                            class="mt-1 text-sm/6 text-zinc-500 dark:text-zinc-400"
+                                        >
+                                            A palavra-passe nunca regressa ao
+                                            navegador. Deixe os campos em branco
+                                            para conservar as credenciais
+                                            existentes.
+                                        </p>
+                                    </div>
+                                </div>
+                                <fieldset
+                                    :disabled="
+                                        !permissions.manage || processing
+                                    "
+                                    class="grid grid-cols-1 gap-x-6 gap-y-6 p-5 disabled:opacity-65 sm:grid-cols-6 sm:p-7"
+                                >
+                                    <div class="sm:col-span-3">
+                                        <label
+                                            for="agt-username"
+                                            class="field-label"
+                                            >Utilizador AGT</label
+                                        >
+                                        <input
+                                            id="agt-username"
+                                            name="basic_auth_username"
+                                            type="text"
+                                            autocomplete="off"
+                                            :required="
+                                                !connection.has_basic_credentials
+                                            "
+                                            :placeholder="
+                                                connection.credential_identity ??
+                                                'Utilizador API do produtor'
+                                            "
+                                            class="mt-2 block form-input"
+                                        />
+                                        <FormError
+                                            :message="
+                                                errors.basic_auth_username
+                                            "
+                                        />
+                                    </div>
+                                    <div class="sm:col-span-3">
+                                        <label
+                                            for="agt-password"
+                                            class="field-label"
+                                            >Palavra-passe / token</label
+                                        >
+                                        <input
+                                            id="agt-password"
+                                            name="basic_auth_password"
+                                            type="password"
+                                            autocomplete="new-password"
+                                            :required="
+                                                !connection.has_basic_credentials
+                                            "
+                                            :placeholder="
+                                                connection.has_basic_credentials
+                                                    ? '••••••••••••••••'
+                                                    : 'Credencial fornecida pela AGT'
+                                            "
+                                            class="mt-2 block form-input"
+                                        />
+                                        <FormError
+                                            :message="
+                                                errors.basic_auth_password
+                                            "
+                                        />
+                                    </div>
+                                </fieldset>
+                            </section>
+
+                            <section class="rounded-2xl surface">
+                                <div
+                                    class="flex gap-4 border-b border-zinc-100 p-5 sm:p-7 dark:border-white/10"
+                                >
+                                    <span
+                                        class="grid size-10 shrink-0 place-items-center rounded-xl bg-sky-100 text-sky-700 dark:bg-sky-400/10 dark:text-sky-300"
+                                    >
+                                        <ServerCog
+                                            class="size-5"
+                                            aria-hidden="true"
+                                        />
+                                    </span>
+                                    <div>
+                                        <h2
+                                            class="font-semibold text-zinc-950 dark:text-white"
+                                        >
+                                            Identidade do software
+                                        </h2>
+                                        <p
+                                            class="mt-1 text-sm/6 text-zinc-500 dark:text-zinc-400"
+                                        >
+                                            Dados assinados no contrato AGT e
+                                            identificador do estabelecimento
+                                            emissor.
+                                        </p>
+                                    </div>
+                                </div>
+                                <fieldset
+                                    :disabled="
+                                        !permissions.manage || processing
+                                    "
+                                    class="grid grid-cols-1 gap-x-6 gap-y-6 p-5 disabled:opacity-65 sm:grid-cols-6 sm:p-7"
+                                >
+                                    <div class="sm:col-span-3">
+                                        <label
+                                            for="product-id"
+                                            class="field-label"
+                                            >Nome do produto</label
+                                        >
+                                        <input
+                                            id="product-id"
+                                            name="product_id"
+                                            type="text"
+                                            required
+                                            :value="connection.product_id"
+                                            placeholder="facturac.ao"
+                                            class="mt-2 block form-input"
+                                        />
+                                        <FormError
+                                            :message="errors.product_id"
+                                        />
+                                    </div>
+                                    <div class="sm:col-span-3">
+                                        <label
+                                            for="product-version"
+                                            class="field-label"
+                                            >Versão</label
+                                        >
+                                        <input
+                                            id="product-version"
+                                            name="product_version"
+                                            type="text"
+                                            required
+                                            :value="connection.product_version"
+                                            placeholder="1.0.0"
+                                            class="mt-2 block form-input font-mono"
+                                        />
+                                        <FormError
+                                            :message="errors.product_version"
+                                        />
+                                    </div>
+                                    <div class="sm:col-span-3">
+                                        <label
+                                            for="validation-number"
+                                            class="field-label"
+                                            >Número de validação</label
+                                        >
+                                        <input
+                                            id="validation-number"
+                                            name="software_validation_number"
+                                            type="text"
+                                            required
+                                            :value="
+                                                connection.software_validation_number
+                                            "
+                                            placeholder="Número atribuído ao software"
+                                            class="mt-2 block form-input font-mono"
+                                        />
+                                        <FormError
+                                            :message="
+                                                errors.software_validation_number
+                                            "
+                                        />
+                                    </div>
+                                    <div class="sm:col-span-3">
+                                        <label
+                                            for="establishment-number"
+                                            class="field-label"
+                                            >Número do estabelecimento
+                                            AGT</label
+                                        >
+                                        <input
+                                            id="establishment-number"
+                                            name="establishment_number"
+                                            type="text"
+                                            required
+                                            :value="
+                                                connection.establishment_number
+                                            "
+                                            placeholder="Identificador da sede na AGT"
+                                            class="mt-2 block form-input font-mono"
+                                        />
+                                        <FormError
+                                            :message="
+                                                errors.establishment_number
+                                            "
+                                        />
+                                    </div>
+                                </fieldset>
+                            </section>
+
+                            <section class="rounded-2xl surface">
+                                <div
+                                    class="flex gap-4 border-b border-zinc-100 p-5 sm:p-7 dark:border-white/10"
+                                >
+                                    <span
+                                        class="grid size-10 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-800 dark:bg-amber-400/10 dark:text-amber-300"
+                                    >
+                                        <Fingerprint
+                                            class="size-5"
+                                            aria-hidden="true"
+                                        />
+                                    </span>
+                                    <div>
+                                        <h2
+                                            class="font-semibold text-zinc-950 dark:text-white"
+                                        >
+                                            Referências das chaves
+                                        </h2>
+                                        <p
+                                            class="mt-1 text-sm/6 text-zinc-500 dark:text-zinc-400"
+                                        >
+                                            Indique nomes relativos no cofre.
+                                            Não cole PEM, conteúdo de chave ou
+                                            caminhos absolutos.
+                                        </p>
+                                    </div>
+                                </div>
+                                <fieldset
+                                    :disabled="
+                                        !permissions.manage || processing
+                                    "
+                                    class="grid grid-cols-1 gap-x-6 gap-y-6 p-5 disabled:opacity-65 sm:grid-cols-6 sm:p-7"
+                                >
+                                    <div class="sm:col-span-3">
+                                        <label
+                                            for="software-key"
+                                            class="field-label"
+                                            >Chave privada do software</label
+                                        >
+                                        <input
+                                            id="software-key"
+                                            name="software_key_reference"
+                                            type="text"
+                                            required
+                                            :value="
+                                                connection.software_key_reference
+                                            "
+                                            placeholder="software/vap-hml"
+                                            class="mt-2 block form-input font-mono"
+                                        />
+                                        <FormError
+                                            :message="
+                                                errors.software_key_reference
+                                            "
+                                        />
+                                        <p
+                                            v-if="
+                                                connection.software_key_fingerprint
+                                            "
+                                            class="mt-2 font-mono text-xs text-zinc-500 dark:text-zinc-400"
+                                        >
+                                            SHA-256
+                                            {{
+                                                connection.software_key_fingerprint
+                                            }}
+                                        </p>
+                                    </div>
+                                    <div class="sm:col-span-3">
+                                        <label
+                                            for="taxpayer-key"
+                                            class="field-label"
+                                            >Chave privada do
+                                            contribuinte</label
+                                        >
+                                        <input
+                                            id="taxpayer-key"
+                                            name="taxpayer_key_reference"
+                                            type="text"
+                                            required
+                                            :value="
+                                                connection.taxpayer_key_reference
+                                            "
+                                            placeholder="taxpayer/nif-hml"
+                                            class="mt-2 block form-input font-mono"
+                                        />
+                                        <FormError
+                                            :message="
+                                                errors.taxpayer_key_reference
+                                            "
+                                        />
+                                        <p
+                                            v-if="
+                                                connection.taxpayer_key_fingerprint
+                                            "
+                                            class="mt-2 font-mono text-xs text-zinc-500 dark:text-zinc-400"
+                                        >
+                                            SHA-256
+                                            {{
+                                                connection.taxpayer_key_fingerprint
+                                            }}
+                                        </p>
+                                    </div>
+                                </fieldset>
+                            </section>
+
+                            <div
+                                class="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end"
                             >
-                                <BadgeCheck class="size-4" aria-hidden="true" />
-                                Guardado
-                            </span>
-                            <button
-                                type="submit"
-                                :disabled="!permissions.manage || processing"
-                                class="inline-flex h-11 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
-                            >
-                                <LoaderCircle
-                                    v-if="processing"
-                                    class="size-4 animate-spin"
-                                    aria-hidden="true"
-                                />
-                                <ShieldCheck
-                                    v-else
-                                    class="size-4"
-                                    aria-hidden="true"
-                                />
-                                Guardar configuração
-                            </button>
-                        </div>
-                    </Form>
+                                <span
+                                    v-if="recentlySuccessful"
+                                    class="inline-flex items-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-300"
+                                >
+                                    <BadgeCheck
+                                        class="size-4"
+                                        aria-hidden="true"
+                                    />
+                                    Guardado
+                                </span>
+                                <button
+                                    type="submit"
+                                    :disabled="
+                                        !permissions.manage || processing
+                                    "
+                                    class="inline-flex h-11 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
+                                >
+                                    <LoaderCircle
+                                        v-if="processing"
+                                        class="size-4 animate-spin"
+                                        aria-hidden="true"
+                                    />
+                                    <ShieldCheck
+                                        v-else
+                                        class="size-4"
+                                        aria-hidden="true"
+                                    />
+                                    Guardar configuração
+                                </button>
+                            </div>
+                        </Form>
+                    </details>
 
                     <aside class="space-y-6 xl:sticky xl:top-24 xl:self-start">
-                        <section class="rounded-2xl surface p-5">
+                        <section
+                            id="connection-check"
+                            class="scroll-mt-24 rounded-2xl surface p-5"
+                        >
                             <div class="flex items-start justify-between gap-4">
                                 <div>
                                     <p
@@ -710,6 +951,12 @@ function formatDate(value: string | null): string {
                                     </div>
                                 </li>
                             </ul>
+                            <p
+                                class="mt-4 text-sm/6 text-zinc-600 dark:text-zinc-400"
+                                role="status"
+                            >
+                                {{ connectionRecovery(checks[0]) }}
+                            </p>
                             <Form
                                 v-if="
                                     permissions.test && guardrails.mfa_enabled
@@ -736,7 +983,7 @@ function formatDate(value: string | null): string {
                                         class="size-4"
                                         aria-hidden="true"
                                     />
-                                    Testar ligação AGT
+                                    Verificar ligação AGT
                                 </button>
                             </Form>
                             <Link
@@ -788,8 +1035,8 @@ function formatDate(value: string | null): string {
                                         class="mt-0.5 size-4 shrink-0"
                                         aria-hidden="true"
                                     />
-                                    Cada repetição de entrega reutiliza
-                                    exactamente os mesmos bytes assinados.
+                                    Pode repetir a verificação depois de
+                                    corrigir os requisitos indicados.
                                 </li>
                                 <li class="flex gap-2">
                                     <Ban
@@ -816,7 +1063,10 @@ function formatDate(value: string | null): string {
                     </aside>
                 </div>
 
-                <section class="overflow-hidden rounded-2xl surface">
+                <section
+                    id="authorized-series"
+                    class="scroll-mt-24 overflow-hidden rounded-2xl surface"
+                >
                     <div
                         class="flex flex-col gap-4 border-b border-zinc-100 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7 dark:border-white/10"
                     >
@@ -835,8 +1085,11 @@ function formatDate(value: string | null): string {
                             <p
                                 class="mt-1 text-sm/6 text-zinc-500 dark:text-zinc-400"
                             >
-                                O próximo número local nunca recua quando a
-                                lista é novamente sincronizada.
+                                Comece por importar as séries existentes. Se não
+                                houver uma série FT adequada, peça uma nova
+                                abaixo. Se o pedido demorar ou falhar sem
+                                confirmação, importe novamente antes de repetir
+                                o pedido.
                             </p>
                         </div>
                         <Form
@@ -863,7 +1116,7 @@ function formatDate(value: string | null): string {
                                     class="size-4"
                                     aria-hidden="true"
                                 />
-                                Sincronizar séries
+                                Importar séries autorizadas
                             </button>
                         </Form>
                         <Link

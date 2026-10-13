@@ -2,6 +2,10 @@
 
 use App\Actions\CompletePosSale;
 use App\Actions\RecordStockMovement;
+use App\Analytics\ReceivablesQuery;
+use App\Fiscal\Documents\V2_0\FiscalDocumentPayloadBuilder;
+use App\Fiscal\Saft\SaftExporter;
+use App\Fiscal\Saft\SaftValidator;
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
 use App\FiscalSeriesStatus;
@@ -17,8 +21,11 @@ use App\PaymentMethod;
 use App\PosSessionStatus;
 use App\StockMovementType;
 use App\WorkspaceRole;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia as Assert;
+use Spatie\Activitylog\Models\Activity;
 
 require_once __DIR__.'/../PosFixtures.php';
 
@@ -91,6 +98,11 @@ test('a cash sale issues exactly one numbered Factura/Recibo and links it to the
         ->and($company['series']->fresh()->next_number)->toBe(2)
         ->and($company['series']->fresh()->status)->toBe(FiscalSeriesStatus::InUse);
 
+    $request = json_decode($document->submissions->sole()->request_body, true, flags: JSON_THROW_ON_ERROR);
+    expect($request['documents'][0]['documentType'])->toBe('FR')
+        ->and($request['documents'][0]['documentNo'])->toBe($document->document_no)
+        ->and(app(FiscalDocumentPayloadBuilder::class)->signableObject($document)['documentType'])->toBe('FR');
+
     Queue::assertPushed(
         SubmitAgtDocument::class,
         fn (SubmitAgtDocument $job): bool => $job->submissionId === AgtSubmission::query()->sole()->id,
@@ -100,6 +112,48 @@ test('a cash sale issues exactly one numbered Factura/Recibo and links it to the
         ->and($response->json('sale.document_public_id'))->toBe($document->public_id)
         ->and($response->json('sale.receipt_url'))->toBe(route('pos.sales.receipt', $sale, false));
 });
+
+test('a POS document exports its selected type in schema valid SAF-T and is billed and paid once', function (string $type) {
+    $company = posCompany();
+    $session = posOpenSession($company);
+    $item = posItem($company);
+    $selection = [];
+    if ($type === 'TV') {
+        posSeries($company['legalEntity'], $company['establishment'], $company['connection'], [
+            'series_code' => 'TVTEST', 'document_type' => FiscalDocumentType::SalesTicket,
+        ]);
+        $selection = ['document_type' => 'TV', 'tv_basis' => 'vending_machine', 'tv_conditions_confirmed' => true];
+    }
+
+    $this->actingAs($company['owner'])
+        ->postJson(route('pos.sales.store', $session), posSalePayload([[$item]], 11_400, $selection))
+        ->assertCreated();
+
+    $document = FiscalDocument::query()->sole();
+    $xml = app(SaftExporter::class)->export(
+        $company['legalEntity'],
+        CarbonImmutable::now('Africa/Luanda')->startOfYear(),
+        CarbonImmutable::now('Africa/Luanda')->endOfYear(),
+    );
+    app(SaftValidator::class)->assertValid($xml);
+    $root = new SimpleXMLElement($xml);
+    $root->registerXPathNamespace('s', (string) config('fiscal.saft.namespace'));
+    $invoices = $root->xpath('//s:SalesInvoices/s:Invoice');
+
+    expect($invoices)->toHaveCount(1)
+        ->and((string) $invoices[0]->InvoiceType)->toBe($type)
+        ->and((string) $invoices[0]->InvoiceNo)->toBe($document->document_no)
+        ->and((string) $invoices[0]->DocumentTotals->GrossTotal)->toBe('114.00')
+        ->and($root->xpath('//s:Payments/s:Payment'))->toBeEmpty();
+
+    $receivables = app(ReceivablesQuery::class);
+    $summary = $receivables->summarise($receivables->forLegalEntity($company['legalEntity']));
+    expect($summary['billed_minor'])->toBe(11_400)
+        ->and($summary['paid_minor'])->toBe(11_400)
+        ->and($summary['outstanding_minor'])->toBe(0)
+        ->and($receivables->paidMinor($document))->toBe(11_400)
+        ->and($document->document_type->settlesOtherDocuments())->toBeFalse();
+})->with(['FR', 'TV']);
 
 test('services are sold as general services and products as goods', function () {
     $company = posCompany();
@@ -587,6 +641,7 @@ test('with no Factura/Recibo series the sale is refused and nothing is left behi
 
     match ($why) {
         'none' => $series->delete(),
+        'TV series' => $series->forceFill(['document_type' => FiscalDocumentType::SalesTicket])->save(),
         'wrong type' => $series->forceFill(['document_type' => FiscalDocumentType::Invoice])->save(),
         'last year' => $series->forceFill(['series_year' => $series->series_year - 1])->save(),
         'closed' => $series->forceFill(['status' => FiscalSeriesStatus::Closed])->save(),
@@ -611,7 +666,7 @@ test('with no Factura/Recibo series the sale is refused and nothing is left behi
         ->and(PosSale::query()->count())->toBe(0);
 
     Queue::assertNothingPushed();
-})->with(['none', 'wrong type', 'last year', 'closed', 'exhausted', 'other establishment', 'connection not verified']);
+})->with(['none', 'TV series', 'wrong type', 'last year', 'closed', 'exhausted', 'other establishment', 'connection not verified']);
 
 test('an issuing refusal comes back as a readable 409 and rolls the sale back', function () {
     $company = posCompany();
@@ -964,4 +1019,111 @@ test('a receipt is for members of the company only', function () {
 
     auth()->logout();
     $this->get($url)->assertRedirect(route('login'));
+});
+
+test('TV requires an eligible operation and an explicit personal purchase confirmation', function (array $selection, string $itemType) {
+    $company = posCompany();
+    $session = posOpenSession($company);
+    $item = posItem($company, ['type' => $itemType]);
+    posSeries($company['legalEntity'], $company['establishment'], $company['connection'], [
+        'series_code' => 'TVTEST', 'document_type' => FiscalDocumentType::SalesTicket,
+    ]);
+
+    $this->actingAs($company['owner'])->postJson(route('pos.sales.store', $session),
+        posSalePayload([[$item]], 11_400, ['document_type' => 'TV', ...$selection]),
+    )->assertUnprocessable();
+
+    expect(FiscalDocument::query()->count())->toBe(0)
+        ->and(PosSale::query()->count())->toBe(0)
+        ->and($company['series']->fresh()->next_number)->toBe(1);
+})->with([
+    'no basis or confirmation' => [[], 'product'],
+    'no confirmation' => [['tv_basis' => 'vending_machine'], 'product'],
+    'false confirmation' => [['tv_basis' => 'vending_machine', 'tv_conditions_confirmed' => false], 'product'],
+    'generic electronic systems are not enabled' => [['tv_basis' => 'electronic_systems', 'tv_conditions_confirmed' => true], 'product'],
+    'vending cannot sell services' => [['tv_basis' => 'vending_machine', 'tv_conditions_confirmed' => true], 'service'],
+    'licensed street vendor category is goods only' => [['tv_basis' => 'licensed_vendor', 'tv_conditions_confirmed' => true], 'service'],
+    'ticketed service cannot sell goods' => [['tv_basis' => 'ticketed_service', 'tv_conditions_confirmed' => true], 'product'],
+    'TV declarations cannot be attached to FR' => [['document_type' => 'FR', 'tv_basis' => 'vending_machine', 'tv_conditions_confirmed' => true], 'product'],
+    'unsupported type' => [['document_type' => 'FT'], 'product'],
+]);
+
+test('eligible TV uses its own series and retains its declaration exactly once across retries', function (string $basis, string $itemType) {
+    $company = posCompany();
+    $session = posOpenSession($company);
+    $item = posItem($company, ['type' => $itemType]);
+    $tv = posSeries($company['legalEntity'], $company['establishment'], $company['connection'], [
+        'series_code' => 'TVTEST', 'document_type' => FiscalDocumentType::SalesTicket,
+    ]);
+    $payload = posSalePayload([[$item]], 11_400, [
+        'document_type' => 'TV', 'tv_basis' => $basis, 'tv_conditions_confirmed' => true,
+    ]);
+
+    $first = $this->actingAs($company['owner'])->postJson(route('pos.sales.store', $session), $payload)->assertCreated();
+    $this->postJson(route('pos.sales.store', $session), $payload)->assertOk()
+        ->assertJsonPath('sale.public_id', $first->json('sale.public_id'))->assertJsonPath('sale.replayed', true);
+
+    $document = FiscalDocument::query()->sole();
+    $request = json_decode($document->submissions()->sole()->request_body, true, flags: JSON_THROW_ON_ERROR);
+    $audit = Activity::query()->where('event', 'pos-tv-eligibility-confirmed')->sole();
+    expect($document->document_type)->toBe(FiscalDocumentType::SalesTicket)
+        ->and($request['documents'][0]['documentType'])->toBe('TV')
+        ->and($document->document_no)->toBe('TV TVTEST/1')
+        ->and($company['series']->fresh()->next_number)->toBe(1)
+        ->and($tv->fresh()->next_number)->toBe(2)
+        ->and($audit->causer_id)->toBe($company['owner']->id)
+        ->and($audit->properties['basis'])->toBe($basis)
+        ->and($audit->properties['personal_purchase_confirmed'])->toBeTrue()
+        ->and($audit->properties['invoice_not_requested_confirmed'])->toBeTrue();
+})->with([
+    'vending' => ['vending_machine', 'product'],
+    'ticketed service' => ['ticketed_service', 'service'],
+    'licensed vendor' => ['licensed_vendor', 'product'],
+]);
+
+test('TV never falls back to an FR series', function () {
+    $company = posCompany();
+    $session = posOpenSession($company);
+    $item = posItem($company);
+    $this->actingAs($company['owner'])->postJson(route('pos.sales.store', $session), posSalePayload([[$item]], 11_400, [
+        'document_type' => 'TV', 'tv_basis' => 'vending_machine', 'tv_conditions_confirmed' => true,
+    ]))->assertConflict();
+    expect(FiscalDocument::query()->count())->toBe(0)
+        ->and($company['series']->fresh()->next_number)->toBe(1);
+});
+
+test('TV checks also protect direct calls to the issuing action', function () {
+    $company = posCompany();
+    $session = posOpenSession($company);
+    $item = posItem($company);
+    $payload = posSalePayload([[$item]], 11_400, [
+        'document_type' => FiscalDocumentType::SalesTicket,
+        'payment_method' => PaymentMethod::Cash,
+    ]);
+    expect(fn () => app(CompletePosSale::class)->execute($session, $company['owner'], $payload))
+        ->toThrow(ValidationException::class);
+    expect(FiscalDocument::query()->count())->toBe(0);
+});
+
+test('the till exposes FR and TV series availability independently', function () {
+    $company = posCompany();
+    posOpenSession($company);
+
+    $this->actingAs($company['owner'])
+        ->get(route('pos.show'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('session.series_available', true)
+            ->where('session.sales_ticket_series_available', false)
+            ->has('session.sales_ticket_bases', 3));
+
+    posSeries($company['legalEntity'], $company['establishment'], $company['connection'], [
+        'document_type' => FiscalDocumentType::SalesTicket,
+        'series_code' => 'TV'.now('Africa/Luanda')->format('y').'POS',
+    ]);
+    $company['series']->forceFill(['status' => FiscalSeriesStatus::Closed])->save();
+
+    $this->get(route('pos.show'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('session.series_available', false)
+            ->where('session.sales_ticket_series_available', true));
 });

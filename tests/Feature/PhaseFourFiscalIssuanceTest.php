@@ -26,6 +26,7 @@ use App\Models\AgtSubmission;
 use App\Models\Customer;
 use App\Models\Establishment;
 use App\Models\FiscalDocument;
+use App\Models\FiscalDocumentLine;
 use App\Models\FiscalSeries;
 use App\Models\LegalEntity;
 use App\Models\RecurringInvoice;
@@ -745,3 +746,53 @@ test('series synchronization isolates identical series codes in different enviro
     expect($productionSeries->fresh()->getAttributes())->toBe($before);
     expect($company['series']->fresh()->agt_last_document_created)->toBe('75');
 });
+
+test('adjustment issuance freezes the original line reference or blocks without consuming a number', function (FiscalDocumentType $type, ?int $referenceLineNumber) {
+    $company = phaseFourState();
+    Queue::fake();
+    Http::preventStrayRequests();
+    $source = FiscalDocument::factory()->create([
+        'workspace_id' => $company['legal_entity']->workspace_id,
+        'legal_entity_id' => $company['legal_entity']->id,
+        'establishment_id' => $company['establishment']->id,
+        'created_by_user_id' => $company['user']->id,
+        'updated_by_user_id' => $company['user']->id,
+        'environment' => 'homologation',
+    ]);
+    foreach ([1, 2, 3] as $lineNumber) {
+        FiscalDocumentLine::factory()->create(['fiscal_document_id' => $source->id, 'line_number' => $lineNumber]);
+    }
+    FiscalDocument::withoutEvents(fn () => $source->forceFill([
+        'status' => FiscalDocumentStatus::Issued, 'document_no' => 'FT ORIGINAL/1', 'system_entry_at' => now(),
+    ])->save());
+    $company['draft']->update([
+        'document_type' => $type,
+        'references_document_id' => $source->id,
+        'references_document_no' => $source->document_no,
+        'adjustment_reason' => 'Correcção parcial',
+    ]);
+    $company['draft']->lines()->firstOrFail()->update(['reference_line_number' => $referenceLineNumber]);
+    $company['series']->update(['document_type' => $type]);
+    $response = $this->actingAs($company['user'])->withSession(phaseFourPasswordSession())
+        ->post(route('invoices.issue', $company['draft']), [
+            'revision' => $company['draft']->revision,
+            'series_public_id' => $company['series']->public_id,
+        ]);
+    if ($referenceLineNumber !== 3) {
+        $response->assertSessionHas('error', 'Seleccione uma linha válida do documento original emitido.');
+        expect($company['draft']->fresh()->status)->toBe(FiscalDocumentStatus::Draft)
+            ->and($company['draft']->fresh()->document_no)->toBeNull()
+            ->and($company['series']->fresh()->next_number)->toBe(100)
+            ->and(AgtSubmission::count())->toBe(0);
+        Queue::assertNothingPushed();
+    } else {
+        $response->assertSessionHasNoErrors();
+        $submission = AgtSubmission::firstOrFail();
+        $request = json_decode($submission->request_body, true, flags: JSON_THROW_ON_ERROR);
+        expect($request['documents'][0]['lines'][0]['referenceInfo']['referenceItemLineNo'])->toBe(3)
+            ->and($request['documents'][0]['lines'][0]['lineNumber'])->toBe(1)
+            ->and($company['series']->fresh()->next_number)->toBe(101);
+        Queue::assertPushed(SubmitAgtDocument::class);
+    }
+    Http::assertNothingSent();
+})->with([FiscalDocumentType::CreditNote, FiscalDocumentType::DebitNote])->with([3, null, 99]);

@@ -16,16 +16,17 @@ use App\Models\PosSale;
 use App\Models\PosSession;
 use App\Models\User;
 use App\PaymentMethod;
+use App\PosSalesTicketBasis;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Rings up one sale: a Factura/Recibo drafted and issued in a single step.
+ * Rings up one sale: a Factura/Recibo by default, or an explicitly qualified Talão de Venda.
  *
  * A point-of-sale sale is nothing new fiscally. It goes through the same draft
- * and issue pipeline as any other FR, inside one transaction, so a sale either
+ * and issue pipeline as any other fiscal document, inside one transaction, so a sale either
  * exists completely (numbered, signed, queued for the AGT, stock moved) or not
  * at all. Prices, taxes and descriptions are read from the catalogue here, never
  * from the till.
@@ -33,6 +34,9 @@ use Illuminate\Validation\ValidationException;
  * @phpstan-type SaleLine array{catalogue_item_public_id: string, quantity: string, discount_percentage: string}
  * @phpstan-type Sale array{
  *     client_key: string,
+ *     document_type?: FiscalDocumentType,
+ *     tv_basis?: PosSalesTicketBasis|null,
+ *     tv_conditions_confirmed?: bool,
  *     customer_public_id: string|null,
  *     customer: array{name: string, tax_identification_number: string}|null,
  *     lines: list<SaleLine>,
@@ -111,9 +115,11 @@ final readonly class CompletePosSale
         $customer = $this->savedCustomer($locked, $sale['customer_public_id']);
         $lines = $this->lines($locked, $customer, $sale['lines']);
 
+        $type = $this->documentType($sale, $lines);
+
         $today = now('Africa/Luanda')->toDateString();
         $draft = $this->saveDraft->execute($legalEntity, $user, [
-            'document_type' => FiscalDocumentType::InvoiceReceipt->value,
+            'document_type' => $type->value,
             'document_date' => $today,
             'due_date' => null,
             'currency_code' => $locked->currency_code,
@@ -142,11 +148,11 @@ final readonly class CompletePosSale
 
         [$tendered, $change] = $this->tender($sale, $total);
 
-        $series = $this->series->forEstablishment($legalEntity, $locked->establishment);
+        $series = $this->series->forEstablishment($legalEntity, $locked->establishment, $type);
 
         if (! $series instanceof FiscalSeries) {
             throw FiscalFinalizationBlocked::because(
-                'Não há série de Factura/Recibo disponível neste estabelecimento. Peça uma série à AGT antes de vender.',
+                'Não há série de '.$type->label().' disponível neste estabelecimento. Peça uma série à AGT antes de vender.',
             );
         }
 
@@ -165,7 +171,56 @@ final readonly class CompletePosSale
             'created_by_user_id' => $user->id,
         ]);
 
+        $basis = $sale['tv_basis'] ?? null;
+
+        if ($type === FiscalDocumentType::SalesTicket && $basis instanceof PosSalesTicketBasis) {
+            activity('pos-sale')
+                ->causedBy($user)
+                ->performedOn($posSale)
+                ->event('pos-tv-eligibility-confirmed')
+                ->withProperties([
+                    'legal_basis' => 'Decreto Presidencial 71/25, artigo 5.º',
+                    'basis' => $basis->value,
+                    'personal_purchase_confirmed' => true,
+                    'invoice_not_requested_confirmed' => true,
+                ])
+                ->log('Condições de emissão de Talão de Venda confirmadas pelo operador.');
+        }
+
         return $posSale->load('fiscalDocument');
+    }
+
+    /**
+     * @param  Sale  $sale
+     * @param  list<array<string, mixed>>  $lines
+     */
+    private function documentType(array $sale, array $lines): FiscalDocumentType
+    {
+        $type = $sale['document_type'] ?? FiscalDocumentType::InvoiceReceipt;
+        $basis = $sale['tv_basis'] ?? null;
+        $confirmed = $sale['tv_conditions_confirmed'] ?? false;
+
+        if ($type === FiscalDocumentType::InvoiceReceipt && $basis === null && ! $confirmed) {
+            return $type;
+        }
+
+        if ($type !== FiscalDocumentType::SalesTicket) {
+            throw ValidationException::withMessages(['document_type' => 'Escolha Factura/Recibo ou Talão de Venda. As condições de TV só se aplicam a um TV.']);
+        }
+
+        if (! $basis instanceof PosSalesTicketBasis || ! $confirmed) {
+            throw ValidationException::withMessages(['tv_basis' => 'Para emitir TV, indique a operação abrangida pelo artigo 5.º e confirme a compra pessoal por pessoa singular, sem pedido de factura-recibo.']);
+        }
+
+        $operation = $basis === PosSalesTicketBasis::TicketedService ? 'SG' : 'TB';
+
+        foreach ($lines as $line) {
+            if ($line['operation_type'] !== $operation) {
+                throw ValidationException::withMessages(['tv_basis' => 'Os artigos não correspondem à operação escolhida para TV. Emita uma factura-recibo ou reveja o carrinho.']);
+            }
+        }
+
+        return $type;
     }
 
     private function existing(PosSession $session, string $clientKey): ?PosSale

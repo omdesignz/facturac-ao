@@ -65,11 +65,16 @@ class FiscalDocumentPrintSource
     ): string {
         $row = (array) DB::table('fiscal_documents')->where('id', $document->id)->first();
 
+        $columns = self::DOCUMENT_COLUMNS;
+        if (in_array($layoutVersion, ['v4', 'v5', 'v6'], true)) {
+            $columns = [...$columns, 'goods_available_at', 'goods_available_location'];
+        }
+
         $source = [
             'layout' => $layoutVersion,
             'issuer' => $this->normalise($issuer),
             'logo' => $logoSha256,
-            'document' => $this->normalise(array_intersect_key($row, array_flip(self::DOCUMENT_COLUMNS))),
+            'document' => $this->normalise(array_intersect_key($row, array_flip($columns))),
         ];
 
         foreach (self::CHILD_TABLES as $table) {
@@ -78,7 +83,12 @@ class FiscalDocumentPrintSource
                 ->orderBy('id')
                 ->get()
                 ->map(fn (object $child): array => $this->normalise(
-                    array_diff_key((array) $child, ['created_at' => true, 'updated_at' => true]),
+                    array_diff_key((array) $child, [
+                        'created_at' => true, 'updated_at' => true,
+                        'reference_line_number' => true,
+                        ...($layoutVersion !== 'v6' && $table === 'fiscal_document_lines'
+                            ? ['origin_transport_line_id' => true, 'order_references' => true] : []),
+                    ]),
                 ))
                 ->all();
         }

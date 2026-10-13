@@ -59,6 +59,7 @@ interface TransporterInput {
 }
 
 interface TransportLineInput {
+    order_references?: { document_no: string; document_date: string }[];
     catalogue_item_public_id: string | null;
     product_code: string;
     product_description: string;
@@ -81,6 +82,7 @@ interface TransportDocumentForm {
     revision: number;
     establishment_public_id: string;
     customer_public_id: string | null;
+    movement_direction: 'incoming' | 'outgoing' | null;
     movement_date: string;
     movement_start_at: string;
     movement_end_at: string | null;
@@ -169,6 +171,8 @@ const form = useForm({
         props.transportDocument?.establishment_public_id ??
         String(initialEstablishment?.value ?? ''),
     customer_public_id: props.transportDocument?.customer_public_id ?? '',
+    movement_direction:
+        props.transportDocument?.movement_direction ?? 'outgoing',
     movement_date: props.transportDocument?.movement_date ?? today,
     movement_start_at:
         props.transportDocument?.movement_start_at ?? `${today} ${currentTime}`,
@@ -547,9 +551,34 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                                         "
                                     />
                                 </div>
+                                <label class="block">
+                                    <span
+                                        class="mb-1.5 block text-xs font-semibold"
+                                        >Sentido do movimento</span
+                                    >
+                                    <SelectInput
+                                        :disabled="readOnly"
+                                        v-model="form.movement_direction"
+                                        :options="[
+                                            {
+                                                value: 'outgoing',
+                                                label: 'Saída de mercadorias',
+                                            },
+                                            {
+                                                value: 'incoming',
+                                                label: 'Entrada de mercadorias',
+                                            },
+                                        ]"
+                                    />
+                                    <FormError
+                                        :message="
+                                            fieldError('movement_direction')
+                                        "
+                                    />
+                                </label>
                                 <div>
                                     <label class="mb-2 field-label"
-                                        >Data do movimento</label
+                                        >Data de emissão</label
                                     >
                                     <DateInput
                                         v-model="form.movement_date"
@@ -1084,6 +1113,86 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                                     </div>
                                 </article>
                             </div>
+                            <details class="mt-4">
+                                <summary
+                                    class="cursor-pointer text-sm font-semibold"
+                                >
+                                    Documentos de origem por artigo
+                                </summary>
+                                <div
+                                    v-for="(line, index) in form.lines"
+                                    :key="index"
+                                    class="mt-3 space-y-2"
+                                >
+                                    <p class="text-sm">
+                                        {{ index + 1 }} ·
+                                        {{
+                                            line.product_description || 'Artigo'
+                                        }}
+                                    </p>
+                                    <div
+                                        v-for="(
+                                            reference, referenceIndex
+                                        ) in line.order_references"
+                                        :key="referenceIndex"
+                                        class="flex flex-wrap items-end gap-2"
+                                    >
+                                        <label class="block"
+                                            ><span class="text-xs"
+                                                >Número do documento</span
+                                            ><input
+                                                v-model="reference.document_no"
+                                                class="form-input"
+                                                maxlength="60" /><FormError
+                                                :message="
+                                                    fieldError(
+                                                        `lines.${index}.order_references.${referenceIndex}.document_no`,
+                                                    )
+                                                "
+                                        /></label>
+                                        <label class="block"
+                                            ><span class="text-xs"
+                                                >Data do documento</span
+                                            ><DateInput
+                                                v-model="
+                                                    reference.document_date
+                                                " /><FormError
+                                                :message="
+                                                    fieldError(
+                                                        `lines.${index}.order_references.${referenceIndex}.document_date`,
+                                                    )
+                                                "
+                                        /></label>
+                                        <button
+                                            type="button"
+                                            class="text-sm underline"
+                                            @click="
+                                                line.order_references?.splice(
+                                                    referenceIndex,
+                                                    1,
+                                                )
+                                            "
+                                        >
+                                            Remover
+                                        </button>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        class="text-sm underline"
+                                        @click="
+                                            (line.order_references ??= []).push(
+                                                {
+                                                    document_no: '',
+                                                    document_date:
+                                                        form.movement_date,
+                                                },
+                                            )
+                                        "
+                                    >
+                                        Adicionar referência
+                                    </button>
+                                </div>
+                            </details>
                             <FormError :message="fieldError('lines')" />
 
                             <div

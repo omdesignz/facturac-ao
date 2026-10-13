@@ -2,12 +2,16 @@
 
 namespace App\Fiscal\Documents;
 
+use App\Fiscal\Saft\TransportDocumentSigner;
 use App\Models\TransportDocument;
 use App\Models\TransportDocumentLine;
+use App\TransportDocumentStatus;
 use App\TransportDocumentType;
 
 final class TransportDocumentPresenter
 {
+    public function __construct(private TransportDocumentSigner $signer) {}
+
     /** @return array<string, mixed> */
     public function forForm(TransportDocument $document): array
     {
@@ -22,13 +26,14 @@ final class TransportDocumentPresenter
                 ? 'Fornecedor'
                 : 'Destinatário',
             'status' => $document->status->value,
-            'status_label' => $document->status->label(),
+            'status_label' => $document->status === TransportDocumentStatus::Issued && $document->latestInvoice() !== null ? 'Facturado' : $document->status->label(),
             'is_editable' => $document->isMutable(),
             'can_issue' => $document->isMutable(),
             'can_cancel' => $document->canCancel(),
             'revision' => $document->revision,
             'establishment_public_id' => $document->establishment->public_id,
             'customer_public_id' => $document->customer?->public_id,
+            'movement_direction' => $document->movement_direction,
             'movement_date' => $document->movement_date->toDateString(),
             'movement_start_at' => $document->movement_start_at
                 ->setTimezone($document->establishment->timezone)
@@ -64,6 +69,7 @@ final class TransportDocumentPresenter
             'cancelled_at' => $document->cancelled_at?->toIso8601String(),
             'lines' => array_values($document->lines->map(
                 fn (TransportDocumentLine $line): array => [
+                    'order_references' => $line->order_references ?? [],
                     'line_number' => $line->line_number,
                     'catalogue_item_public_id' => $line->catalogueItem?->public_id,
                     'product_code' => $line->product_code,
@@ -100,9 +106,9 @@ final class TransportDocumentPresenter
                 'software_product_id' => $document->software_product_id,
                 'software_validation_number' => $document->software_validation_number,
                 'hash_control' => $document->hash_control,
-                'digest' => $document->document_hash === null
-                    ? null
-                    : substr($document->document_hash, 0, (int) config('fiscal.print.digest_characters', 8)),
+                'signature_excerpt' => $this->signer->verify($document)
+                    ? implode('', array_map(fn (int $offset): string => $document->document_hash[$offset], [0, 10, 20, 30]))
+                    : null,
             ],
         ];
     }

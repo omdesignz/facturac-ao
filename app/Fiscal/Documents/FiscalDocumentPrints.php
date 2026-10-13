@@ -136,6 +136,10 @@ class FiscalDocumentPrints
             'municipality' => $document->establishment->municipality,
             'province_code' => $document->establishment->province_code,
             'support_email' => PlatformSetting::get('support_email') ?: null,
+            'bank_name' => $document->legalEntity->bank_name,
+            'bank_account_holder' => $document->legalEntity->bank_account_holder,
+            'bank_account_number' => $document->legalEntity->bank_account_number,
+            'bank_iban' => $document->legalEntity->bank_iban,
         ];
     }
 

@@ -5,7 +5,6 @@ namespace App\Analytics;
 use App\Fiscal\Documents\AgtStatusPresentation;
 use App\Fiscal\Documents\CurrentAgtState;
 use App\FiscalDocumentStatus;
-use App\FiscalDocumentType;
 use App\Models\AgtSubmission;
 use App\Models\FiscalDocument;
 use App\Models\FiscalDocumentEvent;
@@ -156,12 +155,12 @@ class DocumentSnapshot
         if ($this->receivables->isBillable($document->document_type)) {
             // A draft has asked nobody for money, so it cannot be paid yet.
             $paid = $status !== 'draft'
-                && ($document->document_type === FiscalDocumentType::InvoiceReceipt || $outstanding === 0);
+                && ($document->document_type->isPaidOnIssue() || $outstanding === 0);
 
             $steps[] = [
                 'key' => 'paid',
                 'label' => 'Paga',
-                'at' => $document->document_type === FiscalDocumentType::InvoiceReceipt ? $document->issued_at : null,
+                'at' => $document->document_type->isPaidOnIssue() ? $document->issued_at : null,
                 'state' => match (true) {
                     $paid => 'done',
                     $daysPastDue > 0 => 'error',

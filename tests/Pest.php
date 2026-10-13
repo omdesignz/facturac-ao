@@ -87,3 +87,18 @@ function recordAuthoritativeAgtAcceptance(FiscalDocument $source, string $report
     $submission->refresh()->update(['next_attempt_at' => null]);
     (new PollAgtSubmissionStatus($submission->id))->handle($gateway);
 }
+
+/** Configure an ephemeral SAF-T key; never use production key material in tests. */
+function configureTestSaftSigning(): string
+{
+    $key = openssl_pkey_new(['private_key_bits' => 1024, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
+    openssl_pkey_export($key, $pem);
+    $path = tempnam(sys_get_temp_dir(), 'saft-test-');
+    chmod($path, 0600);
+    file_put_contents($path, $pem);
+    test()->beforeApplicationDestroyed(fn () => is_file($path) ? unlink($path) : null);
+    config()->set('agt.saft_signing.key_path', $path);
+    config()->set('agt.saft_signing.key_version', '7');
+
+    return openssl_pkey_get_details($key)['key'];
+}

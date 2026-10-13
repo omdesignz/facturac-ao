@@ -45,7 +45,7 @@ class ReceivablesQuery
     /**
      * Billable types that can still be owed money.
      *
-     * An invoice-receipt is invoiced and paid in the same act, so it is billable
+     * An invoice-receipt or sales ticket is paid on issuance, so it is billable
      * but never outstanding.
      *
      * @return list<string>
@@ -54,7 +54,7 @@ class ReceivablesQuery
     {
         return array_values(array_filter(
             self::billableTypes(),
-            fn (string $type): bool => $type !== FiscalDocumentType::InvoiceReceipt->value,
+            fn (string $type): bool => ! FiscalDocumentType::from($type)->isPaidOnIssue(),
         ));
     }
 
@@ -127,10 +127,10 @@ class ReceivablesQuery
                 [$credit],
             )
             ->selectRaw(
-                'COALESCE(SUM(CASE WHEN d.document_type = ? THEN d.gross_total_minor'
+                'COALESCE(SUM(CASE WHEN d.document_type IN (?, ?) THEN d.gross_total_minor'
                 .' WHEN d.document_type IN ('.$this->placeholders($billable).')'
                 .' THEN COALESCE(d.settled_minor, 0) ELSE 0 END), 0) AS paid_minor',
-                [FiscalDocumentType::InvoiceReceipt->value, ...$billable],
+                [FiscalDocumentType::InvoiceReceipt->value, FiscalDocumentType::SalesTicket->value, ...$billable],
             )
             ->selectRaw("COALESCE(SUM({$outstanding}), 0) AS outstanding_gross", self::owableTypes())
             /*
@@ -311,7 +311,7 @@ class ReceivablesQuery
         $spans = [];
 
         foreach ($rows as $row) {
-            if ($row->document_type === FiscalDocumentType::InvoiceReceipt->value) {
+            if (FiscalDocumentType::from($row->document_type)->isPaidOnIssue()) {
                 $spans[] = 0;
 
                 continue;
@@ -407,7 +407,7 @@ class ReceivablesQuery
 
     public function paidMinor(FiscalDocument $document): int
     {
-        if ($document->document_type === FiscalDocumentType::InvoiceReceipt) {
+        if ($document->document_type->isPaidOnIssue()) {
             return $document->gross_total_minor;
         }
 

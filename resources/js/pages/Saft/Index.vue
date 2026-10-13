@@ -2,7 +2,6 @@
 import { Head, router } from '@inertiajs/vue3';
 import {
     AlertTriangle,
-    Building2,
     Check,
     CircleCheck,
     Download,
@@ -13,7 +12,6 @@ import {
     ReceiptText,
     RefreshCw,
     ShieldCheck,
-    Truck,
     Users,
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
@@ -42,11 +40,9 @@ const props = defineProps<{
         };
         counts: {
             sales_invoices: number;
-            movement_of_goods: number;
             working_documents: number;
             payments: number;
             customers: number;
-            suppliers: number;
             products: number;
         };
         readiness: ReadinessCheck[];
@@ -69,12 +65,6 @@ const countCards = computed(() => [
         icon: ReceiptText,
     },
     {
-        label: 'Guias',
-        detail: 'MovementOfGoods',
-        value: props.summary.counts.movement_of_goods,
-        icon: Truck,
-    },
-    {
         label: 'Orçamentos enviados',
         detail: 'WorkingDocuments',
         value: props.summary.counts.working_documents,
@@ -91,12 +81,6 @@ const countCards = computed(() => [
         detail: 'MasterFiles',
         value: props.summary.counts.customers,
         icon: Users,
-    },
-    {
-        label: 'Fornecedores',
-        detail: 'MasterFiles',
-        value: props.summary.counts.suppliers,
-        icon: Building2,
     },
     {
         label: 'Artigos',
@@ -232,7 +216,7 @@ function inspectPeriod(): void {
                 </section>
 
                 <section
-                    class="grid gap-3 sm:grid-cols-2 xl:grid-cols-7"
+                    class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] gap-3"
                     aria-label="Conteúdo do ficheiro"
                 >
                     <article
@@ -272,7 +256,7 @@ function inspectPeriod(): void {
                                 <h2
                                     class="font-semibold text-zinc-950 dark:text-white"
                                 >
-                                    Verificações antes da entrega
+                                    Verificações do ficheiro
                                 </h2>
                                 <p
                                     class="mt-1 text-sm text-zinc-500 dark:text-zinc-400"
@@ -304,7 +288,7 @@ function inspectPeriod(): void {
                                 />
                                 {{
                                     summary.ready
-                                        ? 'Pronto para entrega'
+                                        ? 'Verificações concluídas'
                                         : !summary.exportable
                                           ? 'Exportação bloqueada'
                                           : 'Preparação incompleta'
@@ -422,13 +406,23 @@ function inspectPeriod(): void {
                 <section
                     class="rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm/6 text-sky-900 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-200"
                 >
-                    <p class="font-semibold">Sobre o âmbito contabilístico</p>
+                    <p class="font-semibold">Âmbito e obrigação de submissão</p>
                     <p class="mt-1">
-                        Este módulo exporta os registos que a aplicação detém:
-                        facturação, recibos, orçamentos e movimentos de
-                        mercadorias. O diário contabilístico e o plano de contas
-                        exigem dados de contabilidade geral e não são inventados
-                        a partir das facturas.
+                        Este ficheiro SAF-T de facturação (tipo F) inclui
+                        facturas e notas, recibos e orçamentos enviados. As
+                        guias de transporte e de remessa não integram esta
+                        exportação; continuam disponíveis no módulo de
+                        transportes. Este ficheiro não substitui o SAF-T de
+                        contabilidade.
+                    </p>
+                    <p class="[margin-block-start:0.5rem]">
+                        Segundo o comunicado da AGT de 20 de Março de 2026, os
+                        contribuintes dos Regimes Geral e Simplificado do IVA
+                        que emitem facturas electronicamente estão dispensados
+                        de submeter o SAF-T de facturação. A aprovação de testes
+                        de homologação, por si só, não determina essa dispensa.
+                        Pode continuar a descarregar o ficheiro para arquivo e
+                        conferência.
                     </p>
                 </section>
             </div>

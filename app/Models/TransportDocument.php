@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 /**
  * The immutable legal record accompanying a physical movement of goods.
@@ -33,6 +34,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $document_no
  * @property int|null $issue_sequence
  * @property int $revision
+ * @property string|null $movement_direction
+ * @property string|null $signature_algorithm
+ * @property string|null $signature_public_key
+ * @property string|null $previous_signature
  * @property CarbonImmutable $movement_date
  * @property CarbonImmutable $movement_start_at
  * @property CarbonImmutable|null $movement_end_at
@@ -84,6 +89,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'issue_sequence',
     'revision',
     'movement_date',
+    'movement_direction',
+    'signature_algorithm',
+    'signature_public_key',
+    'previous_signature',
     'movement_start_at',
     'movement_end_at',
     'recipient_name',
@@ -185,7 +194,7 @@ class TransportDocument extends Model
 
     public function canCancel(): bool
     {
-        return $this->status === TransportDocumentStatus::Issued;
+        return $this->status === TransportDocumentStatus::Issued && ! $this->invoicedLines()->exists();
     }
 
     /** @return BelongsTo<Workspace, $this> */
@@ -246,6 +255,26 @@ class TransportDocument extends Model
     public function lines(): HasMany
     {
         return $this->hasMany(TransportDocumentLine::class)->orderBy('line_number');
+    }
+
+    /** @return HasManyThrough<FiscalDocumentLine, TransportDocumentLine, $this> */
+    public function invoicedLines(): HasManyThrough
+    {
+        return $this->hasManyThrough(FiscalDocumentLine::class, TransportDocumentLine::class,
+            'transport_document_id', 'origin_transport_line_id')
+            ->whereHas('fiscalDocument', fn ($query) => $query
+                ->whereNotNull('document_no')
+                ->where('status', '!=', 'draft')
+                ->whereIn('document_type', ['FT', 'FR', 'FA', 'FG', 'GF', 'TV']));
+    }
+
+    public function latestInvoice(): ?FiscalDocument
+    {
+        $this->loadMissing('invoicedLines.fiscalDocument');
+
+        return $this->invoicedLines->map(fn (FiscalDocumentLine $line): FiscalDocument => $line->fiscalDocument)
+            ->sortByDesc(fn (FiscalDocument $invoice): string => $invoice->issued_at?->toIso8601String() ?? '')
+            ->first();
     }
 
     /** @return array<string, string> */

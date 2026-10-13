@@ -70,7 +70,7 @@ return [
          * is frozen once used: a redesign is a new version for new documents,
          * never an edit to one that documents already depend on.
          */
-        'layout' => 'v2',
+        'layout' => 'v6',
         'layouts' => [
             'v1' => ['margin_top' => 34, 'font' => 'dejavusans'],
             // Lighter type, hairline rules and one clear total, in the
@@ -79,6 +79,38 @@ return [
                 'margin_top' => 31,
                 'margin_bottom' => 20,
                 'margin_header' => 9,
+                'margin_footer' => 9,
+                'font' => 'hankengrotesk',
+                'substitutions' => true,
+            ],
+            'v4' => [
+                'margin_top' => 42,
+                'margin_bottom' => 35,
+                'margin_header' => 10,
+                'margin_footer' => 9,
+                'font' => 'hankengrotesk',
+                'substitutions' => true,
+            ],
+            'v5' => [
+                'margin_top' => 42,
+                'margin_bottom' => 35,
+                'margin_header' => 10,
+                'margin_footer' => 9,
+                'font' => 'hankengrotesk',
+                'substitutions' => true,
+            ],
+            'v6' => [
+                'margin_top' => 42,
+                'margin_bottom' => 35,
+                'margin_header' => 10,
+                'margin_footer' => 9,
+                'font' => 'hankengrotesk',
+                'substitutions' => true,
+            ],
+            'v3' => [
+                'margin_top' => 35,
+                'margin_bottom' => 20,
+                'margin_header' => 10,
                 'margin_footer' => 9,
                 'font' => 'hankengrotesk',
                 'substitutions' => true,

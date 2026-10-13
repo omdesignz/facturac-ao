@@ -44,6 +44,14 @@ class PdfSheet
         ])->render();
 
         $engine = $metadata['engine'] ?? [];
+        if ($view === 'transport-documents.pdf.guide') {
+            $engine['margin_top'] = match ($data['document']['document_type']) {
+                'GA' => 54,
+                'GD' => 46,
+                default => 42,
+            };
+            $engine['margin_bottom'] = 35;
+        }
         $engine['margin_top'] ??= $metadata['margin_top'] ?? 34;
 
         $mpdf = new Mpdf($this->configuration($engine));
@@ -67,6 +75,18 @@ class PdfSheet
         }
 
         $mpdf->WriteHTML($html);
+
+        if (str_starts_with($view, 'documents.pdf.v4.') || str_starts_with($view, 'documents.pdf.v5.') || str_starts_with($view, 'documents.pdf.v6.')) {
+            $document = $data['document'];
+            $amounts = $document['document_type'] === 'RG'
+                ? array_column($data['settlements'], 'total_minor')
+                : array_column($document['lines'], 'gross_amount_minor');
+            app(PageCarryTotals::class)->apply($mpdf, $amounts, $document['currency_code']);
+        }
+
+        if ($view === 'transport-documents.pdf.guide') {
+            app(PageCarryTotals::class)->apply($mpdf, array_column($data['document']['lines'], 'net_amount_minor'), $data['document']['currency_code']);
+        }
 
         return $mpdf->OutputBinaryData();
     }

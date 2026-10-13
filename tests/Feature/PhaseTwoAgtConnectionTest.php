@@ -22,6 +22,10 @@ use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Fortify;
 use Spatie\Activitylog\Models\Activity;
 
+beforeEach(function () {
+    config()->set('agt.manual_setup_enabled', true);
+});
+
 /**
  * @return array{user: User, workspace: Workspace, legal_entity: LegalEntity}
  */

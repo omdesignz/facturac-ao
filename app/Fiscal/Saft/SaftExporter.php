@@ -13,12 +13,8 @@ use App\Models\FiscalDocumentLine;
 use App\Models\LegalEntity;
 use App\Models\Quote;
 use App\Models\QuoteLine;
-use App\Models\TransportDocument;
-use App\Models\TransportDocumentLine;
 use App\PaymentMethod;
 use App\QuoteStatus;
-use App\TransportDocumentStatus;
-use App\TransportDocumentType;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
@@ -28,8 +24,8 @@ use XMLWriter;
  * Version 1.01_01 SAF-T (AO) billing export.
  *
  * The writer follows the XSD sequence exactly. It deliberately covers only
- * ledgers owned by this product: sales documents, goods movements, quotes and
- * receipts. General-ledger SAF-T needs accounting data and is a separate file.
+ * the billing (F) profile: sales documents, quotes and receipts. Goods movements
+ * belong to the integrated (I) profile, which also requires accounting data.
  */
 final class SaftExporter
 {
@@ -40,10 +36,8 @@ final class SaftExporter
         'City' => 50,
         'Province' => 50,
         'CustomerID' => 30,
-        'SupplierID' => 30,
         'AccountID' => 30,
         'CustomerTaxID' => 30,
-        'SupplierTaxID' => 30,
         'ProductCode' => 60,
         'ProductDescription' => 200,
         'ProductNumberCode' => 60,
@@ -52,7 +46,6 @@ final class SaftExporter
         'SourceID' => 30,
         'UnitOfMeasure' => 20,
         'Description' => 200,
-        'MovementComments' => 60,
         'TaxExemptionReason' => 60,
         'OriginatingON' => 60,
         'Reason' => 50,
@@ -84,18 +77,16 @@ final class SaftExporter
         $payments = $fiscalDocuments
             ->filter(fn (FiscalDocument $document): bool => $document->document_type->settlesOtherDocuments())
             ->values();
-        $movements = $this->transportDocuments($legalEntity, $from, $to, $establishment);
         $workingDocuments = $this->quotes($legalEntity, $from, $to, $establishment);
 
-        $this->header($legalEntity, $from, $to, $establishment, $fiscalDocuments, $movements);
+        $this->header($legalEntity, $from, $to, $establishment, $fiscalDocuments);
         $this->masterFiles(
             $legalEntity,
             $salesInvoices,
             $payments,
-            $movements,
             $workingDocuments,
         );
-        $this->sourceDocuments($salesInvoices, $movements, $workingDocuments, $payments);
+        $this->sourceDocuments($salesInvoices, $workingDocuments, $payments);
 
         $this->writer->endElement();
         $this->writer->endDocument();
@@ -149,27 +140,6 @@ final class SaftExporter
             ->get();
     }
 
-    /** @return Collection<int, TransportDocument> */
-    private function transportDocuments(
-        LegalEntity $legalEntity,
-        CarbonImmutable $from,
-        CarbonImmutable $to,
-        ?Establishment $establishment,
-    ): Collection {
-        return TransportDocument::query()
-            ->where('legal_entity_id', $legalEntity->id)
-            ->when(
-                $establishment instanceof Establishment,
-                fn ($query) => $query->where('establishment_id', $establishment->id),
-            )
-            ->whereNotNull('document_no')
-            ->whereBetween('movement_date', [$from->toDateString(), $to->toDateString()])
-            ->with(['lines', 'customer', 'establishment'])
-            ->orderBy('movement_date')
-            ->orderBy('id')
-            ->get();
-    }
-
     /** @return Collection<int, Quote> */
     private function quotes(
         LegalEntity $legalEntity,
@@ -193,7 +163,6 @@ final class SaftExporter
 
     /**
      * @param  Collection<int, FiscalDocument>  $fiscalDocuments
-     * @param  Collection<int, TransportDocument>  $movements
      */
     private function header(
         LegalEntity $legalEntity,
@@ -201,12 +170,11 @@ final class SaftExporter
         CarbonImmutable $to,
         ?Establishment $establishment,
         Collection $fiscalDocuments,
-        Collection $movements,
     ): void {
         $address = $establishment
             ?? $legalEntity->establishments()->where('is_head_office', true)->first()
             ?? $legalEntity->establishments()->first();
-        $validationNumber = $this->softwareValidationNumber($legalEntity, $fiscalDocuments, $movements);
+        $validationNumber = $this->softwareValidationNumber($legalEntity, $fiscalDocuments);
 
         $this->writer->startElement('Header');
         $this->write('AuditFileVersion', (string) config('fiscal.saft.version'));
@@ -244,14 +212,12 @@ final class SaftExporter
     /**
      * @param  Collection<int, FiscalDocument>  $salesInvoices
      * @param  Collection<int, FiscalDocument>  $payments
-     * @param  Collection<int, TransportDocument>  $movements
      * @param  Collection<int, Quote>  $workingDocuments
      */
     private function masterFiles(
         LegalEntity $legalEntity,
         Collection $salesInvoices,
         Collection $payments,
-        Collection $movements,
         Collection $workingDocuments,
     ): void {
         $this->writer->startElement('MasterFiles');
@@ -260,20 +226,14 @@ final class SaftExporter
             $legalEntity,
             $salesInvoices,
             $payments,
-            $movements,
             $workingDocuments,
         ) as $customer) {
             $this->customer($customer);
         }
 
-        foreach ($this->suppliers($movements) as $supplier) {
-            $this->supplier($supplier);
-        }
-
         foreach ($this->products(
             $legalEntity,
             $salesInvoices,
-            $movements,
             $workingDocuments,
         ) as $product) {
             $this->product($product);
@@ -286,7 +246,6 @@ final class SaftExporter
     /**
      * @param  Collection<int, FiscalDocument>  $salesInvoices
      * @param  Collection<int, FiscalDocument>  $payments
-     * @param  Collection<int, TransportDocument>  $movements
      * @param  Collection<int, Quote>  $workingDocuments
      * @return array<string, array{id: string, tax_id: string, name: string, address: string, city: string, country: string}>
      */
@@ -294,7 +253,6 @@ final class SaftExporter
         LegalEntity $legalEntity,
         Collection $salesInvoices,
         Collection $payments,
-        Collection $movements,
         Collection $workingDocuments,
     ): array {
         $customers = [];
@@ -319,26 +277,6 @@ final class SaftExporter
             ];
         }
 
-        foreach ($movements as $document) {
-            if ($document->document_type === TransportDocumentType::ReturnNote) {
-                continue;
-            }
-
-            if ($document->customer instanceof Customer) {
-                continue;
-            }
-
-            $id = $this->transportCustomerId($document);
-            $customers[$id] = [
-                'id' => $id,
-                'tax_id' => $this->taxId($document->recipient_tax_identification_number),
-                'name' => $this->required($document->recipient_name),
-                'address' => $this->required($document->recipient_address),
-                'city' => $this->required($document->recipient_city),
-                'country' => $document->recipient_country_code ?: 'AO',
-            ];
-        }
-
         foreach ($workingDocuments as $quote) {
             if ($quote->customer instanceof Customer) {
                 continue;
@@ -356,33 +294,6 @@ final class SaftExporter
         }
 
         return $customers;
-    }
-
-    /**
-     * @param  Collection<int, TransportDocument>  $movements
-     * @return array<string, array{id: string, tax_id: string, name: string, address: string, city: string, country: string}>
-     */
-    private function suppliers(Collection $movements): array
-    {
-        $suppliers = [];
-
-        foreach ($movements as $document) {
-            if ($document->document_type !== TransportDocumentType::ReturnNote) {
-                continue;
-            }
-
-            $id = $this->transportSupplierId($document);
-            $suppliers[$id] = [
-                'id' => $id,
-                'tax_id' => $this->taxId($document->recipient_tax_identification_number),
-                'name' => $this->required($document->recipient_name),
-                'address' => $this->required($document->recipient_address),
-                'city' => $this->required($document->recipient_city),
-                'country' => $document->recipient_country_code ?: 'AO',
-            ];
-        }
-
-        return $suppliers;
     }
 
     /** @return array{id: string, tax_id: string, name: string, address: string, city: string, country: string} */
@@ -415,33 +326,14 @@ final class SaftExporter
         $this->writer->endElement();
     }
 
-    /** @param array{id: string, tax_id: string, name: string, address: string, city: string, country: string} $supplier */
-    private function supplier(array $supplier): void
-    {
-        $this->writer->startElement('Supplier');
-        $this->write('SupplierID', $supplier['id']);
-        $this->write('AccountID', 'Desconhecido');
-        $this->write('SupplierTaxID', $supplier['tax_id']);
-        $this->write('CompanyName', $supplier['name']);
-        $this->writer->startElement('BillingAddress');
-        $this->write('AddressDetail', $supplier['address']);
-        $this->write('City', $supplier['city']);
-        $this->write('Country', $supplier['country']);
-        $this->writer->endElement();
-        $this->write('SelfBillingIndicator', '0');
-        $this->writer->endElement();
-    }
-
     /**
      * @param  Collection<int, FiscalDocument>  $salesInvoices
-     * @param  Collection<int, TransportDocument>  $movements
      * @param  Collection<int, Quote>  $workingDocuments
      * @return array<string, array{type: string, code: string, description: string}>
      */
     private function products(
         LegalEntity $legalEntity,
         Collection $salesInvoices,
-        Collection $movements,
         Collection $workingDocuments,
     ): array {
         $products = [];
@@ -458,16 +350,6 @@ final class SaftExporter
             foreach ($document->lines as $line) {
                 $products[$line->product_code] ??= [
                     'type' => 'O',
-                    'code' => $line->product_code,
-                    'description' => $line->product_description,
-                ];
-            }
-        }
-
-        foreach ($movements as $document) {
-            foreach ($document->lines as $line) {
-                $products[$line->product_code] ??= [
-                    'type' => 'P',
                     'code' => $line->product_code,
                     'description' => $line->product_description,
                 ];
@@ -554,19 +436,16 @@ final class SaftExporter
 
     /**
      * @param  Collection<int, FiscalDocument>  $salesInvoices
-     * @param  Collection<int, TransportDocument>  $movements
      * @param  Collection<int, Quote>  $workingDocuments
      * @param  Collection<int, FiscalDocument>  $payments
      */
     private function sourceDocuments(
         Collection $salesInvoices,
-        Collection $movements,
         Collection $workingDocuments,
         Collection $payments,
     ): void {
         $this->writer->startElement('SourceDocuments');
         $this->salesInvoices($salesInvoices);
-        $this->movementOfGoods($movements);
         $this->workingDocuments($workingDocuments);
         $this->payments($payments);
         $this->writer->endElement();
@@ -649,6 +528,7 @@ final class SaftExporter
     {
         $this->writer->startElement('Line');
         $this->write('LineNumber', (string) $line->line_number);
+        $this->orderReferences($line->order_references ?? []);
         $this->write('ProductCode', $line->product_code);
         $this->write('ProductDescription', $line->product_description);
         $this->write('Quantity', $this->decimal($line->quantity_units, $line->quantity_scale));
@@ -701,109 +581,15 @@ final class SaftExporter
         $this->writer->endElement();
     }
 
-    /** @param Collection<int, TransportDocument> $documents */
-    private function movementOfGoods(Collection $documents): void
+    /** @param list<array{document_no: string, document_date: string}> $references */
+    private function orderReferences(array $references): void
     {
-        $this->writer->startElement('MovementOfGoods');
-        $this->write('NumberOfMovementLines', (string) $documents->sum(
-            fn (TransportDocument $document): int => $document->lines->count(),
-        ));
-        $quantity = $documents->sum(fn (TransportDocument $document): int => $document->lines->sum(
-            fn (TransportDocumentLine $line): int => $this->rescale($line->quantity_units, $line->quantity_scale, 3),
-        ));
-        $this->write('TotalQuantityIssued', $this->decimal($quantity, 3));
-        foreach ($documents as $document) {
-            $this->stockMovement($document);
+        foreach ($references as $reference) {
+            $this->writer->startElement('OrderReferences');
+            $this->write('OriginatingON', $reference['document_no']);
+            $this->write('OrderDate', $reference['document_date']);
+            $this->writer->endElement();
         }
-        $this->writer->endElement();
-    }
-
-    private function stockMovement(TransportDocument $document): void
-    {
-        $this->writer->startElement('StockMovement');
-        $this->write('DocumentNumber', (string) $document->document_no);
-        $this->writer->startElement('DocumentStatus');
-        $this->write('MovementStatus', $document->status->movementStatus());
-        $this->write('MovementStatusDate', $this->dateTime(
-            $document->cancelled_at ?? $document->issued_at ?? $document->created_at,
-        ));
-        if ($document->status === TransportDocumentStatus::Cancelled) {
-            $this->write('Reason', Str::limit($document->cancellation_reason ?? 'Documento anulado', 50, ''));
-        }
-        $this->write('SourceID', $this->sourceId($document->issued_by_user_id ?? $document->created_by_user_id));
-        $this->write('SourceBilling', 'P');
-        $this->writer->endElement();
-        $this->write('Hash', $document->document_hash ?: '0');
-        $this->write('HashControl', $this->validSoftwareValidationNumber(
-            $document->software_validation_number,
-        ) ? ($document->hash_control ?: '1') : '0');
-        $this->write('Period', (string) $document->movement_date->month);
-        $this->write('MovementDate', $document->movement_date->toDateString());
-        $this->write('MovementType', $document->document_type->value);
-        $this->write('SystemEntryDate', $this->dateTime(
-            $document->system_entry_at ?? $document->created_at,
-        ));
-        if ($document->document_type === TransportDocumentType::ReturnNote) {
-            $this->write('SupplierID', $this->transportSupplierId($document));
-        } else {
-            $this->write('CustomerID', $this->transportCustomerId($document));
-        }
-        $this->write('SourceID', $this->sourceId($document->issued_by_user_id ?? $document->created_by_user_id));
-        if (filled($document->notes)) {
-            $this->write('MovementComments', Str::limit((string) $document->notes, 60, ''));
-        }
-        $this->shippingPoint('ShipTo', $document->destination_address, $document->destination_city, $document->destination_province, $document->destination_country_code, $document->movement_date->toDateString());
-        $this->shippingPoint('ShipFrom', $document->origin_address, $document->origin_city, $document->origin_province, $document->origin_country_code, $document->movement_date->toDateString());
-        if ($document->movement_end_at !== null) {
-            $this->write('MovementEndTime', $this->dateTime($document->movement_end_at));
-        }
-        $this->write('MovementStartTime', $this->dateTime($document->movement_start_at));
-
-        foreach ($document->lines as $line) {
-            $this->transportLine($line);
-        }
-
-        $this->writer->startElement('DocumentTotals');
-        $this->write('TaxPayable', '0.00');
-        $this->write('NetTotal', $this->decimal($document->net_total_minor, 2));
-        $this->write('GrossTotal', $this->decimal($document->gross_total_minor, 2));
-        $this->writer->endElement();
-        $this->writer->endElement();
-    }
-
-    private function transportLine(TransportDocumentLine $line): void
-    {
-        $this->writer->startElement('Line');
-        $this->write('LineNumber', (string) $line->line_number);
-        $this->write('ProductCode', $line->product_code);
-        $this->write('ProductDescription', $line->product_description);
-        $this->write('Quantity', $this->decimal($line->quantity_units, $line->quantity_scale));
-        $this->write('UnitOfMeasure', $line->unit_of_measure);
-        $this->write('UnitPrice', $this->decimal($line->unit_price_minor, 2));
-        $this->write('Description', $line->product_description);
-        $this->write('DebitAmount', $this->decimal($line->net_amount_minor, 2));
-        $this->writer->endElement();
-    }
-
-    private function shippingPoint(
-        string $element,
-        string $address,
-        string $city,
-        ?string $province,
-        string $country,
-        string $deliveryDate,
-    ): void {
-        $this->writer->startElement($element);
-        $this->write('DeliveryDate', $deliveryDate);
-        $this->writer->startElement('Address');
-        $this->write('AddressDetail', $this->required($address));
-        $this->write('City', $this->required($city));
-        if (filled($province)) {
-            $this->write('Province', (string) $province);
-        }
-        $this->write('Country', $country ?: 'AO');
-        $this->writer->endElement();
-        $this->writer->endElement();
     }
 
     /** @param Collection<int, Quote> $quotes */
@@ -1014,19 +800,14 @@ final class SaftExporter
 
     /**
      * @param  Collection<int, FiscalDocument>  $fiscalDocuments
-     * @param  Collection<int, TransportDocument>  $movements
      */
     private function softwareValidationNumber(
         LegalEntity $legalEntity,
         Collection $fiscalDocuments,
-        Collection $movements,
     ): string {
         $number = $fiscalDocuments->first(
             fn (FiscalDocument $document): bool => filled($document->software_validation_number),
         )->software_validation_number
-            ?? $movements->first(
-                fn (TransportDocument $document): bool => filled($document->software_validation_number),
-            )->software_validation_number
             ?? $legalEntity->agtConnections()
                 ->whereNotNull('software_validation_number')
                 ->latest('id')
@@ -1054,19 +835,6 @@ final class SaftExporter
     private function fiscalCustomerId(FiscalDocument $document): string
     {
         return $document->customer->public_id ?? 'F'.$document->public_id;
-    }
-
-    private function transportCustomerId(TransportDocument $document): string
-    {
-        return $document->customer->public_id ?? 'T'.$document->public_id;
-    }
-
-    private function transportSupplierId(TransportDocument $document): string
-    {
-        return 'S'.substr(hash(
-            'sha256',
-            Str::upper(trim($document->recipient_tax_identification_number)),
-        ), 0, 29);
     }
 
     private function quoteCustomerId(Quote $quote): string
@@ -1203,16 +971,5 @@ final class SaftExporter
         [$whole, $fraction] = array_pad(explode('.', trim($value), 2), 2, '');
 
         return (int) ($whole.substr(str_pad($fraction, $scale, '0'), 0, $scale));
-    }
-
-    private function rescale(int $value, int $fromScale, int $toScale): int
-    {
-        if ($fromScale === $toScale) {
-            return $value;
-        }
-
-        return $fromScale < $toScale
-            ? $value * (10 ** ($toScale - $fromScale))
-            : intdiv($value, 10 ** ($fromScale - $toScale));
     }
 }

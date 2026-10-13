@@ -97,6 +97,8 @@ class StoreFiscalDocumentRequest extends FormRequest
                 'max:60',
             ],
             'document_date' => ['required', 'date_format:Y-m-d', 'before_or_equal:today'],
+            'goods_available_at' => ['nullable', 'date_format:Y-m-d\\TH:i', 'required_with:goods_available_location'],
+            'goods_available_location' => ['nullable', 'string', 'max:255', 'required_with:goods_available_at'],
             'due_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:document_date'],
             'currency_code' => ['required', Rule::in((array) config('fiscal.currencies', ['AOA']))],
             /*
@@ -161,7 +163,11 @@ class StoreFiscalDocumentRequest extends FormRequest
             ],
             'lines.*' => [
                 'required',
-                'array:operation_type,operation_date,product_code,product_description,quantity,unit_of_measure,unit_price,discount_percentage,tax',
+                'array:reference_line_number,origin_transport_line_public_id,operation_type,operation_date,product_code,product_description,quantity,unit_of_measure,unit_price,discount_percentage,tax',
+            ],
+            'lines.*.reference_line_number' => [
+                Rule::requiredIf(fn (): bool => $this->isAdjustment()),
+                'nullable', 'integer', 'min:1', 'max:4294967295',
             ],
             'lines.*.operation_type' => ['required', Rule::enum(FiscalOperationType::class)],
             'lines.*.operation_date' => [
@@ -173,6 +179,7 @@ class StoreFiscalDocumentRequest extends FormRequest
             'lines.*.product_code' => ['required', 'string', 'max:60'],
             'lines.*.product_description' => ['required', 'string', 'min:2', 'max:200'],
             'lines.*.quantity' => ['required', 'string', 'max:20', 'regex:/\A(?:0|[1-9]\d*)(?:\.\d{1,4})?\z/', 'not_in:0,0.0,0.00,0.000,0.0000'],
+            'lines.*.origin_transport_line_public_id' => ['nullable', 'string', 'max:26'],
             'lines.*.unit_of_measure' => ['required', 'string', 'max:20'],
             'lines.*.unit_price' => ['required', 'string', 'max:18', 'regex:/\A(?:0|[1-9]\d*)(?:\.\d{1,2})?\z/'],
             'lines.*.discount_percentage' => ['required', 'string', 'max:6', 'regex:/\A(?:100(?:\.0{1,2})?|(?:0|[1-9]\d?)(?:\.\d{1,2})?)\z/'],
@@ -233,6 +240,7 @@ class StoreFiscalDocumentRequest extends FormRequest
      *     payment_date: string|null,
      *     settlements: list<array{document_public_id: string, amount_minor: int}>,
      *     lines: list<array{
+     *         reference_line_number: int|null,
      *         operation_type: string,
      *         operation_date: string|null,
      *         product_code: string,
@@ -260,6 +268,8 @@ class StoreFiscalDocumentRequest extends FormRequest
             }
 
             $lines[] = [
+                'reference_line_number' => isset($rawLine['reference_line_number']) ? (int) $rawLine['reference_line_number'] : null,
+                'origin_transport_line_public_id' => $this->nullableString($rawLine['origin_transport_line_public_id'] ?? null),
                 'operation_type' => (string) ($rawLine['operation_type'] ?? ''),
                 'operation_date' => $this->nullableString($rawLine['operation_date'] ?? null),
                 'product_code' => (string) ($rawLine['product_code'] ?? ''),
@@ -279,6 +289,8 @@ class StoreFiscalDocumentRequest extends FormRequest
             'document_type' => (string) $validated['document_type'],
             'document_date' => (string) $validated['document_date'],
             'due_date' => $this->nullableString($validated['due_date'] ?? null),
+            'goods_available_at' => $this->nullableString($validated['goods_available_at'] ?? null),
+            'goods_available_location' => $this->nullableString($validated['goods_available_location'] ?? null),
             'currency_code' => (string) $validated['currency_code'],
             'exchange_rate_micro' => $this->exchangeRateMicro(),
             'withholdings' => $this->withholdingProfile(),

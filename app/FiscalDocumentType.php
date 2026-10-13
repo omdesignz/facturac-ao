@@ -86,15 +86,21 @@ enum FiscalDocumentType: string
     {
         return in_array($this, [
             self::InvoiceReceipt,
+            self::SalesTicket,
             self::IssuedReceipt,
             self::Receipt,
             self::CollectionNoticeReceipt,
         ], true);
     }
 
+    public function isPaidOnIssue(): bool
+    {
+        return in_array($this, [self::InvoiceReceipt, self::SalesTicket], true);
+    }
+
     /**
      * A standalone receipt settles earlier invoices rather than carrying goods
-     * of its own. FR is the exception: it invoices and is paid in one document.
+     * of its own. FR and TV carry sale lines and are paid on issuance.
      */
     public function settlesOtherDocuments(): bool
     {
@@ -111,6 +117,7 @@ enum FiscalDocumentType: string
         return [
             self::Invoice,
             self::InvoiceReceipt,
+            self::SalesTicket,
             self::GenericInvoice,
             self::Receipt,
             self::CreditNote,

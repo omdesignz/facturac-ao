@@ -16,6 +16,7 @@ function validCompanyProfile(array $overrides = []): array
         'trade_name' => 'Kwanza Comércio',
         'tax_identification_number' => '541.234.567-8',
         'tax_regime' => TaxRegime::General->value,
+        'tax_regime_confirmed' => true,
         'main_cae_code' => '46 900',
         'establishment_code' => 'sede-01',
         'establishment_name' => 'Sede',

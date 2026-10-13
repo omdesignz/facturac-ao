@@ -22,7 +22,7 @@ class BillingSummaryQuery
     {
         $types = BillingDefinition::billableTypes();
         sort($types);
-        if ($types !== ['FR', 'FT', 'GF', 'ND']) {
+        if ($types !== ['FR', 'FT', 'GF', 'ND', 'TV']) {
             throw new \RuntimeException('Unsupported billing definition.');
         }
         $clock = match (DB::getDriverName()) {
@@ -76,7 +76,7 @@ class BillingSummaryQuery
                 CASE WHEN p.status = 'draft' THEN
                     CASE WHEN p.document_no IS NOT NULL OR p.issued_at IS NOT NULL OR p.frozen_at IS NOT NULL THEN 1 ELSE 0 END
                 WHEN p.status IS NULL OR p.status NOT IN ('issued','received','processing','valid','invalid','contingency')
-                    OR p.document_type IS NULL OR p.document_type NOT IN ('FT','FR','GF','ND','NC','RG')
+                    OR p.document_type IS NULL OR p.document_type NOT IN ('FT','FR','GF','ND','NC','RG','TV')
                     OR p.currency_code IS NULL OR p.currency_code NOT IN ('AOA','BRL','CNY','EUR','GBP','NAD','USD','ZAR')
                     OR p.document_no IS NULL OR TRIM(p.document_no) = '' OR p.issued_at IS NULL OR p.frozen_at IS NULL
                     OR p.gross_total_minor IS NULL OR p.net_total_minor IS NULL OR p.tax_payable_minor IS NULL
@@ -85,7 +85,7 @@ class BillingSummaryQuery
             FROM candidates c $payload
         ), folded AS (
             SELECT d.currency_code, COUNT(*) AS candidate_count, MAX(d.invalid_row) AS invalid_count,
-                SUM(CASE WHEN d.document_type IN ('FT','FR','GF','ND') THEN 1 ELSE 0 END) AS billed_document_count,
+                SUM(CASE WHEN d.document_type IN ('FT','FR','GF','ND','TV') THEN 1 ELSE 0 END) AS billed_document_count,
                 SUM(CASE WHEN d.document_type = 'NC' THEN 1 ELSE 0 END) AS credit_note_count,
                 ".implode(',', $select)."
             FROM checked d GROUP BY d.currency_code

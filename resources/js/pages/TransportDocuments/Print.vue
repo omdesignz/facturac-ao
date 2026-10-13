@@ -5,6 +5,7 @@ import { computed } from 'vue';
 import { pdf as transportDocumentPdf } from '@/routes/transport-documents';
 
 interface PrintLine {
+    order_references: { document_no: string; document_date: string }[];
     line_number: number;
     product_code: string;
     product_description: string;
@@ -70,30 +71,23 @@ const props = defineProps<{
             software_product_id: string | null;
             software_validation_number: string | null;
             hash_control: string | null;
-            digest: string | null;
+            signature_excerpt: string | null;
         };
     };
 }>();
 
 const document = computed(() => props.transportDocument);
-const dateFormatter = new Intl.DateTimeFormat('pt-PT', { dateStyle: 'long' });
-const dateTimeFormatter = new Intl.DateTimeFormat('pt-PT', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-});
 const moneyFormatter = new Intl.NumberFormat('pt-AO', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
 });
 
 function formatDate(value: string): string {
-    return dateFormatter.format(new Date(`${value}T12:00:00`));
+    return value.split('T')[0];
 }
 
 function formatDateTime(value: string | null): string {
-    return value
-        ? dateTimeFormatter.format(new Date(value.replace(' ', 'T')))
-        : '—';
+    return value ? value.replace('T', ' ').slice(0, 16) : '—';
 }
 
 function money(minor: number): string {
@@ -334,6 +328,14 @@ function printDocument(): void {
                         </td>
                         <td class="px-2 py-2 font-medium">
                             {{ line.product_description }}
+                            <div
+                                v-for="reference in line.order_references"
+                                :key="reference.document_no"
+                                class="text-xs text-zinc-500"
+                            >
+                                Origem: {{ reference.document_no }} ·
+                                {{ reference.document_date }}
+                            </div>
                         </td>
                         <td
                             class="px-2 py-2 text-right numeric whitespace-nowrap"
@@ -380,20 +382,26 @@ function printDocument(): void {
             <footer
                 class="doc-keep mt-10 border-t border-zinc-200 pt-5 text-[0.625rem]/4 text-zinc-500"
             >
+                <p>Este documento não serve de factura</p>
                 <p
-                    v-if="document.authenticity.software_validation_number"
+                    v-if="
+                        document.authenticity.software_validation_number &&
+                        document.authenticity.signature_excerpt
+                    "
                     class="numeric"
                 >
-                    Processado por programa validado n.º
-                    {{ document.authenticity.software_validation_number }}
+                    {{ document.authenticity.signature_excerpt }}-Processado por
+                    programa validado n.º
+                    {{ document.authenticity.software_validation_number }} /
+                    facturac.ao
                 </p>
-                <p v-if="document.authenticity.digest" class="mt-1 numeric">
-                    Integridade {{ document.authenticity.digest }} ·
-                    {{ document.authenticity.hash_control }}
-                </p>
-                <p class="mt-1">
-                    Documento de acompanhamento de mercadorias · SAF-T (AO)
-                    MovementOfGoods
+                <p v-else class="mt-1">
+                    {{
+                        document.authenticity.signature_excerpt
+                            ? 'Software pendente de validação AGT'
+                            : 'Sem assinatura SAF-T validada'
+                    }}
+                    / facturac.ao
                 </p>
             </footer>
         </article>

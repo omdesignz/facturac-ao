@@ -6,6 +6,8 @@ use App\Fiscal\Agt\Support\CanonicalJson;
 use App\Fiscal\Calculation\CalculatedFiscalLine;
 use App\Fiscal\Calculation\FiscalCalculator;
 use App\Fiscal\Calculation\FiscalReceiptCalculator;
+use App\Fiscal\Documents\AdjustmentLineReference;
+use App\Fiscal\Documents\TransportDocumentOrigins;
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
 use App\Models\Customer;
@@ -17,6 +19,7 @@ use App\Models\FiscalDocumentWithholding;
 use App\Models\LegalEntity;
 use App\Models\User;
 use App\WithholdingType;
+use DomainException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -27,6 +30,8 @@ final readonly class SaveFiscalDocumentDraft
         private FiscalCalculator $calculator,
         private CanonicalJson $canonicalJson,
         private FiscalReceiptCalculator $receiptCalculator,
+        private TransportDocumentOrigins $transportOrigins,
+        private AdjustmentLineReference $adjustmentLineReference,
     ) {}
 
     /**
@@ -34,6 +39,8 @@ final readonly class SaveFiscalDocumentDraft
      *     document_type: string,
      *     document_date: string,
      *     due_date: string|null,
+     *     goods_available_at?: string|null,
+     *     goods_available_location?: string|null,
      *     currency_code: string,
      *     exchange_rate_micro?: int,
      *     withholdings?: list<array{type: string, rate_basis_points: int}>,
@@ -48,6 +55,8 @@ final readonly class SaveFiscalDocumentDraft
      *     payment_date?: string|null,
      *     settlements?: list<array{document_public_id: string, amount_minor: int}>,
      *     lines: list<array{
+     *         reference_line_number?: int|null,
+     *         origin_transport_line_public_id?: string|null,
      *         operation_type: string,
      *         operation_date: string|null,
      *         product_code: string,
@@ -136,6 +145,8 @@ final readonly class SaveFiscalDocumentDraft
                 'payload_schema_version' => '2.0',
                 'document_date' => $profile['document_date'],
                 'due_date' => $profile['due_date'],
+                'goods_available_at' => $profile['goods_available_at'] ?? null,
+                'goods_available_location' => $profile['goods_available_location'] ?? null,
                 'currency_code' => $profile['currency_code'],
                 'exchange_rate_micro' => $profile['exchange_rate_micro'] ?? 1_000_000,
                 'customer_name' => $customer['name'],
@@ -170,6 +181,8 @@ final readonly class SaveFiscalDocumentDraft
                         $document,
                         $calculatedLine,
                         is_string($operationDate) ? $operationDate : null,
+                        $profile['lines'][$index]['origin_transport_line_public_id'] ?? null,
+                        $profile['lines'][$index]['reference_line_number'] ?? null,
                     );
                 }
             }
@@ -414,11 +427,28 @@ final readonly class SaveFiscalDocumentDraft
         FiscalDocument $document,
         CalculatedFiscalLine $calculatedLine,
         ?string $operationDate,
+        ?string $originTransportLinePublicId,
+        ?int $referenceLineNumber,
     ): void {
+        try {
+            $referenceLineNumber = $document->document_type->isAdjustment()
+                ? $this->adjustmentLineReference->resolve($document, $referenceLineNumber) : null;
+        } catch (DomainException $exception) {
+            $index = $calculatedLine->lineNumber - 1;
+            throw ValidationException::withMessages(["lines.{$index}.reference_line_number" => $exception->getMessage()]);
+        }
+
+        $origin = $this->transportOrigins->resolve($document, $originTransportLinePublicId, $calculatedLine->lineNumber - 1);
         $line = $document->lines()->create([
             'workspace_id' => $document->workspace_id,
             'legal_entity_id' => $document->legal_entity_id,
             'line_number' => $calculatedLine->lineNumber,
+            'reference_line_number' => $referenceLineNumber,
+            'origin_transport_line_id' => $origin?->id,
+            'order_references' => $origin === null ? [] : [[
+                'document_no' => $origin->transportDocument->document_no,
+                'document_date' => $origin->transportDocument->movement_date->toDateString(),
+            ]],
             'operation_type' => $calculatedLine->operationType,
             'operation_date' => $operationDate,
             'product_code' => $calculatedLine->productCode,

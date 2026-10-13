@@ -5,8 +5,10 @@ namespace App\Http\Requests;
 use App\Actions\CompletePosSale;
 use App\Fiscal\Pos\PosMoney;
 use App\Fiscal\Pos\PosPaymentMethods;
+use App\FiscalDocumentType;
 use App\Models\FiscalDocument;
 use App\PaymentMethod;
+use App\PosSalesTicketBasis;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -34,6 +36,9 @@ class StorePosSaleRequest extends FormRequest
              * by accident.
              */
             'client_key' => ['required', 'string', 'min:16', 'max:64', 'regex:/\A[A-Za-z0-9_-]+\z/'],
+            'document_type' => ['sometimes', 'required', Rule::in(['FR', 'TV'])],
+            'tv_basis' => ['nullable', Rule::enum(PosSalesTicketBasis::class)],
+            'tv_conditions_confirmed' => ['nullable', 'boolean'],
             'customer_public_id' => ['nullable', 'string', 'max:40'],
             'customer' => ['nullable', 'array:name,tax_identification_number'],
             'customer.name' => ['required_with:customer', 'string', 'min:2', 'max:200'],
@@ -103,6 +108,9 @@ class StorePosSaleRequest extends FormRequest
 
         return [
             'client_key' => (string) $validated['client_key'],
+            'document_type' => FiscalDocumentType::from($validated['document_type'] ?? 'FR'),
+            'tv_basis' => isset($validated['tv_basis']) ? PosSalesTicketBasis::from($validated['tv_basis']) : null,
+            'tv_conditions_confirmed' => (bool) ($validated['tv_conditions_confirmed'] ?? false),
             'customer_public_id' => $this->nullableString($validated['customer_public_id'] ?? null),
             'customer' => is_array($customer)
                 ? [

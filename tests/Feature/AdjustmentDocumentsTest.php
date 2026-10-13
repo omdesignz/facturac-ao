@@ -1,5 +1,6 @@
 <?php
 
+use App\Fiscal\Agt\Support\CanonicalJson;
 use App\Fiscal\Documents\V2_0\FiscalDocumentPayloadBuilder;
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
@@ -35,6 +36,18 @@ function adjustmentCompany(): array
         'document_no' => 'FT TESTE/1',
     ]);
 
+    foreach ([1, 2, 3] as $lineNumber) {
+        FiscalDocumentLine::factory()->create([
+            'fiscal_document_id' => $invoice->id,
+            'line_number' => $lineNumber,
+            'product_code' => 'SAME-PRODUCT',
+        ]);
+    }
+    FiscalDocument::withoutEvents(fn () => $invoice->forceFill([
+        'status' => FiscalDocumentStatus::Issued,
+        'system_entry_at' => now(),
+    ])->save());
+
     return compact('user', 'establishment', 'invoice') + ['legal_entity' => $legalEntity];
 }
 
@@ -60,6 +73,7 @@ function adjustmentPayload(array $company, array $overrides = []): array
         'references_document_public_id' => $company['invoice']->public_id,
         'adjustment_reason' => 'Devolução parcial da mercadoria',
         'lines' => [[
+            'reference_line_number' => 3,
             'operation_type' => 'TB',
             'product_code' => 'ART-1',
             'product_description' => 'Artigo devolvido',
@@ -177,7 +191,7 @@ test('the create screen can be opened directly as a credit note', function () {
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->where('document.document_type', 'NC')
-            ->has('documentTypes', 6)
+            ->has('documentTypes', count(FiscalDocumentType::issuable()))
             ->has('adjustableDocuments', 1)
             ->where('adjustableDocuments.0.document_no', 'FT TESTE/1')
         );
@@ -211,6 +225,7 @@ test('the AGT payload carries the corrected document and reason', function () {
         'workspace_id' => $company['legal_entity']->workspace_id,
         'legal_entity_id' => $company['legal_entity']->id,
         'fiscal_document_id' => $note->id,
+        'reference_line_number' => 3,
     ]);
     FiscalDocument::withoutEvents(fn () => $note->forceFill([
         'status' => FiscalDocumentStatus::Issued,
@@ -222,6 +237,7 @@ test('the AGT payload carries the corrected document and reason', function () {
     expect($payload['lines'][0]['referenceInfo'])->toBe([
         'reference' => 'FT TESTE/1',
         'reason' => 'Devolução parcial',
+        'referenceItemLineNo' => 3,
     ])
         ->and($payload['lines'][0])->toHaveKey('debitAmount')
         ->and($payload['lines'][0])->not->toHaveKey('creditAmount')
@@ -270,3 +286,59 @@ test('an invoice payload is unchanged by the adjustment fields', function () {
         ->and($payload)->not->toHaveKey('adjustmentReason')
         ->and($payload['lines'])->toBe([]);
 });
+
+test('NC and ND retain original line numbers after reordering and reloading', function (FiscalDocumentType $type) {
+    $company = adjustmentCompany();
+    $payload = adjustmentPayload($company, ['document_type' => $type->value]);
+    $payload['lines'][] = array_replace($payload['lines'][0], ['reference_line_number' => 1]);
+    $this->actingAs($company['user'])->post(route('invoices.store'), $payload)
+        ->assertSessionHasNoErrors();
+    $note = FiscalDocument::where('document_type', $type)->firstOrFail();
+    expect($note->lines->pluck('reference_line_number')->all())->toBe([3, 1]);
+    $this->get(route('invoices.edit', $note))->assertInertia(fn (Assert $page) => $page
+        ->where('document.lines.0.reference_line_number', '3')
+        ->where('document.lines.1.reference_line_number', '1')
+        ->where('adjustableDocuments.0.lines.2.line_number', 3));
+    FiscalDocument::withoutEvents(fn () => $note->forceFill([
+        'status' => FiscalDocumentStatus::Issued,
+        'document_no' => $type->value.' TEST/2',
+        'system_entry_at' => now(),
+    ])->save());
+    $json = json_decode(app(CanonicalJson::class)->encode(
+        app(FiscalDocumentPayloadBuilder::class)->document($note->fresh()),
+    ), true, flags: JSON_THROW_ON_ERROR);
+    expect(array_column($json['lines'], 'lineNumber'))->toBe([1, 2])
+        ->and(array_column(array_column($json['lines'], 'referenceInfo'), 'referenceItemLineNo'))->toBe([3, 1]);
+})->with([FiscalDocumentType::CreditNote, FiscalDocumentType::DebitNote]);
+
+test('adjustment line references must identify an existing original line', function (FiscalDocumentType $type, mixed $reference) {
+    $company = adjustmentCompany();
+    $payload = adjustmentPayload($company, ['document_type' => $type->value]);
+    $payload['lines'][0]['reference_line_number'] = $reference;
+    $this->actingAs($company['user'])->post(route('invoices.store'), $payload)
+        ->assertSessionHasErrors('lines.0.reference_line_number');
+    expect(FiscalDocument::where('document_type', $type)->count())->toBe(0);
+})->with([FiscalDocumentType::CreditNote, FiscalDocumentType::DebitNote])
+    ->with([null, 0, -1, 4, '1.5', 'unknown']);
+
+test('legacy or tampered adjustment references fail before payload signing', function (FiscalDocumentType $type, string $fault) {
+    $company = adjustmentCompany();
+    $this->actingAs($company['user'])->post(route('invoices.store'), adjustmentPayload($company, ['document_type' => $type->value]))
+        ->assertSessionHasNoErrors();
+    $note = FiscalDocument::where('document_type', $type)->firstOrFail();
+    if ($fault === 'missing' || $fault === 'unknown') {
+        $note->lines()->firstOrFail()->update(['reference_line_number' => $fault === 'missing' ? null : 99]);
+    } elseif ($fault === 'other company') {
+        $other = adjustmentCompany();
+        $note->references_document_id = $other['invoice']->id;
+    } elseif ($fault === 'other environment') {
+        $note->environment = 'production';
+    } elseif ($fault === 'wrong document number') {
+        $note->references_document_no = 'FT UNKNOWN/1';
+    }
+    FiscalDocument::withoutEvents(fn () => $note->forceFill([
+        'status' => FiscalDocumentStatus::Issued, 'document_no' => $type->value.' TEST/2', 'system_entry_at' => now(),
+    ])->save());
+    expect(fn () => app(FiscalDocumentPayloadBuilder::class)->signableObject($note->fresh()))->toThrow(DomainException::class);
+})->with([FiscalDocumentType::CreditNote, FiscalDocumentType::DebitNote])
+    ->with(['missing', 'unknown', 'other company', 'other environment', 'wrong document number']);

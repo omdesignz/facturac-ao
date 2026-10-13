@@ -3,7 +3,9 @@
 use App\Actions\IssueTransportDocument;
 use App\Actions\SaveTransportDocumentDraft;
 use App\Exceptions\BillingActionRefused;
+use App\Fiscal\Documents\PageCarryTotals;
 use App\Fiscal\Documents\PdfSheet;
+use App\Fiscal\Documents\PrintFormat;
 use App\Fiscal\Documents\TransportDocumentPdf;
 use App\Models\Customer;
 use App\Models\Establishment;
@@ -17,12 +19,14 @@ use App\WorkspaceRole;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Fortify;
 use Mockery\MockInterface;
+use Mpdf\Mpdf;
 
 /**
  * @return array{owner: User, legalEntity: LegalEntity, establishment: Establishment}
  */
 function transportModuleFixture(): array
 {
+    configureTestSaftSigning();
     $owner = User::factory()->withWorkspace('VAP Guias')->create();
     $owner->forceFill([
         'two_factor_secret' => Fortify::currentEncrypter()->encrypt('transport-secret'),
@@ -52,6 +56,7 @@ function transportModulePayload(array $fixture, array $overrides = []): array
         'document_type' => TransportDocumentType::DeliveryNote->value,
         'establishment_public_id' => $fixture['establishment']->public_id,
         'customer_public_id' => null,
+        'movement_direction' => 'outgoing',
         'movement_date' => '2026-08-13',
         'movement_start_at' => '2026-08-13 09:30',
         'movement_end_at' => '2026-08-13 12:00',
@@ -222,7 +227,7 @@ test('issued transport documents use a sequential annual series and freeze their
     expect($first->status)->toBe(TransportDocumentStatus::Issued)
         ->and($first->document_no)->toBe('GR SEDE2026/1')
         ->and($second->document_no)->toBe('GR SEDE2026/2')
-        ->and($first->document_hash)->toHaveLength(64)
+        ->and($first->document_hash)->toHaveLength(172)
         ->and($first->software_product_id)->toContain('/VAP SOLUÇÕES, LDA');
 
     expect(fn () => $first->lines->first()->update(['quantity_units' => 9000]))
@@ -305,7 +310,7 @@ test('the official guide PDF is rendered and isolated from another workspace', f
         ->assertForbidden();
 });
 
-test('transport input rejects an inconsistent movement date', function () {
+test('transport input accepts transport starting after the issue date', function () {
     $fixture = transportModuleFixture();
 
     $this->actingAs($fixture['owner'])
@@ -314,9 +319,9 @@ test('transport input rejects an inconsistent movement date', function () {
             'movement_end_at' => '2026-08-14 12:00',
         ]))
         ->assertRedirect()
-        ->assertSessionHas('error');
+        ->assertSessionHasNoErrors()->assertSessionMissing('error');
 
-    expect(TransportDocument::query()->count())->toBe(0);
+    expect(TransportDocument::query()->count())->toBe(1);
 });
 
 test('a return guide cannot identify a saved customer as its supplier', function () {
@@ -388,3 +393,25 @@ test('a cancelled guide is stamped ANULADO on every page by the PDF engine', fun
 
     expect($watermarks)->toBe([null, 'ANULADO']);
 });
+
+test('a multipage guide renders cumulative transported values for all merchandise', function (TransportDocumentType $type) {
+    $fixture = transportModuleFixture();
+    $payload = transportModulePayload($fixture, ['document_type' => $type->value]);
+    $payload['lines'] = array_fill(0, 70, $payload['lines'][0]);
+    $draft = app(SaveTransportDocumentDraft::class)->execute($fixture['legalEntity'], $fixture['owner'], transportActionProfile($payload));
+    $document = app(IssueTransportDocument::class)->execute($draft, $fixture['owner'], 1);
+    $carry = new class(app(PrintFormat::class)) extends PageCarryTotals
+    {
+        public array $totals = [];
+
+        public function apply(Mpdf $pdf, array $amounts, string $currency): array
+        {
+            return $this->totals = parent::apply($pdf, $amounts, $currency);
+        }
+    };
+    app()->instance(PageCarryTotals::class, $carry);
+    $pdf = app(TransportDocumentPdf::class)->render($document);
+    expect($pdf)->toStartWith('%PDF-')
+        ->and(count($carry->totals))->toBeGreaterThan(1)
+        ->and(end($carry->totals)['carried'])->toBe($document->gross_total_minor);
+})->with(array_values(array_filter(TransportDocumentType::cases(), fn ($type) => $type !== TransportDocumentType::Consignment)));

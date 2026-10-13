@@ -21,6 +21,7 @@ use App\Models\FiscalDocumentLine;
 use App\Models\FiscalDocumentLineTax;
 use App\Models\FiscalSeries;
 use App\Models\LegalEntity;
+use App\Models\TransportDocumentLine;
 use App\Models\User;
 use App\Models\Workspace;
 use App\PaymentMethod;
@@ -88,7 +89,7 @@ class FiscalDocumentController extends Controller
         Gate::authorize('update', $fiscalDocument);
         Inertia::encryptHistory();
 
-        $fiscalDocument->load(['customer', 'lines.taxes', 'settlements.settledDocument', 'withholdings']);
+        $fiscalDocument->load(['customer', 'lines.taxes', 'lines.originTransportLine', 'settlements.settledDocument', 'withholdings']);
 
         return Inertia::render('Invoices/Create', $this->pageProps($legalEntity, $fiscalDocument));
     }
@@ -144,13 +145,14 @@ class FiscalDocumentController extends Controller
             ->limit(500)
             ->get();
         $adjustable = $legalEntity->fiscalDocuments()
-            ->with(['customer', 'submissions'])
+            ->with(['customer', 'submissions', 'lines'])
             ->withSum(['settledBy as settled_minor' => fn ($query) => $query->whereHas('receipt', fn ($receipt) => $receipt->where('status', '!=', FiscalDocumentStatus::Draft)),
             ], 'amount_minor')
             ->whereNotNull('document_no')
             ->whereIn('document_type', [
                 FiscalDocumentType::Invoice,
                 FiscalDocumentType::InvoiceReceipt,
+                FiscalDocumentType::SalesTicket,
                 FiscalDocumentType::GenericInvoice,
                 FiscalDocumentType::DebitNote,
                 FiscalDocumentType::CreditNote,
@@ -170,6 +172,16 @@ class FiscalDocumentController extends Controller
             ->get();
 
         return [
+            'transportLines' => TransportDocumentLine::query()
+                ->where('workspace_id', $legalEntity->workspace_id)
+                ->where('legal_entity_id', $legalEntity->id)
+                ->whereHas('transportDocument', fn ($query) => $query->where('status', 'issued')->where('movement_direction', 'outgoing'))
+                ->with('transportDocument')->latest('id')->limit(500)->get()
+                ->map(fn ($line): array => [
+                    'value' => $line->public_id,
+                    'label' => $line->transportDocument->document_no.' · '.$line->product_description,
+                    'tax_id' => $line->transportDocument->recipient_tax_identification_number,
+                ]),
             'company' => [
                 'legal_name' => $legalEntity->legal_name,
                 'trade_name' => $legalEntity->trade_name,
@@ -264,6 +276,10 @@ class FiscalDocumentController extends Controller
                 FiscalDocumentType::issuable(),
             ),
             'adjustableDocuments' => $adjustable->map(fn (FiscalDocument $issued): array => [
+                'lines' => $issued->lines->map(fn (FiscalDocumentLine $line): array => [
+                    'line_number' => $line->line_number,
+                    'product_description' => $line->product_description,
+                ])->values()->all(),
                 'public_id' => $issued->public_id,
                 'document_no' => $issued->document_no,
                 'document_date' => $issued->document_date->toDateString(),
@@ -310,6 +326,8 @@ class FiscalDocumentController extends Controller
                 'document_type' => $requestedType->value,
                 'document_date' => now('Africa/Luanda')->toDateString(),
                 'due_date' => now('Africa/Luanda')->addDays(30)->toDateString(),
+                'goods_available_at' => '',
+                'goods_available_location' => '',
                 'currency_code' => 'AOA',
                 'exchange_rate' => '1',
                 'withholdings' => [],
@@ -342,6 +360,8 @@ class FiscalDocumentController extends Controller
             'document_type' => $document->document_type->value,
             'document_date' => $document->document_date->toDateString(),
             'due_date' => $document->due_date?->toDateString(),
+            'goods_available_at' => $document->goods_available_at?->format('Y-m-d\\TH:i') ?? '',
+            'goods_available_location' => $document->goods_available_location ?? '',
             'currency_code' => $document->currency_code,
             'exchange_rate' => number_format($document->exchange_rate_micro / 1_000_000, 6, '.', ''),
             'withholdings' => $this->withholdingProps($document),
@@ -389,6 +409,8 @@ class FiscalDocumentController extends Controller
         $tax = $line->taxes->first();
 
         return [
+            'reference_line_number' => $line->reference_line_number === null ? '' : (string) $line->reference_line_number,
+            'origin_transport_line_public_id' => $line->originTransportLine->public_id ?? '',
             'operation_type' => $line->operation_type->value,
             'operation_date' => $line->operation_date?->toDateString() ?? '',
             'product_code' => $line->product_code,

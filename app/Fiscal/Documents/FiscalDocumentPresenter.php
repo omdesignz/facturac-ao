@@ -61,6 +61,13 @@ class FiscalDocumentPresenter
             'agt_accepted' => $document->agt_document_status === 'V',
             'document_date' => $document->document_date->toIso8601String(),
             'due_date' => $document->due_date?->toIso8601String(),
+            'goods_available_at' => $document->goods_available_at?->toIso8601String(),
+            'goods_available_location' => $document->goods_available_location,
+            // A payload checksum or JWS is not a substitute for the SAF-T signature.
+            'footer_text' => app(FiscalPrintFooter::class)->text(
+                $document->document_type, $document->software_validation_number,
+                availableAt: $document->goods_available_at,
+            ),
             'issued_at' => $document->issued_at?->toIso8601String(),
             'currency_code' => $document->currency_code,
             /*
@@ -100,6 +107,7 @@ class FiscalDocumentPresenter
             'lines' => array_values($document->lines
                 ->map(fn (FiscalDocumentLine $line): array => [
                     'line_number' => $line->line_number,
+                    'order_references' => $line->order_references ?? [],
                     'operation_date' => $line->operation_date?->toDateString(),
                     'product_code' => $line->product_code,
                     'product_description' => $line->product_description,

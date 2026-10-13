@@ -29,6 +29,10 @@ use Inertia\Testing\AssertableInertia as Assert;
 const FROZEN_LAYOUTS = [
     'v1' => 'c590bc229e456e4ce1843557bde3bf825d711c28dac0e53231b4c6b75692ff69',
     'v2' => '6c48131289231a5edd5e79eabad494df9731dbfaf98c7fa63bc367e01ce1b93e',
+    'v4' => '622d00fb0592d8d0c1f7e19b79b343640676f4e2cab4d6dca3b9344a78c0a264',
+    'v5' => 'f1937f06e32a89fb5ba929d2ec462a5349b9b031024c6d7c267b4f85fe5c9107',
+    'v6' => 'a6b45c4d519dba9d41d4fb0e372de0638d8d98b61623b7806988a6c66392f85f',
+    'v3' => '9bbc27d2710db39bf2fce4bff2f0ea6ebfadcbbdba4e37bcd3d311ca36f014f4',
 ];
 
 /**
@@ -648,3 +652,149 @@ test('a correction says which document it corrects and why', function () {
         ->toContain('FT 2026/417')
         ->toContain('Devolução de mercadoria');
 });
+
+test('the new layout leaves issued v2 documents on their recorded template', function () {
+    $fixture = pdfFixture();
+    $prints = app(FiscalDocumentPrints::class);
+    config(['fiscal.print.layout' => 'v2', 'fiscal.print.cache_seconds' => 0]);
+    $older = documentWithLines($fixture, lines: 1);
+    $record = $prints->record($older);
+    $fingerprint = $record->source_sha256;
+
+    config(['fiscal.print.layout' => 'v3']);
+    $newer = documentWithLines($fixture, lines: 1);
+
+    expect($prints->pdf($older->fresh()))->toStartWith('%PDF-')
+        ->and($prints->record($older->fresh())->layout_version)->toBe('v2')
+        ->and($prints->record($older->fresh())->source_sha256)->toBe($fingerprint)
+        ->and($prints->record($newer)->layout_version)->toBe('v3')
+        ->and($prints->pdf($newer))->toStartWith('%PDF-');
+});
+
+test('the new layout retains fiscal data and labels settled documents accurately', function (FiscalDocumentType $type) {
+    $fixture = pdfFixture();
+    $document = documentWithLines($fixture, lines: 1, type: $type);
+    DB::table('fiscal_documents')->where('id', $document->id)->update([
+        'settlement_total_minor' => $document->gross_total_minor,
+    ]);
+    $document = $document->fresh();
+    $format = app(PrintFormat::class);
+    $data = app(FiscalDocumentPresenter::class)->forPrint($document, app(FiscalDocumentPrints::class)->record($document));
+    $sheet = $type === FiscalDocumentType::Receipt ? 'receipt' : 'invoice';
+    $html = view('documents.pdf.v3.'.$sheet, [
+        'document' => $data,
+        'settlements' => [],
+        'logo' => null,
+        'money' => fn (int $minor): string => $format->money($minor),
+        'number' => fn (string $value, int $minimumDecimals = 0): string => $format->decimal($value, $minimumDecimals),
+        'percent' => fn (string $value): string => $format->percent($value),
+    ])->render();
+
+    expect($html)->toContain(e($document->document_no))
+        ->toContain(e($document->customer_name))
+        ->toContain($document->customer_tax_identification_number)
+        ->toContain($fixture['legalEntity']->tax_identification_number)
+        ->toContain('123/AGT/2026')
+        ->toContain($data['authenticity']['digest'])
+        ->toContain($data['authenticity']['qr_data_uri'])
+        ->toContain($format->money($document->gross_total_minor))
+        ->not->toContain('Valor total a pagar');
+
+    if ($type === FiscalDocumentType::Receipt) {
+        expect($html)->toContain('Total recebido');
+    } else {
+        expect($html)->toContain('Total do documento')
+            ->toContain('Pago')->toContain('Em dívida')
+            ->toContain('Artigo de demonstração 1')
+            ->toContain('ART-1')->toContain('IEC')->toContain('IVA')->toContain('I. Selo');
+    }
+})->with([FiscalDocumentType::Invoice, FiscalDocumentType::InvoiceReceipt, FiscalDocumentType::SalesTicket, FiscalDocumentType::Receipt]);
+
+test('bank and operation details are frozen with the new print record', function () {
+    $fixture = pdfFixture();
+    $fixture['legalEntity']->update(['bank_name' => 'Banco inicial', 'bank_account_holder' => 'Empresa', 'bank_account_number' => '12345']);
+    $document = documentWithLines($fixture);
+    DB::table('fiscal_documents')->where('id', $document->id)->update(['goods_available_at' => '2026-10-12 09:30:00', 'goods_available_location' => 'Armazém Luanda']);
+    $document = $document->fresh();
+    $prints = app(FiscalDocumentPrints::class);
+    $record = $prints->record($document);
+    $fixture['legalEntity']->update(['bank_name' => 'Novo banco', 'bank_account_number' => '9999']);
+    $data = app(FiscalDocumentPresenter::class)->forPrint($document->fresh(), $prints->verified($document));
+    expect($data['company']['bank_name'])->toBe('Banco inicial')
+        ->and($data['footer_text'])->toContain('2026-10-12 - 09:30')
+        ->and($data['goods_available_location'])->toBe('Armazém Luanda');
+    DB::table('fiscal_documents')->where('id', $document->id)->update(['goods_available_at' => '2026-10-13 09:30:00']);
+    expect(fn () => $prints->verified($document))->toThrow(PrintRecordMismatch::class);
+});
+
+test('v4 preserves issued v3 fingerprints across new optional document columns', function () {
+    $fixture = pdfFixture();
+    config(['fiscal.print.layout' => 'v3']);
+    $document = documentWithLines($fixture);
+    $prints = app(FiscalDocumentPrints::class);
+    $record = $prints->record($document);
+    $hash = $record->source_sha256;
+    config(['fiscal.print.layout' => 'v4']);
+    expect($prints->verified($document)->source_sha256)->toBe($hash)
+        ->and($prints->verified($document)->layout_version)->toBe('v3');
+});
+
+test('payment instructions only accompany unpaid invoices and debit notes', function (FiscalDocumentType $type, bool $paid, bool $visible) {
+    $fixture = pdfFixture();
+    $document = documentWithLines($fixture, type: $type);
+    $data = app(FiscalDocumentPresenter::class)->forPrint($document);
+    $data['company'] += ['bank_name' => 'Banco de teste', 'bank_account_holder' => 'Titular', 'bank_iban' => 'GB82WEST12345698765432', 'bank_account_number' => null];
+    $data['totals']['settled_minor'] = $paid ? $data['totals']['gross_minor'] : 0;
+    $html = view('documents.pdf.v4._bank-details', ['document' => $data])->render();
+    expect(str_contains($html, 'Dados para pagamento'))->toBe($visible);
+})->with([
+    [FiscalDocumentType::Invoice, false, true],
+    [FiscalDocumentType::GenericInvoice, false, true],
+    [FiscalDocumentType::DebitNote, false, true],
+    [FiscalDocumentType::Invoice, true, false],
+    [FiscalDocumentType::InvoiceReceipt, true, false],
+    [FiscalDocumentType::SalesTicket, true, false],
+    [FiscalDocumentType::CreditNote, false, false],
+    [FiscalDocumentType::Receipt, true, false],
+]);
+
+test('new fiscal PDFs retain the verification QR without an explanatory caption', function () {
+    expect(config('fiscal.print.layout'))->toBe('v6');
+    $html = view('documents.pdf.v6._authenticity', [
+        'document' => ['support_email' => 'apoio@example.test'],
+        'qrImage' => 'data:image/png;base64,example',
+    ])->render();
+    expect($html)->toContain('QR de verificação AGT')->toContain('width="30mm"')
+        ->not->toContain('Verificar na AGT');
+});
+
+test('transport provenance preserves old print fingerprints and is protected in layout v6', function () {
+    $fixture = pdfFixture();
+    $prints = app(FiscalDocumentPrints::class);
+    config()->set('fiscal.print.layout', 'v5');
+    $legacy = documentWithLines($fixture, lines: 1);
+    $prints->record($legacy);
+    DB::table('fiscal_document_lines')->where('fiscal_document_id', $legacy->id)->update([
+        'order_references' => json_encode([['document_no' => 'GR SOURCE/1', 'document_date' => '2026-06-01']]),
+    ]);
+    expect($prints->verified($legacy)->layout_version)->toBe('v5');
+
+    config()->set('fiscal.print.layout', 'v6');
+    $current = documentWithLines($fixture, lines: 1);
+    $prints->record($current);
+    DB::table('fiscal_document_lines')->where('fiscal_document_id', $current->id)->update([
+        'order_references' => json_encode([['document_no' => 'GR SOURCE/2', 'document_date' => '2026-06-02']]),
+    ]);
+    expect(fn () => $prints->verified($current))->toThrow(PrintRecordMismatch::class);
+});
+
+test('AGT adjustment line metadata does not invalidate existing print layouts', function (string $layout) {
+    $fixture = pdfFixture();
+    config()->set('fiscal.print.layout', $layout);
+    $document = documentWithLines($fixture, lines: 1);
+    $prints = app(FiscalDocumentPrints::class);
+    $hash = $prints->record($document)->source_sha256;
+    DB::table('fiscal_document_lines')->where('fiscal_document_id', $document->id)
+        ->update(['reference_line_number' => 3]);
+    expect($prints->verified($document)->source_sha256)->toBe($hash);
+})->with(['v1', 'v2', 'v3', 'v4', 'v5', 'v6']);

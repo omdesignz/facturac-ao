@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
  * What a shift has taken, worked out from the documents it issued.
  *
  * Nothing here comes from the till. The totals are summed from the issued
- * Factura/Recibo rows reached through the sales that link them to the shift, so
+ * fiscal document rows reached through the sales that link them to the shift, so
  * the figure the cashier counts the drawer against is the figure the books hold.
  * Integer minor units throughout.
  *

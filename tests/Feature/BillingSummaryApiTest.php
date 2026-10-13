@@ -96,6 +96,17 @@ test('billing exact summary reuses shared arithmetic and contains no private rec
     Notification::assertNothingSent();
 });
 
+test('billing includes POS sales tickets in recorded revenue', function () {
+    $f = billingSummaryFixture();
+    billingDocument($f, ['document_type' => 'TV']);
+
+    $this->withHeader('Authorization', 'Bearer '.$f['secret'])
+        ->getJson($f['url'].'?month=2024-02')
+        ->assertOk()
+        ->assertJsonPath('data.currencies.0.billed_document_count', 1)
+        ->assertJsonPath('data.currencies.0.invoiced_gross_minor', '10000');
+});
+
 test('billing supported fiscal states preserve issuance facts without AGT or settlement authority', function (string $status) {
     $f = billingSummaryFixture();
     billingDocument($f, ['status' => $status]);

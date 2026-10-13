@@ -3,8 +3,10 @@ import { Head } from '@inertiajs/vue3';
 import { Check, Link2, Printer } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
+import { printDocument } from '@/lib/print';
 
 interface PrintLine {
+    order_references: { document_no: string; document_date: string }[];
     line_number: number;
     operation_date: string | null;
     product_code: string | null;
@@ -93,10 +95,6 @@ const outstanding = computed(
     () =>
         props.document.totals.gross_minor - props.document.totals.settled_minor,
 );
-
-function printDocument(): void {
-    window.print();
-}
 
 const copied = ref(false);
 
@@ -261,6 +259,14 @@ async function copyShareLink(): Promise<void> {
                         <td class="py-2 pr-3">
                             <p class="font-medium">
                                 {{ line.product_description }}
+                            </p>
+                            <p
+                                v-for="reference in line.order_references"
+                                :key="reference.document_no"
+                                class="text-xs text-zinc-500"
+                            >
+                                Origem: {{ reference.document_no }} ·
+                                {{ reference.document_date }}
                             </p>
                             <p
                                 v-if="line.product_code"

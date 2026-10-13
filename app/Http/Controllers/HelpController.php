@@ -126,11 +126,11 @@ class HelpController extends Controller
             ],
             [
                 'question' => 'A factura ficou "por comunicar". O que faço?',
-                'answer' => 'O documento é válido e fica em fila. Tentamos de novo automaticamente. Se passar de algumas horas, verifique a Ligação AGT — normalmente é a chave da série que expirou.',
+                'answer' => 'Consulte o Monitor AGT para ver o estado mais recente e as tentativas de comunicação. Um documento em fila ainda não tem uma validação final da AGT. Se a situação persistir, verifique a Ligação AGT e contacte o apoio com a referência do documento.',
             ],
             [
                 'question' => 'Como exporto os meus dados?',
-                'answer' => 'Os seus documentos, clientes e artigos são seus e podem ser exportados a qualquer momento. Peça-nos por esta página se precisar de um formato específico para o seu contabilista.',
+                'answer' => 'Abra Análises → Exportar transacções para preparar um relatório Excel com período, filtros e colunas. Em SAF-T (AO) pode descarregar o XML de facturação. O Guia de utilização explica os dois percursos.',
             ],
             [
                 'question' => 'Quem consegue ver os meus dados?',

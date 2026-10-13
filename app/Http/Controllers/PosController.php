@@ -9,12 +9,14 @@ use App\Fiscal\Pos\PosPaymentMethods;
 use App\Fiscal\Pos\PosPresenter;
 use App\Fiscal\Pos\PosSeriesResolver;
 use App\Fiscal\Pos\PosSessionSummary;
+use App\FiscalDocumentType;
 use App\Http\Controllers\Concerns\ResolvesPosCompany;
 use App\Models\Customer;
 use App\Models\FiscalDocument;
 use App\Models\LegalEntity;
 use App\Models\PosRegister;
 use App\Models\PosSession;
+use App\PosSalesTicketBasis;
 use App\PosSessionStatus;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -149,6 +151,8 @@ class PosController extends Controller
                 'name' => $session->establishment->name,
             ],
             'series_available' => $this->series->exists($legalEntity, $session->establishment),
+            'sales_ticket_series_available' => $this->series->exists($legalEntity, $session->establishment, FiscalDocumentType::SalesTicket),
+            'sales_ticket_bases' => PosSalesTicketBasis::options(),
             'summary' => $this->presenter->tillSummary($this->summary->forSession($session)),
             'cash_movements' => array_values($session->cashMovements()
                 ->latest('id')

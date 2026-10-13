@@ -15,10 +15,12 @@ use App\Fiscal\Calculation\CalculatedFiscalDocument;
 use App\Fiscal\Calculation\CalculatedFiscalLine;
 use App\Fiscal\Calculation\FiscalCalculator;
 use App\Fiscal\Calculation\FiscalReceiptCalculator;
+use App\Fiscal\Documents\AdjustmentLineReference;
 use App\Fiscal\Documents\AgtObservationReducer;
 use App\Fiscal\Documents\CurrentAgtState;
 use App\Fiscal\Documents\FiscalDocumentNumber;
 use App\Fiscal\Documents\FiscalDocumentPrints;
+use App\Fiscal\Documents\TransportDocumentOrigins;
 use App\Fiscal\Documents\V2_0\FiscalDocumentPayloadBuilder;
 use App\Fiscal\RequiredAudit;
 use App\FiscalDocumentEventType;
@@ -53,6 +55,8 @@ final readonly class IssueFiscalDocument
         private CanonicalJson $canonicalJson,
         private FiscalReceiptCalculator $receiptCalculator,
         private FiscalDocumentPrints $prints,
+        private TransportDocumentOrigins $transportOrigins,
+        private AdjustmentLineReference $adjustmentLineReference,
     ) {}
 
     public function execute(
@@ -92,6 +96,8 @@ final readonly class IssueFiscalDocument
                     'O rascunho foi alterado noutra sessão. Recarregue a página antes de emitir.',
                 );
             }
+
+            $this->transportOrigins->assertIssuable($document);
 
             $series = $this->lockedSeries($document, $seriesPublicId);
             $connection = $series->agtConnection;
@@ -340,6 +346,16 @@ final readonly class IssueFiscalDocument
         FiscalSeries $series,
         AgtConnection $connection,
     ): void {
+        if ($document->document_type->isAdjustment()) {
+            try {
+                foreach ($document->lines as $line) {
+                    $this->adjustmentLineReference->resolve($document, $line->reference_line_number);
+                }
+            } catch (\DomainException $exception) {
+                throw FiscalFinalizationBlocked::because($exception->getMessage());
+            }
+        }
+
         if ($document->payload_schema_version !== '2.0' || $connection->schema_version !== '2.0') {
             throw FiscalFinalizationBlocked::because(
                 'A AGT exige o contrato 2.0. Guarde novamente o rascunho e verifique a ligação AGT.',

@@ -46,10 +46,16 @@ class LegalEntityPolicy
         $membership = $this->activeMembership($user, $legalEntity);
 
         return $membership?->role->canManageWorkspace() === true
+            && ! $legalEntity->agtConnections()->exists()
             && in_array($legalEntity->status, [
                 LegalEntityStatus::Draft,
                 LegalEntityStatus::Configured,
             ], true);
+    }
+
+    public function updateBankDetails(User $user, LegalEntity $legalEntity): bool
+    {
+        return $this->activeMembership($user, $legalEntity)?->role->canManageWorkspace() === true;
     }
 
     public function manageAgtConnection(User $user, LegalEntity $legalEntity): bool

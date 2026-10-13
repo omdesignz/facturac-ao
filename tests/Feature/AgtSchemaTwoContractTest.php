@@ -23,6 +23,7 @@ use App\Models\AgtConnection;
 use App\Models\AgtSubmission;
 use App\Models\Establishment;
 use App\Models\FiscalDocument;
+use App\Models\FiscalDocumentLine;
 use App\Models\FiscalDocumentWithholding;
 use App\Models\FiscalSeries;
 use App\Models\LegalEntity;
@@ -120,6 +121,11 @@ function schemaTwoSource(
         'customer_tax_identification_number' => '5411111111',
         'net_total_minor' => $netMinor, 'tax_payable_minor' => $taxMinor, 'gross_total_minor' => $netMinor + $taxMinor,
     ]);
+    FiscalDocumentLine::withoutEvents(fn () => FiscalDocumentLine::factory()->create([
+        'fiscal_document_id' => $source->id, 'line_number' => 1,
+        'net_amount_minor' => $netMinor, 'tax_amount_minor' => $taxMinor, 'gross_amount_minor' => $netMinor + $taxMinor,
+    ]));
+    FiscalDocument::withoutEvents(fn () => $source->forceFill(['system_entry_at' => now()])->save());
     recordAuthoritativeAgtAcceptance($source);
 
     return $source;
@@ -257,6 +263,12 @@ test('printed fiscal discounts use the frozen line amounts', function (string $t
     $company = schemaTwoCompany();
     $profile = schemaTwoProfile($company, ['document_type' => $type]);
     $profile['lines'][0]['discount_percentage'] = '20';
+    if ($type === 'NC') {
+        $source = schemaTwoSource($company);
+        $profile['references_document_public_id'] = $source->public_id;
+        $profile['adjustment_reason'] = 'Correcção parcial';
+        $profile['lines'][0]['reference_line_number'] = 1;
+    }
     $draft = app(SaveFiscalDocumentDraft::class)->execute($company['entity'], $company['user'], $profile);
 
     expect(app(FiscalDocumentPresenter::class)->forPrint($draft)['discount_total_minor'])->toBe(247);
@@ -446,6 +458,9 @@ test('receipt and correction issuance reject source documents from a different e
     $profile = $type === 'RG'
         ? schemaTwoReceiptProfile($company, $source, 11400)
         : schemaTwoProfile($company, ['document_type' => $type, 'references_document_public_id' => $source->public_id, 'adjustment_reason' => 'Correction']);
+    if ($type === 'NC') {
+        $profile['lines'][0]['reference_line_number'] = 1;
+    }
     $draft = app(SaveFiscalDocumentDraft::class)->execute($company['entity'], $company['user'], $profile);
     expect(fn () => app(IssueFiscalDocument::class)->execute($draft, $company['user'], $company['series']->public_id, $draft->revision))
         ->toThrow(FiscalFinalizationBlocked::class);

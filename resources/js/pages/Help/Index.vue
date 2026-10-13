@@ -2,6 +2,8 @@
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import {
+    BookOpen,
+    ArrowRight,
     ChevronDown,
     Clock,
     LoaderCircle,
@@ -17,6 +19,7 @@ import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { store as storeComplaint } from '@/routes/help/complaints';
+import { index as userGuideIndex } from '@/routes/help/guide';
 import type { SelectOption } from '@/types/select';
 
 interface OwnComplaint {
@@ -118,6 +121,24 @@ const whatsappHref = computed(
                         {{ channels.response_days }} dias úteis.
                     </p>
                 </header>
+
+                <Link
+                    :href="userGuideIndex.url()"
+                    class="flex flex-wrap items-center gap-4 rounded-2xl surface p-5 focus-ring active:opacity-75"
+                >
+                    <BookOpen
+                        class="size-7 text-accent-600 dark:text-accent-300"
+                        aria-hidden="true"
+                    />
+                    <div class="flex-1">
+                        <h2 class="font-semibold">Aprenda a usar o facturac</h2>
+                        <p class="text-sm/6 text-zinc-600 dark:text-zinc-400">
+                            Guia interactivo, listas de conferência e PDF para
+                            ter sempre à mão.
+                        </p>
+                    </div>
+                    <ArrowRight class="size-5" aria-hidden="true" />
+                </Link>
 
                 <section class="grid gap-4 sm:grid-cols-3">
                     <a

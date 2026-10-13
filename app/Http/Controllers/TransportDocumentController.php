@@ -127,6 +127,8 @@ class TransportDocumentController extends Controller
                 'value' => $type->value,
                 'label' => $type->label(),
                 'short_label' => $type->shortLabel(),
+                'disabled' => $type === TransportDocumentType::Consignment,
+                'hint' => $type === TransportDocumentType::Consignment ? 'Aguarda esquema SAF-T aceite pela AGT' : null,
             ], TransportDocumentType::cases()),
             'establishments' => array_values($legalEntity->establishments()
                 ->where('is_active', true)

@@ -34,6 +34,14 @@ class AgtQrCode
     /** Below this a printed module blurs into its neighbours. */
     private const int MINIMUM_MODULE_PIXELS = 3;
 
+    /** Small enough to retain headroom at AGT's required correction level M. */
+    private const int LOGO_WIDTH_MODULES = 17;
+
+    /** Only blank top/bottom margins are omitted from the official artwork. */
+    private const int LOGO_CROP_TOP = 80;
+
+    private const int LOGO_CROP_HEIGHT = 140;
+
     /**
      * The link the kiosk expects, with each space in the number as %20 as the
      * specification prescribes. Values are percent-encoded per RFC 3986, so
@@ -57,19 +65,20 @@ class AgtQrCode
     /** The 350 × 350 PNG the specification asks for. */
     public function png(string $url): string
     {
-        $modules = $this->modules($url);
+        $qr = $this->encode($url);
+        $modules = $this->modules($qr);
         $count = count($modules);
         $modulePixels = $this->modulePixels($count);
         $offset = intdiv(self::IMAGE_PIXELS - $count * $modulePixels, 2);
 
-        $image = imagecreate(self::IMAGE_PIXELS, self::IMAGE_PIXELS);
+        $image = imagecreatetruecolor(self::IMAGE_PIXELS, self::IMAGE_PIXELS);
 
         if ($image === false) {
             throw new RuntimeException('Could not allocate the QR image.');
         }
 
-        // The first colour allocated on a palette image is its background.
-        imagecolorallocate($image, 255, 255, 255);
+        $white = imagecolorallocate($image, 255, 255, 255);
+        imagefill($image, 0, 0, (int) $white);
         $dark = imagecolorallocate($image, 0, 0, 0);
 
         foreach ($modules as $y => $row) {
@@ -92,6 +101,33 @@ class AgtQrCode
             }
         }
 
+        $placement = $this->logoPlacement($qr);
+        $logo = imagecreatefromstring($this->logo());
+
+        if ($logo === false) {
+            throw new RuntimeException('Could not read the AGT QR logo.');
+        }
+
+        $logoLeft = $offset + $placement['x'] * $modulePixels;
+        $logoTop = $offset + $placement['y'] * $modulePixels;
+        $logoWidth = $placement['width'] * $modulePixels;
+        $logoHeight = $placement['height'] * $modulePixels;
+        $artworkHeight = (int) round($logoWidth * self::LOGO_CROP_HEIGHT / imagesx($logo));
+        imagefilledrectangle($image, $logoLeft, $logoTop, $logoLeft + $logoWidth - 1, $logoTop + $logoHeight - 1, (int) $white);
+        imagecopyresampled(
+            $image,
+            $logo,
+            $logoLeft,
+            $logoTop + intdiv($logoHeight - $artworkHeight, 2),
+            0,
+            self::LOGO_CROP_TOP,
+            $logoWidth,
+            $artworkHeight,
+            imagesx($logo),
+            self::LOGO_CROP_HEIGHT,
+        );
+        imagedestroy($logo);
+
         ob_start();
         imagepng($image, null, 9);
         $png = (string) ob_get_clean();
@@ -112,8 +148,11 @@ class AgtQrCode
      */
     public function svg(string $url): string
     {
-        $modules = $this->modules($url);
+        $qr = $this->encode($url);
+        $modules = $this->modules($qr);
         $side = count($modules) + self::QUIET_ZONE_MODULES * 2;
+        $this->modulePixels(count($modules));
+        $placement = $this->logoPlacement($qr);
         $path = '';
 
         foreach ($modules as $y => $row) {
@@ -131,9 +170,20 @@ class AgtQrCode
         return sprintf(
             '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %1$d %1$d" width="%1$d" height="%1$d" '
             .'preserveAspectRatio="xMidYMid meet" shape-rendering="crispEdges" role="img" aria-label="QR de verificação AGT">'
-            .'<rect width="%1$d" height="%1$d" fill="#fff"/><path fill="#000" d="%2$s"/></svg>',
+            .'<rect width="%1$d" height="%1$d" fill="#fff"/><path fill="#000" d="%2$s"/>'
+            .'<svg x="%3$d" y="%4$d" width="%5$d" height="%6$d" viewBox="0 0 %5$d %6$d">'
+            .'<rect width="%5$d" height="%6$d" fill="#fff"/>'
+            .'<svg width="%5$d" height="%6$d" viewBox="0 %7$d 300 %8$d" preserveAspectRatio="xMidYMid meet" overflow="hidden">'
+            .'<image width="300" height="300" href="data:image/png;base64,%9$s"/></svg></svg></svg>',
             $side,
             $path,
+            $placement['x'] + self::QUIET_ZONE_MODULES,
+            $placement['y'] + self::QUIET_ZONE_MODULES,
+            $placement['width'],
+            $placement['height'],
+            self::LOGO_CROP_TOP,
+            self::LOGO_CROP_HEIGHT,
+            base64_encode($this->logo()),
         );
     }
 
@@ -142,9 +192,9 @@ class AgtQrCode
      *
      * @return list<list<bool>>
      */
-    private function modules(string $url): array
+    private function modules(QrCode $qr): array
     {
-        $matrix = $this->encode($url)->getMatrix();
+        $matrix = $qr->getMatrix();
         $rows = [];
 
         for ($y = 0; $y < $matrix->getHeight(); $y++) {
@@ -158,6 +208,42 @@ class AgtQrCode
         }
 
         return $rows;
+    }
+
+    /**
+     * The centred rectangular logo used in AGT's published example. The
+     * white backing is included in the area limit, not just the coloured ink.
+     *
+     * @return array{x: int, y: int, width: int, height: int}
+     */
+    private function logoPlacement(QrCode $qr): array
+    {
+        $count = $qr->getMatrix()->getWidth();
+        $width = min(self::LOGO_WIDTH_MODULES, $count - 18);
+        $height = (int) ceil($width * self::LOGO_CROP_HEIGHT / 300);
+        $height += $height % 2 === 0 ? 1 : 0;
+
+        return [
+            'x' => intdiv($count - $width, 2),
+            'y' => intdiv($count - $height, 2),
+            'width' => $width,
+            'height' => $height,
+        ];
+    }
+
+    /**
+     * Official artwork bundled verbatim from:
+     * https://portaldoparceiro.hml.minfin.gov.ao/doc-agt/doc-agt/2/_attachments/logo.png
+     */
+    private function logo(): string
+    {
+        $logo = file_get_contents(public_path('images/logos/agt-qr.png'));
+
+        if ($logo === false) {
+            throw new RuntimeException('The official AGT QR logo is missing.');
+        }
+
+        return $logo;
     }
 
     private function modulePixels(int $moduleCount): int

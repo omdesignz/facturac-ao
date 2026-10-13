@@ -201,8 +201,8 @@ test('the till receipt is an 80mm roll in black on white that prints itself', fu
     expect($receipt)
         ->toContain('size: 80mm auto')
         ->toContain('margin: 3mm')
-        ->toContain('document.fonts.ready')
-        ->toContain('window.print()')
+        ->toContain("import { printDocument as print } from '@/lib/print'")
+        ->toContain('await print()')
         ->toContain('v-html="document.authenticity.qr_svg"')
         ->not->toContain('AppLayout');
 });

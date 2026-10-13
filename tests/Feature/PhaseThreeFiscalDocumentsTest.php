@@ -296,3 +296,27 @@ test('stale or missing draft revisions cannot replace saved fiscal work', functi
         ->and($document->lines()->get()->toArray())->toBe($lines)
         ->and(Activity::query()->count())->toBe($activities);
 })->with(['stale' => 1, 'missing' => null]);
+
+test('the operation timestamp and place round trip independently of the issue date', function () {
+    $company = phaseThreeCompanyState();
+    $this->actingAs($company['user'])->post(route('invoices.store'), validFiscalDraft([
+        'goods_available_at' => '2026-01-02T09:45',
+        'goods_available_location' => 'Armazém do cliente, Luanda',
+    ]))->assertSessionHasNoErrors();
+    $document = FiscalDocument::query()->sole();
+    expect($document->goods_available_at->format('Y-m-d H:i'))->toBe('2026-01-02 09:45')
+        ->and($document->goods_available_location)->toBe('Armazém do cliente, Luanda');
+    $this->get(route('invoices.edit', $document))->assertInertia(fn (Assert $page) => $page
+        ->where('document.goods_available_at', '2026-01-02T09:45')
+        ->where('document.goods_available_location', 'Armazém do cliente, Luanda'));
+});
+
+test('operation details require both a valid timestamp and a place when supplied', function () {
+    $company = phaseThreeCompanyState();
+    $this->actingAs($company['user'])->post(route('invoices.store'), validFiscalDraft([
+        'goods_available_at' => '2026-01-02T09:45',
+    ]))->assertSessionHasErrors('goods_available_location');
+    $this->post(route('invoices.store'), validFiscalDraft([
+        'goods_available_at' => '2026-99-99T25:90', 'goods_available_location' => 'Luanda',
+    ]))->assertSessionHasErrors('goods_available_at');
+});

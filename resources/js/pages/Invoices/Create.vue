@@ -79,6 +79,7 @@ interface SettlementRow {
 }
 
 interface AdjustableDocument {
+    lines: { line_number: number; product_description: string }[];
     public_id: string;
     document_no: string;
     document_date: string;
@@ -139,6 +140,8 @@ interface TaxTreatment extends SelectOption {
 }
 
 interface DocumentLine {
+    reference_line_number?: string;
+    origin_transport_line_public_id?: string;
     operation_type: string;
     operation_date: string;
     product_code: string;
@@ -151,6 +154,8 @@ interface DocumentLine {
 }
 
 interface EditableLine extends DocumentLine {
+    reference_line_number: string;
+    origin_transport_line_public_id: string;
     key: string;
     catalogue_public_id: string;
 }
@@ -163,6 +168,8 @@ interface DraftDocument {
     document_type: string;
     document_date: string;
     due_date: string | null;
+    goods_available_at: string;
+    goods_available_location: string;
     currency_code: string;
     exchange_rate: string;
     withholdings: WithholdingRow[];
@@ -207,6 +214,7 @@ const props = defineProps<{
     establishments: Establishment[];
     customers: Customer[];
     catalogueItems: CatalogueItem[];
+    transportLines: { value: string; label: string; tax_id: string }[];
     documentTypes: DocumentTypeOption[];
     adjustableDocuments: AdjustableDocument[];
     paymentMethods: { value: string; label: string }[];
@@ -489,6 +497,9 @@ function editableLine(
 
     return {
         key: `line-${nextLineKey.value}`,
+        reference_line_number: line?.reference_line_number ?? '',
+        origin_transport_line_public_id:
+            line?.origin_transport_line_public_id ?? '',
         catalogue_public_id:
             props.catalogueItems.find(
                 (item) => item.code === line?.product_code,
@@ -510,6 +521,8 @@ const form = useForm({
     document_type: props.document.document_type,
     document_date: props.document.document_date,
     due_date: props.document.due_date ?? '',
+    goods_available_at: props.document.goods_available_at ?? '',
+    goods_available_location: props.document.goods_available_location ?? '',
     currency_code: props.document.currency_code,
     exchange_rate: props.document.exchange_rate,
     withholdings: props.document.withholdings.map((row) => ({ ...row })),
@@ -550,6 +563,27 @@ const compatibleSeries = computed(() => {
             series.series_year === year,
     );
 });
+const referenceLineOptions = computed<ListboxOption[]>(() =>
+    (
+        props.adjustableDocuments.find(
+            (document) =>
+                document.public_id === form.references_document_public_id,
+        )?.lines ?? []
+    ).map((line) => ({
+        value: String(line.line_number),
+        label: `${line.line_number} · ${line.product_description}`,
+    })),
+);
+
+watch(
+    () => form.references_document_public_id,
+    () => {
+        form.lines.forEach((line) => {
+            line.reference_line_number = '';
+        });
+    },
+);
+
 const seriesOptions = computed<ListboxOption[]>(() =>
     compatibleSeries.value.map((series) => ({
         value: series.public_id,
@@ -1188,6 +1222,8 @@ function submit(): void {
     form.transform((data) => ({
         ...data,
         due_date: data.due_date || null,
+        goods_available_at: data.goods_available_at || null,
+        goods_available_location: data.goods_available_location || null,
         customer_public_id: data.customer_public_id || null,
         withholdings: requiresLines.value ? data.withholdings : [],
         lines: requiresLines.value
@@ -1198,6 +1234,11 @@ function submit(): void {
                       ) ?? props.taxTreatments[0];
 
                   return {
+                      reference_line_number: isAdjustment.value
+                          ? line.reference_line_number || null
+                          : null,
+                      origin_transport_line_public_id:
+                          line.origin_transport_line_public_id || null,
                       operation_type: line.operation_type,
                       operation_date: requiresLineOperationDate.value
                           ? line.operation_date
@@ -1668,6 +1709,59 @@ function confirmIssue(): void {
                                 <FormError
                                     :id="errorId('due_date')"
                                     :message="form.errors.due_date"
+                                />
+                            </div>
+                            <div
+                                v-if="
+                                    !['RG', 'NC'].includes(form.document_type)
+                                "
+                                class="sm:col-span-3"
+                            >
+                                <label
+                                    for="goods-available-at"
+                                    class="field-label"
+                                    >Disponibilização dos bens / serviços</label
+                                >
+                                <input
+                                    id="goods-available-at"
+                                    v-model="form.goods_available_at"
+                                    type="datetime-local"
+                                    class="mt-2 block form-input"
+                                    aria-describedby="availability-help"
+                                />
+                                <p
+                                    id="availability-help"
+                                    class="mt-1 text-xs text-zinc-500"
+                                >
+                                    Data e hora da operação, em Angola. Pode
+                                    diferir da emissão.
+                                </p>
+                                <FormError
+                                    :message="form.errors.goods_available_at"
+                                />
+                            </div>
+                            <div
+                                v-if="
+                                    !['RG', 'NC'].includes(form.document_type)
+                                "
+                                class="sm:col-span-3"
+                            >
+                                <label
+                                    for="goods-available-location"
+                                    class="field-label"
+                                    >Local de disponibilização</label
+                                >
+                                <input
+                                    id="goods-available-location"
+                                    v-model="form.goods_available_location"
+                                    type="text"
+                                    maxlength="255"
+                                    class="mt-2 block form-input"
+                                />
+                                <FormError
+                                    :message="
+                                        form.errors.goods_available_location
+                                    "
                                 />
                             </div>
                         </div>
@@ -3220,6 +3314,49 @@ function confirmIssue(): void {
                     </div>
 
                     <div
+                        v-if="isAdjustment"
+                        class="space-y-4 border-t border-zinc-100 px-5 py-4 sm:px-6 dark:border-white/10"
+                    >
+                        <h3 class="text-sm font-semibold">
+                            Linhas do documento original
+                        </h3>
+                        <p class="text-sm text-zinc-500">
+                            Indique que linha do documento original está a
+                            corrigir em cada linha desta nota.
+                        </p>
+                        <div
+                            v-for="(line, index) in form.lines"
+                            :key="line.key"
+                        >
+                            <label
+                                :for="`reference-line-${line.key}`"
+                                class="text-sm font-medium"
+                                >Linha {{ index + 1 }} ·
+                                {{
+                                    line.product_description ||
+                                    'Artigo ou serviço'
+                                }}</label
+                            >
+                            <SelectInput
+                                :id="`reference-line-${line.key}`"
+                                v-model="line.reference_line_number"
+                                :options="referenceLineOptions"
+                                placeholder="Seleccione a linha original"
+                                class="mt-2"
+                                :aria-describedby="`reference-line-error-${line.key}`"
+                            />
+                            <FormError
+                                :id="`reference-line-error-${line.key}`"
+                                :message="
+                                    form.errors[
+                                        `lines.${index}.reference_line_number`
+                                    ]
+                                "
+                            />
+                        </div>
+                    </div>
+
+                    <div
                         class="border-t border-zinc-100 px-5 py-4 sm:px-6 dark:border-white/10"
                     >
                         <button
@@ -3232,6 +3369,54 @@ function confirmIssue(): void {
                             Adicionar linha
                         </button>
                     </div>
+                    <details
+                        v-if="
+                            requiresLines &&
+                            ['FT', 'FR', 'FA', 'FG', 'GF', 'TV'].includes(
+                                form.document_type,
+                            )
+                        "
+                        class="border-t border-zinc-100 px-5 py-4 sm:px-6 dark:border-white/10"
+                    >
+                        <summary class="cursor-pointer text-sm font-semibold">
+                            Guias de origem dos artigos
+                        </summary>
+                        <p class="mt-2 text-sm text-zinc-500">
+                            Associe os artigos às guias que está a facturar,
+                            mesmo que parcialmente.
+                        </p>
+                        <label
+                            v-for="(line, index) in form.lines"
+                            :key="line.key"
+                            class="mt-3 block"
+                        >
+                            <span class="mb-1 block text-sm"
+                                >{{ index + 1 }} ·
+                                {{ line.product_description || 'Artigo' }}</span
+                            >
+                            <SelectInput
+                                v-model="line.origin_transport_line_public_id"
+                                :options="[
+                                    { value: '', label: 'Sem guia de origem' },
+                                    ...transportLines.filter(
+                                        (option) =>
+                                            option.tax_id ===
+                                                form.customer
+                                                    .tax_identification_number ||
+                                            option.value ===
+                                                line.origin_transport_line_public_id,
+                                    ),
+                                ]"
+                            />
+                            <FormError
+                                :message="
+                                    errorFor(
+                                        `lines.${index}.origin_transport_line_public_id`,
+                                    )
+                                "
+                            />
+                        </label>
+                    </details>
                 </section>
 
                 <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_23rem]">

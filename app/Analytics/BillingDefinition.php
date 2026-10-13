@@ -28,7 +28,7 @@ final class BillingDefinition
         };
         $placeholders = match (count($types)) {
             1 => '?',
-            4 => '?,?,?,?',
+            5 => '?,?,?,?,?',
             default => throw new \LogicException('Unsupported billing type set.'),
         };
 

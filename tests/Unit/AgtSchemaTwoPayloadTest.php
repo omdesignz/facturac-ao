@@ -15,9 +15,10 @@ use App\Models\FiscalDocumentLineTax;
 use App\Models\LegalEntity;
 use App\PaymentMethod;
 use Carbon\CarbonImmutable;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-uses(TestCase::class);
+uses(TestCase::class, RefreshDatabase::class);
 
 function schemaTwoPayloadDocument(FiscalDocumentType $type = FiscalDocumentType::Invoice): FiscalDocument
 {
@@ -60,6 +61,18 @@ function schemaTwoPayloadDocument(FiscalDocumentType $type = FiscalDocumentType:
         'tax_type' => 'IVA', 'tax_country_region' => 'AO', 'tax_code' => 'NOR',
         'tax_rate_basis_points' => 1_400, 'tax_contribution_minor' => 1_260,
     ])]));
+    if ($type->isAdjustment()) {
+        $source = FiscalDocument::factory()->create();
+        FiscalDocumentLine::factory()->create(['fiscal_document_id' => $source->id, 'line_number' => 3]);
+        FiscalDocument::withoutEvents(fn () => $source->forceFill([
+            'status' => FiscalDocumentStatus::Issued, 'document_no' => 'FT ORIGINAL/1', 'system_entry_at' => now(),
+        ])->save());
+        $document->workspace_id = $source->workspace_id;
+        $document->legal_entity_id = $source->legal_entity_id;
+        $document->environment = $source->environment;
+        $document->references_document_id = $source->id;
+        $line->reference_line_number = 3;
+    }
     $document->setRelation('legalEntity', new LegalEntity([
         'tax_identification_number' => '5000000001', 'main_cae_code' => '62010',
     ]));

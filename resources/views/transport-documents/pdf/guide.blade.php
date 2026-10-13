@@ -73,9 +73,9 @@
 
 <table class="grid" style="margin-top: 8pt;">
     <tr>
-        <th>Data</th><td>{{ \Illuminate\Support\Carbon::parse($document['movement_date'])->format('d/m/Y') }}</td>
-        <th>Início</th><td>{{ \Illuminate\Support\Carbon::parse($document['movement_start_at'])->format('d/m/Y H:i') }}</td>
-        <th>Fim previsto</th><td>{{ $document['movement_end_at'] ? \Illuminate\Support\Carbon::parse($document['movement_end_at'])->format('d/m/Y H:i') : '—' }}</td>
+        <th>Data</th><td>{{ \Illuminate\Support\Carbon::parse($document['movement_date'])->format('Y-m-d') }}</td>
+        <th>Início</th><td>{{ \Illuminate\Support\Carbon::parse($document['movement_start_at'])->format('Y-m-d H:i') }}</td>
+        <th>Fim previsto</th><td>{{ $document['movement_end_at'] ? \Illuminate\Support\Carbon::parse($document['movement_end_at'])->format('Y-m-d H:i') : '—' }}</td>
     </tr>
     <tr>
         <th>Transportador</th><td>{{ $document['transporter']['name'] ?? '—' }}</td>
@@ -88,7 +88,7 @@
     <thead><tr><th style="width: 6%;">#</th><th style="width: 15%;">Código</th><th>Mercadoria</th><th style="width: 17%;">Quantidade</th><th style="width: 16%;">Preço unitário</th><th style="width: 16%;">Valor</th></tr></thead>
     <tbody>
         @foreach ($document['lines'] as $index => $line)
-            <tr @class(['alt' => $index % 2 === 1])><td class="center">{{ $line['line_number'] }}</td><td>{{ $line['product_code'] }}</td><td>{{ $line['product_description'] }}</td><td class="right nowrap">{{ $number($line['quantity']) }} {{ $line['unit_of_measure'] }}</td><td class="right nowrap">{{ $number($line['unit_price'], 2) }}</td><td class="right nowrap bold">{{ $money($line['net_amount_minor']) }}</td></tr>
+            <tr @class(['alt' => $index % 2 === 1])><td class="center"><a name="fiscal-row-{{ $index }}"></a>{{ $line['line_number'] }}</td><td>{{ $line['product_code'] }}</td><td>{{ $line['product_description'] }}@foreach ($line['order_references'] as $reference)<div class="muted" style="font-size: 7pt;">Origem: {{ $reference['document_no'] }} · {{ $reference['document_date'] }}</div>@endforeach</td><td class="right nowrap">{{ $number($line['quantity']) }} {{ $line['unit_of_measure'] }}</td><td class="right nowrap">{{ $number($line['unit_price'], 2) }}</td><td class="right nowrap bold">{{ $money($line['net_amount_minor']) }}</td></tr>
         @endforeach
     </tbody>
 </table>
@@ -100,13 +100,12 @@
 @endif
 
 <div style="margin-top: 15pt; border-top: 0.5pt solid #aaa; padding-top: 6pt; font-size: 7pt;" class="muted">
-    @if ($document['authenticity']['software_validation_number'])
-        <div>Processado por programa validado n.º {{ $document['authenticity']['software_validation_number'] }}</div>
+    <div>Este documento não serve de factura</div>
+    @if ($document['authenticity']['software_validation_number'] && $document['authenticity']['signature_excerpt'])
+        <div>{{ $document['authenticity']['signature_excerpt'] }}-Processado por programa validado n.º {{ $document['authenticity']['software_validation_number'] }} / facturac.ao</div>
+    @else
+        <div>{{ $document['authenticity']['signature_excerpt'] ? 'Software pendente de validação AGT' : 'Sem assinatura SAF-T validada' }} / facturac.ao</div>
     @endif
-    @if ($document['authenticity']['digest'])
-        <div>Integridade {{ $document['authenticity']['digest'] }} · {{ $document['authenticity']['hash_control'] }}</div>
-    @endif
-    <div>Documento de acompanhamento de mercadorias · SAF-T (AO) MovementOfGoods</div>
 </div>
 
 </body>

@@ -40,3 +40,5 @@ Schedule::command('notifications:scan')
     ->dailyAt('07:00')
     ->timezone('Africa/Luanda')
     ->withoutOverlapping();
+
+Schedule::command('reports:prune-exports')->hourly()->withoutOverlapping();

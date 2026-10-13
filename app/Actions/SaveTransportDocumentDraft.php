@@ -49,9 +49,9 @@ final class SaveTransportDocumentDraft
                 ? CarbonImmutable::parse((string) $profile['movement_end_at'], $establishment->timezone)
                 : null;
 
-            if ($movementStart->toDateString() !== (string) $profile['movement_date']) {
+            if ($movementStart->toDateString() < (string) $profile['movement_date']) {
                 throw BillingActionRefused::because(
-                    'A data do movimento tem de coincidir com a data de início do transporte.',
+                    'A data de emissão não pode ser posterior ao início do transporte.',
                 );
             }
 
@@ -65,6 +65,7 @@ final class SaveTransportDocumentDraft
                 'document_type' => $documentType,
                 'status' => TransportDocumentStatus::Draft,
                 'revision' => $isNew ? 1 : $document->revision + 1,
+                'movement_direction' => $profile['movement_direction'] ?? 'outgoing',
                 'movement_date' => $profile['movement_date'],
                 'movement_start_at' => $movementStart,
                 'movement_end_at' => $movementEnd,
@@ -185,6 +186,7 @@ final class SaveTransportDocumentDraft
                 'unit_of_measure' => $line['unit_of_measure'],
                 'unit_price_minor' => $line['unit_price_minor'],
                 'net_amount_minor' => $amount,
+                'order_references' => $line['order_references'] ?? [],
             ]);
 
             $total += $amount;

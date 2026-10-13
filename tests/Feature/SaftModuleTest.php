@@ -26,6 +26,7 @@ use Inertia\Testing\AssertableInertia as Assert;
  */
 function saftModuleFixture(): array
 {
+    configureTestSaftSigning();
     config()->set('agt.software.company_tax_id', '5412345678');
     config()->set('agt.software.product_name', 'facturac.ao');
     config()->set('agt.software.company_name', 'VAP SOLUÇÕES, LDA');
@@ -284,11 +285,11 @@ test('the control centre previews every billing ledger in the selected period', 
         ->assertInertia(fn (Assert $page) => $page
             ->component('Saft/Index')
             ->where('summary.counts.sales_invoices', 1)
-            ->where('summary.counts.movement_of_goods', 1)
+            ->missing('summary.counts.movement_of_goods')
             ->where('summary.counts.working_documents', 1)
             ->where('summary.counts.payments', 1)
-            ->where('summary.counts.customers', 4)
-            ->where('summary.counts.suppliers', 0)
+            ->where('summary.counts.customers', 3)
+            ->missing('summary.counts.suppliers')
             ->where('summary.counts.products', 2)
             ->where('summary.exportable', true)
             ->where('schema.version', '1.01_01')
@@ -341,19 +342,14 @@ test('a mixed billing export passes the pinned official AGT schema', function ()
     $root->registerXPathNamespace('s', (string) config('fiscal.saft.namespace'));
 
     expect($root->xpath('//s:SalesInvoices/s:Invoice'))->toHaveCount(1)
-        ->and($root->xpath('//s:MovementOfGoods/s:StockMovement'))->toHaveCount(1)
+        ->and((string) $root->xpath('//s:TaxAccountingBasis')[0])->toBe('F')
+        ->and($root->xpath('//s:MovementOfGoods'))->toHaveCount(0)
         ->and($root->xpath('//s:WorkingDocuments/s:WorkDocument'))->toHaveCount(1)
         ->and($root->xpath('//s:Payments/s:Payment'))->toHaveCount(1)
         ->and((string) $root->xpath('//s:WorkingDocuments/s:WorkDocument/s:WorkType')[0])
         ->toBe('OR')
         ->and((string) $root->xpath('//s:WorkingDocuments/s:WorkDocument/s:Line/s:SettlementAmount')[0])
         ->toBe('10.00')
-        ->and((string) $root->xpath('//s:MovementOfGoods/s:StockMovement/s:MovementType')[0])
-        ->toBe('GT')
-        ->and((string) $root->xpath('//s:MovementOfGoods/s:StockMovement/s:MovementStartTime')[0])
-        ->toBe('2026-06-11T08:00:00')
-        ->and((string) $root->xpath('//s:MovementOfGoods/s:StockMovement/s:MovementEndTime')[0])
-        ->toBe('2026-06-11T10:00:00')
         ->and((string) $root->xpath('//s:Payments/s:Payment/s:PaymentType')[0])
         ->toBe('RC');
 });
@@ -381,10 +377,10 @@ test('a GF document carries its operation date into a schema-valid SAF-T invoice
         ->toBe('2026-06-09');
 });
 
-test('every supported transport document type passes the SAF-T movement schema', function () {
+test('billing exports exclude all supported transport types and their standalone master records', function () {
     $fixture = saftModuleFixture();
 
-    foreach (TransportDocumentType::cases() as $documentType) {
+    foreach (array_filter(TransportDocumentType::cases(), fn ($type) => $type !== TransportDocumentType::Consignment) as $documentType) {
         saftModuleTransport($fixture, $documentType);
     }
 
@@ -398,15 +394,12 @@ test('every supported transport document type passes the SAF-T movement schema',
     $root = new SimpleXMLElement($xml);
     $root->registerXPathNamespace('s', (string) config('fiscal.saft.namespace'));
 
-    expect(array_map(
-        static fn (SimpleXMLElement $type): string => (string) $type,
-        $root->xpath('//s:MovementOfGoods/s:StockMovement/s:MovementType'),
-    ))->toBe(array_column(TransportDocumentType::cases(), 'value'))
-        ->and($root->xpath('//s:MovementOfGoods/s:StockMovement/s:CustomerID'))->toHaveCount(3)
-        ->and($root->xpath('//s:MovementOfGoods/s:StockMovement/s:SupplierID'))->toHaveCount(1)
-        ->and($root->xpath('//s:MasterFiles/s:Supplier'))->toHaveCount(1)
-        ->and((string) $root->xpath('//s:MovementOfGoods/s:StockMovement/s:SupplierID')[0])
-        ->toBe((string) $root->xpath('//s:MasterFiles/s:Supplier/s:SupplierID')[0]);
+    expect((string) $root->xpath('//s:TaxAccountingBasis')[0])->toBe('F')
+        ->and($root->xpath('//s:MovementOfGoods'))->toHaveCount(0)
+        ->and($root->xpath('//s:MasterFiles/s:Supplier'))->toHaveCount(0)
+        ->and($root->xpath('//s:MasterFiles/s:Customer'))->toHaveCount(0)
+        ->and($root->xpath('//s:MasterFiles/s:Product'))->toHaveCount(0)
+        ->and(TransportDocument::query()->whereNotNull('document_no')->count())->toBe(4);
 });
 
 test('an empty billing period still produces a schema-valid SAF-T file', function () {
@@ -423,7 +416,7 @@ test('an empty billing period still produces a schema-valid SAF-T file', functio
     $root->registerXPathNamespace('s', (string) config('fiscal.saft.namespace'));
 
     expect((string) $root->xpath('//s:SalesInvoices/s:NumberOfEntries')[0])->toBe('0')
-        ->and((string) $root->xpath('//s:MovementOfGoods/s:NumberOfMovementLines')[0])->toBe('0')
+        ->and($root->xpath('//s:MovementOfGoods'))->toHaveCount(0)
         ->and((string) $root->xpath('//s:WorkingDocuments/s:NumberOfEntries')[0])->toBe('0')
         ->and((string) $root->xpath('//s:Payments/s:NumberOfEntries')[0])->toBe('0');
 });
@@ -499,4 +492,44 @@ test('a quote freezes when sent because it is now a SAF-T working document', fun
         [],
         $quote,
     ))->toThrow(BillingActionRefused::class, 'já foi enviado');
+});
+
+test('incomplete legacy guides do not block billing previews or downloads without a transport key', function () {
+    $fixture = saftModuleFixture();
+    $invoice = saftModuleInvoice($fixture);
+    $guide = TransportDocument::factory()->issued()->create([
+        'workspace_id' => $fixture['legalEntity']->workspace_id,
+        'legal_entity_id' => $fixture['legalEntity']->id,
+        'establishment_id' => $fixture['establishment']->id,
+        'movement_date' => '2026-06-11',
+        'movement_direction' => null,
+        'software_validation_number' => '987/AGT/2020',
+    ]);
+    $original = $guide->fresh()->getAttributes();
+    config()->set('agt.saft_signing.key_path', null);
+    config()->set('agt.saft_signing.key_version', null);
+
+    $this->actingAs($fixture['owner'])
+        ->get(route('saft.index', ['from' => '2026-01-01', 'to' => '2026-12-31']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('summary.exportable', true)
+            ->where('summary.readiness.0.ready', true)
+            ->where('summary.readiness', fn ($checks) => ! collect($checks)->contains('key', 'transport-signatures'))
+            ->where('summary.counts.sales_invoices', 1)
+            ->where('summary.counts.customers', 1)
+            ->where('summary.counts.products', 1)
+        );
+
+    $response = $this->get(route('saft.export', ['from' => '2026-01-01', 'to' => '2026-12-31']))
+        ->assertOk()
+        ->assertDownload();
+    $xml = $response->getContent();
+    app(SaftValidator::class)->assertValid($xml);
+    $root = new SimpleXMLElement($xml);
+    $root->registerXPathNamespace('s', (string) config('fiscal.saft.namespace'));
+    expect($root->xpath('//s:MovementOfGoods'))->toHaveCount(0)
+        ->and((string) $root->xpath('//s:Invoice/s:InvoiceNo')[0])->toBe($invoice->document_no)
+        ->and((string) $root->xpath('//s:SoftwareValidationNumber')[0])->not->toBe('987/AGT/2020')
+        ->and($guide->fresh()->getAttributes())->toBe($original);
 });

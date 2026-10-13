@@ -1,6 +1,7 @@
 import { usePage } from '@inertiajs/vue3';
 import {
     Boxes,
+    BookOpen,
     Building2,
     CalendarSync,
     ChartLine,
@@ -11,6 +12,7 @@ import {
     FileSignature,
     Files,
     FileUp,
+    FileSpreadsheet,
     HandCoins,
     Landmark,
     Layers,
@@ -41,6 +43,7 @@ import { index as debtsIndex } from '@/routes/debts';
 import { index as documentsIndex } from '@/routes/documents';
 import { index as establishmentsIndex } from '@/routes/establishments';
 import { index as helpIndex } from '@/routes/help';
+import { index as userGuideIndex } from '@/routes/help/guide';
 import { index as importIndex } from '@/routes/imports';
 import { show as posShow } from '@/routes/pos';
 import { index as priceListsIndex } from '@/routes/price-lists';
@@ -53,6 +56,7 @@ import { index as supportIndex } from '@/routes/support';
 import { index as supportComplaints } from '@/routes/support/complaints';
 import { index as supportPackages } from '@/routes/support/packages';
 import { edit as supportSettings } from '@/routes/support/settings';
+import { index as transactionReports } from '@/routes/transaction-reports';
 import { index as transportDocumentsIndex } from '@/routes/transport-documents';
 
 export interface NavigationItem {
@@ -221,6 +225,13 @@ const baseGroups: NavigationGroup[] = [
                 match: '/analises',
                 icon: ChartLine,
             },
+            {
+                name: 'Exportar transacções',
+                href: transactionReports.url(),
+                match: '/relatorios/exportar',
+                icon: FileSpreadsheet,
+                prefetch: false,
+            },
         ],
     },
     {
@@ -264,6 +275,12 @@ const baseGroups: NavigationGroup[] = [
                 href: billingShow.url(),
                 match: '/settings/billing',
                 icon: CreditCard,
+            },
+            {
+                name: 'Guia de utilização',
+                href: userGuideIndex.url(),
+                match: '/ajuda/guia',
+                icon: BookOpen,
             },
             {
                 name: 'Ajuda e reclamações',
