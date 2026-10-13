@@ -23,6 +23,12 @@ declare module '@inertiajs/core' {
             name: string;
             auth: Auth;
             currentWorkspace: CurrentWorkspace | null;
+            subscriptionAccess: {
+                status: 'active' | 'trial' | 'expired';
+                plan_name: string | null;
+                trial_ends_at: string | null;
+                features: Record<string, boolean>;
+            } | null;
             assistant: { url: string } | null;
             flash: FlashMessages;
             workSession: WorkSessionSettings | null;

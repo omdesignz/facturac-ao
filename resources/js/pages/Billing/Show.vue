@@ -258,7 +258,14 @@ function chooseCardPlan(card: PackageCard): void {
 
 const { start: startPaymentPolling, stop: stopPaymentPolling } = usePoll(
     5000,
-    { only: ['activePayment', 'subscription', 'charges'] },
+    {
+        only: [
+            'activePayment',
+            'subscription',
+            'subscriptionAccess',
+            'charges',
+        ],
+    },
     { autoStart: false },
 );
 watch(
@@ -1132,7 +1139,7 @@ function copyPaymentInstruction(): void {
                                         'absolute start-7 -top-3 rounded-full px-2.5 py-0.5 text-xs font-semibold ring-[1.5px] ring-accent-400 sm:start-8',
                                     ]"
                                 >
-                                    Mais escolhido
+                                    Recomendado
                                 </p>
                                 <div class="flex w-full min-w-0 flex-col">
                                     <div
@@ -1319,7 +1326,7 @@ function copyPaymentInstruction(): void {
                                         {{
                                             card.offer.trial_days === 1
                                                 ? '1 dia de experiência'
-                                                : `${card.offer.trial_days} dias de experiência`
+                                                : `${card.offer.trial_days} dias de experiência desde a criação do espaço`
                                         }}
                                     </p>
                                     <button

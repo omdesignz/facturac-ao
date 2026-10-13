@@ -2,6 +2,7 @@
 
 namespace App\Actions;
 
+use App\Billing\SubscriptionAccess;
 use App\Exceptions\BillingActionRefused;
 use App\Fiscal\Agt\Support\CanonicalNumber;
 use App\Fiscal\Calculation\FiscalCalculator;
@@ -11,6 +12,7 @@ use App\Models\LegalEntity;
 use App\Models\Quote;
 use App\Models\User;
 use App\QuoteStatus;
+use App\SubscriptionFeature;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -53,6 +55,8 @@ class SaveQuote
         array $profile,
         ?Quote $quote = null,
     ): Quote {
+        app(SubscriptionAccess::class)->require($legalEntity->workspace_id, SubscriptionFeature::Invoicing);
+
         if ($quote instanceof Quote && ! $quote->status->isEditable()) {
             throw BillingActionRefused::because(
                 'Este orçamento já foi enviado e não pode ser alterado.',

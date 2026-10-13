@@ -3,6 +3,7 @@
 namespace App\Actions;
 
 use App\AgtConnectionStatus;
+use App\Billing\SubscriptionAccess;
 use App\Exceptions\BillingActionRefused;
 use App\Fiscal\Documents\TransportDocumentNumber;
 use App\Fiscal\Saft\TransportDocumentSigner;
@@ -10,6 +11,7 @@ use App\Models\AgtConnection;
 use App\Models\TransportDocument;
 use App\Models\TransportDocumentSequence;
 use App\Models\User;
+use App\SubscriptionFeature;
 use App\TransportDocumentStatus;
 use App\TransportDocumentType;
 use Illuminate\Support\Facades\DB;
@@ -27,6 +29,8 @@ final readonly class IssueTransportDocument
         User $issuer,
         int $expectedRevision,
     ): TransportDocument {
+        app(SubscriptionAccess::class)->require($draft->workspace_id, SubscriptionFeature::Transport);
+
         return DB::transaction(function () use ($draft, $issuer, $expectedRevision): TransportDocument {
             $document = TransportDocument::query()
                 ->with(['lines', 'establishment', 'legalEntity'])

@@ -8,9 +8,12 @@ use App\Models\FiscalDocument;
 use App\Models\Integration;
 use App\Models\IntegrationCredential;
 use App\Models\LegalEntity;
+use App\Models\SubscriptionPlan;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMembership;
+use App\Models\WorkspaceSubscription;
+use Database\Seeders\SubscriptionCatalogueSeeder;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Support\Facades\Context;
@@ -293,4 +296,18 @@ test('TLS and rate-limit network identity honor only explicitly trusted proxies'
     } finally {
         TrustProxies::flushState();
     }
+});
+
+test('external credentials cannot bypass subscription entitlements or expiration', function () {
+    $fixture = externalFixture();
+    $this->seed(SubscriptionCatalogueSeeder::class);
+    $subscription = WorkspaceSubscription::factory()->create([
+        'workspace_id' => $fixture['integration']->workspace_id,
+        'subscription_plan_id' => SubscriptionPlan::where('code', 'essencial-monthly')->firstOrFail()->id,
+    ]);
+    $this->withHeader('Authorization', 'Bearer '.$fixture['secret'])->getJson($fixture['url'])->assertForbidden()->assertJsonPath('error.code', 'FORBIDDEN');
+    $subscription->update(['subscription_plan_id' => SubscriptionPlan::where('code', 'avancado-monthly')->firstOrFail()->id]);
+    $this->getJson($fixture['url'])->assertOk();
+    $subscription->update(['current_period_ends_at' => now()]);
+    $this->getJson($fixture['url'])->assertForbidden();
 });

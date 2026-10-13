@@ -2,12 +2,14 @@
 
 namespace App\Actions;
 
+use App\Billing\SubscriptionAccess;
 use App\Exceptions\BillingActionRefused;
 use App\Models\PosRegister;
 use App\Models\PosSession;
 use App\Models\User;
 use App\Models\WorkspaceMembership;
 use App\PosSessionStatus;
+use App\SubscriptionFeature;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 
@@ -26,6 +28,8 @@ final readonly class OpenPosSession
 
     public function execute(PosRegister $register, User $user, int $openingFloatMinor): PosSession
     {
+        app(SubscriptionAccess::class)->require($register->workspace_id, SubscriptionFeature::Pos);
+
         if ($openingFloatMinor < 0) {
             throw BillingActionRefused::because('O fundo de caixa não pode ser negativo.');
         }

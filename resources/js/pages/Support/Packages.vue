@@ -66,6 +66,7 @@ interface PackageRow {
     name: string;
     summary: string | null;
     features: string[];
+    entitlements: string[];
     trial_days: number;
     currency_code: string;
     is_active: boolean;
@@ -102,6 +103,8 @@ const props = defineProps<{
     packages: PackageRow[];
     intervals: IntervalOption[];
     currencies: string[];
+    featureOptions: { value: string; label: string }[];
+    trialDays: number;
 }>();
 
 const dialogOpen = ref(false);
@@ -131,7 +134,8 @@ const form = useForm({
     name: '',
     summary: '',
     features: [] as string[],
-    trial_days: '0',
+    entitlements: ['invoicing'] as string[],
+    trial_days: String(props.trialDays),
     currency_code: 'AOA',
     sort_order: '0',
     is_active: true,
@@ -225,6 +229,7 @@ interface DraftFields {
     name: string;
     summary: string;
     features: string[];
+    entitlements: string[];
     trial_days: string;
     currency_code: string;
     sort_order: string;
@@ -258,6 +263,7 @@ function storeDraft(): void {
             name: form.name,
             summary: form.summary,
             features: [...form.features],
+            entitlements: [...form.entitlements],
             trial_days: form.trial_days,
             currency_code: form.currency_code,
             sort_order: form.sort_order,
@@ -362,6 +368,15 @@ function readDraft(): StoredDraft | null {
                 name: fields.name,
                 summary: fields.summary,
                 features: fields.features as string[],
+                entitlements: Array.isArray(fields.entitlements)
+                    ? fields.entitlements.filter(
+                          (value): value is string =>
+                              typeof value === 'string' &&
+                              props.featureOptions.some(
+                                  (option) => option.value === value,
+                              ),
+                      )
+                    : ['invoicing'],
                 trial_days: fields.trial_days,
                 currency_code: fields.currency_code,
                 sort_order: fields.sort_order,
@@ -405,7 +420,8 @@ function restoreDraft(): void {
     form.code = fields.code;
     form.name = fields.name;
     form.summary = fields.summary;
-    form.trial_days = fields.trial_days;
+    form.trial_days = String(props.trialDays);
+    form.entitlements = [...new Set(['invoicing', ...fields.entitlements])];
     form.sort_order = fields.sort_order;
     form.is_active = fields.is_active;
     form.is_featured = fields.is_featured;
@@ -492,7 +508,8 @@ function openCreate(): void {
         name: '',
         summary: '',
         features: [],
-        trial_days: '0',
+        entitlements: ['invoicing'],
+        trial_days: String(props.trialDays),
         currency_code: props.currencies[0] ?? 'AOA',
         sort_order: String(
             props.packages.reduce(
@@ -520,7 +537,8 @@ function openEdit(row: PackageRow): void {
         name: row.name,
         summary: row.summary ?? '',
         features: [...row.features],
-        trial_days: String(row.trial_days),
+        entitlements: [...row.entitlements],
+        trial_days: String(props.trialDays),
         currency_code: row.currency_code,
         sort_order: String(row.sort_order),
         is_active: row.is_active,
@@ -972,6 +990,7 @@ function submit(): void {
         name: data.name.trim(),
         summary: data.summary.trim() === '' ? null : data.summary.trim(),
         features: data.features,
+        entitlements: data.entitlements,
         trial_days: Number(data.trial_days),
         currency_code: data.currency_code,
         sort_order: Number(data.sort_order),
@@ -1579,6 +1598,32 @@ const iconButton =
                     </p>
                 </fieldset>
 
+                <fieldset class="flex flex-col gap-3">
+                    <legend class="field-label">
+                        Acesso às funcionalidades
+                    </legend>
+                    <p class="field-hint">
+                        Estas opções controlam o acesso real. A lista descritiva
+                        acima não concede permissões. Alterações aplicam-se às
+                        assinaturas deste pacote.
+                    </p>
+                    <label
+                        v-for="feature in featureOptions"
+                        :key="feature.value"
+                        class="flex min-h-11 items-center gap-3"
+                    >
+                        <input
+                            v-model="form.entitlements"
+                            type="checkbox"
+                            :value="feature.value"
+                            :disabled="feature.value === 'invoicing'"
+                            class="form-checkbox"
+                        />
+                        <span>{{ feature.label }}</span>
+                    </label>
+                    <FormError :message="errorFor('entitlements')" />
+                </fieldset>
+
                 <!-- Experiência, moeda, ordem -->
                 <div class="grid gap-5 sm:grid-cols-2">
                     <div>
@@ -1588,6 +1633,7 @@ const iconButton =
                         <input
                             id="package-trial"
                             v-model="form.trial_days"
+                            readonly
                             type="text"
                             inputmode="numeric"
                             maxlength="2"
@@ -1605,7 +1651,9 @@ const iconButton =
                             "
                         />
                         <p id="package-trial-hint" class="field-hint">
-                            De 0 a 90. Use 0 para não oferecer experiência.
+                            {{ trialDays }} dias desde a criação do espaço de
+                            trabalho. Uma mudança de plano não reinicia a
+                            experiência.
                         </p>
                         <FormError
                             id="package-trial-error"

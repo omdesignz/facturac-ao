@@ -11,6 +11,7 @@ use App\Models\SubscriptionPackage;
 use App\Models\SubscriptionPlan;
 use App\Models\User;
 use App\Models\WorkspaceSubscription;
+use App\SubscriptionFeature;
 use App\SubscriptionInterval;
 use App\WorkspaceSubscriptionStatus;
 use Illuminate\Http\RedirectResponse;
@@ -60,6 +61,8 @@ class SubscriptionPackageController extends Controller
                 'months' => $interval->months(),
                 'period_label' => $interval->periodLabel(),
             ], SubscriptionInterval::ordered()),
+            'featureOptions' => array_map(fn (SubscriptionFeature $feature): array => ['value' => $feature->value, 'label' => $feature->label()], SubscriptionFeature::cases()),
+            'trialDays' => (int) config('subscriptions.trial_days', 14),
             'currencies' => array_values((array) config('fiscal.currencies', ['AOA'])),
         ]);
     }
@@ -124,6 +127,7 @@ class SubscriptionPackageController extends Controller
             'name' => $package->name,
             'summary' => $package->summary,
             'features' => $package->featureList(),
+            'entitlements' => array_values(array_map(fn (SubscriptionFeature $feature): string => $feature->value, array_filter(SubscriptionFeature::cases(), fn (SubscriptionFeature $feature): bool => ! isset($package->limits['entitlement_version']) || ($package->limits[$feature->key()] ?? false) === true))),
             'trial_days' => $package->trial_days,
             'currency_code' => $package->currency_code,
             'is_active' => $package->is_active,

@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\AgtConnectionStatus;
 use App\AgtSubmissionOperation;
 use App\AgtSubmissionStatus;
+use App\Billing\SubscriptionAccess;
 use App\Exceptions\FiscalFinalizationBlocked;
 use App\Exceptions\ReceiptEvidenceUnavailable;
 use App\Fiscal\Agt\Contracts\JwsSigner;
@@ -36,6 +37,7 @@ use App\Models\FiscalDocumentLine;
 use App\Models\FiscalDocumentLineTax;
 use App\Models\FiscalSeries;
 use App\Models\User;
+use App\SubscriptionFeature;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\DB;
@@ -65,6 +67,11 @@ final readonly class IssueFiscalDocument
         string $seriesPublicId,
         int $expectedRevision,
     ): AgtSubmission {
+        app(SubscriptionAccess::class)->require($draft->workspace_id, SubscriptionFeature::Invoicing);
+        if ($draft->document_type === FiscalDocumentType::SalesTicket) {
+            app(SubscriptionAccess::class)->require($draft->workspace_id, SubscriptionFeature::Pos);
+        }
+
         try {
             return $this->issue($draft, $issuer, $seriesPublicId, $expectedRevision);
         } catch (ReceiptEvidenceUnavailable $exception) {

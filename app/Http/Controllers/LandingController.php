@@ -30,6 +30,7 @@ class LandingController extends Controller
         return Inertia::render('Landing', [
             'plans' => $this->plans(),
             'packages' => $this->packages(),
+            'trialDays' => (int) config('subscriptions.trial_days', 14),
             // Counted rather than written down, so the page cannot go stale the
             // next time the map changes.
             'provinceCount' => count(array_filter(

@@ -2,6 +2,7 @@
 
 namespace App\Actions;
 
+use App\Billing\SubscriptionAccess;
 use App\Fiscal\Agt\Support\CanonicalJson;
 use App\Fiscal\Calculation\CalculatedFiscalLine;
 use App\Fiscal\Calculation\FiscalCalculator;
@@ -18,6 +19,7 @@ use App\Models\FiscalDocumentSettlement;
 use App\Models\FiscalDocumentWithholding;
 use App\Models\LegalEntity;
 use App\Models\User;
+use App\SubscriptionFeature;
 use App\WithholdingType;
 use DomainException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -79,6 +81,8 @@ final readonly class SaveFiscalDocumentDraft
         ?FiscalDocument $draft = null,
         ?int $expectedRevision = null,
     ): FiscalDocument {
+        app(SubscriptionAccess::class)->require($legalEntity->workspace_id, SubscriptionFeature::Invoicing);
+
         return DB::transaction(function () use ($legalEntity, $user, $profile, $draft, $expectedRevision): FiscalDocument {
             $document = $this->lockedDraft($legalEntity, $draft);
             if ($document !== null && $expectedRevision !== $document->revision) {

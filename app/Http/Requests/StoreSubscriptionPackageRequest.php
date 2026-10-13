@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\SubscriptionPackage;
+use App\SubscriptionFeature;
 use App\SubscriptionInterval;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
@@ -28,6 +29,8 @@ class StoreSubscriptionPackageRequest extends FormRequest
         $rules = [
             'name' => ['required', 'string', 'min:2', 'max:80'],
             'summary' => ['nullable', 'string', 'max:500'],
+            'entitlements' => ['sometimes', 'array', 'min:1', Rule::contains([SubscriptionFeature::Invoicing->value])],
+            'entitlements.*' => ['required', Rule::enum(SubscriptionFeature::class), 'distinct'],
             'features' => ['nullable', 'array', 'max:20'],
             'features.*' => ['required', 'string', 'min:2', 'max:160', 'distinct:ignore_case'],
             'trial_days' => ['required', 'integer', 'min:0', 'max:90'],
@@ -142,6 +145,7 @@ class StoreSubscriptionPackageRequest extends FormRequest
      *
      * @return array{
      *     code?: string,
+     *     entitlements?: list<string>,
      *     name: string,
      *     summary: string|null,
      *     features: list<string>,
@@ -176,6 +180,10 @@ class StoreSubscriptionPackageRequest extends FormRequest
                 (array) $validated['periods'],
             )),
         ];
+
+        if (isset($validated['entitlements'])) {
+            $data['entitlements'] = array_values(array_map('strval', $validated['entitlements']));
+        }
 
         if (isset($validated['code'])) {
             $data['code'] = (string) $validated['code'];

@@ -14,6 +14,7 @@ use App\Models\WorkspaceSubscription;
 use App\Pay4AllEnvironment;
 use App\PaymentEnvironment;
 use App\PaymentStatus;
+use App\WorkspaceSubscriptionStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -62,6 +63,9 @@ class BillingController extends Controller
                 $query->orWhere(fn ($settled) => $settled->whereIn('status', [PaymentStatus::Paid, PaymentStatus::Rejected])->whereNull('fulfilled_at'));
             })->latest('id')->first();
 
+        $periodExpired = $subscription?->status === WorkspaceSubscriptionStatus::Active
+            && ($subscription->current_period_ends_at === null || ! $subscription->current_period_ends_at->isFuture());
+
         return Inertia::render('Billing/Show', [
             'plans' => SubscriptionPlan::query()
                 ->where('is_active', true)
@@ -75,8 +79,8 @@ class BillingController extends Controller
                 ->all(),
             'subscription' => $subscription === null ? null : [
                 'public_id' => $subscription->public_id,
-                'status' => $subscription->status->value,
-                'status_label' => $subscription->status->label(),
+                'status' => $periodExpired ? 'expired' : $subscription->status->value,
+                'status_label' => $periodExpired ? 'Período expirado' : $subscription->status->label(),
                 'period_started_at' => $subscription->current_period_started_at?->toIso8601String(),
                 'period_ends_at' => $subscription->current_period_ends_at?->toIso8601String(),
                 'cancel_at_period_end' => $subscription->cancel_at_period_end,

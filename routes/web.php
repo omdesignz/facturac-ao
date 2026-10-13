@@ -170,7 +170,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->middleware('throttle:5,1')
         ->name('help.complaints.store');
 
-    Route::middleware('workspace')->group(function (): void {
+    Route::middleware(['workspace', 'subscription'])->group(function (): void {
         Route::post('/session/renew', RenewWorkSessionController::class)
             ->name('session.renew');
         Route::put('/settings/work-session', WorkSessionPreferenceController::class)

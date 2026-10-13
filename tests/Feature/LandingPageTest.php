@@ -271,7 +271,7 @@ test('the pricing section shows packages with the shared period switch and keeps
         ->toContain('v-else-if="plans.length > 0"')
         // The fallback that states what is true when no price is published is untouched.
         ->toContain('v-for="assurance in openingAnAccount"')
-        ->toContain('Mais escolhido')
+        ->toContain('Recomendado')
         // Prices come formatted by the server; the page never works one out.
         ->toContain('card.price.amount')
         ->toContain('card.price.monthly_equivalent')

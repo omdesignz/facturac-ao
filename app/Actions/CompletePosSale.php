@@ -2,6 +2,7 @@
 
 namespace App\Actions;
 
+use App\Billing\SubscriptionAccess;
 use App\CatalogueItemType;
 use App\Exceptions\BillingActionRefused;
 use App\Exceptions\FiscalFinalizationBlocked;
@@ -17,6 +18,7 @@ use App\Models\PosSession;
 use App\Models\User;
 use App\PaymentMethod;
 use App\PosSalesTicketBasis;
+use App\SubscriptionFeature;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
@@ -67,6 +69,8 @@ final readonly class CompletePosSale
      */
     public function execute(PosSession $session, User $user, array $sale): PosSale
     {
+        app(SubscriptionAccess::class)->require($session->workspace_id, SubscriptionFeature::Pos);
+
         try {
             return DB::transaction(fn (): PosSale => $this->complete($session, $user, $sale));
         } catch (UniqueConstraintViolationException $exception) {

@@ -19,6 +19,7 @@ import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import CookieConsent from '@/components/CookieConsent.vue';
 import ImpersonationBanner from '@/components/ImpersonationBanner.vue';
 import SidebarNavigation from '@/components/SidebarNavigation.vue';
+import SubscriptionNotice from '@/components/SubscriptionNotice.vue';
 import TermsReacceptanceNotice from '@/components/TermsReacceptanceNotice.vue';
 
 const sidebarOpen = ref(false);
@@ -158,6 +159,7 @@ onBeforeUnmount(() => stopListening?.());
             <AppHeader @open-navigation="sidebarOpen = true" />
 
             <TermsReacceptanceNotice />
+            <SubscriptionNotice />
 
             <main
                 id="conteudo"

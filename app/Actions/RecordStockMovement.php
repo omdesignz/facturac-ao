@@ -2,6 +2,7 @@
 
 namespace App\Actions;
 
+use App\Billing\SubscriptionAccess;
 use App\Exceptions\BillingActionRefused;
 use App\Models\CatalogueItem;
 use App\Models\Establishment;
@@ -11,6 +12,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Notifications\StockRanLow;
 use App\StockMovementType;
+use App\SubscriptionFeature;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -38,6 +40,10 @@ class RecordStockMovement
         ?string $reference = null,
         ?string $note = null,
     ): StockMovement {
+        if ($fiscalDocumentId === null) {
+            app(SubscriptionAccess::class)->require($item->workspace_id, SubscriptionFeature::Inventory);
+        }
+
         if ($quantityUnits <= 0) {
             throw new InvalidArgumentException('A quantidade tem de ser maior que zero.');
         }

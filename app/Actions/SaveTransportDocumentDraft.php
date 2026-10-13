@@ -2,6 +2,7 @@
 
 namespace App\Actions;
 
+use App\Billing\SubscriptionAccess;
 use App\Exceptions\BillingActionRefused;
 use App\Models\CatalogueItem;
 use App\Models\Customer;
@@ -9,6 +10,7 @@ use App\Models\Establishment;
 use App\Models\LegalEntity;
 use App\Models\TransportDocument;
 use App\Models\User;
+use App\SubscriptionFeature;
 use App\TransportDocumentStatus;
 use App\TransportDocumentType;
 use Carbon\CarbonImmutable;
@@ -26,6 +28,8 @@ final class SaveTransportDocumentDraft
         array $profile,
         ?TransportDocument $draft = null,
     ): TransportDocument {
+        app(SubscriptionAccess::class)->require($legalEntity->workspace_id, SubscriptionFeature::Transport);
+
         return DB::transaction(function () use ($legalEntity, $user, $profile, $draft): TransportDocument {
             $document = $draft instanceof TransportDocument
                 ? $this->lockedDraft($draft, $legalEntity)

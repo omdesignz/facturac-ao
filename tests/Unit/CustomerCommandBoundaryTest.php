@@ -11,8 +11,11 @@ use App\Fiscal\IntegrationLogRedactor;
 use App\Models\Customer;
 use App\Models\LegalEntity;
 use App\Models\PriceList;
+use App\Models\SubscriptionPlan;
 use App\Models\User;
 use App\Models\WorkspaceMembership;
+use App\Models\WorkspaceSubscription;
+use Database\Seeders\SubscriptionCatalogueSeeder;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -435,3 +438,17 @@ test('one and 128 byte keys and the exact body size limit accept then replay', f
     $second = $this->call('POST', $f['url'], [], [], [], $headers, $body)->assertCreated()->assertHeader('Idempotency-Replayed', 'true');
     expect($first->getContent())->toBe($second->getContent())->and(Customer::count())->toBe(1);
 })->with(['a', str_repeat('a', 128)]);
+
+test('external customer commands require the integration entitlement before creating records', function () {
+    $fixture = commandFixture();
+    $this->seed(SubscriptionCatalogueSeeder::class);
+    $subscription = WorkspaceSubscription::factory()->create([
+        'workspace_id' => $fixture['entity']->workspace_id,
+        'subscription_plan_id' => SubscriptionPlan::where('code', 'essencial-monthly')->firstOrFail()->id,
+    ]);
+    $this->postJson($fixture['url'], commandBody(), commandHeaders($fixture))->assertForbidden();
+    expect(Customer::count())->toBe(0);
+    $subscription->update(['subscription_plan_id' => SubscriptionPlan::where('code', 'avancado-monthly')->firstOrFail()->id]);
+    $this->postJson($fixture['url'], commandBody(), commandHeaders($fixture))->assertCreated();
+    expect(Customer::count())->toBe(1);
+});

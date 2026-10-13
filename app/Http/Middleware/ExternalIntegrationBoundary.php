@@ -2,10 +2,12 @@
 
 namespace App\Http\Middleware;
 
+use App\Billing\SubscriptionAccess;
 use App\Fiscal\IntegrationRateLimiter;
 use App\Fiscal\IntegrationReadContext;
 use App\Fiscal\ReadOperationAudit;
 use App\Fiscal\RequiredAudit;
+use App\SubscriptionFeature;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Context;
@@ -37,6 +39,7 @@ class ExternalIntegrationBoundary
             abort_unless(count($authorization) === 1 && strlen($authorization[0]) <= 256 && preg_match('/\ABearer ([^\s,]+)\z/i', $authorization[0], $parts) === 1, 401);
             $clientId = $request->header('X-Client-Request-ID');
             $context = IntegrationReadContext::authenticate($parts[1], $requestId);
+            app(SubscriptionAccess::class)->require($context->workspaceId(), SubscriptionFeature::Integrations);
             $this->limiter->consume(['integration:'.$context->integrationId => 60, 'workspace:'.$context->workspaceId() => 300]);
             $context = $context->withClientRequestId($clientId);
             $request->attributes->set('integration_context', $context);

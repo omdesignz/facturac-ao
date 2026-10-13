@@ -2,12 +2,14 @@
 
 namespace App\Http\Middleware;
 
+use App\Billing\SubscriptionAccess;
 use App\Fiscal\CommandAudit;
 use App\Fiscal\CommandCapability;
 use App\Fiscal\CustomerCreateInput;
 use App\Fiscal\IntegrationCommandContext;
 use App\Fiscal\IntegrationRateLimiter;
 use App\Fiscal\ServiceCreateInput;
+use App\SubscriptionFeature;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Context;
@@ -57,6 +59,7 @@ final class ExternalCommandBoundary
             $authorization = $request->headers->all('authorization');
             abort_unless(count($authorization) === 1 && preg_match('/\ABearer ([^\s,]+)\z/i', $authorization[0], $parts) === 1, 401);
             $context = IntegrationCommandContext::authenticate($parts[1], $requestId);
+            app(SubscriptionAccess::class)->require($context->workspaceId, SubscriptionFeature::Integrations);
             $this->limiter->consume(['command-integration:'.$context->integrationId => 10, 'command-workspace:'.$context->workspaceId => 30]);
             $context->authorize(capability: $capability);
             foreach (['X-Impersonate-User', 'X-On-Behalf-Of', 'X-Agent-ID', 'X-Act-As', 'X-Delegation-ID'] as $header) {

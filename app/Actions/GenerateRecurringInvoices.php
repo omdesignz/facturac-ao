@@ -2,6 +2,7 @@
 
 namespace App\Actions;
 
+use App\Billing\SubscriptionAccess;
 use App\FiscalDocumentStatus;
 use App\Models\FiscalDocument;
 use App\Models\LegalEntity;
@@ -10,6 +11,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMembership;
 use App\Notifications\RecurringInvoiceGenerated;
+use App\SubscriptionFeature;
 use App\WorkspaceRole;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -76,6 +78,9 @@ class GenerateRecurringInvoices
             ->with(['customer', 'establishment', 'legalEntity'])
             ->chunkById(50, function ($due) use ($today, &$generated, &$profiles, &$failed): void {
                 foreach ($due as $profile) {
+                    if (! app(SubscriptionAccess::class)->allows($profile->workspace_id, SubscriptionFeature::Recurring)) {
+                        continue;
+                    }
                     $profiles++;
 
                     try {

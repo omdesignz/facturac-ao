@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Billing\SubscriptionAccess;
 use App\LegalDocumentType;
 use App\Models\ImpersonationSession;
 use App\Models\LegalAcceptance;
@@ -53,6 +54,7 @@ class HandleInertiaRequests extends Middleware
             'workSession' => fn (): ?array => $this->workSessionProps($request),
             'impersonation' => fn (): ?array => $this->impersonationProps($request),
             'legal' => fn (): array => $this->legalProps($request),
+            'subscriptionAccess' => fn (): ?array => ($workspace = $request->attributes->get('currentWorkspace')) instanceof Workspace ? app(SubscriptionAccess::class)->status($workspace->id) : null,
             'currentWorkspace' => fn (): ?array => $this->currentWorkspaceProps($request),
             'assistant' => fn (): ?array => $this->assistantProps($request),
             'notifications' => fn (): ?array => $this->notificationProps($request),

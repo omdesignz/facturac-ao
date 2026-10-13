@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call(LegalDocumentSeeder::class);
+        $this->call(SubscriptionCatalogueSeeder::class);
         $this->call(PhaseOneDemoSeeder::class);
 
         if (filled(config('agt.homologation_fixture.tax_identification_number'))

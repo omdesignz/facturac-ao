@@ -39,6 +39,7 @@ const props = defineProps<{
             saving_percentage: number | null;
         }[];
     }[];
+    trialDays: number;
     provinceCount: number;
     contact: { support_email: string | null; company: string | null };
 }>();
@@ -1626,9 +1627,12 @@ const questions: { question: string; answer: string }[] = [
                         Experimente primeiro. Decida depois.
                     </h2>
                     <p class="mt-4 text-lg text-brand-600 dark:text-zinc-400">
-                        Abra a conta, configure a empresa e emita à vontade em
-                        ambiente de testes. Só passa a produção quando estiver
-                        pronto.
+                        Experimente todas as funcionalidades durante
+                        {{ trialDays }} dias desde a criação do espaço de
+                        trabalho. Depois, escolha o seu plano. Preços por espaço
+                        de trabalho, com documentos sem limite de quantidade. A
+                        consulta dos documentos e a exportação SAF-T continuam
+                        disponíveis após o fim da assinatura.
                     </p>
                 </div>
 
@@ -1673,7 +1677,7 @@ const questions: { question: string; answer: string }[] = [
                                 v-if="card.offer.is_featured"
                                 class="absolute start-7 -top-3 rounded-full bg-white px-2.5 py-0.5 text-xs font-semibold text-brand-950 ring-[1.5px] ring-accent-400 dark:bg-zinc-950 dark:text-accent-300"
                             >
-                                Mais escolhido
+                                Recomendado
                             </p>
                             <h3
                                 :id="`pacote-${index}`"

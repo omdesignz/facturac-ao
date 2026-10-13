@@ -3,6 +3,7 @@
 namespace App\Actions;
 
 use App\AgtEnvironment;
+use App\Billing\SubscriptionAccess;
 use App\Fiscal\Agt\Support\CanonicalJson;
 use App\Fiscal\Agt\Support\CanonicalNumber;
 use App\Fiscal\Calculation\CalculatedFiscalLine;
@@ -14,6 +15,7 @@ use App\Models\FiscalDocument;
 use App\Models\FiscalSeries;
 use App\Models\RecurringInvoice;
 use App\Models\User;
+use App\SubscriptionFeature;
 use Carbon\CarbonImmutable;
 use DomainException;
 use Illuminate\Support\Facades\Context;
@@ -45,6 +47,8 @@ class ConvertRecurringProfile
     public function execute(RecurringInvoice $profile, CarbonImmutable $runOn): FiscalDocument
     {
         return Context::scope(fn (): FiscalDocument => DB::transaction(function () use ($profile, $runOn): FiscalDocument {
+            app(SubscriptionAccess::class)->require($profile->workspace_id, SubscriptionFeature::Recurring);
+
             $profile = RecurringInvoice::query()->lockForUpdate()->findOrFail($profile->id);
             $existing = DB::table('recurring_occurrences')->where('recurring_invoice_id', $profile->id)
                 ->whereDate('scheduled_on', $runOn->toDateString())->first();

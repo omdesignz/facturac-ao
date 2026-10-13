@@ -7,6 +7,7 @@ use App\Http\Middleware\AssistantBoundary;
 use App\Http\Middleware\EnforceWorkSession;
 use App\Http\Middleware\EnsureCurrentWorkspace;
 use App\Http\Middleware\EnsureMultiFactorAuthentication;
+use App\Http\Middleware\EnsureSubscriptionFeature;
 use App\Http\Middleware\EnsureSupportStaff;
 use App\Http\Middleware\ExternalCommandBoundary;
 use App\Http\Middleware\ExternalIntegrationBoundary;
@@ -52,6 +53,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'workspace' => EnsureCurrentWorkspace::class,
+            'subscription' => EnsureSubscriptionFeature::class,
             'mfa' => EnsureMultiFactorAuthentication::class,
             'support' => EnsureSupportStaff::class,
         ]);

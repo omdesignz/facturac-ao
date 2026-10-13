@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\Models\SubscriptionPackage;
 use App\Models\SubscriptionPlan;
 use App\Models\User;
+use App\SubscriptionFeature;
 use App\SubscriptionInterval;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -27,6 +28,7 @@ class SaveSubscriptionPackage
     /**
      * @param  array{
      *     code?: string,
+     *     entitlements?: list<string>,
      *     name: string,
      *     summary: string|null,
      *     features: list<string>,
@@ -59,6 +61,28 @@ class SaveSubscriptionPackage
                 'is_featured' => $data['is_featured'],
                 'sort_order' => $data['sort_order'],
             ];
+
+            if (isset($data['entitlements']) || $package === null) {
+                $enabled = $data['entitlements'] ?? [SubscriptionFeature::Invoicing->value];
+                $attributes['limits'] = ['entitlement_version' => 1];
+                foreach (SubscriptionFeature::cases() as $feature) {
+                    $attributes['limits'][$feature->key()] = $feature === SubscriptionFeature::Invoicing || in_array($feature->value, $enabled, true);
+                }
+                $attributes['trial_days'] = (int) config('subscriptions.trial_days', 14);
+                if (isset($data['entitlements'])) {
+                    $labels = array_map(fn (SubscriptionFeature $feature): string => $feature->label(), SubscriptionFeature::cases());
+                    $included = array_map(fn (SubscriptionFeature $feature): string => $feature->label(), array_filter(SubscriptionFeature::cases(), fn (SubscriptionFeature $feature): bool => $attributes['limits'][$feature->key()] === true));
+                    $attributes['features'] = array_values(array_unique([
+                        'Documentos sem limite de quantidade',
+                        'Exportação SAF-T e consulta dos documentos emitidos',
+                        ...$included,
+                        ...array_diff($data['features'], $labels),
+                    ]));
+                    if (count($attributes['features']) > 20) {
+                        throw ValidationException::withMessages(['features' => 'Use no máximo 20 linhas, incluindo as funcionalidades seleccionadas.']);
+                    }
+                }
+            }
 
             if ($package instanceof SubscriptionPackage) {
                 $locked = SubscriptionPackage::query()->whereKey($package->id)->lockForUpdate()->firstOrFail();

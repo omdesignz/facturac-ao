@@ -369,3 +369,23 @@ test('an update does not need, and cannot change, the code', function () {
 
     expect($package->fresh()->code)->toBe('crescer');
 });
+
+test('staff feature controls update all periods and remove disabled feature promises', function () {
+    $staff = User::factory()->supportStaff()->withWorkspace()->create();
+    $this->actingAs($staff)->withSession(packageConfirmed())->post(route('support.packages.store'), packagePayload([
+        'entitlements' => ['invoicing', 'pos'],
+        'features' => ['API e integrações externas', 'Suporte em português'],
+    ]))->assertSessionHasNoErrors();
+    $package = SubscriptionPackage::where('code', 'crescer')->firstOrFail();
+    expect($package->limits['feature_pos'])->toBeTrue()->and($package->limits['feature_integrations'])->toBeFalse()
+        ->and($package->features)->toContain('Ponto de venda e talões de venda', 'Suporte em português')->not->toContain('API e integrações externas');
+    foreach ($package->plans as $plan) {
+        expect($plan->limits)->toBe($package->limits)->and($plan->features)->toBe($package->features);
+    }
+});
+
+test('feature controls reject unknown rights and cannot omit core invoicing', function (array $features) {
+    $staff = User::factory()->supportStaff()->withWorkspace()->create();
+    $this->actingAs($staff)->withSession(packageConfirmed())->postJson(route('support.packages.store'), packagePayload(['entitlements' => $features]))->assertUnprocessable();
+    expect(SubscriptionPackage::count())->toBe(0);
+})->with([[['invoicing', 'unknown']], [['pos']], [[]]]);
