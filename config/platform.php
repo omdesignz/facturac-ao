@@ -14,9 +14,9 @@ return [
     */
 
     'settings' => [
-        'support_email' => env('PLATFORM_SUPPORT_EMAIL', 'apoio@vapsolucoes.ao'),
-        'support_phone' => env('PLATFORM_SUPPORT_PHONE', '+244 923 000 000'),
-        'support_whatsapp' => env('PLATFORM_SUPPORT_WHATSAPP', '+244 923 000 000'),
+        'support_email' => env('PLATFORM_SUPPORT_EMAIL', 'geral@vapsolucoes.ao'),
+        'support_phone' => env('PLATFORM_SUPPORT_PHONE', '+244 927 808 282'),
+        'support_whatsapp' => env('PLATFORM_SUPPORT_WHATSAPP', '+244 927 808 282'),
         'support_hours' => 'Segunda a sexta, das 8h30 às 17h30 (WAT)',
         'complaints_email' => env('PLATFORM_COMPLAINTS_EMAIL', 'reclamacoes@vapsolucoes.ao'),
 

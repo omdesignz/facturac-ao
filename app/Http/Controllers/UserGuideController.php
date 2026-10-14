@@ -13,8 +13,8 @@ class UserGuideController extends Controller
     public function index(Request $request): Response
     {
         $guide = config('user-guide');
-        $chapter = $request->query('chapter', 'comecar');
-        abort_unless(is_string($chapter) && in_array($chapter, array_column($guide['chapters'], 'id'), true), 404);
+        $chapter = $request->query('chapter');
+        abort_unless($chapter === null || (is_string($chapter) && in_array($chapter, array_column($guide['chapters'], 'id'), true)), 404);
 
         return Inertia::render('Help/Guide', [
             'guide' => [

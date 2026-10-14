@@ -3,6 +3,7 @@
 namespace App\Actions;
 
 use App\Fiscal\Documents\PdfSheet;
+use App\Models\PlatformSetting;
 
 final readonly class RenderUserGuide
 {
@@ -13,6 +14,8 @@ final readonly class RenderUserGuide
         return $this->sheet->render('help.guide-pdf', [
             'guide' => config('user-guide'),
             'logo' => public_path('brand/facturac-ao.svg'),
+            'supportEmail' => PlatformSetting::get('support_email') ?: null,
+            'supportPhone' => PlatformSetting::get('support_phone') ?: null,
         ], [
             'title' => 'facturac.ao | Guia de utilização',
             'author' => 'facturac.ao',

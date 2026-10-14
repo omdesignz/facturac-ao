@@ -2,17 +2,22 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import {
     ArrowDownToLine,
+    ArrowLeft,
     ArrowRight,
     Bookmark,
     BookOpen,
+    CalendarCheck,
     Check,
-    ChevronLeft,
-    ChevronRight,
+    ChevronDown,
     CircleCheck,
     Clock,
+    Compass,
+    LifeBuoy,
+    Receipt,
     Search,
-    X,
+    ShieldCheck,
 } from '@lucide/vue';
+import type { Component } from 'vue';
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import BrandWordmark from '@/components/BrandWordmark.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -27,39 +32,114 @@ const props = defineProps<{
         updated_at: string;
         title: string;
         subtitle: string;
+        /** Topic name → one line on what it covers, in shelf order. */
+        categories: Record<string, string>;
+        popular: { label: string; chapter: string }[];
         chapters: GuideChapter[];
     };
-    selectedChapter: string;
+    /** Null opens the guide's home; a chapter id opens that chapter. */
+    selectedChapter: string | null;
     progressKey: string;
 }>();
+
 const query = ref('');
-const category = ref('Todos');
-const onlySaved = ref(false);
+const libraryQuery = ref('');
 const progress = ref<GuideProgress>({ completed: [], saved: [], checks: [] });
 const storageAvailable = ref(true);
 const loaded = ref(false);
 const heading = ref<HTMLElement | null>(null);
 const announcement = ref('');
-const active = computed(
-    () =>
-        props.guide.chapters.find(
-            (chapter) => chapter.id === props.selectedChapter,
-        ) ?? props.guide.chapters[0]!,
+
+/** A plain signifier per topic; an unknown topic falls back to the book. */
+const topicIcons: Record<string, Component> = {
+    'Primeiros passos': Compass,
+    'Vendas e recebimentos': Receipt,
+    'Operação diária': CalendarCheck,
+    'Controlo e gestão': ShieldCheck,
+};
+
+const active = computed(() =>
+    props.selectedChapter === null
+        ? null
+        : (props.guide.chapters.find(
+              (chapter) => chapter.id === props.selectedChapter,
+          ) ?? null),
 );
 const activeIndex = computed(() =>
-    props.guide.chapters.findIndex((chapter) => chapter.id === active.value.id),
+    active.value === null
+        ? -1
+        : props.guide.chapters.findIndex(
+              (chapter) => chapter.id === active.value!.id,
+          ),
 );
-const categories = computed(() => [
-    'Todos',
-    ...new Set(props.guide.chapters.map((chapter) => chapter.category)),
-]);
+const previousChapter = computed(() =>
+    activeIndex.value > 0 ? props.guide.chapters[activeIndex.value - 1]! : null,
+);
+const nextChapter = computed(() =>
+    activeIndex.value >= 0 &&
+    activeIndex.value < props.guide.chapters.length - 1
+        ? props.guide.chapters[activeIndex.value + 1]!
+        : null,
+);
+
+/** Topics in the order the config shelves them, each with its chapters. */
+const topics = computed(() => {
+    const names = [
+        ...Object.keys(props.guide.categories ?? {}),
+        ...props.guide.chapters.map((chapter) => chapter.category),
+    ];
+
+    return [...new Set(names)]
+        .map((name) => {
+            const chapters = props.guide.chapters.filter(
+                (chapter) => chapter.category === name,
+            );
+
+            return {
+                name,
+                description: props.guide.categories?.[name] ?? '',
+                icon: topicIcons[name] ?? BookOpen,
+                chapters,
+                minutes: chapters.reduce(
+                    (total, chapter) => total + chapter.minutes,
+                    0,
+                ),
+            };
+        })
+        .filter((topic) => topic.chapters.length > 0);
+});
+
+/** The first topic is the path a new user walks; the rest are shelves. */
+const firstSteps = computed(() => topics.value[0] ?? null);
+const shelves = computed(() => topics.value.slice(1));
+
+const totalMinutes = computed(() =>
+    props.guide.chapters.reduce((total, chapter) => total + chapter.minutes, 0),
+);
+const searching = computed(() => query.value.trim() !== '');
 const results = computed(() =>
-    props.guide.chapters.filter(
-        (chapter) =>
-            (category.value === 'Todos' ||
-                chapter.category === category.value) &&
-            (!onlySaved.value || progress.value.saved.includes(chapter.id)) &&
-            matchesGuideSearch(chapter, query.value),
+    props.guide.chapters.filter((chapter) =>
+        matchesGuideSearch(chapter, query.value),
+    ),
+);
+const libraryTopics = computed(() =>
+    topics.value
+        .map((topic) => ({
+            ...topic,
+            chapters: topic.chapters.filter((chapter) =>
+                matchesGuideSearch(chapter, libraryQuery.value),
+            ),
+        }))
+        .filter((topic) => topic.chapters.length > 0),
+);
+const popular = computed(() =>
+    (props.guide.popular ?? []).filter((task) =>
+        props.guide.chapters.some((chapter) => chapter.id === task.chapter),
+    ),
+);
+const savedChapters = computed(() =>
+    props.guide.chapters.filter((chapter) =>
+        progress.value.saved.includes(chapter.id),
     ),
 );
 const percent = computed(() =>
@@ -73,14 +153,29 @@ const nextUnread = computed(() =>
     ),
 );
 const related = computed(() =>
-    props.guide.chapters.filter((chapter) =>
-        active.value.related.includes(chapter.id),
-    ),
+    active.value === null
+        ? []
+        : props.guide.chapters.filter((chapter) =>
+              active.value!.related.includes(chapter.id),
+          ),
 );
-const completed = computed(() =>
-    progress.value.completed.includes(active.value.id),
+const completed = computed(
+    () =>
+        active.value !== null &&
+        progress.value.completed.includes(active.value.id),
 );
-const saved = computed(() => progress.value.saved.includes(active.value.id));
+const saved = computed(
+    () =>
+        active.value !== null && progress.value.saved.includes(active.value.id),
+);
+
+function chapterNumber(chapter: GuideChapter): string {
+    return String(props.guide.chapters.indexOf(chapter) + 1).padStart(2, '0');
+}
+
+function isRead(chapter: GuideChapter): boolean {
+    return progress.value.completed.includes(chapter.id);
+}
 
 function loadProgress(): void {
     loaded.value = false;
@@ -122,258 +217,781 @@ function toggle(key: keyof GuideProgress, value: string): void {
         : [...progress.value[key], value];
 }
 function markRead(): void {
+    if (active.value === null) {
+        return;
+    }
+
     toggle('completed', active.value.id);
     announcement.value = completed.value
         ? 'Capítulo marcado como lido.'
         : 'Capítulo marcado como não lido.';
 }
-function openChapter(id: string): void {
-    router.get(
-        guideIndex.url(),
-        { chapter: id },
-        {
-            preserveState: true,
-            preserveScroll: true,
-            onSuccess: async () => {
-                await nextTick();
-                heading.value?.focus({ preventScroll: true });
-                heading.value?.scrollIntoView({
-                    block: 'start',
-                    behavior: 'instant',
-                });
-            },
-        },
-    );
+
+function chapterUrl(id: string): string {
+    return guideIndex.url({ query: { chapter: id } });
 }
-function clearFilters(): void {
-    query.value = '';
-    category.value = 'Todos';
-    onlySaved.value = false;
+
+/**
+ * Moves between the home and a chapter without reloading the page, then puts
+ * focus on the new heading so a keyboard or screen-reader user starts reading
+ * where the eye does.
+ */
+function openChapter(id: string | null): void {
+    router.get(guideIndex.url(), id === null ? {} : { chapter: id }, {
+        preserveState: true,
+        preserveScroll: true,
+        onSuccess: async () => {
+            query.value = '';
+            await nextTick();
+            heading.value?.focus({ preventScroll: true });
+            window.scrollTo({ top: 0, behavior: 'instant' });
+        },
+    });
 }
 </script>
 
 <template>
     <AppLayout>
-        <Head title="Guia de utilização" />
-        <div class="guide-shell">
-            <header class="guide-hero">
-                <div class="hero-copy">
-                    <p class="guide-kicker">
-                        FACTURAC / CENTRO DE APRENDIZAGEM
-                    </p>
-                    <h1>Mais confiança.<br />Em cada passo.</h1>
-                    <p class="hero-summary">
-                        O seu guia para preparar a empresa, facturar e
-                        acompanhar o negócio. Comece pelo essencial ou encontre
-                        a tarefa de hoje.
-                    </p>
-                    <div class="hero-actions">
-                        <button
-                            v-if="nextUnread"
-                            class="guide-button primary"
-                            @click="openChapter(nextUnread.id)"
-                        >
-                            {{
-                                progress.completed.length
-                                    ? 'Continuar a aprender'
-                                    : 'Começar pelo essencial'
-                            }}
-                            <ArrowRight aria-hidden="true" class="size-4" />
-                        </button>
-                        <Link
-                            class="guide-button secondary"
-                            :href="helpIndex.url()"
-                            >Falar com o apoio</Link
-                        >
-                    </div>
-                </div>
-                <a
-                    class="pdf-card"
-                    :href="guidePdf.url()"
-                    aria-label="Descarregar guia completo em PDF, com capa e índice"
+        <Head
+            :title="active ? `${active.title} · Guia` : 'Guia de utilização'"
+        />
+
+        <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+            <!-- ======================================================== home -->
+            <div v-if="active === null" class="mx-auto max-w-6xl">
+                <header
+                    class="grid gap-10 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-end lg:gap-16"
                 >
-                    <div class="mini-cover" aria-hidden="true">
-                        <BrandWordmark class="mini-brand" />
-                        <strong>Guia de<br />utilização.</strong>
-                        <img
-                            class="mini-art"
-                            src="/brand/guide-cover-art.svg"
-                            alt=""
-                        />
-                        <small>PREPARAR · OPERAR · CONFERIR</small>
-                        <div class="mini-developer">
-                            <img src="/brand/vap-developer.svg" alt="" /><span
-                                >DESENVOLVIDO POR VAP</span
+                    <div class="min-w-0">
+                        <p class="eyebrow text-zinc-500 dark:text-zinc-400">
+                            Ajuda · Guia de utilização
+                        </p>
+                        <h1
+                            ref="heading"
+                            tabindex="-1"
+                            class="mt-3 font-display text-section text-balance text-zinc-950 focus:outline-none dark:text-white"
+                        >
+                            Mais confiança. Em cada passo<span
+                                class="brand-dot"
+                                aria-hidden="true"
+                            />
+                        </h1>
+                        <p
+                            class="mt-4 max-w-xl text-base/7 text-pretty text-zinc-600 dark:text-zinc-400"
+                        >
+                            {{ guide.chapters.length }} capítulos curtos para
+                            preparar a empresa, facturar e acompanhar o negócio.
+                            Leia pela ordem, ou procure só a tarefa de hoje.
+                        </p>
+
+                        <div class="mt-7 max-w-xl">
+                            <label
+                                class="field-adorned [--field-adorn-start:3rem]"
                             >
+                                <span class="sr-only">Procurar no guia</span>
+                                <Search
+                                    class="field-adornment-start start-5! size-5"
+                                    aria-hidden="true"
+                                />
+                                <input
+                                    v-model="query"
+                                    type="search"
+                                    autocomplete="off"
+                                    spellcheck="false"
+                                    placeholder="Procure: recibo, caixa, AGT, nota de crédito…"
+                                    class="form-search min-h-14! text-base!"
+                                />
+                            </label>
+                            <div
+                                v-if="popular.length && !searching"
+                                class="mt-4 flex flex-wrap items-center gap-2"
+                            >
+                                <span
+                                    class="text-sm text-zinc-500 dark:text-zinc-400"
+                                    >Mais procurados:</span
+                                >
+                                <Link
+                                    v-for="task in popular"
+                                    :key="task.chapter"
+                                    :href="chapterUrl(task.chapter)"
+                                    class="rounded-full bg-zinc-900/[0.04] px-3 py-1.5 text-sm text-zinc-700 focus-ring transition hover:bg-zinc-900/[0.08] hover:text-zinc-950 dark:bg-white/[0.06] dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-white"
+                                    @click.prevent="openChapter(task.chapter)"
+                                    >{{ task.label }}</Link
+                                >
+                            </div>
                         </div>
                     </div>
-                    <div class="pdf-caption">
-                        <span
-                            ><strong>O guia, sempre à mão.</strong
-                            ><small>PDF completo · capa e índice</small></span
-                        ><ArrowDownToLine class="size-5" aria-hidden="true" />
-                    </div>
-                </a>
-            </header>
 
-            <section
-                class="reading-progress"
-                aria-label="O seu progresso de leitura"
-            >
-                <BookOpen class="size-5 shrink-0" aria-hidden="true" />
-                <div class="progress-copy">
-                    <strong
-                        >{{ progress.completed.length }} de
-                        {{ guide.chapters.length }} capítulos lidos</strong
-                    ><span>{{
-                        storageAvailable
-                            ? 'Progresso guardado neste navegador, por utilizador.'
-                            : 'Armazenamento indisponível. O progresso fica apenas nesta visita.'
-                    }}</span>
-                </div>
-                <progress
-                    :value="progress.completed.length"
-                    :max="guide.chapters.length"
-                    :aria-label="`${percent}% do guia lido`"
-                ></progress>
-                <span class="progress-percent">{{ percent }}%</span>
-            </section>
-
-            <div class="guide-workspace">
-                <aside
-                    class="guide-library"
-                    aria-label="Biblioteca de capítulos"
-                >
-                    <label class="search-label" for="guide-search"
-                        >Encontre uma resposta</label
+                    <!-- Where the reader is, and the one next step. -->
+                    <section
+                        aria-labelledby="guide-progress"
+                        class="rounded-3xl bg-zinc-900/[0.04] p-6 dark:bg-white/[0.05]"
                     >
-                    <div class="guide-search">
-                        <Search class="size-4" aria-hidden="true" /><input
-                            id="guide-search"
-                            v-model="query"
-                            type="search"
-                            placeholder="Ex.: recibo, caixa, AGT…"
-                            autocomplete="off"
-                        /><button
-                            v-if="query"
-                            aria-label="Limpar pesquisa"
-                            @click="query = ''"
+                        <h2
+                            id="guide-progress"
+                            class="eyebrow text-zinc-500 dark:text-zinc-400"
                         >
-                            <X class="size-4" aria-hidden="true" />
-                        </button>
-                    </div>
-                    <div class="category-filters" aria-label="Filtrar por tema">
-                        <button
-                            v-for="item in categories"
-                            :key="item"
-                            :aria-pressed="category === item"
-                            @click="category = item"
-                        >
-                            {{ item }}
-                        </button>
-                    </div>
-                    <button
-                        class="saved-filter"
-                        :aria-pressed="onlySaved"
-                        @click="onlySaved = !onlySaved"
-                    >
-                        <Bookmark class="size-4" aria-hidden="true" /> Só
-                        guardados <span>{{ progress.saved.length }}</span>
-                    </button>
-                    <p class="result-count" role="status">
-                        {{ results.length }}
-                        {{
-                            results.length === 1
-                                ? 'capítulo encontrado'
-                                : 'capítulos encontrados'
-                        }}
-                    </p>
-                    <nav class="chapter-list" aria-label="Capítulos do guia">
-                        <Link
-                            v-for="chapter in results"
-                            :key="chapter.id"
-                            :href="
-                                guideIndex.url({
-                                    query: { chapter: chapter.id },
-                                })
-                            "
-                            :aria-current="
-                                active.id === chapter.id ? 'page' : undefined
-                            "
-                            @click.prevent="openChapter(chapter.id)"
-                        >
-                            <span class="chapter-number"
-                                ><CircleCheck
-                                    v-if="
-                                        progress.completed.includes(chapter.id)
-                                    "
-                                    class="size-4"
-                                    aria-label="Lido"
-                                /><template v-else>{{
-                                    String(
-                                        guide.chapters.indexOf(chapter) + 1,
-                                    ).padStart(2, '0')
-                                }}</template></span
+                            O seu percurso
+                        </h2>
+                        <p class="mt-3 flex items-baseline gap-2">
+                            <span
+                                class="font-display numeric text-5xl leading-none tracking-[-0.03em]"
+                                >{{ progress.completed.length }}</span
                             >
                             <span
-                                ><strong>{{ chapter.title }}</strong
-                                ><small
-                                    >{{ chapter.category }} ·
-                                    {{ chapter.minutes }} min</small
-                                ></span
+                                class="text-sm text-zinc-600 dark:text-zinc-400"
+                                >de {{ guide.chapters.length }} capítulos
+                                lidos</span
                             >
-                            <ChevronRight
+                        </p>
+                        <div
+                            class="mt-4 h-1.5 overflow-hidden rounded-full bg-zinc-900/10 dark:bg-white/10"
+                            role="progressbar"
+                            :aria-valuenow="percent"
+                            aria-valuemin="0"
+                            aria-valuemax="100"
+                            :aria-label="`${percent}% do guia lido`"
+                        >
+                            <div
+                                class="h-full rounded-full bg-accent-400 motion-safe:transition-[width] motion-safe:duration-500"
+                                :style="{ width: `${percent}%` }"
+                            />
+                        </div>
+                        <button
+                            v-if="nextUnread"
+                            type="button"
+                            class="mt-5 flex w-full items-center justify-between gap-3 rounded-full bg-brand-950 py-3 ps-5 pe-4 text-start text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 dark:bg-white dark:text-brand-950 dark:hover:bg-zinc-200"
+                            @click="openChapter(nextUnread.id)"
+                        >
+                            <span class="min-w-0 truncate">
+                                {{
+                                    progress.completed.length
+                                        ? 'Continuar'
+                                        : 'Começar'
+                                }}:
+                                {{ nextUnread.title }}
+                            </span>
+                            <ArrowRight
                                 class="size-4 shrink-0"
                                 aria-hidden="true"
                             />
-                        </Link>
-                    </nav>
-                    <div v-if="!results.length" class="guide-empty">
-                        <BookOpen class="size-6" aria-hidden="true" /><strong
-                            >Nenhum capítulo encontrado.</strong
-                        >
-                        <p>Tente outra palavra ou remova os filtros.</p>
-                        <button
-                            class="guide-button secondary"
-                            @click="clearFilters"
-                        >
-                            Limpar filtros
                         </button>
+                        <p
+                            v-else
+                            class="mt-5 flex items-center gap-2 text-sm font-semibold"
+                        >
+                            <CircleCheck
+                                class="size-5 text-accent-500"
+                                aria-hidden="true"
+                            />
+                            Leu o guia todo. Bom trabalho.
+                        </p>
+                        <p
+                            class="mt-4 text-xs/5 text-zinc-500 dark:text-zinc-400"
+                        >
+                            {{
+                                storageAvailable
+                                    ? 'O progresso fica guardado neste navegador, só para si.'
+                                    : 'Armazenamento indisponível: o progresso fica apenas nesta visita.'
+                            }}
+                        </p>
+                    </section>
+                </header>
+
+                <!-- ------------------------------------------------- results -->
+                <section
+                    v-if="searching"
+                    aria-labelledby="guide-results"
+                    class="mt-14"
+                >
+                    <h2
+                        id="guide-results"
+                        class="text-sm font-semibold"
+                        role="status"
+                    >
+                        {{ results.length }}
+                        {{
+                            results.length === 1
+                                ? 'capítulo responde a'
+                                : 'capítulos respondem a'
+                        }}
+                        «{{ query.trim() }}»
+                    </h2>
+                    <ul
+                        v-if="results.length"
+                        class="mt-4 divide-y divide-zinc-900/10 border-y border-zinc-900/10 dark:divide-white/10 dark:border-white/10"
+                    >
+                        <li v-for="chapter in results" :key="chapter.id">
+                            <Link
+                                :href="chapterUrl(chapter.id)"
+                                class="group flex items-center gap-5 py-5 focus-ring"
+                                @click.prevent="openChapter(chapter.id)"
+                            >
+                                <span
+                                    class="w-8 shrink-0 numeric text-sm text-zinc-400"
+                                    >{{ chapterNumber(chapter) }}</span
+                                >
+                                <span class="min-w-0 flex-1">
+                                    <span
+                                        class="block font-semibold group-hover:underline group-hover:underline-offset-4"
+                                        >{{ chapter.title }}</span
+                                    >
+                                    <span
+                                        class="mt-1 block text-sm text-zinc-600 dark:text-zinc-400"
+                                        >{{ chapter.summary }}</span
+                                    >
+                                </span>
+                                <span
+                                    class="hidden shrink-0 text-xs text-zinc-500 sm:block dark:text-zinc-400"
+                                    >{{ chapter.category }} ·
+                                    {{ chapter.minutes }} min</span
+                                >
+                                <ArrowRight
+                                    class="size-4 shrink-0 text-zinc-400 transition group-hover:translate-x-0.5 group-hover:text-zinc-950 dark:group-hover:text-white"
+                                    aria-hidden="true"
+                                />
+                            </Link>
+                        </li>
+                    </ul>
+                    <div
+                        v-else
+                        class="mt-4 rounded-3xl bg-zinc-900/[0.04] p-8 dark:bg-white/[0.05]"
+                    >
+                        <p class="font-semibold">Nenhum capítulo fala disso.</p>
+                        <p
+                            class="mt-1 text-sm text-zinc-600 dark:text-zinc-400"
+                        >
+                            Tente outra palavra, ou pergunte directamente à
+                            equipa de apoio.
+                        </p>
+                        <div class="mt-5 flex flex-wrap gap-2.5">
+                            <button
+                                type="button"
+                                class="rounded-full px-4 py-2.5 text-sm font-semibold ring-1 ring-zinc-900/15 focus-ring transition hover:ring-zinc-900/40 dark:ring-white/20 dark:hover:ring-white/50"
+                                @click="query = ''"
+                            >
+                                Limpar a pesquisa
+                            </button>
+                            <Link
+                                :href="helpIndex.url()"
+                                class="rounded-full bg-brand-950 px-4 py-2.5 text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 dark:bg-white dark:text-brand-950 dark:hover:bg-zinc-200"
+                                >Falar com o apoio</Link
+                            >
+                        </div>
+                    </div>
+                </section>
+
+                <template v-else>
+                    <!-- ------------------------------------------ first steps -->
+                    <section
+                        v-if="firstSteps"
+                        aria-labelledby="guide-first-steps"
+                        class="mt-16"
+                    >
+                        <div
+                            class="flex flex-wrap items-end justify-between gap-4"
+                        >
+                            <div>
+                                <p
+                                    class="eyebrow text-zinc-500 dark:text-zinc-400"
+                                >
+                                    Comece por aqui ·
+                                    {{ firstSteps.minutes }} min no total
+                                </p>
+                                <h2
+                                    id="guide-first-steps"
+                                    class="mt-2 font-display text-3xl tracking-[-0.025em]"
+                                >
+                                    {{ firstSteps.name }}
+                                </h2>
+                            </div>
+                            <p
+                                class="max-w-md text-sm text-pretty text-zinc-600 dark:text-zinc-400"
+                            >
+                                {{ firstSteps.description }}
+                            </p>
+                        </div>
+
+                        <!-- A path, read left to right: one line joins the stops. -->
+                        <ol
+                            class="relative mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-5"
+                        >
+                            <li
+                                v-for="(chapter, step) in firstSteps.chapters"
+                                :key="chapter.id"
+                                class="min-w-0"
+                            >
+                                <Link
+                                    :href="chapterUrl(chapter.id)"
+                                    :class="[
+                                        isRead(chapter)
+                                            ? 'bg-accent-50 ring-accent-400/40 dark:bg-accent-400/[0.07] dark:ring-accent-400/30'
+                                            : 'bg-white ring-zinc-900/10 hover:ring-zinc-900/30 dark:bg-zinc-900 dark:ring-white/10 dark:hover:ring-white/30',
+                                        'group flex h-full flex-col rounded-2xl p-5 ring-1 focus-ring transition',
+                                    ]"
+                                    @click.prevent="openChapter(chapter.id)"
+                                >
+                                    <span
+                                        class="flex items-center justify-between gap-3"
+                                    >
+                                        <span
+                                            :class="[
+                                                isRead(chapter)
+                                                    ? 'bg-accent-400 text-brand-950'
+                                                    : 'bg-zinc-900/[0.06] text-zinc-700 dark:bg-white/10 dark:text-zinc-200',
+                                                'grid size-8 place-items-center rounded-full numeric text-sm font-semibold',
+                                            ]"
+                                        >
+                                            <Check
+                                                v-if="isRead(chapter)"
+                                                class="size-4"
+                                                aria-hidden="true"
+                                            />
+                                            <template v-else>{{
+                                                step + 1
+                                            }}</template>
+                                        </span>
+                                        <span
+                                            class="text-xs text-zinc-500 dark:text-zinc-400"
+                                            >{{ chapter.minutes }} min</span
+                                        >
+                                    </span>
+                                    <span
+                                        class="mt-6 font-semibold text-balance"
+                                        >{{ chapter.title }}</span
+                                    >
+                                    <span
+                                        class="mt-1.5 line-clamp-3 text-sm text-zinc-600 dark:text-zinc-400"
+                                        >{{ chapter.summary }}</span
+                                    >
+                                    <span class="sr-only">{{
+                                        isRead(chapter) ? '(lido)' : ''
+                                    }}</span>
+                                </Link>
+                            </li>
+                        </ol>
+                    </section>
+
+                    <!-- --------------------------------------------- shelves -->
+                    <section
+                        v-for="topic in shelves"
+                        :key="topic.name"
+                        :aria-labelledby="`topic-${topic.name}`"
+                        class="mt-16 grid gap-6 border-t border-zinc-900/10 pt-10 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-12 dark:border-white/10"
+                    >
+                        <div>
+                            <span
+                                class="grid size-11 place-items-center rounded-2xl bg-accent-400/15 text-accent-700 dark:text-accent-300"
+                            >
+                                <component
+                                    :is="topic.icon"
+                                    class="size-5"
+                                    aria-hidden="true"
+                                />
+                            </span>
+                            <h2
+                                :id="`topic-${topic.name}`"
+                                class="mt-4 font-display text-2xl tracking-[-0.02em]"
+                            >
+                                {{ topic.name }}
+                            </h2>
+                            <p
+                                class="mt-2 text-sm text-pretty text-zinc-600 dark:text-zinc-400"
+                            >
+                                {{ topic.description }}
+                            </p>
+                            <p
+                                class="mt-3 text-xs text-zinc-500 dark:text-zinc-400"
+                            >
+                                {{ topic.chapters.length }} capítulos ·
+                                {{ topic.minutes }} min
+                            </p>
+                        </div>
+                        <ul class="grid gap-3 sm:grid-cols-2">
+                            <li
+                                v-for="chapter in topic.chapters"
+                                :key="chapter.id"
+                                class="min-w-0"
+                            >
+                                <Link
+                                    :href="chapterUrl(chapter.id)"
+                                    class="group flex h-full flex-col rounded-2xl bg-zinc-900/[0.04] p-5 focus-ring transition hover:bg-zinc-900/[0.07] dark:bg-white/[0.05] dark:hover:bg-white/[0.08]"
+                                    @click.prevent="openChapter(chapter.id)"
+                                >
+                                    <span
+                                        class="flex items-start justify-between gap-3"
+                                    >
+                                        <span
+                                            class="font-semibold text-balance"
+                                        >
+                                            {{ chapter.title }}
+                                        </span>
+                                        <CircleCheck
+                                            v-if="isRead(chapter)"
+                                            class="size-5 shrink-0 text-accent-500"
+                                            aria-label="Lido"
+                                        />
+                                    </span>
+                                    <span
+                                        class="mt-1.5 line-clamp-2 text-sm text-zinc-600 dark:text-zinc-400"
+                                        >{{ chapter.summary }}</span
+                                    >
+                                    <span
+                                        class="mt-auto flex items-center gap-3 pt-4 text-xs text-zinc-500 dark:text-zinc-400"
+                                    >
+                                        <span
+                                            class="inline-flex items-center gap-1"
+                                            ><Clock
+                                                class="size-3.5"
+                                                aria-hidden="true"
+                                            />{{ chapter.minutes }} min</span
+                                        >
+                                        <span
+                                            v-if="chapter.scenarios?.length"
+                                            >{{
+                                                chapter.scenarios.length === 1
+                                                    ? '1 situação'
+                                                    : `${chapter.scenarios.length} situações`
+                                            }}</span
+                                        >
+                                        <Bookmark
+                                            v-if="
+                                                progress.saved.includes(
+                                                    chapter.id,
+                                                )
+                                            "
+                                            class="size-3.5"
+                                            fill="currentColor"
+                                            aria-label="Guardado"
+                                        />
+                                        <ArrowRight
+                                            class="ms-auto size-4 text-zinc-400 transition group-hover:translate-x-0.5 group-hover:text-zinc-950 dark:group-hover:text-white"
+                                            aria-hidden="true"
+                                        />
+                                    </span>
+                                </Link>
+                            </li>
+                        </ul>
+                    </section>
+
+                    <!-- ------------------------------------------------ saved -->
+                    <section
+                        v-if="savedChapters.length"
+                        aria-labelledby="guide-saved"
+                        class="mt-16 border-t border-zinc-900/10 pt-10 dark:border-white/10"
+                    >
+                        <h2
+                            id="guide-saved"
+                            class="flex items-center gap-2 text-sm font-semibold"
+                        >
+                            <Bookmark
+                                class="size-4"
+                                fill="currentColor"
+                                aria-hidden="true"
+                            />
+                            Guardados para mais tarde
+                        </h2>
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            <Link
+                                v-for="chapter in savedChapters"
+                                :key="chapter.id"
+                                :href="chapterUrl(chapter.id)"
+                                class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm ring-1 ring-zinc-900/15 focus-ring transition hover:ring-zinc-900/40 dark:ring-white/20 dark:hover:ring-white/50"
+                                @click.prevent="openChapter(chapter.id)"
+                                >{{ chapter.title
+                                }}<ArrowRight
+                                    class="size-3.5"
+                                    aria-hidden="true"
+                            /></Link>
+                        </div>
+                    </section>
+                </template>
+
+                <!-- ---------------------------------------- take it with you -->
+                <div
+                    class="mt-16 grid gap-3 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]"
+                >
+                    <a
+                        :href="guidePdf.url()"
+                        class="group flex items-center gap-6 overflow-hidden rounded-3xl bg-accent-50 p-6 focus-ring sm:gap-8 sm:p-8 dark:bg-accent-400/[0.07]"
+                    >
+                        <!-- The PDF's own cover, small. -->
+                        <span
+                            class="hidden aspect-[210/270] w-28 shrink-0 flex-col justify-between bg-white p-3 text-brand-950 shadow-[0.3rem_0.3rem_0_rgb(249_178_51/0.45)] ring-1 ring-zinc-900/10 transition group-hover:-rotate-2 motion-reduce:transition-none sm:flex"
+                            aria-hidden="true"
+                        >
+                            <BrandWordmark class="h-auto w-16" />
+                            <span
+                                class="font-display text-[0.95rem] leading-tight tracking-[-0.02em]"
+                                >Guia de utilização.</span
+                            >
+                            <img
+                                class="h-auto w-full"
+                                src="/brand/guide-cover-art.svg"
+                                alt=""
+                            />
+                        </span>
+                        <span class="min-w-0">
+                            <span
+                                class="eyebrow text-accent-800 dark:text-accent-300"
+                                >PDF · Edição {{ guide.edition }}</span
+                            >
+                            <span
+                                class="mt-2 block font-display text-2xl tracking-[-0.02em]"
+                                >O guia completo, para ler ou imprimir</span
+                            >
+                            <span
+                                class="mt-2 block text-sm text-zinc-600 dark:text-zinc-400"
+                                >Com capa, índice e os
+                                {{ guide.chapters.length }} capítulos ·
+                                {{ totalMinutes }} min de leitura.</span
+                            >
+                            <span
+                                class="mt-4 inline-flex items-center gap-2 text-sm font-semibold"
+                                >Descarregar
+                                <ArrowDownToLine
+                                    class="size-4 transition group-hover:translate-y-0.5"
+                                    aria-hidden="true"
+                            /></span>
+                        </span>
+                    </a>
+                    <Link
+                        :href="helpIndex.url()"
+                        class="group flex flex-col rounded-3xl bg-zinc-900/[0.04] p-6 focus-ring transition hover:bg-zinc-900/[0.07] sm:p-8 dark:bg-white/[0.05] dark:hover:bg-white/[0.08]"
+                    >
+                        <LifeBuoy
+                            class="size-6 text-zinc-500 dark:text-zinc-400"
+                            aria-hidden="true"
+                        />
+                        <span
+                            class="mt-4 font-display text-2xl tracking-[-0.02em]"
+                            >Não encontrou a resposta?</span
+                        >
+                        <span
+                            class="mt-2 text-sm text-zinc-600 dark:text-zinc-400"
+                            >Fale com a equipa de apoio: explique o que procura
+                            e indicamos o caminho.</span
+                        >
+                        <span
+                            class="mt-auto inline-flex items-center gap-2 pt-4 text-sm font-semibold"
+                            >Falar com o apoio
+                            <ArrowRight
+                                class="size-4 transition group-hover:translate-x-0.5"
+                                aria-hidden="true"
+                        /></span>
+                    </Link>
+                </div>
+
+                <p class="mt-8 text-xs text-zinc-500 dark:text-zinc-400">
+                    Edição {{ guide.edition }} · actualizado a
+                    {{ guide.updated_at }}
+                </p>
+            </div>
+
+            <!-- ===================================================== chapter -->
+            <div
+                v-else
+                class="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-14"
+            >
+                <aside
+                    class="min-w-0 lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] lg:self-start lg:overflow-y-auto lg:overscroll-contain lg:pe-2"
+                    aria-label="Capítulos do guia"
+                >
+                    <Link
+                        :href="guideIndex.url()"
+                        class="inline-flex items-center gap-2 rounded-full py-1.5 text-sm font-semibold focus-ring"
+                        @click.prevent="openChapter(null)"
+                    >
+                        <ArrowLeft class="size-4" aria-hidden="true" />
+                        Início do guia
+                    </Link>
+
+                    <!-- On a phone the list folds away above the chapter. -->
+                    <details class="group mt-4 lg:hidden">
+                        <summary
+                            class="flex cursor-pointer list-none items-center justify-between rounded-2xl bg-zinc-900/[0.04] px-4 py-3 text-sm font-semibold focus-ring dark:bg-white/[0.05] [&::-webkit-details-marker]:hidden"
+                        >
+                            Todos os capítulos ·
+                            {{ progress.completed.length }}/{{
+                                guide.chapters.length
+                            }}
+                            lidos
+                            <ChevronDown
+                                class="size-4 transition group-open:rotate-180"
+                                aria-hidden="true"
+                            />
+                        </summary>
+                        <nav class="mt-3" aria-label="Capítulos">
+                            <div
+                                v-for="topic in topics"
+                                :key="topic.name"
+                                class="mt-4 first:mt-0"
+                            >
+                                <p
+                                    class="px-3 eyebrow text-zinc-500 dark:text-zinc-400"
+                                >
+                                    {{ topic.name }}
+                                </p>
+                                <Link
+                                    v-for="chapter in topic.chapters"
+                                    :key="chapter.id"
+                                    :href="chapterUrl(chapter.id)"
+                                    :aria-current="
+                                        active.id === chapter.id
+                                            ? 'page'
+                                            : undefined
+                                    "
+                                    class="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm focus-ring aria-[current=page]:bg-zinc-900/[0.06] aria-[current=page]:font-semibold dark:aria-[current=page]:bg-white/10"
+                                    @click.prevent="openChapter(chapter.id)"
+                                >
+                                    <CircleCheck
+                                        v-if="isRead(chapter)"
+                                        class="size-4 shrink-0 text-accent-500"
+                                        aria-label="Lido"
+                                    />
+                                    <span
+                                        v-else
+                                        class="w-4 shrink-0 numeric text-xs text-zinc-400"
+                                        >{{ chapterNumber(chapter) }}</span
+                                    >
+                                    {{ chapter.title }}
+                                </Link>
+                            </div>
+                        </nav>
+                    </details>
+
+                    <div class="mt-6 hidden lg:block">
+                        <label
+                            class="field-adorned [--field-adorn-start:2.5rem]"
+                        >
+                            <span class="sr-only">Filtrar capítulos</span>
+                            <Search
+                                class="field-adornment-start size-4"
+                                aria-hidden="true"
+                            />
+                            <input
+                                v-model="libraryQuery"
+                                type="search"
+                                autocomplete="off"
+                                placeholder="Filtrar capítulos"
+                                class="form-search"
+                            />
+                        </label>
+                        <nav class="mt-5" aria-label="Capítulos">
+                            <div
+                                v-for="topic in libraryTopics"
+                                :key="topic.name"
+                                class="mt-5 first:mt-0"
+                            >
+                                <p
+                                    class="px-3 eyebrow text-zinc-500 dark:text-zinc-400"
+                                >
+                                    {{ topic.name }}
+                                </p>
+                                <Link
+                                    v-for="chapter in topic.chapters"
+                                    :key="chapter.id"
+                                    :href="chapterUrl(chapter.id)"
+                                    :aria-current="
+                                        active.id === chapter.id
+                                            ? 'page'
+                                            : undefined
+                                    "
+                                    class="mt-0.5 flex items-start gap-3 rounded-xl px-3 py-2 text-sm/5 text-zinc-700 focus-ring transition hover:bg-zinc-900/[0.04] hover:text-zinc-950 aria-[current=page]:bg-zinc-900/[0.06] aria-[current=page]:font-semibold aria-[current=page]:text-zinc-950 dark:text-zinc-300 dark:hover:bg-white/[0.06] dark:hover:text-white dark:aria-[current=page]:bg-white/10 dark:aria-[current=page]:text-white"
+                                    @click.prevent="openChapter(chapter.id)"
+                                >
+                                    <CircleCheck
+                                        v-if="isRead(chapter)"
+                                        class="mt-0.5 size-4 shrink-0 text-accent-500"
+                                        aria-label="Lido"
+                                    />
+                                    <span
+                                        v-else
+                                        class="mt-px w-4 shrink-0 numeric text-xs text-zinc-400"
+                                        >{{ chapterNumber(chapter) }}</span
+                                    >
+                                    <span class="min-w-0">{{
+                                        chapter.title
+                                    }}</span>
+                                </Link>
+                            </div>
+                            <p
+                                v-if="!libraryTopics.length"
+                                class="px-3 text-sm text-zinc-500"
+                            >
+                                Nenhum capítulo com essa palavra.
+                            </p>
+                        </nav>
+                        <div
+                            class="mt-6 border-t border-zinc-900/10 px-3 pt-5 dark:border-white/10"
+                        >
+                            <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                                {{ progress.completed.length }} de
+                                {{ guide.chapters.length }} lidos
+                            </p>
+                            <div
+                                class="mt-2 h-1 overflow-hidden rounded-full bg-zinc-900/10 dark:bg-white/10"
+                                aria-hidden="true"
+                            >
+                                <div
+                                    class="h-full rounded-full bg-accent-400"
+                                    :style="{ width: `${percent}%` }"
+                                />
+                            </div>
+                        </div>
                     </div>
                 </aside>
 
                 <article
-                    class="guide-article"
+                    class="max-w-3xl min-w-0"
                     aria-labelledby="chapter-heading"
                 >
-                    <header class="article-header">
-                        <div class="article-meta">
+                    <header
+                        class="border-b border-zinc-900/10 pb-8 dark:border-white/10"
+                    >
+                        <p
+                            class="flex flex-wrap items-center gap-x-3 gap-y-1 eyebrow text-zinc-500 dark:text-zinc-400"
+                        >
                             <span
-                                >{{
-                                    String(activeIndex + 1).padStart(2, '0')
-                                }}
-                                / {{ active.category }}</span
-                            ><span
-                                ><Clock class="size-3.5" aria-hidden="true" />{{
+                                >Capítulo {{ chapterNumber(active) }} ·
+                                {{ active.category }}</span
+                            >
+                            <span class="inline-flex items-center gap-1"
+                                ><Clock class="size-3" aria-hidden="true" />{{
                                     active.minutes
                                 }}
-                                min de leitura</span
+                                min</span
                             >
-                        </div>
-                        <h2 id="chapter-heading" ref="heading" tabindex="-1">
+                            <span
+                                v-if="completed"
+                                class="inline-flex items-center gap-1 text-accent-700 dark:text-accent-300"
+                                ><Check class="size-3" aria-hidden="true" />
+                                Lido</span
+                            >
+                        </p>
+                        <h1
+                            id="chapter-heading"
+                            ref="heading"
+                            tabindex="-1"
+                            class="mt-3 scroll-mt-24 font-display text-[clamp(2rem,1.4rem+2.4vw,2.9rem)] leading-[1.05] tracking-[-0.03em] text-balance text-zinc-950 focus:outline-none dark:text-white"
+                        >
                             {{ active.title }}
-                        </h2>
-                        <p>{{ active.summary }}</p>
-                        <div class="article-actions">
+                        </h1>
+                        <p
+                            class="mt-4 text-lg/8 text-pretty text-zinc-600 dark:text-zinc-400"
+                        >
+                            {{ active.summary }}
+                        </p>
+                        <div class="mt-6 flex flex-wrap gap-2.5">
                             <Link
                                 :href="active.url"
-                                class="guide-button primary"
+                                class="inline-flex h-11 items-center gap-2 rounded-full bg-brand-950 px-5 text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 dark:bg-white dark:text-brand-950 dark:hover:bg-zinc-200"
                                 >Abrir na aplicação
-                                <ArrowRight
-                                    class="size-4"
-                                    aria-hidden="true" /></Link
-                            ><button
-                                class="guide-button secondary"
+                                <ArrowRight class="size-4" aria-hidden="true"
+                            /></Link>
+                            <button
+                                type="button"
+                                class="inline-flex h-11 items-center gap-2 rounded-full px-5 text-sm font-semibold ring-1 ring-zinc-900/15 focus-ring transition hover:ring-zinc-900/40 dark:ring-white/20 dark:hover:ring-white/50"
                                 :aria-pressed="saved"
                                 @click="toggle('saved', active.id)"
                             >
@@ -381,51 +999,98 @@ function clearFilters(): void {
                                     class="size-4"
                                     :fill="saved ? 'currentColor' : 'none'"
                                     aria-hidden="true"
-                                />{{ saved ? 'Guardado' : 'Guardar capítulo' }}
+                                />{{
+                                    saved ? 'Guardado' : 'Guardar para depois'
+                                }}
                             </button>
                         </div>
                     </header>
-                    <ol class="guide-steps">
+
+                    <!-- Steps: one line runs down the numbers, so it reads as a sequence. -->
+                    <ol class="relative mt-10 grid gap-9">
                         <li
                             v-for="(step, index) in active.steps"
                             :key="`${active.id}-${index}`"
+                            class="relative grid grid-cols-[2.5rem_minmax(0,1fr)] gap-4"
                         >
-                            <span aria-hidden="true">{{ index + 1 }}</span>
-                            <div>
-                                <h3>{{ step.title }}</h3>
-                                <p>{{ step.body }}</p>
+                            <span
+                                v-if="index < active.steps.length - 1"
+                                class="absolute start-5 top-11 -bottom-9 w-px bg-zinc-900/10 dark:bg-white/10"
+                                aria-hidden="true"
+                            />
+                            <span
+                                class="relative grid size-10 place-items-center rounded-full bg-accent-400 font-display text-lg text-brand-950"
+                                aria-hidden="true"
+                                >{{ index + 1 }}</span
+                            >
+                            <div class="min-w-0 pt-1.5">
+                                <h2 class="text-lg font-semibold">
+                                    {{ step.title }}
+                                </h2>
+                                <p
+                                    class="mt-2 text-[0.95rem]/7 text-pretty text-zinc-700 dark:text-zinc-300"
+                                >
+                                    {{ step.body }}
+                                </p>
                             </div>
                         </li>
                     </ol>
+
                     <section
                         v-if="active.scenarios?.length"
-                        class="guide-scenarios"
+                        class="mt-14"
                         :aria-labelledby="`scenarios-${active.id}`"
                     >
-                        <p class="guide-kicker">NA PRÁTICA</p>
-                        <h3 :id="`scenarios-${active.id}`">
+                        <p class="eyebrow text-zinc-500 dark:text-zinc-400">
+                            Na prática
+                        </p>
+                        <h2
+                            :id="`scenarios-${active.id}`"
+                            class="mt-2 font-display text-2xl tracking-[-0.02em]"
+                        >
                             Qual documento usar?
-                        </h3>
-                        <p>
+                        </h2>
+                        <p
+                            class="mt-2 text-sm text-zinc-600 dark:text-zinc-400"
+                        >
                             Situações ilustrativas para reconhecer a sua
                             operação.
                         </p>
-                        <div
-                            v-for="scenario in active.scenarios"
-                            :key="scenario.code"
-                            class="scenario-card"
-                        >
-                            <span class="scenario-code">{{
-                                scenario.code
-                            }}</span>
-                            <div>
-                                <h4>{{ scenario.title }}</h4>
-                                <strong>{{ scenario.when }}</strong>
-                                <p>{{ scenario.example }}</p>
-                                <p>{{ scenario.action }}</p>
-                                <p class="scenario-attention">
-                                    {{ scenario.attention }}
-                                </p>
+                        <div class="mt-6 grid gap-3">
+                            <div
+                                v-for="scenario in active.scenarios"
+                                :key="scenario.code"
+                                class="grid grid-cols-[3.25rem_minmax(0,1fr)] gap-4 rounded-2xl bg-zinc-900/[0.04] p-5 dark:bg-white/[0.05]"
+                            >
+                                <span
+                                    class="grid h-9 place-items-center rounded-lg bg-white font-mono text-sm font-semibold ring-1 ring-zinc-900/10 dark:bg-zinc-900 dark:ring-white/10"
+                                    >{{ scenario.code }}</span
+                                >
+                                <div class="min-w-0">
+                                    <h3 class="font-semibold">
+                                        {{ scenario.title }}
+                                    </h3>
+                                    <p
+                                        class="mt-1 text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                                    >
+                                        {{ scenario.when }}
+                                    </p>
+                                    <p
+                                        class="mt-2 text-sm/6 text-zinc-600 dark:text-zinc-400"
+                                    >
+                                        {{ scenario.example }}
+                                    </p>
+                                    <p
+                                        class="mt-2 text-sm/6 text-zinc-600 dark:text-zinc-400"
+                                    >
+                                        {{ scenario.action }}
+                                    </p>
+                                    <p
+                                        class="mt-3 border-s-2 border-accent-400 ps-3 text-sm/6 text-zinc-700 dark:text-zinc-300"
+                                    >
+                                        {{ scenario.attention }}
+                                    </p>
+                                </div>
                             </div>
                         </div>
                         <a
@@ -433,74 +1098,132 @@ function clearFilters(): void {
                             :href="active.source.url"
                             target="_blank"
                             rel="noopener noreferrer"
-                            class="guide-source"
+                            class="mt-4 inline-block text-xs text-zinc-500 underline underline-offset-4 focus-ring hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white"
                             >{{ active.source.label }} ↗</a
                         >
                     </section>
+
                     <figure
                         v-for="screenshot in active.screenshots"
                         :key="screenshot.src"
-                        class="guide-screenshot"
+                        class="mt-14"
                     >
-                        <h3>{{ screenshot.title }}</h3>
-                        <p>{{ screenshot.caption }}</p>
+                        <h2 class="font-display text-2xl tracking-[-0.02em]">
+                            {{ screenshot.title }}
+                        </h2>
+                        <p
+                            class="mt-2 text-sm text-zinc-600 dark:text-zinc-400"
+                        >
+                            {{ screenshot.caption }}
+                        </p>
                         <a
                             :href="screenshot.src"
                             target="_blank"
                             rel="noopener noreferrer"
+                            class="mt-5 block overflow-hidden rounded-2xl ring-1 ring-zinc-900/10 focus-ring dark:ring-white/10"
                             :aria-label="`Ampliar: ${screenshot.title}`"
                             ><img
                                 :src="screenshot.src"
                                 :alt="screenshot.alt"
                                 loading="lazy"
+                                class="h-auto w-full"
                         /></a>
-                        <figcaption>
-                            <span class="guide-kicker"
-                                >DADOS DE DEMONSTRAÇÃO · TOQUE PARA
-                                AMPLIAR</span
+                        <figcaption class="mt-3">
+                            <span
+                                class="eyebrow text-zinc-500 dark:text-zinc-400"
+                                >Dados de demonstração · toque para
+                                ampliar</span
                             >
-                            <p>{{ screenshot.instruction }}</p>
+                            <p
+                                class="mt-1.5 text-sm/6 text-zinc-600 dark:text-zinc-400"
+                            >
+                                {{ screenshot.instruction }}
+                            </p>
                         </figcaption>
                     </figure>
-                    <aside class="guide-note">
-                        <span class="guide-kicker">TENHA EM CONTA</span>
-                        <p>{{ active.tip }}</p>
+
+                    <aside
+                        class="mt-12 rounded-2xl bg-accent-50 p-5 sm:p-6 dark:bg-accent-400/[0.07]"
+                    >
+                        <p class="eyebrow text-accent-800 dark:text-accent-300">
+                            Tenha em conta
+                        </p>
+                        <p
+                            class="mt-2 text-[0.95rem]/7 text-zinc-800 dark:text-zinc-200"
+                        >
+                            {{ active.tip }}
+                        </p>
                     </aside>
+
                     <section
-                        class="guide-checklist"
+                        class="mt-12"
                         :aria-labelledby="`checklist-${active.id}`"
                     >
-                        <h3 :id="`checklist-${active.id}`">
+                        <h2
+                            :id="`checklist-${active.id}`"
+                            class="text-lg font-semibold"
+                        >
                             Antes de continuar
-                        </h3>
-                        <p>
+                        </h2>
+                        <p
+                            class="mt-1 text-sm text-zinc-600 dark:text-zinc-400"
+                        >
                             Confirme o que aprendeu. Estes vistos não alteram os
                             dados da empresa.
                         </p>
-                        <label
-                            v-for="(item, index) in active.checklist"
-                            :key="`${active.id}:${index}`"
-                            ><input
-                                type="checkbox"
-                                :checked="
-                                    progress.checks.includes(
-                                        `${active.id}:${index}`,
-                                    )
-                                "
-                                @change="
-                                    toggle('checks', `${active.id}:${index}`)
-                                "
-                            /><span>{{ item }}</span></label
-                        >
+                        <div class="mt-4 grid gap-1">
+                            <label
+                                v-for="(item, index) in active.checklist"
+                                :key="`${active.id}:${index}`"
+                                class="flex cursor-pointer items-start gap-3 rounded-xl px-3 py-2.5 text-[0.95rem] transition hover:bg-zinc-900/[0.04] dark:hover:bg-white/[0.05]"
+                                ><input
+                                    type="checkbox"
+                                    class="form-checkbox mt-0.5"
+                                    :checked="
+                                        progress.checks.includes(
+                                            `${active.id}:${index}`,
+                                        )
+                                    "
+                                    @change="
+                                        toggle(
+                                            'checks',
+                                            `${active.id}:${index}`,
+                                        )
+                                    "
+                                /><span>{{ item }}</span></label
+                            >
+                        </div>
                     </section>
-                    <details :key="active.id" class="guide-question">
-                        <summary>{{ active.question }}</summary>
-                        <p>{{ active.answer }}</p>
+
+                    <details
+                        :key="active.id"
+                        class="group mt-8 border-y border-zinc-900/10 dark:border-white/10"
+                    >
+                        <summary
+                            class="flex cursor-pointer list-none items-center justify-between gap-4 py-4 font-semibold focus-ring [&::-webkit-details-marker]:hidden"
+                        >
+                            {{ active.question }}
+                            <ChevronDown
+                                class="size-4 shrink-0 transition group-open:rotate-180 motion-reduce:transition-none"
+                                aria-hidden="true"
+                            />
+                        </summary>
+                        <p
+                            class="pb-5 text-[0.95rem]/7 text-zinc-600 dark:text-zinc-400"
+                        >
+                            {{ active.answer }}
+                        </p>
                     </details>
-                    <div class="article-completion">
+
+                    <div class="mt-10 flex flex-wrap items-center gap-4">
                         <button
-                            class="guide-button"
-                            :class="completed ? 'secondary' : 'primary'"
+                            type="button"
+                            :class="[
+                                completed
+                                    ? 'ring-1 ring-zinc-900/15 hover:ring-zinc-900/40 dark:ring-white/20 dark:hover:ring-white/50'
+                                    : 'bg-brand-950 text-white hover:bg-brand-800 dark:bg-white dark:text-brand-950 dark:hover:bg-zinc-200',
+                                'inline-flex h-11 items-center gap-2 rounded-full px-5 text-sm font-semibold focus-ring transition',
+                            ]"
                             :aria-pressed="completed"
                             @click="markRead"
                         >
@@ -508,652 +1231,89 @@ function clearFilters(): void {
                                 completed
                                     ? 'Lido · marcar como não lido'
                                     : 'Marcar capítulo como lido'
-                            }}</button
-                        ><span>Ao seu ritmo, sem perder o ponto.</span>
+                            }}
+                        </button>
+                        <span class="text-sm text-zinc-500 dark:text-zinc-400"
+                            >Ao seu ritmo, sem perder o ponto.</span
+                        >
                     </div>
+
                     <nav
-                        class="chapter-pagination"
+                        class="mt-10 grid gap-3 sm:grid-cols-2"
                         aria-label="Percorrer capítulos"
                     >
-                        <button
-                            v-if="activeIndex > 0"
-                            @click="
-                                openChapter(guide.chapters[activeIndex - 1]!.id)
-                            "
+                        <Link
+                            v-if="previousChapter"
+                            :href="chapterUrl(previousChapter.id)"
+                            class="group flex flex-col rounded-2xl p-5 ring-1 ring-zinc-900/10 focus-ring transition hover:ring-zinc-900/30 dark:ring-white/10 dark:hover:ring-white/30"
+                            @click.prevent="openChapter(previousChapter.id)"
                         >
-                            <ChevronLeft class="size-4" aria-hidden="true" />
-                            Anterior</button
-                        ><button
-                            v-if="activeIndex < guide.chapters.length - 1"
-                            class="next-chapter"
-                            @click="
-                                openChapter(guide.chapters[activeIndex + 1]!.id)
-                            "
+                            <span
+                                class="inline-flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400"
+                                ><ArrowLeft
+                                    class="size-3.5 transition group-hover:-translate-x-0.5"
+                                    aria-hidden="true"
+                                />Anterior</span
+                            >
+                            <span class="mt-2 font-semibold">{{
+                                previousChapter.title
+                            }}</span>
+                        </Link>
+                        <Link
+                            v-if="nextChapter"
+                            :href="chapterUrl(nextChapter.id)"
+                            class="group flex flex-col rounded-2xl bg-zinc-900/[0.04] p-5 text-end focus-ring transition hover:bg-zinc-900/[0.07] sm:col-start-2 dark:bg-white/[0.05] dark:hover:bg-white/[0.08]"
+                            @click.prevent="openChapter(nextChapter.id)"
                         >
-                            Próximo capítulo
-                            <ChevronRight class="size-4" aria-hidden="true" />
-                        </button>
+                            <span
+                                class="inline-flex items-center justify-end gap-1.5 text-xs text-zinc-500 dark:text-zinc-400"
+                                >Próximo capítulo<ArrowRight
+                                    class="size-3.5 transition group-hover:translate-x-0.5"
+                                    aria-hidden="true"
+                            /></span>
+                            <span class="mt-2 font-semibold">{{
+                                nextChapter.title
+                            }}</span>
+                        </Link>
                     </nav>
-                    <section class="related-chapters">
-                        <p class="guide-kicker">CONTINUE A APRENDER</p>
-                        <div>
+
+                    <section v-if="related.length" class="mt-12">
+                        <p class="eyebrow text-zinc-500 dark:text-zinc-400">
+                            Continue a aprender
+                        </p>
+                        <div class="mt-3 flex flex-wrap gap-2">
                             <Link
                                 v-for="chapter in related"
                                 :key="chapter.id"
-                                :href="
-                                    guideIndex.url({
-                                        query: { chapter: chapter.id },
-                                    })
-                                "
+                                :href="chapterUrl(chapter.id)"
+                                class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm ring-1 ring-zinc-900/15 focus-ring transition hover:ring-zinc-900/40 dark:ring-white/20 dark:hover:ring-white/50"
                                 @click.prevent="openChapter(chapter.id)"
                                 >{{ chapter.title
-                                }}<ArrowRight class="size-4" aria-hidden="true"
+                                }}<ArrowRight
+                                    class="size-3.5"
+                                    aria-hidden="true"
                             /></Link>
                         </div>
                     </section>
+
+                    <footer
+                        class="mt-14 flex flex-wrap items-center justify-between gap-4 border-t border-zinc-900/10 pt-6 text-xs text-zinc-500 dark:border-white/10 dark:text-zinc-400"
+                    >
+                        <span
+                            >Edição {{ guide.edition }} ·
+                            {{ guide.updated_at }}</span
+                        >
+                        <a
+                            :href="guidePdf.url()"
+                            class="inline-flex items-center gap-2 rounded-full py-2 font-medium focus-ring hover:text-zinc-950 dark:hover:text-white"
+                            >Descarregar o guia completo
+                            <ArrowDownToLine class="size-4" aria-hidden="true"
+                        /></a>
+                    </footer>
                 </article>
             </div>
-            <footer class="guide-footer">
-                <span>Edição {{ guide.edition }} · {{ guide.updated_at }}</span
-                ><a :href="guidePdf.url()"
-                    >Descarregar o guia completo
-                    <ArrowDownToLine class="size-4" aria-hidden="true"
-                /></a>
-            </footer>
+
             <span class="sr-only" role="status">{{ announcement }}</span>
         </div>
     </AppLayout>
 </template>
-
-<style scoped>
-.guide-scenarios,
-.guide-screenshot {
-    margin-block: 2rem;
-}
-.guide-scenarios > h3,
-.guide-screenshot h3 {
-    font-size: 1.35rem;
-    font-weight: 650;
-    margin-block: 0.4rem;
-}
-.guide-scenarios > p,
-.guide-screenshot > p {
-    color: var(--guide-muted);
-    line-height: 1.6;
-}
-.scenario-card {
-    display: flex;
-    align-items: start;
-    gap: 1rem;
-    padding-block: 1.5rem;
-    border-block-end: 1px solid var(--guide-line);
-}
-.scenario-code {
-    flex: none;
-    min-inline-size: 2.7rem;
-    padding: 0.5rem;
-    text-align: center;
-    border-radius: 0.5rem;
-    background: var(--guide-soft);
-    font-weight: 750;
-}
-.scenario-card h4 {
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin-block-end: 0.5rem;
-}
-.scenario-card strong {
-    font-size: 0.85rem;
-}
-.scenario-card p {
-    margin-block-start: 0.6rem;
-    line-height: 1.65;
-    font-size: 0.9rem;
-}
-.scenario-attention {
-    color: var(--guide-muted);
-    border-inline-start: 2px solid var(--color-accent-400);
-    padding-inline-start: 0.8rem;
-}
-.guide-source {
-    display: inline-block;
-    margin-block-start: 1rem;
-    text-decoration: underline;
-    text-underline-offset: 0.2em;
-    font-size: 0.8rem;
-}
-.guide-source:active,
-.guide-screenshot a:active {
-    opacity: 0.8;
-}
-.guide-screenshot img {
-    inline-size: 100%;
-    block-size: auto;
-    border: 1px solid var(--guide-line);
-    border-radius: 0.6rem;
-    margin-block: 1rem;
-}
-.guide-screenshot figcaption p {
-    margin-block-start: 0.5rem;
-    font-size: 0.85rem;
-    line-height: 1.6;
-    color: var(--guide-muted);
-}
-
-.guide-shell {
-    --guide-ink: oklch(0.22 0 none);
-    --guide-muted: oklch(0.48 0 none);
-    --guide-line: oklch(0.88 0.005 90);
-    --guide-paper: oklch(1 0 none);
-    --guide-soft: oklch(0.975 0.005 90);
-    color: var(--guide-ink);
-    padding: clamp(1rem, 3vw, 3rem);
-    max-inline-size: 94rem;
-    margin-inline: auto;
-}
-.dark .guide-shell {
-    --guide-ink: oklch(0.95 0 none);
-    --guide-muted: oklch(0.72 0 none);
-    --guide-line: oklch(0.32 0 none);
-    --guide-paper: oklch(0.18 0 none);
-    --guide-soft: oklch(0.23 0 none);
-}
-.guide-hero {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: clamp(2rem, 5vw, 5rem);
-    padding-block: 1rem 2.5rem;
-}
-.hero-copy {
-    flex: 999 1 28rem;
-    min-inline-size: min(100%, 18rem);
-    display: flex;
-    flex-direction: column;
-    gap: 1.4rem;
-}
-.guide-kicker {
-    font-size: 0.68rem;
-    letter-spacing: 0.14em;
-    font-weight: 700;
-    color: var(--guide-muted);
-}
-h1 {
-    font-size: clamp(2.45rem, 4.5vw, 4.3rem);
-    line-height: 1.04;
-    letter-spacing: -0.045em;
-    font-weight: 650;
-}
-.hero-summary {
-    color: var(--guide-muted);
-    font-size: 1rem;
-    line-height: 1.65;
-    max-inline-size: 35rem;
-}
-.hero-actions,
-.article-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.65rem;
-}
-.guide-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.55rem;
-    min-block-size: 2.75rem;
-    padding: 0.65rem 1.1rem;
-    border-radius: 99px;
-    font-size: 0.84rem;
-    font-weight: 650;
-    cursor: pointer;
-}
-.primary {
-    background: var(--guide-ink);
-    color: var(--guide-paper);
-}
-.secondary {
-    border: 1px solid var(--guide-line);
-    background: var(--guide-paper);
-    color: var(--guide-ink);
-}
-.pdf-card {
-    flex: 1 1 15rem;
-    max-inline-size: 21rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    background: var(--guide-soft);
-    border: 1px solid var(--guide-line);
-    border-radius: 1.25rem;
-    padding: 1.3rem;
-}
-.mini-cover {
-    background: oklch(0.985 0.005 90);
-    color: oklch(0.22 0 none);
-    border: 1px solid oklch(0.87 0.005 90);
-    padding: 1.6rem;
-    inline-size: 11rem;
-    margin-inline: auto;
-    aspect-ratio: 210 / 270;
-    display: flex;
-    flex-direction: column;
-    align-items: start;
-    justify-content: space-between;
-    box-shadow: 0.35rem 0.35rem 0 oklch(0.83 0.02 85);
-}
-.mini-brand {
-    inline-size: 7rem;
-    block-size: auto;
-    color: var(--color-brand-950);
-}
-.mini-cover strong {
-    font-size: 1.85rem;
-    line-height: 1.05;
-    letter-spacing: -0.035em;
-}
-.mini-cover small {
-    font-size: 0.4rem;
-    letter-spacing: 0.08em;
-}
-.mini-developer {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-size: 0.32rem;
-}
-.mini-developer img {
-    inline-size: 1.5rem;
-    block-size: auto;
-}
-.mini-art {
-    inline-size: 100%;
-    block-size: auto;
-}
-.pdf-caption {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    font-size: 0.85rem;
-}
-.pdf-caption small {
-    display: block;
-    font-size: 0.73rem;
-    color: var(--guide-muted);
-    margin-block-start: 0.2rem;
-}
-.reading-progress {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 1rem;
-    border-block: 1px solid var(--guide-line);
-    padding-block: 1.2rem;
-    margin-block-end: 2rem;
-}
-.progress-copy {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-    min-inline-size: 12rem;
-    font-size: 0.83rem;
-}
-.progress-copy span {
-    font-size: 0.73rem;
-    color: var(--guide-muted);
-}
-.progress-percent {
-    font-size: 0.8rem;
-    font-variant-numeric: tabular-nums;
-}
-progress {
-    inline-size: clamp(5rem, 15vw, 13rem);
-    block-size: 0.35rem;
-    border: 0;
-    border-radius: 99px;
-    overflow: clip;
-    background: var(--guide-line);
-}
-progress::-webkit-progress-bar {
-    background: var(--guide-line);
-}
-progress::-webkit-progress-value {
-    background: var(--color-accent-400);
-}
-progress::-moz-progress-bar {
-    background: var(--color-accent-400);
-}
-.guide-workspace {
-    display: flex;
-    flex-wrap: wrap;
-    gap: clamp(1.25rem, 3vw, 2.5rem);
-    align-items: start;
-}
-.guide-library {
-    flex: 1 1 17rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.85rem;
-}
-.guide-article {
-    flex: 999 1 35rem;
-    min-inline-size: min(100%, 24rem);
-    background: var(--guide-paper);
-    border: 1px solid var(--guide-line);
-    border-radius: 1.25rem;
-    padding: clamp(1.25rem, 3vw, 3rem);
-}
-.search-label {
-    font-size: 0.82rem;
-    font-weight: 650;
-}
-.guide-search {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    border: 1px solid var(--guide-line);
-    border-radius: 0.7rem;
-    padding-inline: 0.75rem;
-    background: var(--guide-paper);
-}
-.guide-search input {
-    inline-size: 100%;
-    min-inline-size: 0;
-    min-block-size: 2.9rem;
-    background: transparent;
-    font-size: 0.85rem;
-}
-.guide-search button {
-    min-inline-size: 2rem;
-    min-block-size: 2.75rem;
-    display: grid;
-    place-items: center;
-}
-.category-filters {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.3rem;
-}
-.category-filters button {
-    font-size: 0.7rem;
-    border-radius: 99px;
-    padding: 0.6rem 0.75rem;
-    border: 1px solid var(--guide-line);
-    min-block-size: 2.5rem;
-}
-.category-filters button[aria-pressed='true'] {
-    background: var(--guide-ink);
-    color: var(--guide-paper);
-    border-color: var(--guide-ink);
-}
-.saved-filter {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.77rem;
-    min-block-size: 2.5rem;
-    align-self: start;
-}
-.saved-filter[aria-pressed='true'] {
-    font-weight: 750;
-}
-.saved-filter span {
-    background: var(--guide-line);
-    border-radius: 99px;
-    padding-inline: 0.5rem;
-}
-.result-count {
-    font-size: 0.7rem;
-    color: var(--guide-muted);
-}
-.chapter-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
-    max-block-size: 65vh;
-    overflow-y: auto;
-    padding: 0.2rem;
-}
-.chapter-list a {
-    display: flex;
-    align-items: center;
-    gap: 0.65rem;
-    padding: 0.85rem 0.7rem;
-    border-radius: 0.7rem;
-    border: 1px solid transparent;
-}
-.chapter-list a[aria-current='page'] {
-    background: var(--guide-paper);
-    border-color: var(--guide-line);
-    box-shadow: 0 2px 5px oklch(0 0 none / 0.03);
-}
-.chapter-number {
-    font-size: 0.72rem;
-    color: var(--guide-muted);
-    flex: 0 0 1.3rem;
-    font-variant-numeric: tabular-nums;
-}
-.chapter-list a > span:nth-child(2) {
-    flex: 1;
-}
-.chapter-list strong {
-    display: block;
-    font-size: 0.83rem;
-    line-height: 1.3;
-    font-weight: 600;
-}
-.chapter-list small {
-    display: block;
-    color: var(--guide-muted);
-    font-size: 0.65rem;
-    margin-block-start: 0.25rem;
-}
-.guide-empty {
-    display: flex;
-    flex-direction: column;
-    align-items: start;
-    gap: 0.75rem;
-    padding-block: 1.5rem;
-    font-size: 0.85rem;
-}
-.guide-empty p {
-    color: var(--guide-muted);
-}
-.article-header {
-    display: flex;
-    flex-direction: column;
-    gap: 1.1rem;
-    padding-block-end: 2rem;
-    border-block-end: 2px solid var(--color-accent-400);
-}
-.article-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    justify-content: space-between;
-    font-size: 0.67rem;
-    font-weight: 600;
-    color: var(--guide-muted);
-}
-.article-meta span {
-    display: inline-flex;
-    gap: 0.4rem;
-    align-items: center;
-}
-h2 {
-    font-size: clamp(1.85rem, 3vw, 2.7rem);
-    font-weight: 650;
-    line-height: 1.1;
-    letter-spacing: -0.035em;
-    scroll-margin-block-start: 6rem;
-}
-.article-header > p {
-    font-size: 1rem;
-    color: var(--guide-muted);
-    line-height: 1.6;
-}
-.guide-steps {
-    display: flex;
-    flex-direction: column;
-    gap: 1.8rem;
-    padding-block: 2rem;
-}
-.guide-steps li {
-    display: flex;
-    align-items: start;
-    gap: 1rem;
-}
-.guide-steps li > span {
-    flex: 0 0 1.7rem;
-    display: grid;
-    place-items: center;
-    block-size: 1.7rem;
-    border: 1px solid var(--guide-line);
-    border-radius: 50%;
-    font-size: 0.75rem;
-}
-h3 {
-    font-size: 1.06rem;
-    font-weight: 650;
-}
-.guide-steps p {
-    margin-block-start: 0.4rem;
-    font-size: 0.9rem;
-    line-height: 1.8;
-    color: var(--guide-muted);
-}
-.guide-note {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    padding: 1.2rem;
-    border-inline-start: 3px solid var(--color-accent-400);
-    background: var(--guide-soft);
-    font-size: 0.86rem;
-    line-height: 1.7;
-}
-.guide-checklist {
-    display: flex;
-    flex-direction: column;
-    gap: 0.85rem;
-    padding-block: 2rem;
-}
-.guide-checklist > p {
-    color: var(--guide-muted);
-    font-size: 0.8rem;
-}
-.guide-checklist label {
-    display: flex;
-    align-items: start;
-    gap: 0.7rem;
-    font-size: 0.88rem;
-    line-height: 1.5;
-    cursor: pointer;
-    min-block-size: 2.4rem;
-}
-.guide-checklist input {
-    flex: 0 0 1.15rem;
-    block-size: 1.15rem;
-    margin-block-start: 0.1rem;
-    accent-color: var(--guide-ink);
-}
-.guide-question {
-    border-block: 1px solid var(--guide-line);
-    padding-block: 1rem;
-}
-.guide-question summary {
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 0.9rem;
-    padding-block: 0.25rem;
-}
-.guide-question p {
-    margin-block-start: 0.75rem;
-    color: var(--guide-muted);
-    font-size: 0.85rem;
-    line-height: 1.7;
-}
-.article-completion {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 1rem;
-    padding-block: 1.75rem;
-}
-.article-completion span {
-    font-size: 0.73rem;
-    color: var(--guide-muted);
-}
-.chapter-pagination {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    border-block-start: 1px solid var(--guide-line);
-    padding-block-start: 1rem;
-}
-.chapter-pagination button {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.8rem;
-    min-block-size: 2.75rem;
-}
-.next-chapter {
-    margin-inline-start: auto;
-}
-.related-chapters {
-    padding-block-start: 1.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.8rem;
-}
-.related-chapters > div {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-}
-.related-chapters a {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.65rem;
-    border: 1px solid var(--guide-line);
-    border-radius: 0.5rem;
-    padding: 0.65rem;
-    font-size: 0.75rem;
-}
-.guide-footer {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: 1rem;
-    padding-block: 2rem 0.5rem;
-    color: var(--guide-muted);
-    font-size: 0.73rem;
-}
-.guide-footer a {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    min-block-size: 2.75rem;
-}
-:is(button, a, input, summary):focus-visible {
-    outline: 2px solid var(--color-accent-600);
-    outline-offset: 3px;
-}
-:is(button, a, summary):active {
-    opacity: 0.75;
-}
-@media (hover: hover) and (pointer: fine) {
-    .guide-button:hover,
-    .chapter-list a:hover,
-    .related-chapters a:hover,
-    .category-filters button:hover {
-        box-shadow: 0 0 0 2px var(--guide-line);
-    }
-    .pdf-card:hover {
-        border-color: var(--guide-muted);
-    }
-}
-</style>

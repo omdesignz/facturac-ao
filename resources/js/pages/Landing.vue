@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { ArrowRight, Menu, RotateCcw, Search, X } from '@lucide/vue';
+import {
+    ArrowRight,
+    Check,
+    ChevronDown,
+    Menu,
+    RotateCcw,
+    Search,
+    X,
+} from '@lucide/vue';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import PeriodSwitch from '@/components/billing/PeriodSwitch.vue';
 import BrandWordmark from '@/components/BrandWordmark.vue';
@@ -78,18 +86,75 @@ function choosePeriod(value: string): void {
     periodAnnouncement.value = option ? `Preços: ${option.label}.` : '';
 }
 
+/**
+ * Packages are usually sold as steps: each one includes everything the one
+ * before it does. When that holds, a card names the package it builds on and
+ * lists only what it adds, so the difference is the first thing a visitor
+ * reads. A package that is not a superset keeps its whole list.
+ */
 const packageCards = computed(() =>
-    props.packages.map((offer) => ({
-        offer,
-        price:
-            offer.prices.find(
-                (candidate) => candidate.interval === activePeriod.value,
-            ) ?? null,
-        otherPeriods: offer.prices
-            .map((candidate) => candidate.interval_label.toLowerCase())
-            .join(', '),
-    })),
+    props.packages.map((offer, index) => {
+        const previous = index > 0 ? props.packages[index - 1]! : null;
+        const buildsOnPrevious =
+            previous !== null &&
+            previous.features.length > 0 &&
+            previous.features.every((feature) =>
+                offer.features.includes(feature),
+            );
+
+        return {
+            offer,
+            price:
+                offer.prices.find(
+                    (candidate) => candidate.interval === activePeriod.value,
+                ) ?? null,
+            otherPeriods: offer.prices
+                .map((candidate) => candidate.interval_label.toLowerCase())
+                .join(', '),
+            buildsOn: buildsOnPrevious ? previous.name : null,
+            features: buildsOnPrevious
+                ? offer.features.filter(
+                      (feature) => !previous.features.includes(feature),
+                  )
+                : offer.features,
+        };
+    }),
 );
+
+/** Every feature on sale, in the order it is first offered, ticked per package. */
+const comparison = computed(() =>
+    [...new Set(props.packages.flatMap((offer) => offer.features))].map(
+        (feature) => ({
+            feature,
+            included: props.packages.map((offer) =>
+                offer.features.includes(feature),
+            ),
+        }),
+    ),
+);
+
+/** Only worth a table when there is more than one package and they differ. */
+const showComparison = computed(
+    () =>
+        props.packages.length > 1 &&
+        comparison.value.some((row) => row.included.includes(false)),
+);
+
+/** What holds for every package, said once above the cards. */
+const pricingTerms: { term: string; value: string }[] = [
+    {
+        term: 'Sem cartão para começar',
+        value: 'Abre a conta e experimenta sem dar dados de pagamento.',
+    },
+    {
+        term: 'Documentos sem limite',
+        value: 'O preço é por espaço de trabalho, não por documento emitido.',
+    },
+    {
+        term: 'O arquivo continua seu',
+        value: 'A consulta dos documentos e o SAF-T ficam disponíveis após o fim da assinatura.',
+    },
+];
 const menuButton = ref<HTMLButtonElement | null>(null);
 const selectedMomentIndex = ref(0);
 const selectedLifecycleIndex = ref(0);
@@ -1622,27 +1687,26 @@ const questions: { question: string; answer: string }[] = [
                 id="precos"
                 class="mx-auto max-w-6xl px-5 pt-(--space-section) sm:px-8"
             >
-                <div class="max-w-2xl">
-                    <h2 class="font-display text-section text-balance">
-                        Experimente primeiro. Decida depois.
-                    </h2>
-                    <p class="mt-4 text-lg text-brand-600 dark:text-zinc-400">
-                        Experimente todas as funcionalidades durante
-                        {{ trialDays }} dias desde a criação do espaço de
-                        trabalho. Depois, escolha o seu plano. Preços por espaço
-                        de trabalho, com documentos sem limite de quantidade. A
-                        consulta dos documentos e a exportação SAF-T continuam
-                        disponíveis após o fim da assinatura.
-                    </p>
-                </div>
-
-                <!--
-                    Rendered from the plans table. With none published the page
-                    says what is true about opening an account instead, rather
-                    than showing a price nobody agreed to charge.
-                -->
-                <template v-if="packages.length > 0">
-                    <div v-if="periods.length > 1" class="mt-10">
+                <div
+                    class="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between"
+                >
+                    <div class="max-w-2xl">
+                        <h2 class="font-display text-section text-balance">
+                            Experimente primeiro. Decida depois.
+                        </h2>
+                        <p
+                            class="mt-4 text-lg text-pretty text-brand-600 dark:text-zinc-400"
+                        >
+                            Use todas as funcionalidades durante
+                            {{ trialDays }} dias desde a criação do espaço de
+                            trabalho. Depois, escolha o pacote que serve o seu
+                            negócio.
+                        </p>
+                    </div>
+                    <div
+                        v-if="packages.length > 0 && periods.length > 1"
+                        class="lg:shrink-0"
+                    >
                         <PeriodSwitch
                             :model-value="activePeriod"
                             :options="periods"
@@ -1650,16 +1714,55 @@ const questions: { question: string; answer: string }[] = [
                             @update:model-value="choosePeriod"
                         />
                     </div>
+                </div>
+
+                <!--
+                    The terms that hold for every package, said once here
+                    instead of once per card.
+                -->
+                <dl
+                    v-if="packages.length > 0 || plans.length > 0"
+                    class="mt-10 grid gap-x-8 gap-y-5 border-y border-zinc-900/10 py-6 sm:grid-cols-3 dark:border-white/10"
+                >
+                    <div
+                        v-for="term in pricingTerms"
+                        :key="term.term"
+                        class="flex min-w-0 gap-3"
+                    >
+                        <Check
+                            class="mt-0.5 size-4 shrink-0 text-accent-500"
+                            aria-hidden="true"
+                        />
+                        <div class="min-w-0">
+                            <dt class="text-[0.95rem] font-semibold">
+                                {{ term.term }}
+                            </dt>
+                            <dd
+                                class="mt-0.5 text-sm text-pretty text-brand-600 dark:text-zinc-400"
+                            >
+                                {{ term.value }}
+                            </dd>
+                        </div>
+                    </div>
+                </dl>
+
+                <!--
+                    Rendered from the plans table. With none published the page
+                    says what is true about opening an account instead, rather
+                    than showing a price nobody agreed to charge.
+                -->
+                <template v-if="packages.length > 0">
                     <p class="sr-only" role="status" aria-live="polite">
                         {{ periodAnnouncement }}
                     </p>
 
-                    <div
-                        :class="[
-                            periods.length > 1 ? 'mt-8' : 'mt-12',
-                            'grid gap-4 md:grid-cols-2 lg:grid-cols-3',
-                        ]"
-                    >
+                    <!--
+                        Each card is a subgrid of the same five rows (name,
+                        price, action, what it includes, trial), so the prices,
+                        buttons and lists line up across the row whatever their
+                        length. Switching the period moves nothing.
+                    -->
+                    <div class="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         <article
                             v-for="(card, index) in packageCards"
                             :key="card.offer.name"
@@ -1667,74 +1770,91 @@ const questions: { question: string; answer: string }[] = [
                             :aria-labelledby="`pacote-${index}`"
                             :class="[
                                 card.offer.is_featured
-                                    ? 'ring-[1.5px] ring-accent-400'
-                                    : '',
-                                'relative flex min-w-0 flex-col rounded-3xl bg-brand-50 p-7 dark:bg-white/5',
+                                    ? 'bg-brand-950 text-white shadow-[0_24px_48px_-24px_rgb(23_23_22/0.45)] dark:bg-white dark:text-brand-950'
+                                    : 'bg-brand-50 dark:bg-white/5',
+                                'row-span-5 grid min-w-0 grid-rows-subgrid gap-0 rounded-3xl p-7 sm:p-8',
                             ]"
                         >
-                            <!-- On the card's top edge, so it adds nothing to the flow and the cards stay aligned. -->
-                            <p
-                                v-if="card.offer.is_featured"
-                                class="absolute start-7 -top-3 rounded-full bg-white px-2.5 py-0.5 text-xs font-semibold text-brand-950 ring-[1.5px] ring-accent-400 dark:bg-zinc-950 dark:text-accent-300"
-                            >
-                                Recomendado
-                            </p>
-                            <h3
-                                :id="`pacote-${index}`"
-                                class="font-display text-2xl tracking-[-0.02em] [overflow-wrap:anywhere]"
-                            >
-                                {{ card.offer.name }}
-                            </h3>
+                            <header>
+                                <div
+                                    class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2"
+                                >
+                                    <h3
+                                        :id="`pacote-${index}`"
+                                        class="font-display text-2xl tracking-[-0.02em] [overflow-wrap:anywhere]"
+                                    >
+                                        {{ card.offer.name }}
+                                    </h3>
+                                    <p
+                                        v-if="card.offer.is_featured"
+                                        class="rounded-full bg-accent-400 px-2.5 py-0.5 text-xs font-semibold text-brand-950"
+                                    >
+                                        Recomendado
+                                    </p>
+                                </div>
+                                <p
+                                    v-if="card.offer.summary"
+                                    :class="[
+                                        card.offer.is_featured
+                                            ? 'text-white/70 dark:text-brand-600'
+                                            : 'text-brand-600 dark:text-zinc-400',
+                                        'mt-2 text-[0.95rem] text-pretty',
+                                    ]"
+                                >
+                                    {{ card.offer.summary }}
+                                </p>
+                            </header>
 
-                            <!--
-                                One height whatever the period: tabular figures,
-                                the period on its own line, room for two lines of
-                                saving. Switching moves nothing.
-                            -->
-                            <div class="mt-5 min-h-[7.5rem]">
+                            <div class="mt-7">
                                 <template v-if="card.price">
                                     <p class="flex items-baseline gap-2">
                                         <span
-                                            class="font-display numeric text-[2.6rem] leading-none tracking-[-0.03em] [overflow-wrap:anywhere]"
+                                            class="font-display numeric text-[2.75rem] leading-none tracking-[-0.03em] [overflow-wrap:anywhere]"
                                             >{{ card.price.amount }}</span
                                         >
                                         <span
-                                            class="text-sm font-medium text-brand-500 dark:text-zinc-400"
+                                            :class="[
+                                                card.offer.is_featured
+                                                    ? 'text-white/70 dark:text-brand-500'
+                                                    : 'text-brand-500 dark:text-zinc-400',
+                                                'text-sm font-medium',
+                                            ]"
                                             >{{
                                                 currencyLabel(
                                                     card.price.currency,
                                                 )
-                                            }}</span
+                                            }}
+                                            {{ card.price.period_label }}</span
                                         >
                                     </p>
                                     <p
-                                        class="mt-1.5 text-sm text-brand-600 dark:text-zinc-400"
-                                    >
-                                        {{ card.price.period_label }}
-                                    </p>
-                                    <p
-                                        class="mt-2 min-h-10 numeric text-sm text-brand-600 dark:text-zinc-400"
+                                        :class="[
+                                            card.offer.is_featured
+                                                ? 'text-white/70 dark:text-brand-600'
+                                                : 'text-brand-600 dark:text-zinc-400',
+                                            'mt-2.5 flex min-h-6 flex-wrap items-center gap-x-2 gap-y-1 numeric text-sm',
+                                        ]"
                                     >
                                         <template v-if="card.price.months > 1">
-                                            ≈
-                                            {{ card.price.monthly_equivalent }}
-                                            {{
-                                                currencyLabel(
-                                                    card.price.currency,
-                                                )
-                                            }}
-                                            por mês<template
+                                            <!-- prettier-ignore -->
+                                            <span>≈ {{ card.price.monthly_equivalent }} {{ currencyLabel(card.price.currency) }} por mês</span>
+                                            <span
                                                 v-if="
                                                     card.price
                                                         .saving_percentage !==
                                                     null
                                                 "
-                                            >
-                                                · poupa
+                                                :class="[
+                                                    card.offer.is_featured
+                                                        ? 'bg-accent-400 text-brand-950'
+                                                        : 'bg-accent-100 text-accent-950 dark:bg-accent-400/15 dark:text-accent-300',
+                                                    'rounded-full px-2 py-0.5 text-xs font-semibold',
+                                                ]"
+                                                >Poupa
                                                 {{
                                                     card.price
                                                         .saving_percentage
-                                                }}%</template
+                                                }}%</span
                                             >
                                         </template>
                                     </p>
@@ -1744,60 +1864,221 @@ const questions: { question: string; answer: string }[] = [
                                         Não disponível neste período
                                     </p>
                                     <p
-                                        class="mt-1.5 text-sm text-brand-600 dark:text-zinc-400"
+                                        :class="[
+                                            card.offer.is_featured
+                                                ? 'text-white/70 dark:text-brand-600'
+                                                : 'text-brand-600 dark:text-zinc-400',
+                                            'mt-1.5 text-sm',
+                                        ]"
                                     >
                                         Disponível: {{ card.otherPeriods }}.
                                     </p>
                                 </template>
                             </div>
 
-                            <p
-                                v-if="card.offer.summary"
-                                class="mt-3 text-[0.95rem] text-brand-600 dark:text-zinc-400"
-                            >
-                                {{ card.offer.summary }}
-                            </p>
-                            <ul
-                                v-if="card.offer.features.length > 0"
-                                class="mt-5 grid gap-2 text-[0.95rem] text-brand-700 dark:text-zinc-300"
-                            >
-                                <li
-                                    v-for="feature in card.offer.features"
-                                    :key="feature"
-                                    class="flex gap-3"
+                            <div class="mt-6">
+                                <Link
+                                    v-if="card.offer.is_featured"
+                                    :href="register.url()"
+                                    class="flex h-12 items-center justify-center gap-2 rounded-full bg-accent-400 px-5 text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1)] focus-ring transition hover:bg-accent-300"
                                 >
-                                    <span
-                                        class="mt-2.5 size-1.5 shrink-0 rounded-full bg-accent-400"
+                                    {{
+                                        card.offer.trial_days > 0
+                                            ? 'Experimentar grátis'
+                                            : 'Abrir conta'
+                                    }}<span class="sr-only">
+                                        com o pacote {{ card.offer.name }}</span
+                                    >
+                                    <ArrowRight
+                                        class="size-4"
                                         aria-hidden="true"
                                     />
-                                    <span
-                                        class="min-w-0 [overflow-wrap:anywhere]"
-                                        >{{ feature }}</span
-                                    >
-                                </li>
-                            </ul>
-                            <p
-                                v-if="card.offer.trial_days > 0"
-                                class="mt-5 text-[0.95rem] font-medium"
-                            >
-                                {{
-                                    card.offer.trial_days === 1
-                                        ? '1 dia de experiência'
-                                        : `${card.offer.trial_days} dias de experiência`
-                                }}
-                            </p>
-                            <div class="mt-auto pt-7">
+                                </Link>
                                 <Link
+                                    v-else
                                     :href="register.url()"
-                                    class="flex h-11 items-center justify-center rounded-full bg-brand-950 px-5 text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 dark:bg-white dark:text-brand-950 dark:hover:bg-zinc-200"
+                                    class="flex h-12 items-center justify-center gap-2 rounded-full bg-white px-5 text-sm font-semibold text-brand-950 ring-1 ring-zinc-900/15 focus-ring transition hover:ring-zinc-900/40 dark:bg-transparent dark:text-white dark:ring-white/20 dark:hover:ring-white/50"
                                 >
-                                    Abrir conta<span class="sr-only">
+                                    {{
+                                        card.offer.trial_days > 0
+                                            ? 'Experimentar grátis'
+                                            : 'Abrir conta'
+                                    }}<span class="sr-only">
                                         com o pacote {{ card.offer.name }}</span
                                     >
                                 </Link>
                             </div>
+
+                            <div
+                                :class="[
+                                    card.offer.is_featured
+                                        ? 'border-white/15 dark:border-zinc-900/10'
+                                        : 'border-zinc-900/10 dark:border-white/10',
+                                    'mt-7 border-t pt-6',
+                                ]"
+                            >
+                                <p
+                                    v-if="card.buildsOn"
+                                    class="text-sm font-semibold"
+                                >
+                                    Tudo do {{ card.buildsOn }}, e ainda:
+                                </p>
+                                <p
+                                    v-else-if="card.features.length > 0"
+                                    class="text-sm font-semibold"
+                                >
+                                    Inclui:
+                                </p>
+                                <ul
+                                    v-if="card.features.length > 0"
+                                    :class="[
+                                        card.offer.is_featured
+                                            ? 'text-white/85 dark:text-brand-700'
+                                            : 'text-brand-700 dark:text-zinc-300',
+                                        'mt-3 grid content-start gap-2.5 text-[0.95rem]',
+                                    ]"
+                                >
+                                    <li
+                                        v-for="feature in card.features"
+                                        :key="feature"
+                                        class="flex gap-3"
+                                    >
+                                        <Check
+                                            :class="[
+                                                card.offer.is_featured
+                                                    ? 'text-accent-400 dark:text-accent-600'
+                                                    : 'text-accent-500',
+                                                'mt-0.5 size-4 shrink-0',
+                                            ]"
+                                            aria-hidden="true"
+                                        />
+                                        <span
+                                            class="min-w-0 [overflow-wrap:anywhere]"
+                                            >{{ feature }}</span
+                                        >
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <p
+                                :class="[
+                                    card.offer.is_featured
+                                        ? 'text-white/60 dark:text-brand-500'
+                                        : 'text-brand-500 dark:text-zinc-500',
+                                    'mt-6 self-end text-sm',
+                                ]"
+                            >
+                                <template v-if="card.offer.trial_days > 0">
+                                    {{
+                                        card.offer.trial_days === 1
+                                            ? '1 dia de experiência, sem cartão.'
+                                            : `${card.offer.trial_days} dias de experiência, sem cartão.`
+                                    }}
+                                </template>
+                            </p>
                         </article>
                     </div>
+
+                    <!--
+                        Every feature any package sells, in the order they are
+                        first offered, ticked per package. Closed by default:
+                        the cards answer most visitors; this is for the one
+                        comparing line by line.
+                    -->
+                    <details v-if="showComparison" v-reveal class="group mt-10">
+                        <summary
+                            class="mx-auto flex w-fit cursor-pointer list-none items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold ring-1 ring-zinc-900/15 focus-ring transition hover:ring-zinc-900/40 dark:ring-white/20 dark:hover:ring-white/50 [&::-webkit-details-marker]:hidden"
+                        >
+                            <span class="group-open:hidden"
+                                >Comparar os pacotes linha a linha</span
+                            >
+                            <span class="hidden group-open:inline"
+                                >Esconder a comparação</span
+                            >
+                            <ChevronDown
+                                class="size-4 transition group-open:rotate-180 motion-reduce:transition-none"
+                                aria-hidden="true"
+                            />
+                        </summary>
+                        <div class="mt-8 overflow-x-auto">
+                            <table class="w-full min-w-[36rem] text-left">
+                                <caption class="sr-only">
+                                    O que cada pacote inclui
+                                </caption>
+                                <thead>
+                                    <tr
+                                        class="border-b border-brand-950 dark:border-white"
+                                    >
+                                        <th
+                                            scope="col"
+                                            class="w-2/5 pb-3 text-xs font-semibold tracking-[0.07em] text-brand-500 uppercase dark:text-zinc-400"
+                                        >
+                                            Funcionalidade
+                                        </th>
+                                        <th
+                                            v-for="offer in packages"
+                                            :key="offer.name"
+                                            scope="col"
+                                            :style="{
+                                                width: `${60 / packages.length}%`,
+                                            }"
+                                            :class="[
+                                                offer.is_featured
+                                                    ? 'bg-accent-50 dark:bg-accent-400/[0.06]'
+                                                    : '',
+                                                'pt-3 pb-3 text-center font-display text-lg font-normal tracking-[-0.02em]',
+                                            ]"
+                                        >
+                                            {{ offer.name }}
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr
+                                        v-for="row in comparison"
+                                        :key="row.feature"
+                                        class="border-b border-zinc-900/10 dark:border-white/10"
+                                    >
+                                        <th
+                                            scope="row"
+                                            class="py-3 pe-4 text-[0.95rem] font-normal"
+                                        >
+                                            {{ row.feature }}
+                                        </th>
+                                        <td
+                                            v-for="(
+                                                included, column
+                                            ) in row.included"
+                                            :key="column"
+                                            :class="[
+                                                packages[column]?.is_featured
+                                                    ? 'bg-accent-50 dark:bg-accent-400/[0.06]'
+                                                    : '',
+                                                'py-3 text-center',
+                                            ]"
+                                        >
+                                            <Check
+                                                v-if="included"
+                                                class="mx-auto size-4 text-accent-500"
+                                                aria-hidden="true"
+                                            />
+                                            <span
+                                                v-else
+                                                class="text-brand-400 dark:text-zinc-600"
+                                                aria-hidden="true"
+                                                >—</span
+                                            >
+                                            <span class="sr-only">{{
+                                                included
+                                                    ? 'Incluído'
+                                                    : 'Não incluído'
+                                            }}</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </details>
                 </template>
 
                 <div

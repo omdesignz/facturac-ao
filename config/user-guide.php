@@ -5,6 +5,25 @@ return [
     'updated_at' => '13 de Outubro de 2026',
     'title' => 'Guia de utilização',
     'subtitle' => 'Do primeiro acesso à gestão do dia a dia.',
+    /*
+     * One line per topic for the guide's home, in the order the topics are
+     * shelved. A chapter's `category` must be one of these keys.
+     */
+    'categories' => [
+        'Primeiros passos' => 'Preparar a empresa, os clientes e os artigos antes da primeira venda.',
+        'Vendas e recebimentos' => 'Emitir, vender ao balcão, orçamentar e receber o que lhe devem.',
+        'Operação diária' => 'Guias, avenças e importações: o trabalho que se repete todas as semanas.',
+        'Controlo e gestão' => 'A comunicação à AGT, o SAF-T, os relatórios e a segurança da conta.',
+    ],
+    /** The tasks people come looking for, each answered by one chapter. */
+    'popular' => [
+        ['label' => 'Emitir uma factura', 'chapter' => 'documentos'],
+        ['label' => 'Vender ao balcão', 'chapter' => 'pos'],
+        ['label' => 'Registar um recebimento', 'chapter' => 'cobrancas'],
+        ['label' => 'Acompanhar a AGT', 'chapter' => 'agt'],
+        ['label' => 'Exportar o SAF-T', 'chapter' => 'saft'],
+        ['label' => 'Importar clientes e artigos', 'chapter' => 'importar'],
+    ],
     'chapters' => [
         [
             'id' => 'comecar',

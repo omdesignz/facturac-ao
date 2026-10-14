@@ -321,7 +321,7 @@ function formatDate(value: string | null): string {
                                 name="association_confirmed"
                                 value="1"
                                 required
-                                class="mt-1 size-4 shrink-0"
+                                class="form-checkbox mt-1"
                                 :disabled="processing"
                                 :aria-invalid="!!errors.association_confirmed"
                                 aria-describedby="association-error"

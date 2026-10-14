@@ -17,7 +17,7 @@ test('the guide is available before workspace setup and contains complete linked
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('Help/Guide')
-            ->where('selectedChapter', 'comecar')
+            ->where('selectedChapter', null)
             ->where('progressKey', 'facturac.guide.2026.10.'.$user->id)
             ->has('guide.chapters', 16)
             ->where('guide.chapters.0.url', route('onboarding'))
@@ -38,6 +38,31 @@ test('the guide is available before workspace setup and contains complete linked
             expect($ids)->toContain($related);
         }
     }
+});
+
+test('the guide opens on its home, shelving every chapter under a described topic', function () {
+    $guide = config('user-guide');
+    $ids = array_column($guide['chapters'], 'id');
+
+    foreach ($guide['chapters'] as $chapter) {
+        expect($guide['categories'])->toHaveKey($chapter['category']);
+    }
+    foreach ($guide['categories'] as $description) {
+        expect($description)->not->toBeEmpty();
+    }
+    foreach ($guide['popular'] as $task) {
+        expect($ids)->toContain($task['chapter'])
+            ->and($task['label'])->not->toBeEmpty();
+    }
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('help.guide.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('selectedChapter', null)
+            ->where('guide.categories', $guide['categories'])
+            ->where('guide.popular', $guide['popular'])
+        );
 });
 
 test('chapters can be deep linked and invalid chapters are rejected', function () {
