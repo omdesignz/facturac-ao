@@ -21,7 +21,7 @@ Uma plataforma SaaS multiempresa para emitir documentos fiscais, comunicar com a
 </div>
 
 > [!IMPORTANT]
-> O facturac.ao está em desenvolvimento activo e preparado para trabalho de homologação. Este repositório não declara certificação, validação ou autorização de produção pela AGT. As ligações de produção à AGT e à Pay4All permanecem bloqueadas por defeito até existirem credenciais, contratos, testes e aprovações aplicáveis.
+> O facturac.ao está em desenvolvimento activo e preparado para trabalho de homologação. Este repositório não declara certificação, validação ou autorização de produção pela AGT. As ligações de produção à AGT e à WiPay permanecem bloqueadas por defeito até existirem credenciais, contratos, testes e aprovações aplicáveis.
 
 ## O produto
 
@@ -37,7 +37,7 @@ O facturac.ao foi desenhado para empreendedores, pequenas e médias empresas e e
 | Ligação AGT              | Ambiente de homologação, credenciais protegidas, referências para chaves PEM fora da base de dados, testes de conectividade e sincronização de séries |
 | Documentos fiscais       | Rascunhos, linhas, descontos, impostos, totais determinísticos, numeração de séries e emissão imutável                                                |
 | Submissões AGT           | Outbox transaccional, assinatura JWS, filas, repetição segura, idempotência, consulta de estado e monitor operacional                                 |
-| Cobrança SaaS            | Planos, subscrições e Referências EMIS através da fronteira Pay4All e+; simulador local seguro enquanto a API comercial não está autorizada           |
+| Cobrança SaaS            | Planos e subscrições com checkout seguro WiPay, confirmação autenticada e recuperação de pagamentos pendentes           |
 | Importação de dados      | Clientes, produtos e serviços via XLSX, XLS ou CSV, com mapeamento, validação por linha, SHA-256, staging privado e confirmação idempotente           |
 | Auditoria e notificações | Registo de actividades atribuível, eventos fiscais, histórico de pagamentos e notificações persistentes                                               |
 | Experiência              | Interface responsiva, acessível, com modo escuro, temas, componentes Tailwind Plus, ícones Lucide e linguagem orientada ao utilizador                 |
@@ -56,7 +56,7 @@ flowchart LR
 
     FISCAL --> OUTBOX["Outbox + filas<br/>entrega idempotente"]
     OUTBOX --> AGT["Serviços AGT<br/>homologação por defeito"]
-    BILLING --> PAY4ALL["Pay4All e+<br/>produção bloqueada por defeito"]
+    BILLING --> WIPAY["WiPay<br/>produção bloqueada por defeito"]
 
     ID --> DB[("Base de dados")]
     TENANT --> DB
@@ -76,7 +76,7 @@ O backend mantém as regras fiscais no servidor. A interface nunca é a fonte de
 |       2 | Configuração e verificação da ligação AGT                                  | Implementada              |
 |       3 | Cadastro e rascunhos de documentos fiscais                                 | Implementada              |
 |       4 | Emissão, assinatura, submissão e monitor AGT                               | Implementada              |
-|       5 | Subscrições por Pay4All e+ / Referência EMIS                               | Implementada em simulação |
+|       5 | Subscrições por checkout WiPay                               | Implementada com sandbox |
 |       6 | Migração assistida de clientes, produtos e serviços                        | Implementada              |
 | Próxima | SAF-T (AO), validação de esquema e fluxo controlado de entrega             | Planeada                  |
 
@@ -165,8 +165,8 @@ O [`.env.example`](.env.example) contém valores locais seguros e usa Angola com
 | Google OAuth          | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`                          |
 | AGT                   | `AGT_DEFAULT_ENVIRONMENT`, `AGT_SCHEMA_VERSION`, `AGT_*_BASE_URL`, timeouts e limites      |
 | Produção AGT          | `AGT_PRODUCTION_ENABLED` — deve permanecer `false` até à autorização operacional           |
-| Pay4All e+            | `PAY4ALL_ENVIRONMENT`, dados do comerciante, validade e limites da Referência EMIS         |
-| Produção Pay4All      | `PAY4ALL_PRODUCTION_ENABLED` — deve permanecer `false` até à integração comercial assinada |
+| WiPay                | `WIPAY_ENVIRONMENT`, `WIPAY_CLIENT_ID`, `WIPAY_CLIENT_SECRET` e callback HTTPS         |
+| Produção WiPay        | `WIPAY_PRODUCTION_ENABLED` — deve permanecer `false` até à autorização e verificação da integração |
 
 As chaves privadas de assinatura da AGT devem permanecer fora da raiz pública e fora da base de dados. A aplicação guarda apenas uma referência ao ficheiro configurado.
 
@@ -178,9 +178,9 @@ Em produção, configure pelo menos:
 - `php artisan schedule:run` a cada minuto;
 - HTTPS, armazenamento privado e gestão externa de segredos;
 - retenção de logs, monitorização, alertas e cópias de segurança testadas;
-- uma política de rotação das chaves e credenciais da AGT e da Pay4All.
+- uma política de rotação das chaves e credenciais da AGT e da WiPay.
 
-O scheduler despacha submissões AGT pendentes, consulta resultados e expira Referências EMIS não pagas.
+O scheduler despacha submissões AGT pendentes, consulta resultados e recupera pagamentos WiPay pendentes.
 
 ## Qualidade
 

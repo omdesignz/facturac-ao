@@ -1,8 +1,8 @@
 <?php
 
 use App\Actions\CompletePosSale;
-use App\Actions\ConfirmEmisPayment;
 use App\Actions\ConvertRecurringProfile;
+use App\Actions\FulfillHostedPayment;
 use App\Actions\GenerateRecurringInvoices;
 use App\Actions\IssueFiscalDocument;
 use App\Actions\IssueTransportDocument;
@@ -10,7 +10,7 @@ use App\Actions\OpenPosSession;
 use App\Actions\SaveFiscalDocumentDraft;
 use App\Actions\SaveQuote;
 use App\Actions\SaveTransportDocumentDraft;
-use App\Actions\StartSubscriptionCheckout;
+use App\Actions\StartWiPaySubscriptionCheckout;
 use App\Billing\SubscriptionAccess;
 use App\Exceptions\SubscriptionRequired;
 use App\FiscalDocumentType;
@@ -42,6 +42,8 @@ function subscribedUser(string $tier = 'essencial'): User
 
     return $user;
 }
+
+require_once __DIR__.'/../HostedBillingFixtures.php';
 
 beforeEach(function () {
     $this->seed(SubscriptionCatalogueSeeder::class);
@@ -139,16 +141,18 @@ test('scheduled recurring invoices pause without consuming occurrences on a lowe
 });
 
 test('paying a catalogue plan activates exactly its advertised rights and price', function (string $tier, int $amount, bool $pos, bool $reports) {
-    config(['billing.gateway' => 'pay4all', 'billing.pay4all.environment' => 'simulation']);
+    configureHostedBilling();
+    fakeHostedProvider();
     Notification::fake();
     $user = User::factory()->withWorkspace()->create();
     $workspace = $user->currentWorkspace;
     $workspace->forceFill(['created_at' => now()->subMonth()])->save();
     $plan = SubscriptionPlan::where('code', $tier.'-monthly')->firstOrFail();
     $access = app(SubscriptionAccess::class);
-    $reference = app(StartSubscriptionCheckout::class)->execute($workspace, $plan, $user);
+    $reference = app(StartWiPaySubscriptionCheckout::class)->execute($workspace, $plan, $user, '900000000');
     expect($reference->amount_minor)->toBe($amount)->and($access->allows($workspace->id, SubscriptionFeature::Invoicing))->toBeFalse();
-    app(ConfirmEmisPayment::class)->execute($reference, 'catalogue-payment-'.$tier, $amount, 'AOA', CarbonImmutable::now(), hash('sha256', $tier), $user);
+    sendHostedCallback(hostedCallback($reference))->assertAccepted();
+    app(FulfillHostedPayment::class)->execute($reference);
     expect($access->allows($workspace->id, SubscriptionFeature::Invoicing))->toBeTrue()
         ->and($access->allows($workspace->id, SubscriptionFeature::Pos))->toBe($pos)
         ->and($access->allows($workspace->id, SubscriptionFeature::Reports))->toBe($reports);

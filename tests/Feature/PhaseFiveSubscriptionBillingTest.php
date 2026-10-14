@@ -1,10 +1,11 @@
 <?php
 
-use App\Actions\ConfirmEmisPayment;
+use App\Actions\FulfillHostedPayment;
 use App\Actions\SaveSubscriptionPackage;
 use App\BillingPaymentEventType;
 use App\EmisPaymentReferenceStatus;
 use App\Models\EmisPaymentReference;
+use App\Models\Payment;
 use App\Models\SubscriptionCharge;
 use App\Models\SubscriptionPackage;
 use App\Models\SubscriptionPlan;
@@ -13,7 +14,8 @@ use App\Models\Workspace;
 use App\Models\WorkspaceMembership;
 use App\Models\WorkspaceSubscription;
 use App\Notifications\SubscriptionActivated;
-use App\Pay4AllEnvironment;
+use App\PaymentEnvironment;
+use App\PaymentStatus;
 use App\SubscriptionChargeStatus;
 use App\SubscriptionInterval;
 use App\WorkspaceRole;
@@ -24,8 +26,11 @@ use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Fortify;
 
+require_once __DIR__.'/../HostedBillingFixtures.php';
+
 beforeEach(function (): void {
-    config()->set('billing.gateway', 'pay4all');
+    configureHostedBilling();
+    fakeHostedProvider();
 });
 
 /**
@@ -80,7 +85,7 @@ function phaseFivePasswordSession(): array
     return ['auth.password_confirmed_at' => time()];
 }
 
-test('the billing portal exposes configurable plans and the Pay4All EMIS boundary', function () {
+test('the billing portal exposes configurable plans and the WiPay payment boundary', function () {
     $company = phaseFiveBillingCompany();
 
     $this->actingAs($company['user'])
@@ -90,47 +95,44 @@ test('the billing portal exposes configurable plans and the Pay4All EMIS boundar
             ->component('Billing/Show')
             ->where('plans.0.public_id', $company['plan']->public_id)
             ->where('plans.0.amount_minor', 25_000_00)
-            ->where('gateway.provider', 'Pay4All é+')
-            ->where('gateway.method', 'Referência EMIS')
-            ->where('gateway.environment', Pay4AllEnvironment::Simulation->value)
-            ->where('gateway.transaction_fee_basis_points', 100)
+            ->where('gateway.provider', 'WiPay')
+            ->where('gateway.method', 'Pagamento online')
+            ->where('gateway.environment', PaymentEnvironment::Sandbox->value)
             ->where('canManage', true)
             ->where('subscription', null)
-            ->where('activeReference', null));
+            ->missing('activeReference')->where('activePayment', null));
 });
 
-test('checkout creates one exact EMIS charge and reuses it after repeated clicks', function () {
+test('checkout creates one exact WiPay charge and reuses it after repeated clicks', function () {
     $company = phaseFiveBillingCompany();
 
     foreach (range(1, 2) as $attempt) {
         $this->actingAs($company['user'])
             ->withSession(phaseFivePasswordSession())
             ->post(route('billing.checkout'), [
+                'customer_phone' => '900000000',
                 'plan_public_id' => $company['plan']->public_id,
             ])
             ->assertSessionHasNoErrors()
-            ->assertRedirect(route('billing.show'));
+            ->assertRedirectContains('https://hosted.wipay.ao/');
     }
 
     $charge = SubscriptionCharge::query()->firstOrFail();
-    $reference = EmisPaymentReference::query()->firstOrFail();
+    $reference = Payment::query()->firstOrFail();
 
     expect(SubscriptionCharge::query()->count())->toBe(1)
-        ->and(EmisPaymentReference::query()->count())->toBe(1)
+        ->and(Payment::query()->count())->toBe(1)
         ->and($charge->amount_minor)->toBe(25_000_00)
-        ->and($charge->estimated_provider_fee_minor)->toBe(25_000)
+        ->and($charge->estimated_provider_fee_minor)->toBe(0)
         ->and($charge->status)->toBe(SubscriptionChargeStatus::Pending)
         ->and($reference->amount_minor)->toBe($charge->amount_minor)
         ->and($reference->currency_code)->toBe('AOA')
-        ->and($reference->entity)->toBe('00000')
-        ->and($reference->environment)->toBe(Pay4AllEnvironment::Simulation)
-        ->and($reference->status)->toBe(EmisPaymentReferenceStatus::Pending)
-        ->and($reference->events()->value('event_type'))
-        ->toBe(BillingPaymentEventType::ReferenceCreated)
+        ->and($reference->environment)->toBe(PaymentEnvironment::Sandbox)
+        ->and($reference->status)->toBe(PaymentStatus::Pending)
         ->and(WorkspaceSubscription::query()->doesntExist())->toBeTrue();
 });
 
-test('a workspace cannot hold concurrent payment references for different plans', function () {
+test('a workspace cannot hold concurrent payments for different plans', function () {
     $company = phaseFiveBillingCompany();
     $otherPlan = SubscriptionPlan::factory()->create([
         'code' => 'escala-anual-'.$company['workspace']->id,
@@ -141,6 +143,7 @@ test('a workspace cannot hold concurrent payment references for different plans'
     $this->actingAs($company['user'])
         ->withSession(phaseFivePasswordSession())
         ->post(route('billing.checkout'), [
+            'customer_phone' => '900000000',
             'plan_public_id' => $company['plan']->public_id,
         ])
         ->assertSessionHasNoErrors();
@@ -148,15 +151,16 @@ test('a workspace cannot hold concurrent payment references for different plans'
     $this->actingAs($company['user'])
         ->withSession(phaseFivePasswordSession())
         ->post(route('billing.checkout'), [
+            'customer_phone' => '900000000',
             'plan_public_id' => $otherPlan->public_id,
         ])
         ->assertSessionHas('error', fn (string $message): bool => str_contains(
             $message,
-            'Referência EMIS pendente',
+            'pagamento pendente',
         ));
 
     expect(SubscriptionCharge::query()->count())->toBe(1)
-        ->and(EmisPaymentReference::query()->count())->toBe(1)
+        ->and(Payment::query()->count())->toBe(1)
         ->and(SubscriptionCharge::query()->firstOrFail()->subscription_plan_id)
         ->toBe($company['plan']->id);
 });
@@ -166,15 +170,12 @@ test('payment confirmation is exact and idempotently activates one subscription'
     $company = phaseFiveBillingCompany();
     $this->actingAs($company['user'])
         ->withSession(phaseFivePasswordSession())
-        ->post(route('billing.checkout'), ['plan_public_id' => $company['plan']->public_id]);
-    $reference = EmisPaymentReference::query()->firstOrFail();
+        ->post(route('billing.checkout'), ['customer_phone' => '900000000', 'plan_public_id' => $company['plan']->public_id]);
+    $reference = Payment::query()->firstOrFail();
 
     foreach (range(1, 2) as $attempt) {
-        $this->actingAs($company['user'])
-            ->withSession(phaseFivePasswordSession())
-            ->post(route('billing.references.simulate', $reference))
-            ->assertSessionHasNoErrors()
-            ->assertRedirect(route('billing.show'));
+        sendHostedCallback(hostedCallback($reference))->assertAccepted();
+        app(FulfillHostedPayment::class)->execute($reference);
     }
 
     $subscription = WorkspaceSubscription::query()->firstOrFail();
@@ -186,13 +187,7 @@ test('payment confirmation is exact and idempotently activates one subscription'
         ->and($subscription->current_period_ends_at?->isAfter($subscription->current_period_started_at))->toBeTrue()
         ->and($charge->status)->toBe(SubscriptionChargeStatus::Paid)
         ->and($charge->active_checkout_key)->toBeNull()
-        ->and($reference->fresh()->status)->toBe(EmisPaymentReferenceStatus::Paid)
-        ->and($reference->events()->count())->toBe(3)
-        ->and($reference->events()->pluck('event_type')->all())->toBe([
-            BillingPaymentEventType::ReferenceCreated,
-            BillingPaymentEventType::PaymentConfirmed,
-            BillingPaymentEventType::SubscriptionActivated,
-        ]);
+        ->and($reference->fresh()->status)->toBe(PaymentStatus::Paid);
 
     Notification::assertSentToTimes($company['user'], SubscriptionActivated::class, 1);
 });
@@ -201,20 +196,11 @@ test('an amount mismatch never activates or consumes a pending reference', funct
     $company = phaseFiveBillingCompany();
     $this->actingAs($company['user'])
         ->withSession(phaseFivePasswordSession())
-        ->post(route('billing.checkout'), ['plan_public_id' => $company['plan']->public_id]);
-    $reference = EmisPaymentReference::query()->firstOrFail();
+        ->post(route('billing.checkout'), ['customer_phone' => '900000000', 'plan_public_id' => $company['plan']->public_id]);
+    $reference = Payment::query()->firstOrFail();
 
-    expect(fn () => app(ConfirmEmisPayment::class)->execute(
-        paymentReference: $reference,
-        providerEventId: 'pay4all-mismatch-1',
-        amountMinor: $reference->amount_minor - 1,
-        currencyCode: 'AOA',
-        occurredAt: CarbonImmutable::now('Africa/Luanda'),
-        payloadSha256: hash('sha256', 'mismatch'),
-    ))->toThrow(DomainException::class, 'valor exacto');
-
-    expect($reference->fresh()->status)->toBe(EmisPaymentReferenceStatus::Pending)
-        ->and(SubscriptionCharge::query()->firstOrFail()->status)->toBe(SubscriptionChargeStatus::Pending)
+    sendHostedCallback(hostedCallback($reference, ['amount' => '24999.99']))->assertUnprocessable();
+    expect($reference->fresh()->status)->toBe(PaymentStatus::Review)
         ->and(WorkspaceSubscription::query()->doesntExist())->toBeTrue();
 });
 
@@ -228,7 +214,7 @@ test('MFA and workspace management permission protect subscription changes', fun
 
     $this->actingAs($company['user'])
         ->withSession(phaseFivePasswordSession())
-        ->post(route('billing.checkout'), ['plan_public_id' => $company['plan']->public_id])
+        ->post(route('billing.checkout'), ['customer_phone' => '900000000', 'plan_public_id' => $company['plan']->public_id])
         ->assertRedirect(route('settings.security'));
 
     expect(SubscriptionCharge::query()->doesntExist())->toBeTrue();
@@ -236,87 +222,59 @@ test('MFA and workspace management permission protect subscription changes', fun
     $viewerCompany = phaseFiveBillingCompany(WorkspaceRole::Viewer);
     $this->actingAs($viewerCompany['user'])
         ->withSession(phaseFivePasswordSession())
-        ->post(route('billing.checkout'), ['plan_public_id' => $viewerCompany['plan']->public_id])
+        ->post(route('billing.checkout'), ['customer_phone' => '900000000', 'plan_public_id' => $viewerCompany['plan']->public_id])
         ->assertForbidden();
 });
 
-test('another workspace cannot discover or mutate an EMIS reference', function () {
-    $ownerCompany = phaseFiveBillingCompany();
-    $this->actingAs($ownerCompany['user'])
-        ->withSession(phaseFivePasswordSession())
-        ->post(route('billing.checkout'), ['plan_public_id' => $ownerCompany['plan']->public_id]);
-    $reference = EmisPaymentReference::query()->firstOrFail();
-    $otherCompany = phaseFiveBillingCompany();
-
-    $this->actingAs($otherCompany['user'])
-        ->withSession(phaseFivePasswordSession())
-        ->post(route('billing.references.refresh', $reference))
-        ->assertNotFound();
-    $this->actingAs($otherCompany['user'])
-        ->withSession(phaseFivePasswordSession())
-        ->post(route('billing.references.simulate', $reference))
-        ->assertNotFound();
-
-    expect($reference->fresh()->status)->toBe(EmisPaymentReferenceStatus::Pending);
+test('another workspace cannot discover or resume a WiPay payment', function () {
+    $owner = phaseFiveBillingCompany();
+    $payment = startHostedTestPayment($owner);
+    $other = phaseFiveBillingCompany();
+    $this->actingAs($other['user'])->withSession(phaseFivePasswordSession())
+        ->post(route('billing.payments.resume', $payment))->assertNotFound();
+    expect($payment->fresh()->status)->toBe(PaymentStatus::Pending);
 });
 
-test('expired references release the checkout lock and retain append-only evidence', function () {
+test('retiring a simulated checkout releases its lock and preserves append-only history', function () {
     $company = phaseFiveBillingCompany();
-    $this->actingAs($company['user'])
-        ->withSession(phaseFivePasswordSession())
-        ->post(route('billing.checkout'), ['plan_public_id' => $company['plan']->public_id]);
-    $reference = EmisPaymentReference::query()->firstOrFail();
-    $reference->forceFill(['expires_at' => now()->subMinute()])->save();
-
-    $this->artisan('billing:expire-emis-references')->assertSuccessful();
-
-    expect($reference->fresh()->status)->toBe(EmisPaymentReferenceStatus::Expired)
-        ->and($reference->charge->fresh()->status)->toBe(SubscriptionChargeStatus::Expired)
-        ->and($reference->charge->fresh()->active_checkout_key)->toBeNull()
-        ->and($reference->events()->latest('id')->value('event_type'))
-        ->toBe(BillingPaymentEventType::ReferenceExpired)
-        ->and(fn () => $reference->events()->latest('id')->firstOrFail()->delete())
-        ->toThrow(DomainException::class);
+    $charge = SubscriptionCharge::factory()->create([
+        'workspace_id' => $company['workspace']->id, 'subscription_plan_id' => $company['plan']->id,
+        'active_checkout_key' => (string) $company['workspace']->id,
+    ]);
+    $reference = EmisPaymentReference::factory()->create(['subscription_charge_id' => $charge->id]);
+    foreach (range(1, 2) as $attempt) {
+        startHostedTestPayment($company);
+    }
+    expect($reference->fresh()->status)->toBe(EmisPaymentReferenceStatus::Cancelled)
+        ->and($charge->fresh()->status)->toBe(SubscriptionChargeStatus::Cancelled)
+        ->and($charge->fresh()->active_checkout_key)->toBeNull()
+        ->and($reference->events()->count())->toBe(1)
+        ->and($reference->events()->sole()->event_type)->toBe(BillingPaymentEventType::ReferenceCancelled)
+        ->and(fn () => $reference->events()->sole()->delete())->toThrow(DomainException::class)
+        ->and(Payment::count())->toBe(1);
+    $this->actingAs($company['user'])->get(route('billing.show'))->assertInertia(fn (Assert $page) => $page
+        ->has('charges', 2)->where('charges.1.reference.public_id', $reference->public_id));
 });
 
-test('checkout expires stale evidence before issuing a replacement reference', function () {
+test('retired reference routes cannot confirm or refresh even existing records', function () {
     $company = phaseFiveBillingCompany();
-    $this->actingAs($company['user'])
-        ->withSession(phaseFivePasswordSession())
-        ->post(route('billing.checkout'), [
-            'plan_public_id' => $company['plan']->public_id,
-        ]);
-    $staleReference = EmisPaymentReference::query()->firstOrFail();
-    $staleReference->forceFill(['expires_at' => now()->subMinute()])->save();
-    $staleReference->charge->forceFill(['due_at' => now()->subMinute()])->save();
-
-    $this->actingAs($company['user'])
-        ->withSession(phaseFivePasswordSession())
-        ->post(route('billing.checkout'), [
-            'plan_public_id' => $company['plan']->public_id,
-        ])
-        ->assertSessionHasNoErrors();
-
-    expect(SubscriptionCharge::query()->count())->toBe(2)
-        ->and(EmisPaymentReference::query()->count())->toBe(2)
-        ->and($staleReference->fresh()->status)->toBe(EmisPaymentReferenceStatus::Expired)
-        ->and($staleReference->events()->latest('id')->value('event_type'))
-        ->toBe(BillingPaymentEventType::ReferenceExpired)
-        ->and(EmisPaymentReference::query()->latest('id')->firstOrFail()->status)
-        ->toBe(EmisPaymentReferenceStatus::Pending);
+    $charge = SubscriptionCharge::factory()->create(['workspace_id' => $company['workspace']->id]);
+    $reference = EmisPaymentReference::factory()->create(['subscription_charge_id' => $charge->id]);
+    foreach (['refresh', 'simulate'] as $action) {
+        $this->actingAs($company['user'])->withSession(phaseFivePasswordSession())
+            ->post('/settings/billing/references/'.$reference->public_id.'/'.$action)->assertNotFound();
+    }
+    expect($reference->fresh()->status)->toBe(EmisPaymentReferenceStatus::Pending)
+        ->and(WorkspaceSubscription::count())->toBe(0);
 });
 
-test('non-simulation environments fail closed until the merchant API contract is installed', function () {
-    config()->set('billing.pay4all.environment', Pay4AllEnvironment::Homologation->value);
+test('missing WiPay credentials fail closed without creating a checkout', function () {
+    config()->set('billing.wipay.client_secret', '');
     $company = phaseFiveBillingCompany();
-
-    $this->actingAs($company['user'])
-        ->withSession(phaseFivePasswordSession())
-        ->post(route('billing.checkout'), ['plan_public_id' => $company['plan']->public_id])
-        ->assertSessionHas('error', fn (string $message): bool => str_contains($message, 'especificação API'));
-
-    expect(EmisPaymentReference::query()->doesntExist())->toBeTrue()
-        ->and(SubscriptionCharge::query()->firstOrFail()->status)->toBe(SubscriptionChargeStatus::Failed);
+    $this->actingAs($company['user'])->withSession(phaseFivePasswordSession())
+        ->post(route('billing.checkout'), ['plan_public_id' => $company['plan']->public_id, 'customer_phone' => '900000000'])
+        ->assertSessionHas('error');
+    expect(Payment::count())->toBe(0)->and(SubscriptionCharge::count())->toBe(0);
 });
 
 test('each payment period ends exactly where it always did for monthly and annual plans', function (SubscriptionInterval $interval, string $endsAt) {
@@ -326,7 +284,7 @@ test('each payment period ends exactly where it always did for monthly and annua
 
     $this->actingAs($company['user'])
         ->withSession(['auth.password_confirmed_at' => now()->timestamp])
-        ->post(route('billing.checkout'), ['plan_public_id' => $company['plan']->public_id])
+        ->post(route('billing.checkout'), ['customer_phone' => '900000000', 'plan_public_id' => $company['plan']->public_id])
         ->assertSessionHasNoErrors();
 
     expect(SubscriptionCharge::query()->sole()->period_ends_at->equalTo(CarbonImmutable::parse($endsAt, 'Africa/Luanda')))->toBeTrue();
@@ -347,7 +305,7 @@ test('a quarterly or semi-annual plan is checked out, paid and activated for the
 
     $this->actingAs($company['user'])
         ->withSession(['auth.password_confirmed_at' => now()->timestamp])
-        ->post(route('billing.checkout'), ['plan_public_id' => $plan->public_id])
+        ->post(route('billing.checkout'), ['customer_phone' => '900000000', 'plan_public_id' => $plan->public_id])
         ->assertSessionHasNoErrors();
 
     $charge = SubscriptionCharge::query()->sole();
@@ -357,10 +315,8 @@ test('a quarterly or semi-annual plan is checked out, paid and activated for the
         ->and($charge->amount_minor)->toBe(70_000_00)
         ->and($charge->period_ends_at->equalTo($expectedEnd))->toBeTrue();
 
-    $this->actingAs($company['user'])
-        ->withSession(['auth.password_confirmed_at' => now()->timestamp])
-        ->post(route('billing.references.simulate', EmisPaymentReference::query()->sole()))
-        ->assertSessionHasNoErrors();
+    sendHostedCallback(hostedCallback(Payment::query()->sole()))->assertAccepted();
+    app(FulfillHostedPayment::class)->execute(Payment::query()->sole());
 
     $subscription = WorkspaceSubscription::query()->sole();
 
@@ -382,7 +338,7 @@ test('changing a package price leaves a pending charge at the amount it was crea
 
     $this->actingAs($company['user'])
         ->withSession(phaseFivePasswordSession())
-        ->post(route('billing.checkout'), ['plan_public_id' => $plan->public_id])
+        ->post(route('billing.checkout'), ['customer_phone' => '900000000', 'plan_public_id' => $plan->public_id])
         ->assertSessionHasNoErrors();
 
     app(SaveSubscriptionPackage::class)->execute($package, [
@@ -401,18 +357,52 @@ test('changing a package price leaves a pending charge at the amount it was crea
     ], $actor);
 
     $charge = SubscriptionCharge::query()->sole();
-    $reference = EmisPaymentReference::query()->sole();
+    $reference = Payment::query()->sole();
 
     expect($plan->fresh()->amount_minor)->toBe(40_000_00)
         ->and($charge->amount_minor)->toBe(25_000_00)
         ->and($reference->amount_minor)->toBe(25_000_00);
 
-    $this->actingAs($company['user'])
-        ->withSession(phaseFivePasswordSession())
-        ->post(route('billing.references.simulate', $reference))
-        ->assertSessionHasNoErrors();
+    sendHostedCallback(hostedCallback($reference))->assertAccepted();
+    app(FulfillHostedPayment::class)->execute($reference);
 
     expect($charge->fresh()->status)->toBe(SubscriptionChargeStatus::Paid)
         ->and($charge->fresh()->amount_minor)->toBe(25_000_00)
         ->and(WorkspaceSubscription::query()->sole()->status)->toBe(WorkspaceSubscriptionStatus::Active);
 });
+
+test('obsolete gateway settings cannot restore Pay4All or bypass phone validation', function () {
+    config(['billing.gateway' => 'pay4all', 'billing.pay4all.environment' => 'simulation']);
+    $company = phaseFiveBillingCompany();
+    $this->actingAs($company['user'])->withSession(phaseFivePasswordSession())
+        ->post(route('billing.checkout'), ['plan_public_id' => $company['plan']->public_id])
+        ->assertSessionHasErrors('customer_phone');
+    expect(SubscriptionCharge::count())->toBe(0);
+    $this->withHeader('X-Inertia', 'true')->post(route('billing.checkout'), [
+        'plan_public_id' => $company['plan']->public_id, 'customer_phone' => '900000000',
+    ])->assertStatus(409)->assertHeader('X-Inertia-Location');
+    expect(Payment::query()->sole()->provider)->toBe('wipay')
+        ->and(EmisPaymentReference::count())->toBe(0);
+});
+
+test('unresolved real or paid legacy charges are preserved for reconciliation', function (string $environment, bool $paid) {
+    $company = phaseFiveBillingCompany();
+    $charge = SubscriptionCharge::factory()->create([
+        'workspace_id' => $company['workspace']->id, 'subscription_plan_id' => $company['plan']->id,
+        'active_checkout_key' => (string) $company['workspace']->id,
+        'status' => $paid ? SubscriptionChargeStatus::Paid : SubscriptionChargeStatus::Pending,
+    ]);
+    $reference = EmisPaymentReference::factory()->create([
+        'subscription_charge_id' => $charge->id, 'environment' => $environment,
+        'status' => $paid ? EmisPaymentReferenceStatus::Paid : EmisPaymentReferenceStatus::Pending,
+    ]);
+    expect(fn () => startHostedTestPayment($company))->toThrow(DomainException::class)
+        ->and($reference->fresh()->status)->toBe($reference->status)
+        ->and($charge->fresh()->active_checkout_key)->toBe((string) $company['workspace']->id)
+        ->and($reference->events()->count())->toBe(0)
+        ->and(Payment::count())->toBe(0);
+})->with([
+    ['production', false],
+    ['homologation', false],
+    ['simulation', true],
+]);

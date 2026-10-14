@@ -2,8 +2,6 @@
 
 namespace App\Notifications;
 
-use App\Models\EmisPaymentReference;
-use App\Models\WorkspaceSubscription;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -18,21 +16,9 @@ class SubscriptionActivated extends Notification implements ShouldQueue
         public readonly string $planName,
         public readonly string $periodEndsAt,
         public readonly string $paymentReferencePublicId,
-        public readonly string $paymentMethod = 'Referência EMIS',
+        public readonly string $paymentMethod = 'WiPay',
     ) {
         $this->afterCommit();
-    }
-
-    public static function fromModels(
-        WorkspaceSubscription $subscription,
-        EmisPaymentReference $paymentReference,
-    ): self {
-        return new self(
-            subscriptionPublicId: $subscription->public_id,
-            planName: $subscription->plan->name,
-            periodEndsAt: $subscription->current_period_ends_at?->toIso8601String() ?? '',
-            paymentReferencePublicId: $paymentReference->public_id,
-        );
     }
 
     /**

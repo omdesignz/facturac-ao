@@ -11,7 +11,6 @@ use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AssistantController;
 use App\Http\Controllers\BillingCheckoutController;
 use App\Http\Controllers\BillingController;
-use App\Http\Controllers\BillingReferenceRefreshController;
 use App\Http\Controllers\CatalogueItemController;
 use App\Http\Controllers\CompanyBankDetailsController;
 use App\Http\Controllers\CompanyLogoController;
@@ -58,7 +57,6 @@ use App\Http\Controllers\SaftExportController;
 use App\Http\Controllers\SaftIndexController;
 use App\Http\Controllers\SecurityController;
 use App\Http\Controllers\SessionController;
-use App\Http\Controllers\SimulateEmisPaymentController;
 use App\Http\Controllers\SocialAuthenticationController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\SubscriptionPackageController;
@@ -222,16 +220,6 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::post('/settings/billing/payments/{payment}/resume', HostedPaymentResumeController::class)
             ->middleware(['mfa', 'password.confirm', 'throttle:6,1'])
             ->name('billing.payments.resume');
-        Route::post(
-            '/settings/billing/references/{emisPaymentReference}/refresh',
-            BillingReferenceRefreshController::class,
-        )->middleware(['mfa', 'password.confirm', 'throttle:12,1'])
-            ->name('billing.references.refresh');
-        Route::post(
-            '/settings/billing/references/{emisPaymentReference}/simulate',
-            SimulateEmisPaymentController::class,
-        )->middleware(['mfa', 'password.confirm', 'throttle:6,1'])
-            ->name('billing.references.simulate');
 
         Route::get('/customers', [CustomerController::class, 'index'])
             ->name('customers.index');

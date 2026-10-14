@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Billing\WiPay\WiPayConfiguration;
-use App\EmisPaymentReferenceStatus;
 use App\Models\EmisPaymentReference;
 use App\Models\Payment;
 use App\Models\SubscriptionCharge;
@@ -11,7 +10,6 @@ use App\Models\SubscriptionPackage;
 use App\Models\SubscriptionPlan;
 use App\Models\Workspace;
 use App\Models\WorkspaceSubscription;
-use App\Pay4AllEnvironment;
 use App\PaymentEnvironment;
 use App\PaymentStatus;
 use App\WorkspaceSubscriptionStatus;
@@ -33,30 +31,15 @@ class BillingController extends Controller
             ->with('plan')
             ->where('workspace_id', $workspace->id)
             ->first();
-        $activeReference = EmisPaymentReference::query()
-            ->with('charge.plan')
-            ->where('workspace_id', $workspace->id)
-            ->where('status', EmisPaymentReferenceStatus::Pending)
-            ->where('expires_at', '>', now('Africa/Luanda'))
-            ->latest('id')
-            ->first();
         $charges = SubscriptionCharge::query()
             ->with(['plan', 'paymentReference', 'hostedPayment'])
             ->where('workspace_id', $workspace->id)
             ->latest('id')
             ->limit(20)
             ->get();
-        $environment = Pay4AllEnvironment::tryFrom(
-            (string) config('billing.pay4all.environment'),
-        );
-        $isHosted = config('billing.gateway') === 'wipay';
         $hostedEnvironment = $configuration->environment;
-        $gatewayAvailable = [
-            'wipay' => $configuration->isAvailable()
-                && ($hostedEnvironment !== PaymentEnvironment::Sandbox || ! app()->isProduction()),
-            'pay4all' => $environment === Pay4AllEnvironment::Simulation,
-        ][(string) config('billing.gateway')] ?? false;
-        $hostedAvailable = $isHosted && $gatewayAvailable;
+        $gatewayAvailable = $configuration->isAvailable()
+            && ($hostedEnvironment !== PaymentEnvironment::Sandbox || ! app()->isProduction());
         $activePayment = Payment::query()->where('workspace_id', $workspace->id)
             ->where(function ($query): void {
                 $query->whereIn('status', [PaymentStatus::Created, PaymentStatus::Creating, PaymentStatus::Pending, PaymentStatus::Review]);
@@ -86,10 +69,7 @@ class BillingController extends Controller
                 'cancel_at_period_end' => $subscription->cancel_at_period_end,
                 'plan' => $this->planProps($subscription->plan),
             ],
-            'activeReference' => $activeReference === null
-                ? null
-                : $this->referenceProps($activeReference),
-            'activePayment' => $activePayment === null ? null : $this->paymentProps($activePayment, $configuration, $hostedAvailable),
+            'activePayment' => $activePayment === null ? null : $this->paymentProps($activePayment, $configuration, $gatewayAvailable),
             'charges' => $charges->map(fn (SubscriptionCharge $charge): array => [
                 'public_id' => $charge->public_id,
                 'amount_minor' => $charge->amount_minor,
@@ -99,31 +79,18 @@ class BillingController extends Controller
                 'created_at' => $charge->created_at?->toIso8601String(),
                 'paid_at' => $charge->paid_at?->toIso8601String(),
                 'plan_name' => $charge->plan->name,
-                'payment' => $charge->hostedPayment === null ? null : $this->paymentProps($charge->hostedPayment, $configuration, $hostedAvailable),
+                'payment' => $charge->hostedPayment === null ? null : $this->paymentProps($charge->hostedPayment, $configuration, $gatewayAvailable),
                 'reference' => $charge->paymentReference === null
                     ? null
                     : $this->referenceProps($charge->paymentReference),
             ]),
-            'gateway' => $isHosted ? [
-                'provider' => 'WiPay', 'method' => 'Pagamento online', 'hosted' => true,
+            'gateway' => [
+                'provider' => 'WiPay', 'method' => 'Pagamento online',
                 'environment' => $hostedEnvironment->value ?? 'invalid',
                 'environment_label' => $hostedEnvironment?->label() ?? 'Configuração inválida',
                 'available' => $gatewayAvailable,
-                'simulated' => false,
                 'production_enabled' => (bool) config('billing.wipay.production_enabled'),
-                'transaction_fee_basis_points' => 0,
                 'maximum_amount_minor' => (int) config('billing.wipay.maximum_amount_minor'),
-            ] : [
-                'hosted' => false,
-                'provider' => 'Pay4All é+',
-                'method' => 'Referência EMIS',
-                'environment' => $environment->value ?? 'invalid',
-                'environment_label' => $environment?->label() ?? 'Configuração inválida',
-                'available' => $gatewayAvailable,
-                'simulated' => $environment === Pay4AllEnvironment::Simulation,
-                'production_enabled' => (bool) config('billing.pay4all.production_enabled'),
-                'transaction_fee_basis_points' => (int) config('billing.pay4all.transaction_fee_basis_points'),
-                'maximum_amount_minor' => (int) config('billing.pay4all.maximum_reference_amount_minor'),
             ],
             'canManage' => $request->user()?->can('update', $workspace) === true,
         ]);

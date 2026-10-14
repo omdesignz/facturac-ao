@@ -10,11 +10,8 @@ import { Head, Link, useForm, usePage, usePoll } from '@inertiajs/vue3';
 import {
     BadgeCheck,
     Banknote,
-    CalendarClock,
-    Check,
     CheckCircle2,
     CircleAlert,
-    Clipboard,
     CreditCard,
     History,
     Landmark,
@@ -24,7 +21,6 @@ import {
     ReceiptText,
     RefreshCw,
     ShieldCheck,
-    Sparkles,
     TriangleAlert,
     X,
 } from '@lucide/vue';
@@ -43,7 +39,6 @@ import {
 import { currencyLabel } from '@/lib/pos-ui';
 import { checkout } from '@/routes/billing';
 import { resume } from '@/routes/billing/payments';
-import { refresh, simulate } from '@/routes/billing/references';
 import { security } from '@/routes/settings';
 
 type BadgeTone = 'success' | 'warning' | 'danger' | 'info' | 'neutral';
@@ -130,15 +125,12 @@ interface HostedPayment {
 }
 
 interface Gateway {
-    hosted: boolean;
     provider: string;
     method: string;
     environment: string;
     environment_label: string;
     available: boolean;
-    simulated: boolean;
     production_enabled: boolean;
-    transaction_fee_basis_points: number;
     maximum_amount_minor: number;
 }
 
@@ -146,7 +138,6 @@ const props = defineProps<{
     plans: SubscriptionPlan[];
     packages: BillingPackage[];
     subscription: Subscription | null;
-    activeReference: PaymentReference | null;
     activePayment: HostedPayment | null;
     charges: SubscriptionCharge[];
     gateway: Gateway;
@@ -155,26 +146,17 @@ const props = defineProps<{
 
 const page = usePage();
 const selectedPlan = ref<SubscriptionPlan | null>(null);
-const copiedField = ref<'entity' | 'reference' | 'instruction' | null>(null);
 const checkoutForm = useForm({ plan_public_id: '', customer_phone: '' });
 const resumeForm = useForm({});
-const refreshForm = useForm({});
-const simulationForm = useForm({});
 
 const mfaEnabled = computed(
     () => page.props.auth.user?.two_factor_enabled === true,
-);
-const feePercentage = computed(() =>
-    (props.gateway.transaction_fee_basis_points / 100).toLocaleString('pt-AO', {
-        maximumFractionDigits: 2,
-    }),
 );
 const canStartCheckout = computed(
     () =>
         props.canManage &&
         mfaEnabled.value &&
         props.gateway.available &&
-        props.activeReference === null &&
         props.activePayment === null,
 );
 
@@ -239,7 +221,7 @@ const packageCards = computed<PackageCard[]>(() =>
 );
 
 function packageButtonLabel(card: PackageCard): string {
-    if (props.activeReference || props.activePayment) {
+    if (props.activePayment) {
         return 'Conclua o pagamento activo';
     }
 
@@ -370,61 +352,6 @@ function submitCheckout(): void {
         },
     });
 }
-
-function refreshReference(): void {
-    if (props.activeReference === null) {
-        return;
-    }
-
-    refreshForm.post(refresh.url(props.activeReference.public_id), {
-        preserveScroll: true,
-    });
-}
-
-function confirmSimulation(): void {
-    if (props.activeReference === null || !props.gateway.simulated) {
-        return;
-    }
-
-    simulationForm.post(simulate.url(props.activeReference.public_id), {
-        preserveScroll: true,
-    });
-}
-
-async function copyValue(
-    field: 'entity' | 'reference' | 'instruction',
-    value: string,
-): Promise<void> {
-    try {
-        await navigator.clipboard.writeText(value);
-        copiedField.value = field;
-        window.setTimeout(() => {
-            if (copiedField.value === field) {
-                copiedField.value = null;
-            }
-        }, 1800);
-    } catch {
-        copiedField.value = null;
-    }
-}
-
-function copyPaymentInstruction(): void {
-    if (props.activeReference === null) {
-        return;
-    }
-
-    const reference = props.activeReference;
-    void copyValue(
-        'instruction',
-        [
-            `${props.gateway.method} — ${props.gateway.provider}`,
-            `Entidade: ${reference.entity}`,
-            `Referência: ${reference.reference}`,
-            `Valor: ${formatMoney(reference.amount_minor, reference.currency_code)}`,
-            `Válida até: ${formatDate(reference.expires_at, true)}`,
-        ].join('\n'),
-    );
-}
 </script>
 
 <template>
@@ -436,19 +363,11 @@ function copyPaymentInstruction(): void {
                 <PageHeader
                     eyebrow="Configuração · Plano e cobrança"
                     title="Plano e cobrança"
-                    :description="
-                        gateway.hosted
-                            ? 'Escolha o plano e o método de pagamento na página segura da WiPay. A assinatura só é activada após confirmação autenticada do pagamento.'
-                            : 'Escolha o plano, gere uma Referência EMIS e pague através de qualquer banco, ATM ou aplicação bancária. A assinatura só é activada depois da confirmação do provedor.'
-                    "
+                    description="Escolha o plano e o método de pagamento na página segura da WiPay. A assinatura só é activada após confirmação autenticada do pagamento."
                 >
                     <template #meta>
                         <StatusBadge
-                            :label="
-                                gateway.hosted
-                                    ? 'Pagamento seguro com WiPay'
-                                    : 'Pagamento por Referência EMIS'
-                            "
+                            label="Pagamento seguro com WiPay"
                             tone="info"
                         />
                         <StatusBadge :label="gateway.method" tone="neutral" />
@@ -462,11 +381,7 @@ function copyPaymentInstruction(): void {
                         />
                         <PageStat
                             label="Pagamento activo"
-                            :value="
-                                activeReference || activePayment
-                                    ? 'A aguardar'
-                                    : 'Nenhum'
-                            "
+                            :value="activePayment ? 'A aguardar' : 'Nenhum'"
                             detail="Valor exacto e confirmação automática"
                             compact
                         />
@@ -474,9 +389,7 @@ function copyPaymentInstruction(): void {
                 </PageHeader>
 
                 <section
-                    v-if="
-                        gateway.simulated || gateway.environment === 'sandbox'
-                    "
+                    v-if="gateway.environment === 'sandbox'"
                     class="rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-600/15 dark:bg-amber-400/10 dark:ring-amber-400/20"
                     aria-labelledby="simulation-heading"
                 >
@@ -495,20 +408,10 @@ function copyPaymentInstruction(): void {
                             <p
                                 class="mt-1 text-sm/6 text-amber-800/80 dark:text-amber-100/75"
                             >
-                                <template v-if="gateway.hosted">
-                                    Está no sandbox da WiPay. Use os números de
-                                    teste fornecidos pelo operador; não
-                                    introduza dados de pagamentos reais. Uma
-                                    confirmação de teste não activa uma
-                                    assinatura em produção.
-                                </template>
-                                <template v-else
-                                    >A entidade e a referência geradas aqui são
-                                    simuladas e não são pagáveis. A produção
-                                    fica bloqueada até instalar a especificação
-                                    API e as credenciais comerciais da
-                                    Pay4All.</template
-                                >
+                                Está no sandbox da WiPay. Use os números de
+                                teste fornecidos pelo operador; não introduza
+                                dados de pagamentos reais. Uma confirmação de
+                                teste não activa uma assinatura em produção.
                             </p>
                         </div>
                     </div>
@@ -668,246 +571,9 @@ function copyPaymentInstruction(): void {
                     </section>
 
                     <section
-                        v-else-if="activeReference"
-                        class="overflow-hidden rounded-2xl surface"
-                        aria-labelledby="reference-heading"
-                    >
-                        <div
-                            class="flex flex-col gap-4 border-b border-zinc-200 px-5 py-5 sm:flex-row sm:items-start sm:justify-between sm:px-7 dark:border-white/10"
-                        >
-                            <div>
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <h2
-                                        id="reference-heading"
-                                        class="text-base font-semibold text-zinc-950 dark:text-white"
-                                    >
-                                        Instruções de pagamento
-                                    </h2>
-                                    <StatusBadge
-                                        :label="activeReference.status_label"
-                                        :tone="
-                                            statusTone(activeReference.status)
-                                        "
-                                        pulse
-                                    />
-                                </div>
-                                <p
-                                    class="mt-1 text-sm/6 text-zinc-500 dark:text-zinc-400"
-                                >
-                                    Use exactamente estes dados no canal
-                                    bancário da sua preferência.
-                                </p>
-                            </div>
-                            <button
-                                type="button"
-                                class="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-zinc-950 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm focus-ring transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
-                                @click="copyPaymentInstruction"
-                            >
-                                <Check
-                                    v-if="copiedField === 'instruction'"
-                                    class="size-4"
-                                    aria-hidden="true"
-                                />
-                                <Clipboard
-                                    v-else
-                                    class="size-4"
-                                    aria-hidden="true"
-                                />
-                                {{
-                                    copiedField === 'instruction'
-                                        ? 'Copiado'
-                                        : 'Copiar instrução'
-                                }}
-                            </button>
-                        </div>
-
-                        <dl
-                            class="divide-y divide-zinc-100 dark:divide-white/5"
-                        >
-                            <div
-                                class="px-5 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-7"
-                            >
-                                <dt
-                                    class="text-sm font-medium text-zinc-700 dark:text-zinc-300"
-                                >
-                                    Entidade
-                                </dt>
-                                <dd
-                                    class="mt-2 flex items-center justify-between gap-4 sm:col-span-2 sm:mt-0"
-                                >
-                                    <span
-                                        class="font-mono text-xl font-semibold tracking-[0.16em] text-zinc-950 dark:text-white"
-                                        >{{ activeReference.entity }}</span
-                                    >
-                                    <button
-                                        type="button"
-                                        class="icon-button text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 focus-visible:outline-2 focus-visible:outline-brand-600 dark:hover:bg-white/5 dark:hover:text-white"
-                                        :aria-label="`Copiar entidade ${activeReference.entity}`"
-                                        @click="
-                                            copyValue(
-                                                'entity',
-                                                activeReference.entity,
-                                            )
-                                        "
-                                    >
-                                        <Check
-                                            v-if="copiedField === 'entity'"
-                                            class="size-4 text-emerald-600 dark:text-emerald-400"
-                                            aria-hidden="true"
-                                        />
-                                        <Clipboard
-                                            v-else
-                                            class="size-4"
-                                            aria-hidden="true"
-                                        />
-                                    </button>
-                                </dd>
-                            </div>
-                            <div
-                                class="px-5 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-7"
-                            >
-                                <dt
-                                    class="text-sm font-medium text-zinc-700 dark:text-zinc-300"
-                                >
-                                    Referência
-                                </dt>
-                                <dd
-                                    class="mt-2 flex items-center justify-between gap-4 sm:col-span-2 sm:mt-0"
-                                >
-                                    <span
-                                        class="font-mono text-xl font-semibold tracking-[0.12em] text-zinc-950 dark:text-white"
-                                        >{{ activeReference.reference }}</span
-                                    >
-                                    <button
-                                        type="button"
-                                        class="icon-button text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 focus-visible:outline-2 focus-visible:outline-brand-600 dark:hover:bg-white/5 dark:hover:text-white"
-                                        :aria-label="`Copiar referência ${activeReference.reference}`"
-                                        @click="
-                                            copyValue(
-                                                'reference',
-                                                activeReference.reference,
-                                            )
-                                        "
-                                    >
-                                        <Check
-                                            v-if="copiedField === 'reference'"
-                                            class="size-4 text-emerald-600 dark:text-emerald-400"
-                                            aria-hidden="true"
-                                        />
-                                        <Clipboard
-                                            v-else
-                                            class="size-4"
-                                            aria-hidden="true"
-                                        />
-                                    </button>
-                                </dd>
-                            </div>
-                            <div
-                                class="px-5 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-7"
-                            >
-                                <dt
-                                    class="text-sm font-medium text-zinc-700 dark:text-zinc-300"
-                                >
-                                    Valor exacto
-                                </dt>
-                                <dd
-                                    class="mt-1 numeric text-xl font-semibold tracking-tight text-zinc-950 sm:col-span-2 sm:mt-0 dark:text-white"
-                                >
-                                    {{
-                                        formatMoney(
-                                            activeReference.amount_minor,
-                                            activeReference.currency_code,
-                                        )
-                                    }}
-                                </dd>
-                            </div>
-                            <div
-                                class="px-5 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-7"
-                            >
-                                <dt
-                                    class="text-sm font-medium text-zinc-700 dark:text-zinc-300"
-                                >
-                                    Válida até
-                                </dt>
-                                <dd
-                                    class="mt-1 flex items-center gap-2 text-sm text-zinc-700 sm:col-span-2 sm:mt-0 dark:text-zinc-300"
-                                >
-                                    <CalendarClock
-                                        class="size-4 text-zinc-400"
-                                        aria-hidden="true"
-                                    />
-                                    {{
-                                        formatDate(
-                                            activeReference.expires_at,
-                                            true,
-                                        )
-                                    }}
-                                </dd>
-                            </div>
-                        </dl>
-
-                        <div
-                            class="border-t border-zinc-200 bg-zinc-50 px-5 py-5 sm:flex sm:items-center sm:justify-between sm:gap-4 sm:px-7 dark:border-white/10 dark:bg-white/[0.025]"
-                        >
-                            <p
-                                class="flex items-start gap-2 text-xs/5 text-zinc-500 dark:text-zinc-400"
-                            >
-                                <CircleAlert
-                                    class="mt-0.5 size-4 shrink-0"
-                                    aria-hidden="true"
-                                />
-                                A referência é uma instrução, não um
-                                comprovativo. O acesso só muda após confirmação
-                                do pagamento.
-                            </p>
-                            <div
-                                class="mt-4 flex shrink-0 flex-wrap gap-2 sm:mt-0"
-                            >
-                                <button
-                                    type="button"
-                                    class="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-white px-[1.125rem] text-sm font-semibold text-zinc-900 ring-1 ring-zinc-900/10 transition ring-inset hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
-                                    :disabled="refreshForm.processing"
-                                    @click="refreshReference"
-                                >
-                                    <LoaderCircle
-                                        v-if="refreshForm.processing"
-                                        class="size-4 animate-spin"
-                                        aria-hidden="true"
-                                    />
-                                    <RefreshCw
-                                        v-else
-                                        class="size-4"
-                                        aria-hidden="true"
-                                    />
-                                    Verificar estado
-                                </button>
-                                <button
-                                    v-if="gateway.simulated"
-                                    type="button"
-                                    class="inline-flex items-center justify-center gap-2 rounded-xl bg-accent-400 px-3.5 py-2.5 text-sm font-semibold text-brand-950 shadow-sm transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
-                                    :disabled="simulationForm.processing"
-                                    @click="confirmSimulation"
-                                >
-                                    <LoaderCircle
-                                        v-if="simulationForm.processing"
-                                        class="size-4 animate-spin"
-                                        aria-hidden="true"
-                                    />
-                                    <Sparkles
-                                        v-else
-                                        class="size-4"
-                                        aria-hidden="true"
-                                    />
-                                    Simular confirmação
-                                </button>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section
                         v-else
                         class="rounded-2xl surface p-7 text-center sm:p-10"
-                        aria-labelledby="no-reference-heading"
+                        aria-labelledby="no-payment-heading"
                     >
                         <span
                             class="mx-auto grid size-12 place-items-center rounded-2xl bg-brand-50 text-brand-700 dark:bg-brand-400/10 dark:text-brand-300"
@@ -915,14 +581,10 @@ function copyPaymentInstruction(): void {
                             <Landmark class="size-6" aria-hidden="true" />
                         </span>
                         <h2
-                            id="no-reference-heading"
+                            id="no-payment-heading"
                             class="mt-4 text-base font-semibold text-zinc-950 dark:text-white"
                         >
-                            {{
-                                gateway.hosted
-                                    ? 'Nenhum pagamento pendente'
-                                    : 'Nenhuma Referência EMIS pendente'
-                            }}
+                            Nenhum pagamento pendente
                         </h2>
                         <p
                             class="mx-auto mt-2 max-w-lg text-sm/6 text-zinc-500 dark:text-zinc-400"
@@ -1056,18 +718,9 @@ function copyPaymentInstruction(): void {
                                     class="mt-0.5 size-4 shrink-0 text-emerald-600 dark:text-emerald-400"
                                     aria-hidden="true"
                                 />
-                                <template v-if="gateway.hosted"
-                                    >Valor exacto do plano em AOA. Não guardamos
-                                    PINs nem dados bancários; o método é
-                                    escolhido na página segura da
-                                    WiPay.</template
-                                >
-                                <template v-else
-                                    >Valor do plano cobrado em AOA. A taxa
-                                    comercial Pay4All de {{ feePercentage }}% é
-                                    controlada internamente e não é somada à
-                                    referência do cliente.</template
-                                >
+                                Valor exacto do plano em AOA. Não guardamos PINs
+                                nem dados bancários; o método é escolhido na
+                                página segura da WiPay.
                             </div>
                         </div>
                     </aside>
@@ -1471,7 +1124,7 @@ function copyPaymentInstruction(): void {
                                         aria-hidden="true"
                                     />
                                     {{
-                                        activeReference || activePayment
+                                        activePayment
                                             ? 'Conclua o pagamento activo'
                                             : isCurrentPlan(plan)
                                               ? 'Renovar este plano'
@@ -1604,6 +1257,7 @@ function copyPaymentInstruction(): void {
                                                     v-if="charge.reference"
                                                     class="font-mono font-medium tracking-wide"
                                                 >
+                                                    Registo antigo:
                                                     {{
                                                         charge.reference.entity
                                                     }}
@@ -1805,11 +1459,7 @@ function copyPaymentInstruction(): void {
                                     as="h2"
                                     class="mt-5 pr-10 text-lg font-semibold text-zinc-950 dark:text-white"
                                 >
-                                    {{
-                                        gateway.hosted
-                                            ? 'Continuar para a WiPay'
-                                            : 'Gerar Referência EMIS'
-                                    }}
+                                    Continuar para a WiPay
                                 </DialogTitle>
                                 <p
                                     class="mt-2 text-sm/6 text-zinc-500 dark:text-zinc-400"
@@ -1875,7 +1525,7 @@ function copyPaymentInstruction(): void {
                                     </div>
                                 </dl>
 
-                                <div v-if="gateway.hosted" class="mt-5">
+                                <div class="mt-5">
                                     <label
                                         for="payment-customer-phone"
                                         class="block text-sm font-medium text-zinc-900 dark:text-white"
@@ -1981,11 +1631,7 @@ function copyPaymentInstruction(): void {
                                             class="size-4"
                                             aria-hidden="true"
                                         />
-                                        {{
-                                            gateway.hosted
-                                                ? 'Continuar para a WiPay'
-                                                : 'Gerar referência'
-                                        }}
+                                        Continuar para a WiPay
                                     </button>
                                 </div>
                             </DialogPanel>

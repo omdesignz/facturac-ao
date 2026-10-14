@@ -12,10 +12,6 @@ Schedule::command('agt:dispatch-due-submissions')
     ->everyMinute()
     ->withoutOverlapping();
 
-Schedule::command('billing:expire-emis-references')
-    ->everyMinute()
-    ->withoutOverlapping();
-
 Schedule::command('payments:recover')
     ->everyMinute()
     ->withoutOverlapping()

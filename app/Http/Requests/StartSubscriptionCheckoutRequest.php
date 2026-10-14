@@ -27,7 +27,7 @@ class StartSubscriptionCheckoutRequest extends FormRequest
                 Rule::exists('subscription_plans', 'public_id')
                     ->where('is_active', true),
             ],
-            'customer_phone' => [Rule::requiredIf(config('billing.gateway') === 'wipay'), 'nullable', 'string', 'regex:/\A9\d{8}\z/'],
+            'customer_phone' => ['required', 'string', 'regex:/\A9\d{8}\z/'],
         ];
     }
 

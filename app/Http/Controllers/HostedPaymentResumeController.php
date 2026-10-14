@@ -23,7 +23,7 @@ class HostedPaymentResumeController extends Controller
         abort_unless($workspace instanceof Workspace && $payment->workspace_id === $workspace->id, 404);
         Gate::authorize('update', $workspace);
 
-        if (config('billing.gateway') !== 'wipay' || ! $configuration->isAvailable()
+        if (! $configuration->isAvailable()
             || $payment->environment !== $configuration->environment
             || ($payment->environment === PaymentEnvironment::Sandbox && app()->isProduction())) {
             return back()->with('error', 'Este ambiente de pagamentos está desactivado. Contacte o apoio.');

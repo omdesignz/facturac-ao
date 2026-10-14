@@ -5,10 +5,6 @@ use App\Models\SubscriptionPlan;
 use App\Models\User;
 use Illuminate\Support\Arr;
 
-beforeEach(function (): void {
-    config()->set('billing.gateway', 'pay4all');
-});
-
 /** @var array<string, int> the monthly price and what each longer period costs, in minor units */
 function offerPrices(): array
 {
