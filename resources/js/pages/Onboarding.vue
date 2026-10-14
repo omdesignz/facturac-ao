@@ -366,7 +366,7 @@ const taxRegimeOptions = computed(() =>
                                             type="checkbox"
                                             value="1"
                                             required
-                                            class="mt-1 size-4 shrink-0"
+                                            class="form-checkbox mt-1"
                                             :aria-invalid="
                                                 !!errors.tax_regime_confirmed
                                             "

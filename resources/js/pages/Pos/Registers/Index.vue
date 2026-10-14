@@ -371,7 +371,8 @@ function canDelete(register: RegisterRow): boolean {
                     <input
                         v-model="form.is_active"
                         type="checkbox"
-                        class="size-4 rounded border-zinc-300 text-brand-700 focus-ring dark:border-white/15 dark:bg-white/5"
+                        class="form-checkbox"
+                        :aria-invalid="!!form.errors.is_active"
                     />
                     Activa: pode abrir-se um turno nesta caixa
                 </label>

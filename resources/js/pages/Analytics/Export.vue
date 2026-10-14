@@ -631,6 +631,7 @@ function cell(value: string | number | null, key: string): string {
                                 ><input
                                     v-model="form.types"
                                     type="checkbox"
+                                    class="form-checkbox"
                                     :value="type.value"
                                 /><span
                                     >{{ type.label }}
@@ -657,6 +658,7 @@ function cell(value: string | number | null, key: string): string {
                                 ><input
                                     v-model="form.statuses"
                                     type="checkbox"
+                                    class="form-checkbox"
                                     :value="status.value"
                                 />{{ status.label }}</label
                             >
@@ -749,12 +751,14 @@ function cell(value: string | number | null, key: string): string {
                                     ><input
                                         v-model="form.include_lines"
                                         type="checkbox"
+                                        class="form-checkbox"
                                     />Artigos, quantidades, descontos e
                                     impostos</label
                                 ><label class="check-option"
                                     ><input
                                         v-model="form.include_payments"
                                         type="checkbox"
+                                        class="form-checkbox"
                                     />Liquidações: recibos e facturas que
                                     liquidam</label
                                 >
@@ -1010,12 +1014,6 @@ function cell(value: string | number | null, key: string): string {
     font-size: 0.875rem;
     padding-block: 0.5rem;
     cursor: pointer;
-}
-.check-option input {
-    inline-size: 1rem;
-    block-size: 1rem;
-    accent-color: var(--color-zinc-900);
-    flex: none;
 }
 .column-layout {
     display: flex;

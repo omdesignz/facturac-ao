@@ -223,7 +223,7 @@ function submit(): void {
                                             ? 'true'
                                             : undefined
                                     "
-                                    class="size-4 shrink-0 disabled:opacity-40"
+                                    class="form-radio"
                                 />
                                 <span
                                     :class="[
