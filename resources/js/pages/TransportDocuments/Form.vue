@@ -551,10 +551,9 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                                         "
                                     />
                                 </div>
-                                <label class="block">
-                                    <span
-                                        class="mb-1.5 block text-xs font-semibold"
-                                        >Sentido do movimento</span
+                                <div>
+                                    <label class="mb-2 field-label"
+                                        >Sentido do movimento</label
                                     >
                                     <SelectInput
                                         :disabled="readOnly"
@@ -575,7 +574,7 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                                             fieldError('movement_direction')
                                         "
                                     />
-                                </label>
+                                </div>
                                 <div>
                                     <label class="mb-2 field-label"
                                         >Data de emissão</label

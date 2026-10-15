@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -24,7 +25,10 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('fiscal_document_lines', function (Blueprint $table): void {
-            $table->dropForeign('fiscal_lines_transport_origin_fk');
+            // SQLite names a foreign key by its columns, not by the name it was given.
+            $table->dropForeign(DB::getDriverName() === 'sqlite'
+                ? ['origin_transport_line_id', 'workspace_id', 'legal_entity_id']
+                : 'fiscal_lines_transport_origin_fk');
             $table->dropIndex(['origin_transport_line_id']);
             $table->dropColumn('origin_transport_line_id');
             $table->dropColumn('order_references');

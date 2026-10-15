@@ -85,8 +85,10 @@ function transportComplianceInvoiceProfile(array $fixture, TransportDocument $gu
 }
 
 test('transport signatures verify independently and chain across cancelled guides', function () {
-    $fixture = transportComplianceFixture();
+    // Travel first: the workspace must exist on the day the test is set, or
+    // the subscription trial reads as not yet started.
     $this->travelTo(CarbonImmutable::parse('2026-06-30 08:15:00', 'Africa/Luanda'));
+    $fixture = transportComplianceFixture();
     $first = app(IssueTransportDocument::class)->execute(transportComplianceDraft($fixture), $fixture['owner'], 1);
     $message = '2026-06-30;2026-06-30T08:15:00;'.$first->document_no.';100.00;';
     expect(openssl_verify($message, base64_decode($first->document_hash), $fixture['publicKey'], OPENSSL_ALGO_SHA1))->toBe(1)

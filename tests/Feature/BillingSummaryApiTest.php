@@ -340,8 +340,10 @@ test('billing malformed scope ceilings remain independent of valid credential gr
 });
 
 test('billing current month accepts committed future dated facts and year boundaries', function () {
-    $f = billingSummaryFixture();
+    // Travel first: the workspace must exist on the day the test is set, or
+    // the subscription trial reads as not yet started.
     $this->travelTo(CarbonImmutable::parse('2026-01-01 00:15:00', 'Africa/Luanda'));
+    $f = billingSummaryFixture();
     billingDocument($f, ['document_date' => '2025-12-31']);
     billingDocument($f, ['document_date' => '2026-01-31']);
     $this->withHeader('Authorization', 'Bearer '.$f['secret'])->getJson($f['url'].'?month=2026-01')->assertOk()->assertJsonPath('data.currencies.0.billed_document_count', 1)->assertJsonPath('data.period.to_exclusive', '2026-02-01');
