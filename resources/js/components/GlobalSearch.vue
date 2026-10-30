@@ -456,16 +456,16 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div class="flex min-w-0 flex-1 items-center">
+    <div class="flex min-w-0 flex-1 items-center max-sm:justify-end">
         <button
             type="button"
-            class="group flex h-10 w-full max-w-md min-w-0 items-center gap-3 rounded-full bg-zinc-900/[0.04] pr-2 pl-3.5 text-left text-sm text-zinc-500 focus-ring transition hover:bg-zinc-900/[0.07] hover:text-zinc-700 dark:bg-white/[0.06] dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-zinc-200"
+            class="group flex h-10 w-full max-w-md min-w-0 items-center gap-3 rounded-full bg-zinc-900/[0.04] pr-2 pl-3.5 text-left text-sm text-zinc-500 focus-ring transition hover:bg-zinc-900/[0.07] hover:text-zinc-700 max-sm:size-10 max-sm:w-10 max-sm:justify-center max-sm:px-0 dark:bg-white/[0.06] dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-zinc-200"
             aria-haspopup="dialog"
             :aria-keyshortcuts="isApplePlatform ? 'Meta+K' : 'Control+K'"
             @click="openPalette"
         >
             <Search class="size-4 shrink-0" aria-hidden="true" />
-            <span class="min-w-0 flex-1 truncate">
+            <span class="min-w-0 flex-1 truncate max-sm:sr-only">
                 Pesquisar factura, cliente ou NIF…
             </span>
             <span

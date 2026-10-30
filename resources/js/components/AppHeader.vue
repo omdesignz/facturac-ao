@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { Menu as MenuIcon } from '@lucide/vue';
+import { Link } from '@inertiajs/vue3';
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 import AccountMenu from '@/components/AccountMenu.vue';
+import BrandWordmark from '@/components/BrandWordmark.vue';
 import GlobalSearch from '@/components/GlobalSearch.vue';
 import NotificationsMenu from '@/components/NotificationsMenu.vue';
 import WorkSessionTimer from '@/components/WorkSessionTimer.vue';
-
-defineEmits<{ openNavigation: [] }>();
+import { dashboard } from '@/routes';
 
 /**
  * At rest the bar is the page's own ground, so a screen opens on its header
@@ -33,18 +33,20 @@ onBeforeUnmount(() => {
         class="sticky inset-bs-[var(--impersonation-bar,0px)] z-40 flex h-16 shrink-0 items-center gap-3 border-b px-4 transition-[border-color,background-color] duration-200 sm:gap-4 sm:px-6 lg:px-8"
         :class="
             scrolled
-                ? 'border-zinc-900/[0.07] bg-stone-50/85 backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/85'
-                : 'border-transparent bg-stone-50 dark:bg-zinc-950'
+                ? 'border-zinc-900/[0.07] bg-white/80 backdrop-blur-xl dark:border-white/10 dark:bg-black/80'
+                : 'border-transparent bg-white dark:bg-black'
         "
     >
-        <button
-            type="button"
-            class="-ml-2 icon-button rounded-full text-zinc-700 focus-ring transition hover:bg-zinc-900/[0.05] hover:text-zinc-950 lg:hidden dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-white"
-            @click="$emit('openNavigation')"
+        <Link
+            :href="dashboard.url()"
+            class="-ml-1 flex min-h-11 items-center rounded-lg focus-ring lg:hidden"
         >
-            <span class="sr-only">Abrir navegação</span>
-            <MenuIcon class="size-5" aria-hidden="true" />
-        </button>
+            <BrandWordmark
+                class="h-[1.25rem] w-auto text-brand-950 dark:text-stone-50"
+                aria-hidden="true"
+            />
+            <span class="sr-only">facturac.ao, ir para Hoje</span>
+        </Link>
 
         <GlobalSearch />
 

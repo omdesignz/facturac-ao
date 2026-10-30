@@ -563,7 +563,7 @@ const reviewStatement = computed(() => {
                 <!-- ---------------------------------------------------- KPIs -->
                 <dl
                     v-if="kpis"
-                    class="mt-8 grid grid-cols-1 gap-y-6 min-[30rem]:grid-cols-2 md:grid-cols-3 xl:grid-cols-5"
+                    class="mt-8 grid grid-cols-2 gap-y-6 md:grid-cols-3 xl:grid-cols-5"
                 >
                     <div class="@container min-w-0 pr-5">
                         <dt
@@ -573,7 +573,7 @@ const reviewStatement = computed(() => {
                         </dt>
                         <dd class="mt-3 flex flex-wrap items-center gap-2.5">
                             <span
-                                class="min-w-0 numeric text-[clamp(1.5rem,13cqi,2rem)] leading-none font-normal tracking-[-0.035em] [overflow-wrap:anywhere] text-zinc-950 dark:text-white"
+                                class="min-w-0 numeric text-[clamp(1.5rem,13cqi,2rem)] leading-none font-light tracking-[-0.035em] [overflow-wrap:anywhere] text-zinc-950 dark:text-white"
                                 >{{ formatAmount(kpis.billed_today_minor)
                                 }}<span
                                     class="ml-1 text-sm tracking-normal text-zinc-500 dark:text-zinc-400"
@@ -604,7 +604,7 @@ const reviewStatement = computed(() => {
                     </div>
 
                     <div
-                        class="@container min-w-0 pr-5 xl:border-l xl:border-zinc-900/10 xl:pl-5 dark:xl:border-white/10"
+                        class="@container min-w-0 pr-5 max-md:hidden xl:border-l xl:border-zinc-900/10 xl:pl-5 dark:xl:border-white/10"
                     >
                         <dt
                             class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
@@ -612,7 +612,7 @@ const reviewStatement = computed(() => {
                             Emitidos hoje
                         </dt>
                         <dd
-                            class="mt-3 numeric text-[clamp(1.5rem,13cqi,2rem)] leading-none font-normal tracking-[-0.035em] text-zinc-950 dark:text-white"
+                            class="mt-3 numeric text-[clamp(1.5rem,13cqi,2rem)] leading-none font-light tracking-[-0.035em] text-zinc-950 dark:text-white"
                         >
                             {{ kpis.issued_today }}
                         </dd>
@@ -632,7 +632,7 @@ const reviewStatement = computed(() => {
                     </div>
 
                     <div
-                        class="@container min-w-0 pr-5 xl:border-l xl:border-zinc-900/10 xl:pl-5 dark:xl:border-white/10"
+                        class="@container min-w-0 pr-5 max-md:hidden xl:border-l xl:border-zinc-900/10 xl:pl-5 dark:xl:border-white/10"
                     >
                         <dt
                             class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
@@ -641,7 +641,7 @@ const reviewStatement = computed(() => {
                         </dt>
                         <dd class="mt-3 flex flex-wrap items-center gap-2.5">
                             <span
-                                class="numeric text-[clamp(1.5rem,13cqi,2rem)] leading-none font-normal tracking-[-0.035em] text-zinc-950 dark:text-white"
+                                class="numeric text-[clamp(1.5rem,13cqi,2rem)] leading-none font-light tracking-[-0.035em] text-zinc-950 dark:text-white"
                                 >{{ kpis.valid_today }}</span
                             >
                             <span
@@ -672,7 +672,7 @@ const reviewStatement = computed(() => {
                         press and focus as one piece.
                     -->
                     <div
-                        class="@container min-w-0 pr-5 xl:border-l xl:border-zinc-900/10 xl:pl-5 dark:xl:border-white/10"
+                        class="@container min-w-0 pr-5 max-md:hidden xl:border-l xl:border-zinc-900/10 xl:pl-5 dark:xl:border-white/10"
                     >
                         <div
                             class="relative -m-2 rounded-lg p-2 hover:bg-zinc-900/[0.04] active:bg-zinc-900/[0.07] has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-brand-600 dark:hover:bg-white/[0.06] dark:active:bg-white/10 dark:has-[a:focus-visible]:outline-brand-300"
@@ -694,7 +694,7 @@ const reviewStatement = computed(() => {
                                 class="mt-3 flex flex-wrap items-center gap-2.5"
                             >
                                 <span
-                                    class="numeric text-[clamp(1.5rem,13cqi,2rem)] leading-none font-normal tracking-[-0.035em] text-zinc-950 dark:text-white"
+                                    class="numeric text-[clamp(1.5rem,13cqi,2rem)] leading-none font-light tracking-[-0.035em] text-zinc-950 dark:text-white"
                                     >{{ kpis.attention_count }}</span
                                 >
                                 <span
@@ -730,7 +730,7 @@ const reviewStatement = computed(() => {
                                 class="mt-3 flex flex-wrap items-center gap-2.5"
                             >
                                 <span
-                                    class="min-w-0 numeric text-[clamp(1.5rem,13cqi,2rem)] leading-none font-normal tracking-[-0.035em] [overflow-wrap:anywhere] text-zinc-950 dark:text-white"
+                                    class="min-w-0 numeric text-[clamp(1.5rem,13cqi,2rem)] leading-none font-light tracking-[-0.035em] [overflow-wrap:anywhere] text-zinc-950 dark:text-white"
                                     >{{ formatAmount(kpis.outstanding_minor)
                                     }}<span
                                         class="ml-1 text-sm tracking-normal text-zinc-500 dark:text-zinc-400"

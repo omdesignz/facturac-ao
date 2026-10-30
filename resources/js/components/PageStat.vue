@@ -28,7 +28,7 @@ withDefaults(
             :class="[
                 compact
                     ? 'text-base font-medium tracking-[-0.01em]'
-                    : 'text-stat leading-none tracking-[-0.03em]',
+                    : 'text-stat leading-none font-light tracking-[-0.03em]',
                 'mt-2.5 numeric break-words text-zinc-950 dark:text-white',
             ]"
         >

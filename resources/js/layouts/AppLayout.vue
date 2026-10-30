@@ -12,15 +12,24 @@ import {
 } from '@headlessui/vue';
 import { router, usePage } from '@inertiajs/vue3';
 import { useMediaQuery } from '@vueuse/core';
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import {
+    computed,
+    nextTick,
+    onBeforeUnmount,
+    onMounted,
+    ref,
+    watch,
+} from 'vue';
 import AppHeader from '@/components/AppHeader.vue';
 import AppRail from '@/components/AppRail.vue';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import CookieConsent from '@/components/CookieConsent.vue';
 import ImpersonationBanner from '@/components/ImpersonationBanner.vue';
+import MobileTabBar from '@/components/MobileTabBar.vue';
 import SidebarNavigation from '@/components/SidebarNavigation.vue';
 import SubscriptionNotice from '@/components/SubscriptionNotice.vue';
 import TermsReacceptanceNotice from '@/components/TermsReacceptanceNotice.vue';
+import { isFocusedPath } from '@/lib/mobile-tab-bar';
 
 const sidebarOpen = ref(false);
 
@@ -41,6 +50,11 @@ watch(isDesktop, (matches) => {
  */
 const page = usePage();
 const main = ref<HTMLElement | null>(null);
+
+/** The phone's tab bar covers the foot of the page, so the page leaves room for it. */
+const tabBarShown = computed(
+    () => !isFocusedPath(new URL(page.url, 'http://localhost').pathname),
+);
 
 function visitKey(component: string, url: string): string {
     return `${component}\u0000${new URL(url, window.location.origin).pathname}`;
@@ -88,9 +102,7 @@ onBeforeUnmount(() => stopListening?.());
 </script>
 
 <template>
-    <div
-        class="min-h-dvh bg-stone-50 text-zinc-950 dark:bg-zinc-950 dark:text-white"
-    >
+    <div class="min-h-dvh bg-white text-zinc-950 dark:bg-black dark:text-white">
         <a
             href="#conteudo"
             class="sr-only focus-ring focus:not-sr-only focus:fixed focus:inset-s-3 focus:inset-bs-3 focus:z-[100] focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold dark:focus:bg-zinc-900"
@@ -155,8 +167,9 @@ onBeforeUnmount(() => stopListening?.());
             <AppRail />
         </div>
 
+        <MobileTabBar @more="sidebarOpen = true" />
         <div class="lg:pl-[4.5rem]">
-            <AppHeader @open-navigation="sidebarOpen = true" />
+            <AppHeader />
 
             <TermsReacceptanceNotice />
             <SubscriptionNotice />
@@ -165,7 +178,12 @@ onBeforeUnmount(() => stopListening?.());
                 id="conteudo"
                 ref="main"
                 tabindex="-1"
-                class="min-h-[calc(100dvh-4rem)] focus:outline-hidden"
+                :class="[
+                    'min-h-[calc(100dvh-4rem)] focus:outline-hidden',
+                    tabBarShown
+                        ? 'max-lg:pb-[calc(5rem+env(safe-area-inset-bottom))]'
+                        : '',
+                ]"
             >
                 <slot />
             </main>

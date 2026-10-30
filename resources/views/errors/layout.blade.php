@@ -116,7 +116,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
         <meta name="robots" content="noindex, nofollow">
         <meta name="color-scheme" content="light dark">
-        <meta name="theme-color" content="#faf9f6" media="(prefers-color-scheme: light)">
+        <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
         <meta name="theme-color" content="#09090b" media="(prefers-color-scheme: dark)">
         @if (View::hasSection('refresh') && $retrySeconds !== null)
             <meta http-equiv="refresh" content="{{ max(5, $retrySeconds) }}">
@@ -127,7 +127,7 @@
             /* The app's own tokens: page ground, zinc ink, brand grey, gold. */
             :root {
                 color-scheme: light;
-                --ground: #faf9f6;
+                --ground: #ffffff;
                 --ink: #18181b;
                 --muted: #52525b;
                 --rule: rgba(24, 24, 27, 0.12);

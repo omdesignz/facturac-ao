@@ -11,9 +11,9 @@
      * pages' headlines only, never for the product itself.
      */
     --font-sans:
-        'Hanken Grotesk', ui-sans-serif, system-ui, sans-serif,
-        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
-        'Noto Color Emoji';
+        -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Hanken Grotesk',
+        ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
     --font-mono:
         'IBM Plex Mono', ui-monospace, 'SF Mono', SFMono-Regular, Menlo,
         Consolas, 'Liberation Mono', monospace;
@@ -88,7 +88,7 @@
 :root {
     color-scheme: light;
     --fiscal-grid: color-mix(in srgb, var(--color-accent-400) 10%, transparent);
-    --surface-page: #faf9f6;
+    --surface-page: #ffffff;
 
     /* Durations for hand-written CSS; Tailwind's own come from duration-*. */
     --duration-instant: 75ms;
@@ -100,7 +100,7 @@
 .dark {
     color-scheme: dark;
     --fiscal-grid: color-mix(in srgb, var(--color-accent-400) 9%, transparent);
-    --surface-page: #09090b;
+    --surface-page: #000000;
 }
 
 html {
@@ -204,7 +204,7 @@ input[type='search']::-webkit-search-decoration {
  * kept for the values inside rows and cards.
  */
 @utility display {
-    font-weight: 400;
+    font-weight: 300;
     letter-spacing: -0.028em;
 }
 
@@ -1609,4 +1609,148 @@ label:has(> :is(.form-checkbox, .form-radio):not(:disabled)) {
     select {
         font-size: max(16px, 1rem);
     }
+}
+
+/*
+ * The proposed UI layer.
+ *
+ * Unlayered on purpose: it sits above the utilities and refines them in one
+ * place, so a page never has to know. White canvas, cards that are a hairline
+ * and a whisper of shadow, a gold halo for keyboard focus, and the brand's gold
+ * dot as the one flourish on anything that says "chosen".
+ */
+:root {
+    --ui-halo: rgb(249 178 51 / 0.38);
+    --ui-halo-invalid: rgb(225 29 72 / 0.16);
+    --ui-hairline: rgb(0 0 0 / 0.09);
+    --ui-card-shadow:
+        0 0 0 0.5px var(--ui-hairline), 0 1px 2px rgb(0 0 0 / 0.04),
+        0 14px 34px -18px rgb(0 0 0 / 0.16);
+    --ui-wash: #f5f5f7;
+}
+
+.dark {
+    --ui-halo: rgb(249 178 51 / 0.32);
+    --ui-halo-invalid: rgb(251 113 133 / 0.2);
+    --ui-hairline: rgb(255 255 255 / 0.14);
+    --ui-card-shadow: 0 0 0 0.5px var(--ui-hairline);
+    --ui-wash: rgb(255 255 255 / 0.08);
+}
+
+body {
+    letter-spacing: -0.011em;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Cards: 24px, a hairline and a whisper of shadow. */
+.surface {
+    border-radius: 1.5rem;
+    box-shadow: var(--ui-card-shadow);
+    --tw-ring-shadow: 0 0 #0000;
+}
+
+.dark .surface {
+    background-color: #1c1c1e;
+}
+
+/* Fields: ink on focus, with a soft gold halo for the keyboard. */
+.form-input:focus,
+.form-input:is(button, [aria-haspopup='dialog'])[aria-expanded='true'] {
+    outline-color: var(--color-brand-950);
+    box-shadow: 0 0 0 4px var(--ui-halo);
+}
+
+.dark .form-input:focus,
+.dark .form-input:is(button, [aria-haspopup='dialog'])[aria-expanded='true'] {
+    outline-color: #f4f4f5;
+}
+
+.form-input[aria-invalid='true']:focus {
+    box-shadow: 0 0 0 4px var(--ui-halo-invalid);
+}
+
+/* Ticks: a little larger, and chosen carries the gold dot. */
+.form-checkbox {
+    inline-size: 1.25rem;
+    block-size: 1.25rem;
+    border-width: 1.5px;
+    border-radius: 0.4375rem;
+}
+
+.form-checkbox::before {
+    content: '';
+    position: absolute;
+    inset-block-start: -0.25rem;
+    inset-inline-end: -0.25rem;
+    inline-size: 0.6875rem;
+    block-size: 0.6875rem;
+    border-radius: 9999px;
+    background-color: var(--color-accent-400);
+    box-shadow: 0 0 0 2px var(--surface-page);
+    transform: scale(0);
+    pointer-events: none;
+    transition: transform 0.24s cubic-bezier(0.2, 0.9, 0.3, 1.6) 0.06s;
+}
+
+.form-checkbox:checked::before {
+    transform: scale(1);
+}
+
+.form-checkbox:focus-visible,
+.form-radio:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 4px var(--ui-halo);
+}
+
+.form-radio,
+.dark .form-radio {
+    --form-dot-glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Ccircle cx='9' cy='9' r='3.5' fill='%23F9B233'/%3E%3C/svg%3E");
+    inline-size: 1.25rem;
+    block-size: 1.25rem;
+    border-width: 1.5px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .form-checkbox::before {
+        transition: none;
+    }
+}
+
+/* Tables: tabular figures, and a row that answers the pointer. */
+table {
+    font-variant-numeric: tabular-nums lining-nums;
+}
+
+tbody tr {
+    transition: background-color 0.12s var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    tbody tr:hover > :is(td, th) {
+        background-color: var(--ui-wash);
+    }
+}
+
+/*
+ * A well that holds a table is a card: the list is the content of the page, so
+ * it sits on white with a hairline, and its header row takes a faint tint.
+ */
+[class*='bg-zinc-900/[0.04]']:has(table) {
+    background-color: #fff;
+    box-shadow: var(--ui-card-shadow);
+}
+
+.dark [class*='bg-zinc-900/[0.04]']:has(table),
+.dark [class*='dark:bg-white/[0.04]']:has(table) {
+    background-color: #1c1c1e;
+}
+
+.surface thead th,
+[class*='bg-zinc-900/[0.04]']:has(table) thead th {
+    background-color: color-mix(in srgb, var(--ui-wash) 60%, transparent);
+}
+
+.dark .dialog-panel,
+.dark .menu-panel {
+    background-color: #1c1c1e;
 }

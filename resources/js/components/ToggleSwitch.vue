@@ -97,12 +97,17 @@ function toggle(): void {
             <span
                 aria-hidden="true"
                 :class="[
-                    'pointer-events-none block size-5 rounded-full shadow-sm motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out forced-colors:bg-[ButtonText]',
+                    'pointer-events-none relative block size-5 rounded-full shadow-sm motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out forced-colors:bg-[ButtonText]',
                     modelValue
                         ? 'translate-x-5 bg-white rtl:-translate-x-5 dark:bg-brand-950'
                         : 'translate-x-0 bg-white dark:bg-zinc-300',
                 ]"
-            />
+            >
+                <span
+                    v-if="modelValue"
+                    class="absolute inset-0 m-auto block size-2 rounded-full bg-accent-400 motion-safe:animate-[fade-in_150ms_var(--ease-out)_both]"
+                />
+            </span>
         </button>
 
         <input

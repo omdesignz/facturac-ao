@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="application-name" content="{{ config('app.name') }}">
         <meta name="apple-mobile-web-app-title" content="{{ config('app.name') }}">
-        <meta name="theme-color" content="#faf9f6" media="(prefers-color-scheme: light)">
+        <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
         <meta name="theme-color" content="#171716" media="(prefers-color-scheme: dark)">
 
         <link rel="icon" href="/favicon.ico" sizes="any">

@@ -49,6 +49,9 @@ jobs:
       - name: Subscription package pricing gate
         run: node --test tests/packages.test.mjs
 
+      - name: Phone tab bar gate
+        run: node --test tests/mobile-tab-bar.test.mjs
+
       - name: Run CI Checks
         run: composer ci:check
 

@@ -51,11 +51,11 @@ test('the dashboard and the debts page colour debt age the same way', function (
         ->toContain("import { agingBucketColours, agingShare } from '@/lib/aging';");
 })->with(['Dashboard', 'Debts/Index']);
 
-test('headings are set at regular weight and labels stay quiet', function () {
+test('headings are set light and labels stay quiet', function () {
     $css = (string) file_get_contents(resource_path('css/app.css'));
 
     expect($css)
-        ->toMatch('/@utility display \{\s*font-weight: 400;/')
+        ->toMatch('/@utility display \{\s*font-weight: 300;/')
         ->toMatch('/@utility eyebrow \{[^}]*font-weight: 500;[^}]*letter-spacing: 0\.07em;/s');
 });
 
@@ -129,11 +129,11 @@ test('secondary buttons are outline pills, not rounded boxes', function () {
     }
 });
 
-test('the product speaks Hanken Grotesk, and the logo never depends on it', function () {
+test('the product speaks SF Pro on Apple devices and Hanken Grotesk everywhere else, and the logo never depends on either', function () {
     $styles = (string) file_get_contents(resource_path('css/app.css'));
     $vite = (string) file_get_contents(base_path('vite.config.ts'));
 
-    expect($styles)->toMatch("/--font-sans:\s+'Hanken Grotesk'/")
+    expect($styles)->toMatch("/--font-sans:\s+-apple-system,[^;]*'SF Pro Text', 'Hanken Grotesk'/")
         ->not->toContain('IBM Plex Sans')
         ->and($vite)->toContain("bunny('Hanken Grotesk'")
         ->and((string) file_get_contents(resource_path('js/components/BrandWordmark.vue')))
@@ -288,4 +288,22 @@ test('a package draft survives the password confirmation but is never saved by i
         ->not->toContain('submit(')
         ->not->toContain('form.post(')
         ->not->toContain('form.put(');
+});
+
+test('the phone gets a tab bar of four words and one gold action, and a header that is just the wordmark', function () {
+    $layout = (string) file_get_contents(resource_path('js/layouts/AppLayout.vue'));
+    $bar = (string) file_get_contents(resource_path('js/components/MobileTabBar.vue'));
+    $header = (string) file_get_contents(resource_path('js/components/AppHeader.vue'));
+
+    expect($layout)->toContain('<MobileTabBar')
+        ->toContain('max-lg:pb-')
+        ->and($bar)->toContain('lg:hidden')
+        ->toContain("label: 'Hoje'")
+        ->toContain("label: 'Cobrar'")
+        ->toContain("label: 'Registos'")
+        ->toContain('Mais')
+        ->toContain('bg-accent-400')
+        ->toContain('isFocusedPath')
+        ->and($header)->toContain('lg:hidden')
+        ->not->toContain('Abrir navegação');
 });

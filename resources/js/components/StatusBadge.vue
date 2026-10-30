@@ -33,11 +33,11 @@ const styles: Record<StatusTone, string> = {
     success: 'bg-lime-300 text-lime-950',
     info: 'bg-accent-400 text-brand-950',
     warning:
-        'bg-orange-50 text-orange-700 dark:bg-orange-400/10 dark:text-orange-300',
-    danger: 'bg-rose-50 text-rose-700 dark:bg-rose-400/10 dark:text-rose-300',
+        'bg-[#fff0cf] text-[#7a4308] dark:bg-amber-400/15 dark:text-amber-200',
+    danger: 'bg-[#fde7ea] text-[#9a1b30] dark:bg-rose-400/15 dark:text-rose-200',
     contingency:
         'bg-orange-100 text-orange-800 dark:bg-orange-400/15 dark:text-orange-200',
-    neutral: 'bg-zinc-200/70 text-zinc-700 dark:bg-white/10 dark:text-zinc-300',
+    neutral: 'bg-[#f5f5f7] text-zinc-700 dark:bg-white/10 dark:text-zinc-300',
     draft: 'bg-white text-zinc-600 ring-1 ring-zinc-900/10 ring-inset dark:bg-transparent dark:text-zinc-300 dark:ring-white/15',
 };
 </script>
