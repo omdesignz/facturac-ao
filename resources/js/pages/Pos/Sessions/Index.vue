@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import { ReceiptText } from '@lucide/vue';
+import EmptyState from '@/components/EmptyState.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
@@ -82,26 +83,13 @@ function pageLabel(label: string): string {
                 </PageHeader>
 
                 <div :class="[wellSection, 'overflow-clip']">
-                    <div
+                    <EmptyState
                         v-if="sessions.data.length === 0"
-                        class="px-6 py-16 text-center"
-                    >
-                        <ReceiptText
-                            class="mx-auto size-8 text-zinc-400 dark:text-zinc-500"
-                            aria-hidden="true"
-                        />
-                        <p
-                            class="mt-4 font-semibold text-zinc-900 dark:text-white"
-                        >
-                            Ainda não há turnos
-                        </p>
-                        <p
-                            class="mx-auto mt-1 max-w-sm text-sm/6 text-zinc-600 dark:text-zinc-400"
-                        >
-                            Quando abrir uma caixa no ponto de venda, o turno
-                            aparece aqui.
-                        </p>
-                    </div>
+                        bare
+                        :icon="ReceiptText"
+                        title="Ainda não há turnos"
+                        description="Quando abrir uma caixa no ponto de venda, o turno aparece aqui."
+                    />
 
                     <div
                         v-else

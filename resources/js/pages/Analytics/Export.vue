@@ -997,10 +997,10 @@ function cell(value: string | number | null, key: string): string {
     margin-inline: auto;
 }
 .report-section {
-    border: 1px solid var(--color-zinc-200);
-    border-radius: 1rem;
+    border: 1px solid light-dark(var(--color-zinc-200), var(--color-zinc-700));
+    border-radius: 1.5rem;
     padding: clamp(1rem, 2vw, 1.75rem);
-    background: var(--color-white);
+    background: light-dark(var(--color-white), #1c1c1e);
 }
 .report-field {
     gap: 0.6rem;
@@ -1027,7 +1027,7 @@ function cell(value: string | number | null, key: string): string {
 }
 .hint,
 .section-heading > span {
-    color: var(--color-zinc-500);
+    color: light-dark(var(--color-zinc-500), var(--color-zinc-400));
     font-size: 0.8125rem;
     line-height: 1.6;
     font-weight: 400;
@@ -1066,7 +1066,8 @@ function cell(value: string | number | null, key: string): string {
     display: flex;
     gap: 0.4rem;
     align-items: center;
-    border-block-end: 1px solid var(--color-zinc-100);
+    border-block-end: 1px solid
+        light-dark(var(--color-zinc-100), var(--color-zinc-800));
     padding-block: 0.25rem;
 }
 .column-number {
@@ -1086,21 +1087,21 @@ function cell(value: string | number | null, key: string): string {
     justify-content: center;
     gap: 0.5rem;
     min-block-size: 2.5rem;
-    border: 1px solid var(--color-zinc-200);
+    border: 1px solid light-dark(var(--color-zinc-200), var(--color-zinc-700));
     border-radius: 0.625rem;
     padding-inline: 0.875rem;
     font-size: 0.8125rem;
     cursor: pointer;
-    background: var(--color-white);
+    background: light-dark(var(--color-white), var(--color-zinc-900));
 }
 .icon-button {
     padding-inline: 0.5rem;
     min-inline-size: 2.5rem;
 }
 .report-button.primary {
-    background: var(--color-zinc-900);
-    color: var(--color-white);
-    border-color: var(--color-zinc-900);
+    background: light-dark(var(--color-zinc-900), var(--color-white));
+    color: light-dark(var(--color-white), var(--color-zinc-900));
+    border-color: light-dark(var(--color-zinc-900), var(--color-white));
 }
 :is(.report-button, .icon-button):disabled {
     opacity: 0.4;
@@ -1120,17 +1121,18 @@ function cell(value: string | number | null, key: string): string {
     }
 }
 .saved-model {
-    border-block-start: 1px solid var(--color-zinc-200);
+    border-block-start: 1px solid
+        light-dark(var(--color-zinc-200), var(--color-zinc-700));
     padding-block-start: 1.25rem;
 }
 .report-error {
-    color: var(--color-red-700);
+    color: light-dark(var(--color-red-700), var(--color-red-400));
     font-size: 0.875rem;
 }
 .report-table {
     overflow: auto;
     max-block-size: 30rem;
-    border: 1px solid var(--color-zinc-200);
+    border: 1px solid light-dark(var(--color-zinc-200), var(--color-zinc-700));
     border-radius: 0.5rem;
 }
 .report-table table {
@@ -1142,43 +1144,15 @@ function cell(value: string | number | null, key: string): string {
     padding: 0.75rem;
     text-align: start;
     white-space: nowrap;
-    border-block-end: 1px solid var(--color-zinc-200);
+    border-block-end: 1px solid
+        light-dark(var(--color-zinc-200), var(--color-zinc-700));
 }
 .report-table th {
-    background: var(--color-zinc-100);
+    background: light-dark(var(--color-zinc-100), var(--color-zinc-800));
     font-weight: 600;
 }
 .report-table .numeric {
     text-align: end;
     font-variant-numeric: tabular-nums;
-}
-:global(.dark) .report-section,
-:global(.dark) :is(.report-button, .icon-button) {
-    background: var(--color-zinc-900);
-    border-color: var(--color-zinc-700);
-}
-:global(.dark) .report-button.primary {
-    background: var(--color-white);
-    color: var(--color-zinc-900);
-}
-:global(.dark) .hint,
-:global(.dark) .section-heading > span {
-    color: var(--color-zinc-400);
-}
-:global(.dark) .report-table th {
-    background: var(--color-zinc-800);
-}
-:global(.dark)
-    :is(
-        .column-list li,
-        .report-table,
-        .report-table td,
-        .report-table th,
-        .saved-model
-    ) {
-    border-color: var(--color-zinc-700);
-}
-:global(.dark) .report-error {
-    color: var(--color-red-400);
 }
 </style>

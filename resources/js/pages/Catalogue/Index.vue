@@ -10,6 +10,7 @@ import {
     Search,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import EmptyState from '@/components/EmptyState.vue';
 import FormError from '@/components/FormError.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
@@ -247,33 +248,21 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                         </p>
                     </div>
 
-                    <div
+                    <EmptyState
                         v-if="items.data.length === 0"
-                        class="px-6 py-16 text-center"
-                    >
-                        <Package
-                            class="mx-auto size-8 text-zinc-300 dark:text-zinc-600"
-                            aria-hidden="true"
-                        />
-                        <p
-                            class="mt-4 font-semibold text-zinc-900 dark:text-white"
-                        >
-                            {{
-                                filters.search || filters.type
-                                    ? 'Nenhum artigo corresponde aos filtros'
-                                    : 'O catálogo está vazio'
-                            }}
-                        </p>
-                        <p
-                            class="mx-auto mt-1 max-w-sm text-sm/6 text-zinc-500 dark:text-zinc-400"
-                        >
-                            {{
-                                filters.search || filters.type
-                                    ? 'Tente outro termo ou limpe o filtro de tipo.'
-                                    : 'Guarde o que vende com mais frequência para não repetir preços e IVA em cada factura.'
-                            }}
-                        </p>
-                    </div>
+                        bare
+                        :icon="Package"
+                        :title="
+                            filters.search || filters.type
+                                ? 'Nenhum artigo corresponde aos filtros'
+                                : 'O catálogo está vazio'
+                        "
+                        :description="
+                            filters.search || filters.type
+                                ? 'Tente outro termo ou limpe o filtro de tipo.'
+                                : 'Guarde o que vende com mais frequência para não repetir preços e IVA em cada factura.'
+                        "
+                    />
 
                     <div v-else class="overflow-x-auto">
                         <table class="min-w-full text-sm">

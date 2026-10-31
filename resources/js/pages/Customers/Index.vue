@@ -12,6 +12,7 @@ import {
     X,
 } from '@lucide/vue';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import EmptyState from '@/components/EmptyState.vue';
 import FormError from '@/components/FormError.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
@@ -308,35 +309,24 @@ async function deactivate(customer: Customer): Promise<void> {
                 <div
                     class="overflow-hidden rounded-3xl bg-zinc-900/[0.04] dark:bg-white/[0.04]"
                 >
-                    <div
+                    <EmptyState
                         v-if="customers.data.length === 0"
-                        class="px-6 py-16 text-center"
+                        bare
+                        :icon="Users"
                         :role="filters.search ? 'status' : undefined"
+                        :title="
+                            filters.search
+                                ? 'Nenhum cliente corresponde à procura'
+                                : 'Ainda não guardou nenhum cliente'
+                        "
+                        :description="
+                            filters.search
+                                ? 'Tente outro nome ou NIF.'
+                                : 'Pode adicionar um agora ou importar a sua lista a partir do Excel.'
+                        "
                     >
-                        <Users
-                            class="mx-auto size-8 text-zinc-300 dark:text-zinc-600"
-                            aria-hidden="true"
-                        />
-                        <p
-                            class="mt-4 font-semibold text-zinc-900 dark:text-white"
-                        >
-                            {{
-                                filters.search
-                                    ? 'Nenhum cliente corresponde à procura'
-                                    : 'Ainda não guardou nenhum cliente'
-                            }}
-                        </p>
-                        <p
-                            class="mx-auto mt-1 max-w-sm text-sm/6 text-zinc-500 dark:text-zinc-400"
-                        >
-                            {{
-                                filters.search
-                                    ? 'Tente outro nome ou NIF.'
-                                    : 'Pode adicionar um agora ou importar a sua lista a partir do Excel.'
-                            }}
-                        </p>
                         <div
-                            class="mt-6 flex flex-wrap items-center justify-center gap-2.5"
+                            class="flex flex-wrap items-center justify-center gap-2.5"
                         >
                             <button
                                 v-if="filters.search"
@@ -364,7 +354,7 @@ async function deactivate(customer: Customer): Promise<void> {
                                 </Link>
                             </template>
                         </div>
-                    </div>
+                    </EmptyState>
 
                     <div
                         v-else

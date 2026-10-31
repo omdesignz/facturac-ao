@@ -380,6 +380,13 @@ test('a list with nothing in it says so in one shape', function (string $page) {
     'pages/PriceLists/Index',
     'pages/Notifications/Index',
     'pages/Stock/Index',
+    'pages/Customers/Index',
+    'pages/Catalogue/Index',
+    'pages/TransportDocuments/Index',
+    'pages/Agt/Submissions/Index',
+    'pages/Imports/Index',
+    'pages/Pos/Sessions/Index',
+    'pages/Pos/Registers/Index',
     'components/pos/PosOpenShift',
 ]);
 
@@ -393,4 +400,11 @@ test('no working screen leaves the date to the browser, so every date reads dd/m
     }
 
     expect($native)->toBe([]);
+});
+
+test('the export page follows the theme through light-dark, not a dark override that can drop out', function () {
+    $page = (string) file_get_contents(resource_path('js/pages/Analytics/Export.vue'));
+
+    expect($page)->toContain('light-dark(')
+        ->and($page)->not->toContain(':global(.dark)');
 });

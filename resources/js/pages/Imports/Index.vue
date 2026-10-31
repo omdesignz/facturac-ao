@@ -18,6 +18,7 @@ import {
     Users,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import EmptyState from '@/components/EmptyState.vue';
 import FileInput from '@/components/FileInput.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageStat from '@/components/PageStat.vue';
@@ -1335,23 +1336,13 @@ function historyUrl(publicId: string): string {
                             </li>
                         </ul>
 
-                        <div v-else class="px-6 py-10 text-center">
-                            <Sparkles
-                                class="mx-auto size-8 text-zinc-300 dark:text-zinc-600"
-                                aria-hidden="true"
-                            />
-                            <p
-                                class="mt-3 text-sm font-semibold text-zinc-900 dark:text-white"
-                            >
-                                Ainda não há importações
-                            </p>
-                            <p
-                                class="mt-1 text-xs/5 text-zinc-500 dark:text-zinc-400"
-                            >
-                                A primeira aparecerá aqui com o seu estado e
-                                evidência.
-                            </p>
-                        </div>
+                        <EmptyState
+                            v-else
+                            bare
+                            :icon="Sparkles"
+                            title="Ainda não há importações"
+                            description="A primeira aparecerá aqui com o seu estado e evidência."
+                        />
                     </section>
                 </div>
 

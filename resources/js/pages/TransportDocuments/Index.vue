@@ -3,6 +3,7 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import { Filter, Plus, Search, Truck } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import DateInput from '@/components/DateInput.vue';
+import EmptyState from '@/components/EmptyState.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageStat from '@/components/PageStat.vue';
@@ -290,24 +291,12 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                     </form>
                 </section>
 
-                <section
+                <EmptyState
                     v-if="documents.data.length === 0"
-                    class="rounded-3xl bg-zinc-900/[0.04] px-5 py-16 text-center dark:bg-white/[0.04]"
-                >
-                    <Truck
-                        class="mx-auto size-9 text-zinc-300 dark:text-zinc-600"
-                        aria-hidden="true"
-                    />
-                    <p
-                        class="mt-3 font-medium text-zinc-800 dark:text-zinc-200"
-                    >
-                        Nenhuma guia neste filtro
-                    </p>
-                    <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                        Crie uma guia ou ajuste os filtros para ver outros
-                        movimentos.
-                    </p>
-                </section>
+                    :icon="Truck"
+                    title="Nenhuma guia neste filtro"
+                    description="Crie uma guia ou ajuste os filtros para ver outros movimentos."
+                />
 
                 <section
                     v-else

@@ -12,6 +12,7 @@ import {
     Send,
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import EmptyState from '@/components/EmptyState.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageStat from '@/components/PageStat.vue';
 import SelectInput from '@/components/SelectInput.vue';
@@ -479,23 +480,13 @@ function abbreviate(value: string | null): string {
                                 </div>
                             </div>
                         </div>
-                        <div v-else class="px-6 py-16 text-center">
-                            <Inbox
-                                class="mx-auto size-9 text-zinc-300 dark:text-zinc-600"
-                                aria-hidden="true"
-                            />
-                            <h3
-                                class="mt-4 text-sm font-semibold text-zinc-950 dark:text-white"
-                            >
-                                Nenhuma submissão neste filtro
-                            </h3>
-                            <p
-                                class="mx-auto mt-1 max-w-sm text-sm/6 text-zinc-500 dark:text-zinc-400"
-                            >
-                                Os documentos aparecem aqui assim que uma
-                                factura é emitida e colocada na fila AGT.
-                            </p>
-                        </div>
+                        <EmptyState
+                            v-else
+                            bare
+                            :icon="Inbox"
+                            title="Nenhuma submissão neste filtro"
+                            description="Os documentos aparecem aqui assim que uma factura é emitida e colocada na fila AGT."
+                        />
                     </section>
 
                     <aside

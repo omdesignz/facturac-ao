@@ -2,6 +2,7 @@
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { LoaderCircle, Pencil, Plus, Store, Trash2 } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import EmptyState from '@/components/EmptyState.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
 import FormError from '@/components/FormError.vue';
 import PageHeader from '@/components/PageHeader.vue';
@@ -179,32 +180,22 @@ function canDelete(register: RegisterRow): boolean {
                     </Link>
                 </div>
 
-                <div
+                <EmptyState
                     v-if="registers.length === 0 && establishments.length > 0"
-                    :class="[wellSection, 'px-6 py-14 text-center']"
+                    :icon="Store"
+                    title="Ainda não há caixas"
+                    description="Crie a primeira para poder abrir um turno."
                 >
-                    <Store
-                        class="mx-auto size-8 text-zinc-400 dark:text-zinc-500"
-                        aria-hidden="true"
-                    />
-                    <p class="mt-4 font-semibold text-zinc-900 dark:text-white">
-                        Ainda não há caixas.
-                    </p>
-                    <p
-                        class="mx-auto mt-1 max-w-sm text-sm/6 text-zinc-600 dark:text-zinc-400"
-                    >
-                        Crie a primeira para poder abrir um turno.
-                    </p>
                     <button
                         v-if="canManage"
                         type="button"
-                        :class="[buttonGold, 'mt-6']"
+                        :class="buttonGold"
                         @click="openCreate"
                     >
                         <Plus class="size-4" aria-hidden="true" />
                         Nova caixa
                     </button>
-                </div>
+                </EmptyState>
 
                 <ul v-if="registers.length > 0" class="grid gap-2.5">
                     <li
