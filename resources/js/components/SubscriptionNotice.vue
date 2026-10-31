@@ -38,25 +38,29 @@ const trialDate = computed(() =>
     <aside
         v-if="visible"
         aria-label="Acesso da assinatura"
-        class="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-blue-200 bg-blue-50 px-6 py-3 text-sm text-blue-950 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-100"
+        class="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-zinc-900/[0.07] bg-[#f5f5f7] px-4 py-2.5 text-sm text-zinc-800 sm:px-6 lg:px-8 dark:border-white/10 dark:bg-white/[0.05] dark:text-zinc-200"
     >
-        <p v-if="access?.status === 'trial'">
+        <span
+            class="size-2 shrink-0 rounded-full bg-accent-400"
+            aria-hidden="true"
+        />
+        <p v-if="access?.status === 'trial'" class="min-w-0 flex-1">
             Experimente todas as funcionalidades até {{ trialDate }}. Depois,
             escolha o plano adequado ao seu negócio.
         </p>
-        <p v-else-if="locked">
+        <p v-else-if="locked" class="min-w-0 flex-1">
             O plano {{ access?.plan_name ?? 'actual' }} não inclui novas
             operações neste módulo. Os registos existentes continuam
             disponíveis.
         </p>
-        <p v-else>
+        <p v-else class="min-w-0 flex-1">
             Assinatura sem período activo. Consulte os documentos e exporte o
             SAF-T; escolha um plano para retomar a emissão e as funcionalidades
             pagas.
         </p>
         <Link
             :href="billing.url()"
-            class="inline-flex min-h-11 items-center rounded-lg px-3 font-semibold underline underline-offset-4 focus-ring active:bg-blue-200 dark:active:bg-blue-900"
+            class="inline-flex h-8 items-center rounded-full bg-brand-950 px-3.5 text-[0.8125rem] font-semibold text-white focus-ring transition hover:bg-brand-800 active:scale-[0.97] dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
             >Ver planos</Link
         >
     </aside>

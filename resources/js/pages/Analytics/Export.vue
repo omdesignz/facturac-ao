@@ -441,488 +441,521 @@ function cell(value: string | number | null, key: string): string {
 <template>
     <Head title="Exportar transacções" />
     <AppLayout>
-        <div class="report-page">
-            <PageHeader
-                eyebrow="Análises · Excel"
-                title="Os seus dados, o seu relatório"
-                :description="`${companyName} · Escolha os movimentos e organize as colunas para trabalhar no Excel.`"
-            />
-            <section
-                v-if="exports.length"
-                class="report-section"
-                aria-labelledby="exports-heading"
-            >
-                <div class="section-heading">
-                    <h2 id="exports-heading">Relatórios em segundo plano</h2>
-                    <span>Disponíveis durante 24 horas</span>
-                </div>
-                <p v-if="historyError" class="hint" role="status">
-                    {{ historyError }}
-                </p>
-                <ul class="export-list">
-                    <li
-                        v-for="item in exports"
-                        :key="item.id"
-                        class="export-entry"
-                    >
-                        <div class="export-details">
-                            <strong>{{ item.title }}</strong>
-                            <span class="hint"
-                                >Pedido em {{ dateTime(item.created_at) }}</span
-                            >
-                            <span role="status">
-                                {{ statusLabels[item.status]
-                                }}<template v-if="item.status === 'processing'">
-                                    · {{ item.processed }} /
-                                    {{ item.total }} documentos<template
-                                        v-if="item.processed === item.total"
-                                    >
-                                        · A finalizar o ficheiro</template
-                                    ></template
-                                >
-                            </span>
-                            <progress
-                                v-if="item.status === 'processing'"
-                                :value="item.processed"
-                                :max="Math.max(item.total, 1)"
-                                :aria-label="`Preparação de ${item.title}`"
-                            />
-                            <p v-if="item.status === 'failed'" class="hint">
-                                {{ item.failure }} Crie uma nova exportação para
-                                tentar novamente.
-                            </p>
-                            <span v-if="item.status === 'ready'" class="hint"
-                                >Disponível até
-                                {{ dateTime(item.expires_at) }}</span
-                            >
-                        </div>
-                        <a
-                            v-if="item.status === 'ready'"
-                            :href="file.url(item.id)"
-                            class="report-button"
-                            :aria-label="`Descarregar ${item.title}`"
-                            ><Download :size="16" aria-hidden="true" />
-                            Descarregar Excel</a
-                        >
-                        <LoaderCircle
-                            v-if="
-                                ['queued', 'processing'].includes(item.status)
-                            "
-                            :size="20"
-                            class="motion-safe:animate-spin"
-                            aria-hidden="true"
-                        />
-                    </li>
-                </ul>
-            </section>
-            <form class="report-form" @submit.prevent="run('preview')">
-                <fieldset :disabled="busy !== null" class="report-section">
+        <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+            <div class="report-page">
+                <PageHeader
+                    eyebrow="Análises · Excel"
+                    title="Os seus dados, o seu relatório"
+                    :description="`${companyName} · Escolha os movimentos e organize as colunas para trabalhar no Excel.`"
+                />
+                <section
+                    v-if="exports.length"
+                    class="report-section"
+                    aria-labelledby="exports-heading"
+                >
                     <div class="section-heading">
-                        <h2>1. Escolha os movimentos</h2>
-                        <span>Documentos emitidos</span>
+                        <h2 id="exports-heading">
+                            Relatórios em segundo plano
+                        </h2>
+                        <span>Disponíveis durante 24 horas</span>
                     </div>
-                    <div class="report-grid">
-                        <label class="report-field"
-                            ><span class="field-label">Título do relatório</span
-                            ><input
-                                v-model="form.title"
-                                class="form-input"
-                                maxlength="100"
-                                required
-                        /></label>
-                        <label class="report-field"
-                            ><span class="field-label">Cliente ou NIF</span
-                            ><input
-                                v-model="form.customer"
-                                class="form-input"
-                                maxlength="100"
-                                placeholder="Todos os clientes"
-                        /></label>
-                        <div class="report-field">
-                            <label for="report-from" class="field-label"
-                                >Data inicial</label
-                            ><DateInput
-                                id="report-from"
-                                v-model="form.from"
-                                :clearable="false"
-                                required
-                            />
-                        </div>
-                        <div class="report-field">
-                            <label for="report-to" class="field-label"
-                                >Data final</label
-                            ><DateInput
-                                id="report-to"
-                                v-model="form.to"
-                                :min-date="form.from ?? undefined"
-                                :clearable="false"
-                                required
-                            />
-                        </div>
-                        <div class="report-field">
-                            <label
-                                for="report-establishment"
-                                class="field-label"
-                                >Estabelecimento</label
-                            ><SelectInput
-                                id="report-establishment"
-                                v-model="form.establishment"
-                                :options="allEstablishments"
-                            />
-                        </div>
-                        <div class="report-field">
-                            <label for="report-method" class="field-label"
-                                >Meio de pagamento</label
-                            ><SelectInput
-                                id="report-method"
-                                v-model="form.payment_method"
-                                :options="allMethods"
-                            />
-                        </div>
-                        <label class="report-field"
-                            ><span class="field-label">Moeda</span
-                            ><input
-                                v-model="form.currency"
-                                class="form-input"
-                                maxlength="3"
-                                pattern="[A-Z]{3}"
-                                placeholder="Todas · AOA, USD, EUR…"
-                                @input="
-                                    form.currency = form.currency.toUpperCase()
-                                "
-                        /></label>
-                    </div>
-                    <div class="report-field">
-                        <span class="field-label">Começar com</span>
-                        <div class="button-row">
-                            <button
-                                type="button"
-                                class="report-button"
-                                @click="preset('sales')"
-                            >
-                                Vendas e notas</button
-                            ><button
-                                type="button"
-                                class="report-button"
-                                @click="preset('payments')"
-                            >
-                                Pagamentos</button
-                            ><button
-                                type="button"
-                                class="report-button"
-                                @click="preset('complete')"
-                            >
-                                Relatório completo
-                            </button>
-                        </div>
-                    </div>
-                    <fieldset class="report-field">
-                        <legend class="field-label">
-                            Tipos de documento
-                            <span class="hint"
-                                >· Nenhum seleccionado inclui todos</span
-                            >
-                        </legend>
-                        <div class="option-grid">
-                            <label
-                                v-for="type in types"
-                                :key="type.value"
-                                class="check-option"
-                                ><input
-                                    v-model="form.types"
-                                    type="checkbox"
-                                    class="form-checkbox"
-                                    :value="type.value"
-                                /><span
-                                    >{{ type.label }}
-                                    <span class="hint">{{
-                                        type.value
-                                    }}</span></span
-                                ></label
-                            >
-                        </div>
-                    </fieldset>
-                    <fieldset class="report-field">
-                        <legend class="field-label">
-                            Estado do documento
-                            <span class="hint"
-                                >· Nenhum seleccionado inclui todos os
-                                emitidos</span
-                            >
-                        </legend>
-                        <div class="option-grid">
-                            <label
-                                v-for="status in statuses"
-                                :key="status.value"
-                                class="check-option"
-                                ><input
-                                    v-model="form.statuses"
-                                    type="checkbox"
-                                    class="form-checkbox"
-                                    :value="status.value"
-                                />{{ status.label }}</label
-                            >
-                        </div>
-                    </fieldset>
-                    <p class="hint">
-                        O período usa a data de emissão. Rascunhos, orçamentos e
-                        guias de transporte não entram nas transacções fiscais.
+                    <p v-if="historyError" class="hint" role="status">
+                        {{ historyError }}
                     </p>
-                </fieldset>
-                <fieldset :disabled="busy !== null" class="report-section">
-                    <div class="section-heading">
-                        <h2>2. Personalize o ficheiro</h2>
-                        <span>{{ form.columns.length }} colunas</span>
-                    </div>
-                    <div class="column-layout">
-                        <div class="report-field">
-                            <h3 class="field-label">
-                                Colunas e ordem no Excel
-                            </h3>
-                            <ol class="column-list">
-                                <li
-                                    v-for="(key, index) in form.columns"
-                                    :key="key"
+                    <ul class="export-list">
+                        <li
+                            v-for="item in exports"
+                            :key="item.id"
+                            class="export-entry"
+                        >
+                            <div class="export-details">
+                                <strong>{{ item.title }}</strong>
+                                <span class="hint"
+                                    >Pedido em
+                                    {{ dateTime(item.created_at) }}</span
                                 >
-                                    <span class="column-number">{{
-                                        index + 1
-                                    }}</span
-                                    ><span class="column-label">{{
-                                        columns[key].label
-                                    }}</span
-                                    ><button
-                                        type="button"
-                                        class="icon-button"
-                                        :disabled="index === 0"
-                                        :aria-label="`Subir ${columns[key].label}`"
-                                        @click="moveColumn(index, -1)"
+                                <span role="status">
+                                    {{ statusLabels[item.status]
+                                    }}<template
+                                        v-if="item.status === 'processing'"
                                     >
-                                        <ArrowUp :size="15" /></button
-                                    ><button
-                                        type="button"
-                                        class="icon-button"
-                                        :disabled="
-                                            index === form.columns.length - 1
-                                        "
-                                        :aria-label="`Descer ${columns[key].label}`"
-                                        @click="moveColumn(index, 1)"
+                                        · {{ item.processed }} /
+                                        {{ item.total }} documentos<template
+                                            v-if="item.processed === item.total"
+                                        >
+                                            · A finalizar o ficheiro</template
+                                        ></template
                                     >
-                                        <ArrowDown :size="15" /></button
-                                    ><button
-                                        type="button"
-                                        class="icon-button"
-                                        :disabled="
-                                            requiredColumns.includes(key)
-                                        "
-                                        :aria-label="`Remover ${columns[key].label}`"
-                                        @click="
-                                            form.columns = form.columns.filter(
-                                                (item) => item !== key,
-                                            )
-                                        "
-                                    >
-                                        <Trash2 :size="15" />
-                                    </button>
-                                </li>
-                            </ol>
-                        </div>
-                        <div class="report-field column-options">
-                            <h3 class="field-label">Adicionar colunas</h3>
-                            <div class="button-row">
-                                <button
-                                    v-for="key in availableColumns"
-                                    :key="key"
-                                    type="button"
-                                    class="report-button"
-                                    @click="form.columns.push(key)"
-                                >
-                                    + {{ columns[key].label }}
-                                </button>
-                                <p
-                                    v-if="availableColumns.length === 0"
-                                    class="hint"
-                                >
-                                    Todas as colunas estão incluídas.
+                                </span>
+                                <progress
+                                    v-if="item.status === 'processing'"
+                                    :value="item.processed"
+                                    :max="Math.max(item.total, 1)"
+                                    :aria-label="`Preparação de ${item.title}`"
+                                />
+                                <p v-if="item.status === 'failed'" class="hint">
+                                    {{ item.failure }} Crie uma nova exportação
+                                    para tentar novamente.
                                 </p>
+                                <span
+                                    v-if="item.status === 'ready'"
+                                    class="hint"
+                                    >Disponível até
+                                    {{ dateTime(item.expires_at) }}</span
+                                >
+                            </div>
+                            <a
+                                v-if="item.status === 'ready'"
+                                :href="file.url(item.id)"
+                                class="report-button"
+                                :aria-label="`Descarregar ${item.title}`"
+                                ><Download :size="16" aria-hidden="true" />
+                                Descarregar Excel</a
+                            >
+                            <LoaderCircle
+                                v-if="
+                                    ['queued', 'processing'].includes(
+                                        item.status,
+                                    )
+                                "
+                                :size="20"
+                                class="motion-safe:animate-spin"
+                                aria-hidden="true"
+                            />
+                        </li>
+                    </ul>
+                </section>
+                <form class="report-form" @submit.prevent="run('preview')">
+                    <fieldset :disabled="busy !== null" class="report-section">
+                        <div class="section-heading">
+                            <h2>1. Escolha os movimentos</h2>
+                            <span>Documentos emitidos</span>
+                        </div>
+                        <div class="report-grid">
+                            <label class="report-field"
+                                ><span class="field-label"
+                                    >Título do relatório</span
+                                ><input
+                                    v-model="form.title"
+                                    class="form-input"
+                                    maxlength="100"
+                                    required
+                            /></label>
+                            <label class="report-field"
+                                ><span class="field-label">Cliente ou NIF</span
+                                ><input
+                                    v-model="form.customer"
+                                    class="form-input"
+                                    maxlength="100"
+                                    placeholder="Todos os clientes"
+                            /></label>
+                            <div class="report-field">
+                                <label for="report-from" class="field-label"
+                                    >Data inicial</label
+                                ><DateInput
+                                    id="report-from"
+                                    v-model="form.from"
+                                    :clearable="false"
+                                    required
+                                />
                             </div>
                             <div class="report-field">
-                                <h3 class="field-label">Folhas adicionais</h3>
-                                <label class="check-option"
-                                    ><input
-                                        v-model="form.include_lines"
-                                        type="checkbox"
-                                        class="form-checkbox"
-                                    />Artigos, quantidades, descontos e
-                                    impostos</label
-                                ><label class="check-option"
-                                    ><input
-                                        v-model="form.include_payments"
-                                        type="checkbox"
-                                        class="form-checkbox"
-                                    />Liquidações: recibos e facturas que
-                                    liquidam</label
-                                >
-                                <p class="hint">
-                                    Resumo, transacções e totais por mês
-                                    incluídos. As moedas ficam separadas; as
-                                    notas de crédito reduzem a facturação. Os
-                                    saldos reflectem a data da exportação.
-                                </p>
+                                <label for="report-to" class="field-label"
+                                    >Data final</label
+                                ><DateInput
+                                    id="report-to"
+                                    v-model="form.to"
+                                    :min-date="form.from ?? undefined"
+                                    :clearable="false"
+                                    required
+                                />
                             </div>
-                            <div class="saved-model report-field">
-                                <h3 class="field-label">
-                                    Reutilizar esta configuração
-                                </h3>
-                                <div v-if="presets.length" class="button-row">
-                                    <SelectInput
-                                        v-model="selectedPreset"
-                                        :options="
-                                            presets.map((item) => ({
-                                                value: item.name,
-                                                label: item.name,
-                                            }))
-                                        "
-                                        placeholder="Escolher modelo guardado"
-                                        aria-label="Modelo guardado"
-                                        @update:model-value="loadPreset"
-                                    /><button
-                                        type="button"
-                                        class="icon-button"
-                                        :disabled="!selectedPreset"
-                                        aria-label="Eliminar modelo guardado"
-                                        @click="removePreset"
-                                    >
-                                        <Trash2 :size="16" />
-                                    </button>
-                                </div>
-                                <label class="report-field"
-                                    ><span class="hint">Nome do modelo</span
-                                    ><input
-                                        v-model="presetName"
-                                        class="form-input"
-                                        maxlength="60"
-                                        placeholder="Ex.: Fecho mensal" /></label
+                            <div class="report-field">
+                                <label
+                                    for="report-establishment"
+                                    class="field-label"
+                                    >Estabelecimento</label
+                                ><SelectInput
+                                    id="report-establishment"
+                                    v-model="form.establishment"
+                                    :options="allEstablishments"
+                                />
+                            </div>
+                            <div class="report-field">
+                                <label for="report-method" class="field-label"
+                                    >Meio de pagamento</label
+                                ><SelectInput
+                                    id="report-method"
+                                    v-model="form.payment_method"
+                                    :options="allMethods"
+                                />
+                            </div>
+                            <label class="report-field"
+                                ><span class="field-label">Moeda</span
+                                ><input
+                                    v-model="form.currency"
+                                    class="form-input"
+                                    maxlength="3"
+                                    pattern="[A-Z]{3}"
+                                    placeholder="Todas · AOA, USD, EUR…"
+                                    @input="
+                                        form.currency =
+                                            form.currency.toUpperCase()
+                                    "
+                            /></label>
+                        </div>
+                        <div class="report-field">
+                            <span class="field-label">Começar com</span>
+                            <div class="button-row">
+                                <button
+                                    type="button"
+                                    class="report-button"
+                                    @click="preset('sales')"
+                                >
+                                    Vendas e notas</button
                                 ><button
                                     type="button"
                                     class="report-button"
-                                    @click="savePreset"
+                                    @click="preset('payments')"
                                 >
-                                    <Save :size="16" />Guardar modelo
+                                    Pagamentos</button
+                                ><button
+                                    type="button"
+                                    class="report-button"
+                                    @click="preset('complete')"
+                                >
+                                    Relatório completo
                                 </button>
-                                <p class="hint">
-                                    Guarda colunas, tipos e folhas neste
-                                    navegador. As datas e os filtros de cliente
-                                    mantêm-se independentes.
-                                </p>
                             </div>
                         </div>
-                    </div>
-                </fieldset>
-                <section
-                    class="report-section"
-                    aria-labelledby="preview-heading"
-                >
-                    <div class="section-heading">
-                        <h2 id="preview-heading">
-                            3. Pré-visualize e descarregue
-                        </h2>
-                        <FileSpreadsheet :size="23" />
-                    </div>
-                    <p class="hint">
-                        Excel editável (.xlsx), com tabelas filtráveis,
-                        cabeçalhos fixos e valores numéricos prontos para
-                        fórmulas e tabelas dinâmicas. Até
-                        {{ maxDocuments.toLocaleString('pt-AO') }} documentos e
-                        20 000 linhas de detalhe por exportação.
-                    </p>
-                    <div v-if="errors.length" role="alert" class="report-error">
-                        <p v-for="error in errors" :key="error">{{ error }}</p>
-                    </div>
-                    <p v-if="notice" role="status" class="hint">{{ notice }}</p>
-                    <div class="button-row">
-                        <button
-                            type="submit"
-                            class="report-button"
-                            :disabled="busy !== null"
-                        >
-                            <LoaderCircle
-                                v-if="busy === 'preview'"
-                                :size="17"
-                                class="motion-safe:animate-spin"
-                            />Pré-visualizar</button
-                        ><button
-                            type="button"
-                            class="report-button primary"
-                            :disabled="busy !== null || tooMany"
-                            @click="run('download')"
-                        >
-                            <LoaderCircle
-                                v-if="busy === 'download'"
-                                :size="17"
-                                class="motion-safe:animate-spin"
-                            /><Download v-else :size="17" />{{
-                                busy === 'download'
-                                    ? 'A preparar Excel…'
-                                    : 'Descarregar Excel'
-                            }}
-                        </button>
-                    </div>
-                    <template v-if="result"
-                        ><p class="hint" aria-live="polite">
-                            {{
-                                previewStale
-                                    ? 'Os filtros mudaram. Actualize a pré-visualização; o download usará a configuração actual.'
-                                    : `${result.count.toLocaleString('pt-AO')} documentos encontrados · primeiros 10 abaixo.`
-                            }}
+                        <fieldset class="report-field">
+                            <legend class="field-label">
+                                Tipos de documento
+                                <span class="hint"
+                                    >· Nenhum seleccionado inclui todos</span
+                                >
+                            </legend>
+                            <div class="option-grid">
+                                <label
+                                    v-for="type in types"
+                                    :key="type.value"
+                                    class="check-option"
+                                    ><input
+                                        v-model="form.types"
+                                        type="checkbox"
+                                        class="form-checkbox"
+                                        :value="type.value"
+                                    /><span
+                                        >{{ type.label }}
+                                        <span class="hint">{{
+                                            type.value
+                                        }}</span></span
+                                    ></label
+                                >
+                            </div>
+                        </fieldset>
+                        <fieldset class="report-field">
+                            <legend class="field-label">
+                                Estado do documento
+                                <span class="hint"
+                                    >· Nenhum seleccionado inclui todos os
+                                    emitidos</span
+                                >
+                            </legend>
+                            <div class="option-grid">
+                                <label
+                                    v-for="status in statuses"
+                                    :key="status.value"
+                                    class="check-option"
+                                    ><input
+                                        v-model="form.statuses"
+                                        type="checkbox"
+                                        class="form-checkbox"
+                                        :value="status.value"
+                                    />{{ status.label }}</label
+                                >
+                            </div>
+                        </fieldset>
+                        <p class="hint">
+                            O período usa a data de emissão. Rascunhos,
+                            orçamentos e guias de transporte não entram nas
+                            transacções fiscais.
                         </p>
-                        <p v-if="tooMany" role="alert" class="report-error">
-                            Reduza o período ou aplique mais filtros para
-                            descarregar.
+                    </fieldset>
+                    <fieldset :disabled="busy !== null" class="report-section">
+                        <div class="section-heading">
+                            <h2>2. Personalize o ficheiro</h2>
+                            <span>{{ form.columns.length }} colunas</span>
+                        </div>
+                        <div class="column-layout">
+                            <div class="report-field">
+                                <h3 class="field-label">
+                                    Colunas e ordem no Excel
+                                </h3>
+                                <ol class="column-list">
+                                    <li
+                                        v-for="(key, index) in form.columns"
+                                        :key="key"
+                                    >
+                                        <span class="column-number">{{
+                                            index + 1
+                                        }}</span
+                                        ><span class="column-label">{{
+                                            columns[key].label
+                                        }}</span
+                                        ><button
+                                            type="button"
+                                            class="icon-button"
+                                            :disabled="index === 0"
+                                            :aria-label="`Subir ${columns[key].label}`"
+                                            @click="moveColumn(index, -1)"
+                                        >
+                                            <ArrowUp :size="15" /></button
+                                        ><button
+                                            type="button"
+                                            class="icon-button"
+                                            :disabled="
+                                                index ===
+                                                form.columns.length - 1
+                                            "
+                                            :aria-label="`Descer ${columns[key].label}`"
+                                            @click="moveColumn(index, 1)"
+                                        >
+                                            <ArrowDown :size="15" /></button
+                                        ><button
+                                            type="button"
+                                            class="icon-button"
+                                            :disabled="
+                                                requiredColumns.includes(key)
+                                            "
+                                            :aria-label="`Remover ${columns[key].label}`"
+                                            @click="
+                                                form.columns =
+                                                    form.columns.filter(
+                                                        (item) => item !== key,
+                                                    )
+                                            "
+                                        >
+                                            <Trash2 :size="15" />
+                                        </button>
+                                    </li>
+                                </ol>
+                            </div>
+                            <div class="report-field column-options">
+                                <h3 class="field-label">Adicionar colunas</h3>
+                                <div class="button-row">
+                                    <button
+                                        v-for="key in availableColumns"
+                                        :key="key"
+                                        type="button"
+                                        class="report-button"
+                                        @click="form.columns.push(key)"
+                                    >
+                                        + {{ columns[key].label }}
+                                    </button>
+                                    <p
+                                        v-if="availableColumns.length === 0"
+                                        class="hint"
+                                    >
+                                        Todas as colunas estão incluídas.
+                                    </p>
+                                </div>
+                                <div class="report-field">
+                                    <h3 class="field-label">
+                                        Folhas adicionais
+                                    </h3>
+                                    <label class="check-option"
+                                        ><input
+                                            v-model="form.include_lines"
+                                            type="checkbox"
+                                            class="form-checkbox"
+                                        />Artigos, quantidades, descontos e
+                                        impostos</label
+                                    ><label class="check-option"
+                                        ><input
+                                            v-model="form.include_payments"
+                                            type="checkbox"
+                                            class="form-checkbox"
+                                        />Liquidações: recibos e facturas que
+                                        liquidam</label
+                                    >
+                                    <p class="hint">
+                                        Resumo, transacções e totais por mês
+                                        incluídos. As moedas ficam separadas; as
+                                        notas de crédito reduzem a facturação.
+                                        Os saldos reflectem a data da
+                                        exportação.
+                                    </p>
+                                </div>
+                                <div class="saved-model report-field">
+                                    <h3 class="field-label">
+                                        Reutilizar esta configuração
+                                    </h3>
+                                    <div
+                                        v-if="presets.length"
+                                        class="button-row"
+                                    >
+                                        <SelectInput
+                                            v-model="selectedPreset"
+                                            :options="
+                                                presets.map((item) => ({
+                                                    value: item.name,
+                                                    label: item.name,
+                                                }))
+                                            "
+                                            placeholder="Escolher modelo guardado"
+                                            aria-label="Modelo guardado"
+                                            @update:model-value="loadPreset"
+                                        /><button
+                                            type="button"
+                                            class="icon-button"
+                                            :disabled="!selectedPreset"
+                                            aria-label="Eliminar modelo guardado"
+                                            @click="removePreset"
+                                        >
+                                            <Trash2 :size="16" />
+                                        </button>
+                                    </div>
+                                    <label class="report-field"
+                                        ><span class="hint">Nome do modelo</span
+                                        ><input
+                                            v-model="presetName"
+                                            class="form-input"
+                                            maxlength="60"
+                                            placeholder="Ex.: Fecho mensal" /></label
+                                    ><button
+                                        type="button"
+                                        class="report-button"
+                                        @click="savePreset"
+                                    >
+                                        <Save :size="16" />Guardar modelo
+                                    </button>
+                                    <p class="hint">
+                                        Guarda colunas, tipos e folhas neste
+                                        navegador. As datas e os filtros de
+                                        cliente mantêm-se independentes.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <section
+                        class="report-section"
+                        aria-labelledby="preview-heading"
+                    >
+                        <div class="section-heading">
+                            <h2 id="preview-heading">
+                                3. Pré-visualize e descarregue
+                            </h2>
+                            <FileSpreadsheet :size="23" />
+                        </div>
+                        <p class="hint">
+                            Excel editável (.xlsx), com tabelas filtráveis,
+                            cabeçalhos fixos e valores numéricos prontos para
+                            fórmulas e tabelas dinâmicas. Até
+                            {{
+                                maxDocuments.toLocaleString('pt-AO')
+                            }}
+                            documentos e 20 000 linhas de detalhe por
+                            exportação.
                         </p>
                         <div
-                            v-if="result.rows.length"
-                            class="report-table"
-                            tabindex="0"
-                            aria-label="Pré-visualização das transacções"
+                            v-if="errors.length"
+                            role="alert"
+                            class="report-error"
                         >
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th
-                                            v-for="key in form.columns"
-                                            :key="key"
-                                        >
-                                            {{ columns[key].label }}
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr
-                                        v-for="(row, index) in result.rows"
-                                        :key="index"
-                                    >
-                                        <td
-                                            v-for="key in form.columns"
-                                            :key="key"
-                                            :class="{
-                                                numeric:
-                                                    columns[key].format ===
-                                                    'money',
-                                            }"
-                                        >
-                                            {{ cell(row[key], key) }}
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                            <p v-for="error in errors" :key="error">
+                                {{ error }}
+                            </p>
                         </div>
-                        <p v-else class="hint">
-                            Sem movimentos para os filtros seleccionados. Pode
-                            descarregar o ficheiro com os cabeçalhos.
-                        </p></template
-                    >
-                </section>
-            </form>
+                        <p v-if="notice" role="status" class="hint">
+                            {{ notice }}
+                        </p>
+                        <div class="button-row">
+                            <button
+                                type="submit"
+                                class="report-button"
+                                :disabled="busy !== null"
+                            >
+                                <LoaderCircle
+                                    v-if="busy === 'preview'"
+                                    :size="17"
+                                    class="motion-safe:animate-spin"
+                                />Pré-visualizar</button
+                            ><button
+                                type="button"
+                                class="report-button primary"
+                                :disabled="busy !== null || tooMany"
+                                @click="run('download')"
+                            >
+                                <LoaderCircle
+                                    v-if="busy === 'download'"
+                                    :size="17"
+                                    class="motion-safe:animate-spin"
+                                /><Download v-else :size="17" />{{
+                                    busy === 'download'
+                                        ? 'A preparar Excel…'
+                                        : 'Descarregar Excel'
+                                }}
+                            </button>
+                        </div>
+                        <template v-if="result"
+                            ><p class="hint" aria-live="polite">
+                                {{
+                                    previewStale
+                                        ? 'Os filtros mudaram. Actualize a pré-visualização; o download usará a configuração actual.'
+                                        : `${result.count.toLocaleString('pt-AO')} documentos encontrados · primeiros 10 abaixo.`
+                                }}
+                            </p>
+                            <p v-if="tooMany" role="alert" class="report-error">
+                                Reduza o período ou aplique mais filtros para
+                                descarregar.
+                            </p>
+                            <div
+                                v-if="result.rows.length"
+                                class="report-table"
+                                tabindex="0"
+                                aria-label="Pré-visualização das transacções"
+                            >
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th
+                                                v-for="key in form.columns"
+                                                :key="key"
+                                            >
+                                                {{ columns[key].label }}
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr
+                                            v-for="(row, index) in result.rows"
+                                            :key="index"
+                                        >
+                                            <td
+                                                v-for="key in form.columns"
+                                                :key="key"
+                                                :class="{
+                                                    numeric:
+                                                        columns[key].format ===
+                                                        'money',
+                                                }"
+                                            >
+                                                {{ cell(row[key], key) }}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p v-else class="hint">
+                                Sem movimentos para os filtros seleccionados.
+                                Pode descarregar o ficheiro com os cabeçalhos.
+                            </p></template
+                        >
+                    </section>
+                </form>
+            </div>
         </div>
     </AppLayout>
 </template>
@@ -962,7 +995,6 @@ function cell(value: string | number | null, key: string): string {
     gap: 1.25rem;
 }
 .report-page {
-    padding: clamp(1rem, 3vw, 2.5rem);
     max-inline-size: 100rem;
     margin-inline: auto;
 }

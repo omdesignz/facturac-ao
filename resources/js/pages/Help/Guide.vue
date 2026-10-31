@@ -258,7 +258,7 @@ function openChapter(id: string | null): void {
 
         <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
             <!-- ======================================================== home -->
-            <div v-if="active === null" class="mx-auto max-w-6xl">
+            <div v-if="active === null" class="page-shell">
                 <header
                     class="grid gap-10 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-end lg:gap-16"
                 >

@@ -214,7 +214,7 @@ function abbreviate(value: string | null): string {
         <Head title="Monitor AGT" />
 
         <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-            <div class="mx-auto max-w-[100rem] space-y-7">
+            <div class="page-shell space-y-7">
                 <PageHeader
                     eyebrow="AGT · Monitor"
                     title="Onde está cada factura"

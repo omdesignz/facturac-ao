@@ -25,6 +25,7 @@ import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { confirmAction } from '@/lib/confirm';
+import { currencyLabel } from '@/lib/pos-ui';
 import {
     cancel as cancelTransportDocument,
     index as transportDocumentsIndex,
@@ -330,7 +331,7 @@ const moneyFormatter = new Intl.NumberFormat('pt-AO', {
 });
 
 function money(minor: number): string {
-    return `${moneyFormatter.format(minor / 100)} ${props.currencyCode}`;
+    return `${moneyFormatter.format(minor / 100)} ${currencyLabel(props.currencyCode)}`;
 }
 
 function submit(): void {
@@ -412,7 +413,7 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
         <Head :title="transportDocument?.document_no ?? 'Nova guia'" />
 
         <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-            <div class="mx-auto max-w-7xl space-y-6">
+            <div class="page-shell space-y-6">
                 <FlashBanner />
 
                 <header

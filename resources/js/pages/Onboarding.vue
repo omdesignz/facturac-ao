@@ -188,7 +188,7 @@ const taxRegimeOptions = computed(() =>
         <Head title="Preparar empresa" />
 
         <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-            <div class="mx-auto max-w-7xl space-y-8">
+            <div class="page-shell space-y-8">
                 <PageHeader
                     eyebrow="Configuração · Preparar empresa"
                     title="Fale-nos da sua empresa"

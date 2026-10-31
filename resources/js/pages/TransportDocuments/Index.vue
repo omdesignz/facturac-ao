@@ -188,7 +188,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
         <Head title="Guias e transporte" />
 
         <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-            <div class="mx-auto max-w-7xl space-y-6">
+            <div class="page-shell space-y-6">
                 <FlashBanner />
 
                 <PageHeader

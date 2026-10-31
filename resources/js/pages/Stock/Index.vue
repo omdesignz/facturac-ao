@@ -17,6 +17,7 @@ import PageStat from '@/components/PageStat.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { currencyLabel } from '@/lib/pos-ui';
 import { index as stockIndex } from '@/routes/stock';
 import { store as storeMovement } from '@/routes/stock/movements';
 import type { SelectOption } from '@/types/select';
@@ -161,7 +162,7 @@ const moneyFormatter = new Intl.NumberFormat('pt-AO', {
 });
 
 function money(minor: number): string {
-    return `${moneyFormatter.format(minor / 100)} ${props.summary.currency_code}`;
+    return `${moneyFormatter.format(minor / 100)} ${currencyLabel(props.summary.currency_code)}`;
 }
 
 const dateFormatter = new Intl.DateTimeFormat('pt-PT', {
@@ -183,7 +184,7 @@ function isInbound(quantity: string): boolean {
         <Head title="Inventário" />
 
         <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-            <div class="mx-auto max-w-6xl space-y-6">
+            <div class="page-shell space-y-6">
                 <FlashBanner />
 
                 <PageHeader

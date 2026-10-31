@@ -262,11 +262,11 @@ const summary = computed(() => {
                 stroke-linecap="round"
             />
 
-            <path :d="areaPath" fill="var(--viz-series-1)" opacity="0.1" />
+            <path :d="areaPath" fill="var(--viz-primary)" opacity="0.1" />
             <path
                 :d="linePath"
                 fill="none"
-                stroke="var(--viz-series-1)"
+                stroke="var(--viz-primary)"
                 stroke-width="2"
                 stroke-linejoin="round"
                 stroke-linecap="round"
@@ -294,7 +294,7 @@ const summary = computed(() => {
                     :cx="x(hoverIndex)"
                     :cy="y(points[hoverIndex].value)"
                     r="4"
-                    fill="var(--viz-series-1)"
+                    fill="var(--viz-primary)"
                     stroke="var(--viz-surface)"
                     stroke-width="2"
                 />
@@ -325,7 +325,7 @@ const summary = computed(() => {
             <p class="mt-1.5 flex items-center gap-2">
                 <span
                     class="size-2 shrink-0 rounded-full"
-                    style="background: var(--viz-series-1)"
+                    style="background: var(--viz-primary)"
                     aria-hidden="true"
                 />
                 <span class="text-zinc-500 dark:text-zinc-400">{{

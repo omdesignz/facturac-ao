@@ -359,7 +359,7 @@ function submitCheckout(): void {
         <Head title="Plano e cobrança" />
 
         <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-            <div class="mx-auto max-w-[100rem] space-y-8">
+            <div class="page-shell space-y-8">
                 <PageHeader
                     eyebrow="Configuração · Plano e cobrança"
                     title="Plano e cobrança"

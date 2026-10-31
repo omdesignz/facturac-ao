@@ -1391,7 +1391,7 @@ function confirmIssue(): void {
                 {{ announcement }}
             </p>
 
-            <div class="mx-auto max-w-[100rem] space-y-7">
+            <div class="page-shell space-y-7">
                 <PageHeader
                     :eyebrow="
                         document.public_id === null

@@ -16,6 +16,7 @@ import ChartTrend from '@/components/charts/ChartTrend.vue';
 import StatTile from '@/components/charts/StatTile.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { currencyLabel } from '@/lib/pos-ui';
 import type { SelectOption } from '@/types/select';
 
 interface Summary {
@@ -84,11 +85,11 @@ const compactFormatter = new Intl.NumberFormat('pt-AO', {
 });
 
 function money(minor: number): string {
-    return `${moneyFormatter.format(minor / 100)} ${props.currencyCode}`;
+    return `${moneyFormatter.format(minor / 100)} ${currencyLabel(props.currencyCode)}`;
 }
 
 function compactMoney(minor: number): string {
-    return `${compactFormatter.format(minor / 100)} ${props.currencyCode}`;
+    return `${compactFormatter.format(minor / 100)} ${currencyLabel(props.currencyCode)}`;
 }
 
 function duration(seconds: number | null): string {
@@ -158,14 +159,8 @@ const submissionHealth = computed(() => [
 <template>
     <AppLayout>
         <Head title="Análises" />
-        <p>
-            Valores limitados à moeda da empresa. Saldos e recebimentos
-            representam o estado actual das facturas seleccionadas, não um saldo
-            histórico nem o movimento bancário do período.
-        </p>
-
         <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-            <div class="mx-auto max-w-6xl space-y-6">
+            <div class="page-shell space-y-6">
                 <header
                     class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
                 >
@@ -292,7 +287,7 @@ const submissionHealth = computed(() => [
                             <span class="inline-flex items-center gap-1.5">
                                 <span
                                     class="h-0.5 w-4 rounded-full"
-                                    style="background: var(--viz-series-1)"
+                                    style="background: var(--viz-primary)"
                                     aria-hidden="true"
                                 />
                                 {{ period.label }}
@@ -498,6 +493,12 @@ const submissionHealth = computed(() => [
                         </div>
                     </div>
                 </section>
+
+                <p class="text-xs/5 text-zinc-500 dark:text-zinc-400">
+                    Valores limitados à moeda da empresa. Saldos e recebimentos
+                    representam o estado actual das facturas seleccionadas, não
+                    um saldo histórico nem o movimento bancário do período.
+                </p>
             </div>
         </div>
     </AppLayout>

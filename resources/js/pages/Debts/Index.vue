@@ -237,12 +237,12 @@ const dayPill = (days: number): string =>
     <AppLayout>
         <Head title="Dívidas" />
         <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-            <div class="mx-auto max-w-6xl">
+            <div class="page-shell">
                 <FlashBanner />
 
                 <!-- ------------------------------------------ the question -->
                 <header
-                    class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"
+                    class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between"
                 >
                     <div class="min-w-0">
                         <p

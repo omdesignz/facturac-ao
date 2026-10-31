@@ -18,6 +18,7 @@ import StatusBadge from '@/components/StatusBadge.vue';
 import ToggleSwitch from '@/components/ToggleSwitch.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { confirmAction } from '@/lib/confirm';
+import { currencyLabel } from '@/lib/pos-ui';
 import { destroy, store, update } from '@/routes/catalogue';
 import type { SelectOption } from '@/types/select';
 
@@ -194,7 +195,7 @@ async function deactivate(item: CatalogueItem): Promise<void> {
         <Head title="Artigos e serviços" />
 
         <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-            <div class="mx-auto max-w-6xl space-y-6">
+            <div class="page-shell space-y-6">
                 <PageHeader
                     eyebrow="Artigos"
                     title="Artigos e serviços"
@@ -507,7 +508,9 @@ async function deactivate(item: CatalogueItem): Promise<void> {
 
                     <div class="sm:col-span-3">
                         <label for="item-price" class="field-label"
-                            >Preço unitário ({{ currencyCode }})</label
+                            >Preço unitário ({{
+                                currencyLabel(currencyCode)
+                            }})</label
                         >
                         <input
                             id="item-price"

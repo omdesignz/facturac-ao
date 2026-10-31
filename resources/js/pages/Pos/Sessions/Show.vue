@@ -104,7 +104,7 @@ const linkClass =
         <Head :title="`Turno · ${session.register_name}`" />
 
         <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-            <div id="pos-report" class="mx-auto max-w-5xl space-y-6">
+            <div id="pos-report" class="page-shell space-y-6">
                 <FlashBanner />
 
                 <PageHeader

@@ -28,6 +28,7 @@ import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { confirmAction } from '@/lib/confirm';
+import { currencyLabel } from '@/lib/pos-ui';
 import { index as customersIndex } from '@/routes/customers';
 import {
     destroy as destroyPrice,
@@ -143,7 +144,7 @@ function amount(minor: number): string {
 
 /** Amount and currency stay on one line: a non-breaking space joins them. */
 function money(minor: number): string {
-    return `${amount(minor)}\u00a0${props.currencyCode}`;
+    return `${amount(minor)}\u00a0${currencyLabel(props.currencyCode)}`;
 }
 
 /** Whole kwanzas for the figures row; the centimos are on each document. */
@@ -154,7 +155,7 @@ function wholeAmount(minor: number): string {
 }
 
 function compactMoney(minor: number): string {
-    return `${compactFormatter.format(minor / 100)}\u00a0${props.currencyCode}`;
+    return `${compactFormatter.format(minor / 100)}\u00a0${currencyLabel(props.currencyCode)}`;
 }
 
 /** The business keeps its own calendar, whatever the browser's clock says. */
@@ -319,7 +320,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
     <AppLayout>
         <Head :title="customer.name" />
         <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-            <div class="mx-auto max-w-6xl min-w-0 space-y-6">
+            <div class="page-shell min-w-0 space-y-6">
                 <Link
                     :href="customersIndex.url()"
                     class="inline-flex items-center gap-2 rounded-lg text-sm font-medium text-zinc-600 focus-ring transition hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white"
@@ -532,7 +533,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                             <span class="inline-flex items-center gap-1.5">
                                 <span
                                     class="h-0.5 w-4 rounded-full"
-                                    style="background: var(--viz-series-1)"
+                                    style="background: var(--viz-primary)"
                                     aria-hidden="true"
                                 />
                                 Este ano
@@ -595,12 +596,16 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                     <th
                                         class="px-3 py-3 text-right eyebrow whitespace-nowrap text-zinc-500 sm:px-5"
                                     >
-                                        Movimento ({{ currencyCode }})
+                                        Movimento ({{
+                                            currencyLabel(currencyCode)
+                                        }})
                                     </th>
                                     <th
                                         class="px-3 py-3 text-right eyebrow whitespace-nowrap text-zinc-500 sm:px-5"
                                     >
-                                        Saldo ({{ currencyCode }})
+                                        Saldo ({{
+                                            currencyLabel(currencyCode)
+                                        }})
                                     </th>
                                 </tr>
                             </thead>
@@ -917,17 +922,21 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                     <th
                                         class="px-3 py-3 text-right eyebrow whitespace-nowrap text-zinc-500 sm:px-5"
                                     >
-                                        Total ({{ currencyCode }})
+                                        Total ({{
+                                            currencyLabel(currencyCode)
+                                        }})
                                     </th>
                                     <th
                                         class="hidden px-3 py-3 text-right eyebrow whitespace-nowrap text-zinc-500 sm:table-cell sm:px-5"
                                     >
-                                        Pago ({{ currencyCode }})
+                                        Pago ({{ currencyLabel(currencyCode) }})
                                     </th>
                                     <th
                                         class="px-3 py-3 text-right eyebrow whitespace-nowrap text-zinc-500 sm:px-5"
                                     >
-                                        Em dívida ({{ currencyCode }})
+                                        Em dívida ({{
+                                            currencyLabel(currencyCode)
+                                        }})
                                     </th>
                                     <th class="px-3 py-3 sm:px-5">
                                         <span class="sr-only">Enviar</span>

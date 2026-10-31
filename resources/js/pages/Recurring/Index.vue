@@ -21,6 +21,7 @@ import ToggleSwitch from '@/components/ToggleSwitch.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { confirmAction } from '@/lib/confirm';
 import { localIsoDate } from '@/lib/dates';
+import { currencyLabel } from '@/lib/pos-ui';
 import {
     destroy as destroyProfile,
     run as runProfiles,
@@ -220,7 +221,7 @@ const moneyFormatter = new Intl.NumberFormat('pt-AO', {
 });
 
 function money(minor: number): string {
-    return `${moneyFormatter.format(minor / 100)} ${props.currencyCode}`;
+    return `${moneyFormatter.format(minor / 100)} ${currencyLabel(props.currencyCode)}`;
 }
 
 const dateFormatter = new Intl.DateTimeFormat('pt-PT', { dateStyle: 'medium' });
@@ -244,7 +245,7 @@ const dueCount = computed(
         <Head title="Avenças" />
 
         <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-            <div class="mx-auto max-w-6xl space-y-6">
+            <div class="page-shell space-y-6">
                 <FlashBanner />
 
                 <PageHeader

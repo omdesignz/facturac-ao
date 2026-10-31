@@ -522,7 +522,7 @@ const reviewStatement = computed(() => {
     <AppLayout>
         <Head title="Painel" />
         <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-            <div class="mx-auto max-w-[100rem]">
+            <div class="page-shell">
                 <!-- -------------------------------------------------- header -->
                 <header
                     class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"
@@ -534,7 +534,7 @@ const reviewStatement = computed(() => {
                             {{ dateLine }}
                         </p>
                         <h1
-                            class="mt-2.5 text-[2.125rem] leading-[1.08] font-normal tracking-[-0.028em] text-zinc-950 dark:text-white"
+                            class="mt-2.5 text-page-title leading-[1.08] font-light tracking-[-0.028em] text-zinc-950 dark:text-white"
                         >
                             {{ greeting }}
                         </h1>

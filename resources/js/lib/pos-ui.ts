@@ -8,7 +8,7 @@
  */
 
 const base =
-    'inline-flex items-center justify-center gap-2 rounded-full text-sm font-semibold whitespace-nowrap focus-ring transition disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-50';
+    'inline-flex items-center justify-center gap-2 rounded-full text-sm font-semibold whitespace-nowrap focus-ring transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-50';
 
 /** Create, charge, send. The only gold on a screen. */
 export const buttonGold = `${base} h-10 px-[1.125rem] pointer-coarse:h-11 bg-accent-400 text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] hover:bg-accent-300`;

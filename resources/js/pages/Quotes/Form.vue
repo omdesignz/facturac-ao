@@ -8,6 +8,7 @@ import FormError from '@/components/FormError.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { currencyLabel } from '@/lib/pos-ui';
 import { index as quotesIndex } from '@/routes/quotes';
 import {
     convert as convertQuote,
@@ -346,7 +347,7 @@ function money(minor: bigint): string {
     const whole = minor / 100n;
     const fraction = (minor % 100n).toString().padStart(2, '0');
 
-    return `${integerFormatter.format(whole)}${decimalSeparator}${fraction} ${props.currencyCode}`;
+    return `${integerFormatter.format(whole)}${decimalSeparator}${fraction} ${currencyLabel(props.currencyCode)}`;
 }
 
 function lineError(index: number, field: string): string | undefined {
@@ -401,7 +402,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
         <Head :title="quote ? quote.reference : 'Novo orçamento'" />
 
         <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-            <div class="mx-auto max-w-5xl space-y-6">
+            <div class="page-shell space-y-6">
                 <Link
                     :href="quotesIndex.url()"
                     class="inline-flex items-center gap-2 rounded-lg text-sm font-medium text-zinc-600 focus-ring transition hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white"

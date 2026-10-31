@@ -327,3 +327,39 @@ test('the desktop navigation is five words along the top, and a company chip', f
 
     expect(file_exists(resource_path('js/components/AppRail.vue')))->toBeFalse();
 });
+
+test('every working screen shares one width, so the ground never shifts between pages', function () {
+    $stray = [];
+
+    foreach (File::allFiles(resource_path('js/pages')) as $file) {
+        if ($file->getExtension() !== 'vue') {
+            continue;
+        }
+
+        $contents = $file->getContents();
+
+        if (str_contains($contents, 'px-4 py-8 sm:px-6 lg:px-8 lg:py-10')
+            && preg_match('/mx-auto max-w-(5xl|6xl|7xl|\[100rem\])[" ]/', $contents)) {
+            $stray[] = $file->getRelativePathname();
+        }
+    }
+
+    expect($stray)->toBe([])
+        ->and((string) file_get_contents(resource_path('css/app.css')))
+        ->toContain('@utility page-shell')
+        ->toContain('max-width: 100rem');
+});
+
+test('the product has no blue: informational notes use the neutral ramp, and charts lead with ink', function () {
+    $css = (string) file_get_contents(resource_path('css/app.css'));
+    $notice = (string) file_get_contents(resource_path('js/components/SubscriptionNotice.vue'));
+
+    expect($css)->toContain('--color-sky-50: #f5f5f7')
+        ->toContain('--viz-primary: #1d1d1f')
+        ->and($notice)->not->toMatch('/(bg|text|border)-blue-/');
+
+    foreach (['ChartTrend', 'ChartBars'] as $chart) {
+        expect((string) file_get_contents(resource_path("js/components/charts/{$chart}.vue")))
+            ->toContain('--viz-primary');
+    }
+});

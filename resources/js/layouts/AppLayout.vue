@@ -172,7 +172,7 @@ onBeforeUnmount(() => stopListening?.());
                 ref="main"
                 tabindex="-1"
                 :class="[
-                    'min-h-[calc(100dvh-4rem)] focus:outline-hidden',
+                    'min-h-[calc(100dvh-4rem)] page-enter focus:outline-hidden',
                     tabBarShown
                         ? 'max-lg:pb-[calc(5rem+env(safe-area-inset-bottom))]'
                         : '',

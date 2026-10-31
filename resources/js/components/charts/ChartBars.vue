@@ -31,7 +31,7 @@ const maxValue = computed(() =>
  */
 function colour(bar: BarDatum, index: number): string {
     if (!props.categorical) {
-        return 'var(--viz-series-1)';
+        return 'var(--viz-primary)';
     }
 
     return `var(--viz-series-${bar.slot ?? Math.min(5, index + 1)})`;
