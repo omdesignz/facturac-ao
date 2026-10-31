@@ -268,6 +268,7 @@ class DeleteUserAccount
 
             $user->workspaceMemberships()->delete();
             $user->passkeys()->delete();
+            $user->tokens()->delete();
             $user->socialIdentities()->delete();
             $user->notifications()->delete();
 

@@ -38,3 +38,7 @@ Schedule::command('notifications:scan')
     ->withoutOverlapping();
 
 Schedule::command('reports:prune-exports')->hourly()->withoutOverlapping();
+
+Schedule::command('sanctum:prune-expired --hours=24')
+    ->daily()
+    ->withoutOverlapping();

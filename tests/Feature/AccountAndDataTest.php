@@ -283,6 +283,7 @@ test('an account that issued documents is stripped, not erased', function () {
     ]);
 
     $document = issuedDocument($fixture, $fixture['owner']);
+    $fixture['owner']->createToken('iPhone', ['mobile']);
 
     app(DeleteUserAccount::class)->execute($fixture['owner']);
 
@@ -293,6 +294,7 @@ test('an account that issued documents is stripped, not erased', function () {
         ->and($user->name)->toBe('Utilizador removido')
         ->and($user->email)->not->toContain('@vap')
         ->and($user->two_factor_secret)->toBeNull()
+        ->and($user->tokens()->count())->toBe(0)
         ->and($document->fresh()->issued_by_user_id)->toBe($user->id);
 });
 

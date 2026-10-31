@@ -13,6 +13,7 @@ use App\Http\Middleware\ExternalCommandBoundary;
 use App\Http\Middleware\ExternalIntegrationBoundary;
 use App\Http\Middleware\HandleImpersonation;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\MobileApiResponse;
 use App\Http\Middleware\ReadApiResponse;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -23,6 +24,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
+use Laravel\Sanctum\Http\Middleware\CheckAbilities;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -34,6 +36,7 @@ return Application::configure(basePath: dirname(__DIR__))
             Route::prefix('api/integrations/v1')->group(base_path('routes/integrations.php'));
             Route::prefix('api/integrations/v2')->group(base_path('routes/integrations-v2.php'));
             Route::prefix('webhooks')->group(base_path('routes/webhooks.php'));
+            Route::middleware(MobileApiResponse::class)->prefix('api/mobile/v1')->group(base_path('routes/mobile.php'));
             Route::middleware('web')->withoutMiddleware([HandleInertiaRequests::class, AddLinkHeadersForPreloadedAssets::class])
                 ->prefix('api/v1')->group(base_path('routes/api.php'));
         },
@@ -56,6 +59,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'subscription' => EnsureSubscriptionFeature::class,
             'mfa' => EnsureMultiFactorAuthentication::class,
             'support' => EnsureSupportStaff::class,
+            'abilities' => CheckAbilities::class,
         ]);
 
         $middleware->web(append: [
