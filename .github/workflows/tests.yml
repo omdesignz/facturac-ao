@@ -55,6 +55,12 @@ jobs:
       - name: Top navigation gate
         run: node --test tests/top-navigation.test.mjs
 
+      - name: Today decisions gate
+        run: node --test tests/today-decisions.test.mjs
+
+      - name: Typed sale gate
+        run: node --test tests/typed-lines.test.mjs
+
       - name: Run CI Checks
         run: composer ci:check
 

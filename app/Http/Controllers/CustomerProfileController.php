@@ -201,6 +201,7 @@ class CustomerProfileController extends Controller
                 'can_send' => Gate::allows('deliver', $document),
                 'sent_at' => $document->sent_to_customer_at?->toIso8601String(),
                 'send_count' => $document->send_count,
+                'opened_at' => $document->first_opened_by_customer_at?->toIso8601String(),
             ];
         })->all());
     }

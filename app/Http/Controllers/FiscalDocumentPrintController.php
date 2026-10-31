@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\RecordDocumentOpenedByCustomer;
 use App\Fiscal\Documents\FiscalDocumentPdf;
 use App\Fiscal\Documents\FiscalDocumentPresenter;
 use App\Fiscal\Documents\FiscalDocumentPrints;
@@ -26,6 +27,7 @@ class FiscalDocumentPrintController extends Controller
         private FiscalDocumentPresenter $presenter,
         private FiscalDocumentPdf $pdf,
         private FiscalDocumentPrints $prints,
+        private RecordDocumentOpenedByCustomer $opened,
     ) {}
 
     public function __invoke(Request $request, FiscalDocument $fiscalDocument): Response
@@ -38,6 +40,12 @@ class FiscalDocumentPrintController extends Controller
             $request->hasValidSignature() || $this->belongsToCurrentCompany($request, $fiscalDocument),
             403,
         );
+
+        // Reached by the signed link and not from inside the company: the
+        // customer, looking at what they were sent.
+        if ($request->hasValidSignature() && ! $this->belongsToCurrentCompany($request, $fiscalDocument)) {
+            $this->opened->execute($fiscalDocument);
+        }
 
         return Inertia::render('Documents/Print', [
             // The same frozen issuer and checks as the PDF, so the page and

@@ -41,6 +41,7 @@ use App\Http\Controllers\LegalDocumentController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\NotificationPreferenceController;
 use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\PaymentReminderController;
 use App\Http\Controllers\PlatformSettingController;
 use App\Http\Controllers\PosCashMovementController;
 use App\Http\Controllers\PosController;
@@ -301,6 +302,11 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             ->route('stock.index', $request->query(), 301));
 
         Route::get('/dividas', DebtController::class)->name('debts.index');
+        Route::get('/dividas/{customer}/lembrete', [PaymentReminderController::class, 'show'])
+            ->name('debts.reminder.show');
+        Route::post('/dividas/{customer}/lembrete', [PaymentReminderController::class, 'store'])
+            ->middleware('throttle:6,1')
+            ->name('debts.reminder.store');
 
         Route::get('/avencas', [RecurringInvoiceController::class, 'index'])
             ->name('recurring.index');

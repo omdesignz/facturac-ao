@@ -44,8 +44,52 @@ final class FiscalDocumentRegister
         return [
             ...$this->present($document, $canPrepareDocuments),
             'snapshot' => $this->snapshot->describe($document, CarbonImmutable::now()),
-            'history' => $this->snapshot->history($document),
+            'history' => $this->withDeliveryNotes($document, $this->snapshot->history($document)),
         ];
+    }
+
+    /**
+     * What happened to the sending, beside what happened to the document: that
+     * it was emailed, and that the customer opened it. These are delivery
+     * notes rather than fiscal evidence, so they come from the document's own
+     * columns and are laid into the same newest-first list.
+     *
+     * @param  list<array{type: string, label: string, tone: string, actor_name: string|null, document_no: string|null, occurred_at: string}>  $history
+     * @return list<array{type: string, label: string, tone: string, actor_name: string|null, document_no: string|null, occurred_at: string}>
+     */
+    private function withDeliveryNotes(FiscalDocument $document, array $history): array
+    {
+        $notes = [];
+
+        if ($document->sent_to_customer_at !== null) {
+            $notes[] = [
+                'type' => 'sent_to_customer',
+                'label' => $document->sent_to_email === null
+                    ? 'Enviado ao cliente'
+                    : "Enviado a {$document->sent_to_email}",
+                'tone' => 'pending',
+                'actor_name' => null,
+                'document_no' => null,
+                'occurred_at' => $document->sent_to_customer_at->toIso8601String(),
+            ];
+        }
+
+        if ($document->first_opened_by_customer_at !== null) {
+            $notes[] = [
+                'type' => 'opened_by_customer',
+                'label' => 'Aberta pelo cliente',
+                'tone' => 'done',
+                'actor_name' => null,
+                'document_no' => null,
+                'occurred_at' => $document->first_opened_by_customer_at->toIso8601String(),
+            ];
+        }
+
+        $all = [...$history, ...$notes];
+
+        usort($all, fn (array $a, array $b): int => strcmp($b['occurred_at'], $a['occurred_at']));
+
+        return $all;
     }
 
     /**
@@ -88,6 +132,8 @@ final class FiscalDocumentRegister
                 'sent_to_customer_at',
                 'sent_to_email',
                 'send_count',
+                'first_opened_by_customer_at',
+                'open_count',
                 'created_at',
                 'updated_at',
             ])
@@ -310,6 +356,8 @@ final class FiscalDocumentRegister
             'updated_at' => $document->updated_at?->toIso8601String(),
             'sent_at' => $document->sent_to_customer_at?->toIso8601String(),
             'send_count' => $document->send_count,
+            'opened_at' => $document->first_opened_by_customer_at?->toIso8601String(),
+            'open_count' => $document->open_count,
             'delivery_email' => is_string($deliveryEmail) && trim($deliveryEmail) !== ''
                 ? trim($deliveryEmail)
                 : null,

@@ -41,6 +41,8 @@ import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { addDaysToIsoDate } from '@/lib/dates';
 import { roundFiscalLineAmount } from '@/lib/fiscal-rounding';
+import { buttonOutline } from '@/lib/pos-ui';
+import { parseTypedLines } from '@/lib/typed-lines';
 import { show as agtConnection } from '@/routes/agt/connection';
 import { issue, store, update } from '@/routes/invoices';
 import { security } from '@/routes/settings';
@@ -1016,6 +1018,65 @@ function firstFieldIds(key: string): string[] {
         `catalogue-${key}`,
         `code-${key}`,
     ];
+}
+
+/* ------------------------------------------------------ typing a sale */
+
+/**
+ * "2 óleo, 1 arroz, 20 cesto a 950": the lines of a sale typed as a sentence,
+ * matched against the catalogue. Only a line that matched one article is added;
+ * the rest are shown back, for a person to type again or pick by hand.
+ */
+const typedSale = ref('');
+const typedLines = computed(() =>
+    parseTypedLines(typedSale.value, props.catalogueItems),
+);
+const typedSaleReady = computed(
+    () =>
+        typedLines.value.length > 0 &&
+        typedLines.value.every((line) => line.item !== null),
+);
+
+function addTypedSale(): void {
+    if (!typedSaleReady.value) {
+        return;
+    }
+
+    // The form opens on one empty line; typing a sale replaces it.
+    const [first] = form.lines;
+
+    if (
+        form.lines.length === 1 &&
+        first !== undefined &&
+        first.catalogue_public_id === '' &&
+        first.product_description === '' &&
+        Number(first.unit_price) === 0
+    ) {
+        form.lines.splice(0, 1);
+    }
+
+    for (const typed of typedLines.value) {
+        if (typed.item === null) {
+            continue;
+        }
+
+        const line = editableLine(undefined, form.document_date);
+
+        line.catalogue_public_id = typed.item.public_id;
+        applyCatalogueItem(line, typed.item.public_id);
+        line.quantity = typed.quantity;
+
+        if (typed.unitPrice !== null) {
+            line.unit_price = typed.unitPrice;
+        }
+
+        form.lines.push(line);
+    }
+
+    announce(
+        `${lineCountLabel(typedLines.value.length)} a partir do que escreveu. ${lineCountLabel(form.lines.length)}.`,
+    );
+    typedSale.value = '';
 }
 
 async function addLine(): Promise<void> {
@@ -2340,6 +2401,66 @@ function confirmIssue(): void {
                             >
                             <span class="sm:hidden">Adicionar</span>
                         </button>
+                    </div>
+
+                    <div
+                        v-if="catalogueItems.length > 0"
+                        class="border-b border-zinc-100 px-5 py-4 sm:px-6 dark:border-white/10"
+                    >
+                        <label
+                            for="typed-sale"
+                            class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
+                        >
+                            Escreva o que vendeu
+                        </label>
+                        <div class="mt-2 flex gap-2">
+                            <input
+                                id="typed-sale"
+                                v-model="typedSale"
+                                type="text"
+                                autocomplete="off"
+                                spellcheck="false"
+                                placeholder="2 óleo, 1 arroz, 20 cesto a 950"
+                                class="form-input"
+                                @keydown.enter.prevent="addTypedSale"
+                            />
+                            <button
+                                type="button"
+                                :class="buttonOutline"
+                                :disabled="!typedSaleReady"
+                                @click="addTypedSale"
+                            >
+                                Adicionar
+                            </button>
+                        </div>
+                        <ul
+                            v-if="typedLines.length > 0"
+                            class="mt-3 flex flex-wrap gap-2"
+                            aria-label="O que percebemos"
+                        >
+                            <li
+                                v-for="(typed, index) in typedLines"
+                                :key="index"
+                                :class="[
+                                    'inline-flex min-h-7 items-center rounded-full px-3 py-1 text-xs font-medium',
+                                    typed.item
+                                        ? 'bg-lime-300 text-lime-950'
+                                        : 'bg-[#fde7ea] text-[#9a1b30]',
+                                ]"
+                            >
+                                <template v-if="typed.item">
+                                    {{ typed.quantity }} ×
+                                    {{ typed.item.name }}
+                                    <span v-if="typed.unitPrice" class="ms-1"
+                                        >a {{ typed.unitPrice }}</span
+                                    >
+                                </template>
+                                <template v-else>
+                                    «{{ typed.text }}»: não encontrado, ou há
+                                    mais de um artigo assim
+                                </template>
+                            </li>
+                        </ul>
                     </div>
 
                     <div

@@ -4,10 +4,12 @@ use App\AgtSubmissionStatus;
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
 use App\Models\AgtSubmission;
+use App\Models\CatalogueItem;
 use App\Models\Customer;
 use App\Models\Establishment;
 use App\Models\FiscalDocument;
 use App\Models\LegalEntity;
+use App\Models\StockLevel;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -228,4 +230,41 @@ test('collections arrive after first paint, oldest debt first', function () {
                 ->where('collections.customers.0.oldest_days_past_due', 30)
             )
         );
+});
+
+test('the dashboard names the one item that has run furthest below its reorder level', function () {
+    $fixture = dashboardFixture();
+
+    foreach ([['Rolo térmico 80 mm', 3, 20], ['Arroz agulha 1 kg', 12, 40], ['Saco kraft', 90, 20]] as [$name, $quantity, $reorder]) {
+        $item = CatalogueItem::factory()->tracked($reorder)->create([
+            'workspace_id' => $fixture['legalEntity']->workspace_id,
+            'legal_entity_id' => $fixture['legalEntity']->id,
+            'name' => $name,
+        ]);
+
+        StockLevel::query()->create([
+            'workspace_id' => $fixture['legalEntity']->workspace_id,
+            'legal_entity_id' => $fixture['legalEntity']->id,
+            'catalogue_item_id' => $item->id,
+            'establishment_id' => $fixture['establishment']->id,
+            'quantity_units' => $quantity,
+            'quantity_scale' => 3,
+            'average_cost_micros' => 0,
+        ]);
+    }
+
+    $this->actingAs($fixture['owner'])
+        ->get(route('dashboard'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('lowStock.name', 'Rolo térmico 80 mm')
+            ->where('lowStock.quantity', 3)
+            ->where('lowStock.reorder_level', 20));
+});
+
+test('with no stock below its level the dashboard has no stock decision', function () {
+    $fixture = dashboardFixture();
+
+    $this->actingAs($fixture['owner'])
+        ->get(route('dashboard'))
+        ->assertInertia(fn (Assert $page) => $page->where('lowStock', null));
 });

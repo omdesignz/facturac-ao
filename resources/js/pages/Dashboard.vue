@@ -11,10 +11,12 @@ import {
     HandCoins,
     Plus,
 } from '@lucide/vue';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import type { Component } from 'vue';
 import DocumentLifecycle from '@/components/DocumentLifecycle.vue';
 import type { LifecycleStep } from '@/components/DocumentLifecycle.vue';
+import ReminderDialog from '@/components/ReminderDialog.vue';
+import TodayDecisions from '@/components/TodayDecisions.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { agingBucketColours, agingShare } from '@/lib/aging';
 import { onboarding } from '@/routes';
@@ -113,7 +115,17 @@ const props = defineProps<{
     focus: FocusDocument | null;
     review: Review | null;
     collections?: Collections | null;
+    lowStock?: { name: string; quantity: number; unit: string } | null;
 }>();
+
+/** The customer whose reminder is being read before it goes out. */
+const reminderFor = ref<{ public_id: string; name: string } | null>(null);
+const reminderOpen = ref(false);
+
+function openReminder(customer: { public_id: string; name: string }): void {
+    reminderFor.value = customer;
+    reminderOpen.value = true;
+}
 
 const page = usePage();
 const workspace = computed(() => page.props.currentWorkspace);
@@ -769,6 +781,16 @@ const reviewStatement = computed(() => {
                     representam o estado actual das facturas seleccionadas, não
                     um saldo histórico nem o movimento bancário do período.
                 </p>
+
+                <TodayDecisions
+                    class="mt-6 md:hidden"
+                    :focus="focus"
+                    :collections="collections"
+                    :low-stock="lowStock"
+                    :currency-label="currencyLabel()"
+                    :format-amount="formatAmount"
+                    @remind="openReminder"
+                />
 
                 <!-- --------------------------------------- focus and review -->
                 <div
@@ -1579,5 +1601,10 @@ const reviewStatement = computed(() => {
                 </Deferred>
             </div>
         </div>
+        <ReminderDialog
+            :open="reminderOpen"
+            :customer="reminderFor"
+            @close="reminderOpen = false"
+        />
     </AppLayout>
 </template>

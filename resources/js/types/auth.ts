@@ -23,6 +23,7 @@ export type LegalEntitySummary = {
     status: string;
     status_label: string;
     establishment_name: string | null;
+    agt: { configured: boolean; verified: boolean };
 };
 
 export type CurrentWorkspace = {

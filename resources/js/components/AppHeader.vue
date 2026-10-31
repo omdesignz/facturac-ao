@@ -2,6 +2,7 @@
 import { Link } from '@inertiajs/vue3';
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 import AccountMenu from '@/components/AccountMenu.vue';
+import AgtStateChip from '@/components/AgtStateChip.vue';
 import AppTopNav from '@/components/AppTopNav.vue';
 import BrandWordmark from '@/components/BrandWordmark.vue';
 import GlobalSearch from '@/components/GlobalSearch.vue';
@@ -55,6 +56,7 @@ onBeforeUnmount(() => {
         <GlobalSearch class="lg:ml-3 lg:justify-end" />
 
         <div class="flex shrink-0 items-center gap-1 sm:gap-2">
+            <AgtStateChip />
             <WorkspaceSwitcher />
             <WorkSessionTimer />
             <NotificationsMenu />

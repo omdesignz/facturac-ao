@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import { CircleCheck, TriangleAlert } from '@lucide/vue';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import FlashBanner from '@/components/FlashBanner.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageStat from '@/components/PageStat.vue';
+import ReminderDialog from '@/components/ReminderDialog.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { agingBucketColours, agingShare } from '@/lib/aging';
+import { buttonGold } from '@/lib/pos-ui';
 import { show as showCustomer } from '@/routes/customers';
 
 interface DebtRow {
@@ -35,6 +37,19 @@ const props = defineProps<{
     };
     currencyCode: string;
 }>();
+
+/** The customer whose reminder is being read before it goes out. */
+const reminderFor = ref<{ public_id: string; name: string } | null>(null);
+const reminderOpen = ref(false);
+
+function openReminder(row: DebtRow): void {
+    if (row.customer_public_id === null) {
+        return;
+    }
+
+    reminderFor.value = { public_id: row.customer_public_id, name: row.name };
+    reminderOpen.value = true;
+}
 
 const currencyLabel = computed(() =>
     props.currencyCode === 'AOA' ? 'Kz' : props.currencyCode,
@@ -261,7 +276,7 @@ function bucketSummary(row: DebtRow): string {
                         <li
                             v-for="row in customers"
                             :key="row.customer_public_id ?? row.name"
-                            class="grid grid-cols-1 items-center gap-3 border-t border-zinc-900/[0.06] py-4 sm:grid-cols-[minmax(0,16rem)_minmax(0,1fr)_auto] dark:border-white/10"
+                            class="grid grid-cols-1 items-center gap-3 border-t border-zinc-900/[0.06] py-4 sm:grid-cols-[minmax(0,16rem)_minmax(0,1fr)_auto_auto] dark:border-white/10"
                         >
                             <div class="min-w-0">
                                 <component
@@ -351,9 +366,33 @@ function bucketSummary(row: DebtRow): string {
                                     vencidos</span
                                 >
                             </p>
+
+                            <button
+                                v-if="
+                                    row.customer_public_id &&
+                                    row.overdue_minor > 0
+                                "
+                                type="button"
+                                :class="[
+                                    buttonGold,
+                                    'h-9 px-3.5 text-[0.8125rem]',
+                                ]"
+                                @click="openReminder(row)"
+                            >
+                                Lembrar<span class="sr-only">
+                                    {{ row.name }}</span
+                                >
+                            </button>
+                            <span v-else class="hidden sm:block" />
                         </li>
                     </ul>
                 </section>
+
+                <ReminderDialog
+                    :open="reminderOpen"
+                    :customer="reminderFor"
+                    @close="reminderOpen = false"
+                />
 
                 <p class="text-xs/5 text-zinc-500 dark:text-zinc-400">
                     Valores e documentos limitados à moeda da empresa; saldos

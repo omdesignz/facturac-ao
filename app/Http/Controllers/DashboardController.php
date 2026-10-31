@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\AgtConnectionStatus;
 use App\AgtEnvironment;
 use App\Analytics\DashboardQuery;
+use App\Models\CatalogueItem;
 use App\Models\LegalEntity;
 use App\Models\Workspace;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -63,6 +65,10 @@ class DashboardController extends Controller
                 : null,
             'review' => $legalEntity instanceof LegalEntity && $kpis !== null
                 ? $this->dashboard->review($legalEntity, $kpis['overdue_count'])
+                : null,
+            // The one item to reorder, only for someone who may see stock.
+            'lowStock' => $legalEntity instanceof LegalEntity && Gate::allows('viewAny', CatalogueItem::class)
+                ? $this->dashboard->lowStock($legalEntity)
                 : null,
             // Ageing walks every open invoice, so it arrives after first paint.
             'collections' => Inertia::defer(fn (): ?array => $legalEntity instanceof LegalEntity

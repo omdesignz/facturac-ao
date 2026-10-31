@@ -62,6 +62,7 @@ interface DocumentRow {
     can_send: boolean;
     sent_at: string | null;
     send_count: number;
+    opened_at: string | null;
 }
 
 const props = defineProps<{
@@ -1084,6 +1085,14 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                                 formatInstant(document.sent_at)
                                             }}
                                             · {{ document.send_count }}×
+                                            <template v-if="document.opened_at"
+                                                >· aberto a
+                                                {{
+                                                    formatInstant(
+                                                        document.opened_at,
+                                                    )
+                                                }}</template
+                                            >
                                         </p>
                                     </td>
                                 </tr>

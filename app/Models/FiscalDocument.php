@@ -73,6 +73,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property CarbonImmutable|null $sent_to_customer_at
  * @property string|null $sent_to_email
  * @property int $send_count
+ * @property CarbonImmutable|null $first_opened_by_customer_at
+ * @property CarbonImmutable|null $last_opened_by_customer_at
+ * @property int $open_count
  * @property-read LegalEntity $legalEntity
  * @property-read Establishment $establishment
  */
@@ -314,6 +317,8 @@ class FiscalDocument extends Model
             'frozen_at' => 'immutable_datetime',
             'issued_at' => 'immutable_datetime',
             'sent_to_customer_at' => 'immutable_datetime',
+            'first_opened_by_customer_at' => 'immutable_datetime',
+            'last_opened_by_customer_at' => 'immutable_datetime',
             'exchange_rate_micro' => 'integer',
         ];
     }

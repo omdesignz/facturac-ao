@@ -2,11 +2,14 @@
 
 namespace App\Http\Middleware;
 
+use App\AgtConnectionStatus;
+use App\AgtEnvironment;
 use App\Billing\SubscriptionAccess;
 use App\LegalDocumentType;
 use App\Models\ImpersonationSession;
 use App\Models\LegalAcceptance;
 use App\Models\LegalDocument;
+use App\Models\LegalEntity;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMembership;
@@ -377,7 +380,26 @@ class HandleInertiaRequests extends Middleware
                 'status' => $legalEntity->status->value,
                 'status_label' => $legalEntity->status->label(),
                 'establishment_name' => $establishment?->name,
+                'agt' => $this->agtStateProps($legalEntity),
             ],
+        ];
+    }
+
+    /**
+     * Whether the AGT link is verified, for the chip in the top bar. It reads
+     * the same homologation connection the dashboard does, so the two agree.
+     *
+     * @return array{configured: bool, verified: bool}
+     */
+    private function agtStateProps(LegalEntity $legalEntity): array
+    {
+        $connection = $legalEntity->agtConnections()
+            ->where('environment', AgtEnvironment::Homologation)
+            ->first();
+
+        return [
+            'configured' => $connection !== null,
+            'verified' => $connection?->status === AgtConnectionStatus::Verified,
         ];
     }
 

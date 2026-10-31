@@ -7,6 +7,7 @@ use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
 use App\Models\FiscalDocument;
 use App\Models\LegalEntity;
+use App\Models\StockLevel;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -137,6 +138,38 @@ class DashboardQuery
             'customer_count' => count($rows),
             'totals' => $this->aging->totals($rows),
             'outstanding_minor' => array_sum(array_column($rows, 'outstanding_minor')),
+        ];
+    }
+
+    /**
+     * The tracked item that has run down the furthest below its reorder level,
+     * or null when nothing is low. One item, because the page leads with what
+     * to do next rather than with a list.
+     *
+     * @return array{name: string, quantity: int, unit: string, reorder_level: int}|null
+     */
+    public function lowStock(LegalEntity $legalEntity): ?array
+    {
+        $level = StockLevel::query()
+            ->with('catalogueItem')
+            ->where('legal_entity_id', $legalEntity->id)
+            ->whereHas('catalogueItem', fn (Builder $items) => $items
+                ->where('tracks_stock', true)
+                ->whereNotNull('reorder_level_units'))
+            ->get()
+            ->filter(fn (StockLevel $stock): bool => $stock->isBelowReorderLevel())
+            ->sortBy(fn (StockLevel $stock): float => (float) $stock->quantity_units)
+            ->first();
+
+        if (! $level instanceof StockLevel) {
+            return null;
+        }
+
+        return [
+            'name' => $level->catalogueItem->name,
+            'quantity' => $level->quantity_units,
+            'unit' => $level->catalogueItem->unit_of_measure,
+            'reorder_level' => (int) $level->catalogueItem->reorder_level_units,
         ];
     }
 

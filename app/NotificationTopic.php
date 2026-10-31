@@ -14,6 +14,7 @@ enum NotificationTopic: string
 {
     case DocumentAccepted = 'document_accepted';
     case DocumentRejected = 'document_rejected';
+    case DocumentOpened = 'document_opened';
     case InvoiceOverdue = 'invoice_overdue';
     case QuoteAccepted = 'quote_accepted';
     case QuoteExpiring = 'quote_expiring';
@@ -29,6 +30,7 @@ enum NotificationTopic: string
         return match ($this) {
             self::DocumentAccepted => 'Documentos aceites pela AGT',
             self::DocumentRejected => 'Documentos recusados pela AGT',
+            self::DocumentOpened => 'Documentos abertos pelo cliente',
             self::InvoiceOverdue => 'Facturas vencidas',
             self::QuoteAccepted => 'Orçamentos aceites',
             self::QuoteExpiring => 'Orçamentos a expirar',
@@ -46,6 +48,7 @@ enum NotificationTopic: string
         return match ($this) {
             self::DocumentAccepted => 'Quando a AGT confirma um documento comunicado.',
             self::DocumentRejected => 'Quando a AGT recusa um documento e é preciso corrigi-lo.',
+            self::DocumentOpened => 'Na primeira vez que o cliente abre o documento que lhe enviou por email.',
             self::InvoiceOverdue => 'No dia seguinte ao vencimento de uma factura por pagar.',
             self::QuoteAccepted => 'Quando um orçamento passa a aceite e pode virar factura.',
             self::QuoteExpiring => 'Três dias antes de um orçamento perder a validade.',
