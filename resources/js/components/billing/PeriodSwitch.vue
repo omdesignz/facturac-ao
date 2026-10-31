@@ -68,7 +68,7 @@ function narrowSpan(index: number): string {
                 <span>{{ option.label }}</span>
                 <span
                     v-if="option.saving !== null"
-                    class="text-[0.6875rem] leading-4 font-medium opacity-80"
+                    class="text-xs leading-4 font-medium opacity-80"
                 >
                     <span aria-hidden="true"
                         >até {{ formatSaving(option.saving) }}</span

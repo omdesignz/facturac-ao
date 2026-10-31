@@ -414,7 +414,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
             <div class="page-shell space-y-6">
                 <Link
                     :href="quotesIndex.url()"
-                    class="inline-flex items-center gap-2 rounded-lg text-sm font-medium text-zinc-600 focus-ring transition hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white"
+                    class="inline-flex items-center gap-2 rounded-lg text-sm font-medium text-zinc-600 focus-ring transition hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white pointer-coarse:min-h-11"
                 >
                     <ArrowLeft class="size-4" aria-hidden="true" />
                     Orçamentos
@@ -616,7 +616,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                 </SectionHeading>
                                 <button
                                     type="button"
-                                    class="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-700 ring-1 ring-zinc-300 focus-ring transition hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
+                                    class="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-700 ring-1 ring-zinc-300 focus-ring transition hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5 pointer-coarse:min-h-11"
                                     @click="addLine"
                                 >
                                     <Plus class="size-4" aria-hidden="true" />
@@ -634,11 +634,13 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                 >
                                     <div class="sm:col-span-12 lg:col-span-4">
                                         <label
+                                            :for="`quote-line-${index}-item`"
                                             class="block text-xs font-medium text-zinc-500 dark:text-zinc-400"
                                             >Artigo</label
                                         >
                                         <div class="mt-1.5">
                                             <SelectInput
+                                                :id="`quote-line-${index}-item`"
                                                 :model-value="
                                                     catalogueItemValue(line)
                                                 "
@@ -656,6 +658,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                             v-model="line.product_description"
                                             type="text"
                                             placeholder="Descrição"
+                                            :aria-label="`Descrição da linha ${index + 1}`"
                                             class="mt-2 form-input"
                                         />
                                         <FormError
@@ -669,10 +672,12 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
 
                                     <div class="sm:col-span-3 lg:col-span-1">
                                         <label
+                                            :for="`quote-line-${index}-quantity`"
                                             class="block text-xs font-medium text-zinc-500 dark:text-zinc-400"
                                             >Quantidade</label
                                         >
                                         <input
+                                            :id="`quote-line-${index}-quantity`"
                                             v-model="line.quantity"
                                             type="text"
                                             inputmode="decimal"
@@ -687,10 +692,12 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
 
                                     <div class="sm:col-span-3 lg:col-span-2">
                                         <label
+                                            :for="`quote-line-${index}-price`"
                                             class="block text-xs font-medium text-zinc-500 dark:text-zinc-400"
                                             >Preço</label
                                         >
                                         <input
+                                            :id="`quote-line-${index}-price`"
                                             v-model="line.unit_price"
                                             type="text"
                                             inputmode="decimal"
@@ -705,10 +712,12 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
 
                                     <div class="sm:col-span-3 lg:col-span-1">
                                         <label
+                                            :for="`quote-line-${index}-discount`"
                                             class="block text-xs font-medium text-zinc-500 dark:text-zinc-400"
                                             >Desconto %</label
                                         >
                                         <input
+                                            :id="`quote-line-${index}-discount`"
                                             v-model="line.discount_rate"
                                             type="text"
                                             inputmode="decimal"

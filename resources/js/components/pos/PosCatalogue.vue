@@ -522,7 +522,7 @@ defineExpose({ focusSearch, announce });
                 </button>
                 <span
                     v-if="quantities[item.public_id] !== undefined"
-                    class="pointer-events-none absolute -inset-e-1.5 -inset-bs-1.5 grid h-6 min-w-6 place-items-center rounded-full bg-brand-950 px-1.5 numeric text-[0.6875rem] font-semibold text-white ring-2 ring-stone-50 dark:bg-zinc-100 dark:text-brand-950 dark:ring-zinc-950"
+                    class="pointer-events-none absolute -inset-e-1.5 -inset-bs-1.5 grid h-6 min-w-6 place-items-center rounded-full bg-brand-950 px-1.5 numeric text-xs font-semibold text-white ring-2 ring-stone-50 dark:bg-zinc-100 dark:text-brand-950 dark:ring-zinc-950"
                     aria-hidden="true"
                     >{{
                         formatQuantity(quantities[item.public_id] ?? '')

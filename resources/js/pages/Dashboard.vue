@@ -529,7 +529,7 @@ const reviewStatement = computed(() => {
                 >
                     <div>
                         <p
-                            class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                            class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                         >
                             {{ dateLine }}
                         </p>
@@ -562,7 +562,7 @@ const reviewStatement = computed(() => {
                 >
                     <div class="@container min-w-0 pr-5">
                         <dt
-                            class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                            class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                         >
                             Facturado hoje
                         </dt>
@@ -602,7 +602,7 @@ const reviewStatement = computed(() => {
                         class="@container min-w-0 pr-5 max-md:hidden xl:border-l xl:border-zinc-900/10 xl:pl-5 dark:xl:border-white/10"
                     >
                         <dt
-                            class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                            class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                         >
                             Emitidos hoje
                         </dt>
@@ -630,7 +630,7 @@ const reviewStatement = computed(() => {
                         class="@container min-w-0 pr-5 max-md:hidden xl:border-l xl:border-zinc-900/10 xl:pl-5 dark:xl:border-white/10"
                     >
                         <dt
-                            class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                            class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                         >
                             Validados pela AGT
                         </dt>
@@ -673,7 +673,7 @@ const reviewStatement = computed(() => {
                             class="relative -m-2 rounded-lg p-2 hover:bg-zinc-900/[0.04] active:bg-zinc-900/[0.07] has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-brand-600 dark:hover:bg-white/[0.06] dark:active:bg-white/10 dark:has-[a:focus-visible]:outline-brand-300"
                         >
                             <dt
-                                class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                                class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                             >
                                 <Link
                                     :href="
@@ -713,7 +713,7 @@ const reviewStatement = computed(() => {
                             class="relative -m-2 rounded-lg p-2 hover:bg-zinc-900/[0.04] active:bg-zinc-900/[0.07] has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-brand-600 dark:hover:bg-white/[0.06] dark:active:bg-white/10 dark:has-[a:focus-visible]:outline-brand-300"
                         >
                             <dt
-                                class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                                class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                             >
                                 <Link
                                     :href="debtsIndex.url()"
@@ -784,7 +784,7 @@ const reviewStatement = computed(() => {
                         aria-labelledby="setup-title"
                     >
                         <p
-                            class="text-[0.6875rem] font-semibold tracking-[0.07em] text-accent-700 uppercase dark:text-accent-300"
+                            class="text-xs font-semibold tracking-[0.07em] text-accent-700 uppercase dark:text-accent-300"
                         >
                             Comece por aqui
                         </p>
@@ -922,7 +922,7 @@ const reviewStatement = computed(() => {
                                         />
                                     </span>
                                     <span
-                                        class="text-[0.6875rem] font-semibold tracking-[0.07em] text-accent-700 uppercase dark:text-accent-300"
+                                        class="text-xs font-semibold tracking-[0.07em] text-accent-700 uppercase dark:text-accent-300"
                                         >{{ focusChip }}</span
                                     >
                                 </span>
@@ -976,7 +976,7 @@ const reviewStatement = computed(() => {
                             >
                                 <div>
                                     <dt
-                                        class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                                        class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                                     >
                                         Total
                                     </dt>
@@ -1010,7 +1010,7 @@ const reviewStatement = computed(() => {
                                 </div>
                                 <div v-if="focus.outstanding_minor > 0">
                                     <dt
-                                        class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                                        class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                                     >
                                         Por receber
                                     </dt>
@@ -1052,7 +1052,7 @@ const reviewStatement = computed(() => {
                                 class="rounded-[0.875rem] bg-white px-3.5 py-2.5 shadow-[0_1px_2px_rgb(23_23_22/0.04),0_6px_16px_-8px_rgb(23_23_22/0.12)] dark:bg-zinc-900 dark:ring-1 dark:ring-white/10"
                             >
                                 <dt
-                                    class="text-[0.625rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                                    class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                                 >
                                     NIF do adquirente
                                 </dt>
@@ -1068,7 +1068,7 @@ const reviewStatement = computed(() => {
                                 class="rounded-[0.875rem] bg-white px-3.5 py-2.5 shadow-[0_1px_2px_rgb(23_23_22/0.04),0_6px_16px_-8px_rgb(23_23_22/0.12)] dark:bg-zinc-900 dark:ring-1 dark:ring-white/10"
                             >
                                 <dt
-                                    class="text-[0.625rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                                    class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                                 >
                                     Data do documento
                                 </dt>
@@ -1083,7 +1083,7 @@ const reviewStatement = computed(() => {
                                 class="rounded-[0.875rem] bg-white px-3.5 py-2.5 shadow-[0_1px_2px_rgb(23_23_22/0.04),0_6px_16px_-8px_rgb(23_23_22/0.12)] dark:bg-zinc-900 dark:ring-1 dark:ring-white/10"
                             >
                                 <dt
-                                    class="text-[0.625rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                                    class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                                 >
                                     Vencimento
                                 </dt>
@@ -1192,7 +1192,7 @@ const reviewStatement = computed(() => {
                                     }}
                                 </h2>
                                 <p
-                                    class="mt-0.5 text-[0.625rem] font-semibold tracking-[0.07em] text-accent-700 uppercase dark:text-accent-300"
+                                    class="mt-0.5 text-xs font-semibold tracking-[0.07em] text-accent-700 uppercase dark:text-accent-300"
                                 >
                                     {{
                                         review
@@ -1213,7 +1213,7 @@ const reviewStatement = computed(() => {
 
                             <template v-if="reviewCauses.length > 0">
                                 <p
-                                    class="mt-5 text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                                    class="mt-5 text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                                 >
                                     O que encontrámos
                                 </p>
@@ -1248,7 +1248,7 @@ const reviewStatement = computed(() => {
                                 </ul>
 
                                 <p
-                                    class="mt-5 text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                                    class="mt-5 text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                                 >
                                     O que fazer a seguir
                                 </p>
@@ -1300,7 +1300,7 @@ const reviewStatement = computed(() => {
                         <dl v-else class="mt-6 grid gap-4 text-sm">
                             <div>
                                 <dt
-                                    class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                                    class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                                 >
                                     Espaço
                                 </dt>
@@ -1312,7 +1312,7 @@ const reviewStatement = computed(() => {
                             </div>
                             <div>
                                 <dt
-                                    class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                                    class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                                 >
                                     Empresa
                                 </dt>
@@ -1328,7 +1328,7 @@ const reviewStatement = computed(() => {
                             </div>
                             <div>
                                 <dt
-                                    class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                                    class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                                 >
                                     NIF protegido
                                 </dt>
@@ -1498,7 +1498,7 @@ const reviewStatement = computed(() => {
                                                       )
                                                     : undefined
                                             "
-                                            class="block truncate rounded text-sm font-semibold text-zinc-950 focus-ring dark:text-white"
+                                            class="block truncate rounded py-1 text-sm font-semibold text-zinc-950 focus-ring dark:text-white pointer-coarse:py-3"
                                             >{{ customer.name }}</component
                                         >
                                         <p

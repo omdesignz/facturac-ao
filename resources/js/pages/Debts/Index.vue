@@ -246,7 +246,7 @@ const dayPill = (days: number): string =>
                 >
                     <div class="min-w-0">
                         <p
-                            class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                            class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                         >
                             Cobrar
                         </p>
@@ -258,7 +258,7 @@ const dayPill = (days: number): string =>
                     </div>
                     <div class="sm:text-right">
                         <p
-                            class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                            class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                         >
                             Por receber
                         </p>
@@ -380,7 +380,7 @@ const dayPill = (days: number): string =>
                     <section aria-labelledby="choose-title" class="min-w-0">
                         <h2
                             id="choose-title"
-                            class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                            class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                         >
                             Escolha a quem lembrar
                         </h2>
@@ -563,7 +563,7 @@ const dayPill = (days: number): string =>
                                                             '',
                                                     )
                                                 "
-                                                class="rounded text-xs font-medium text-zinc-500 underline-offset-4 focus-ring hover:text-zinc-950 hover:underline dark:text-zinc-400 dark:hover:text-white"
+                                                class="inline-flex items-center rounded text-xs font-medium text-zinc-500 underline-offset-4 focus-ring hover:text-zinc-950 hover:underline dark:text-zinc-400 dark:hover:text-white pointer-coarse:min-h-11"
                                                 >Ver cliente<span
                                                     class="sr-only"
                                                 >
@@ -578,7 +578,7 @@ const dayPill = (days: number): string =>
 
                         <template v-if="notYetDue.length > 0">
                             <h2
-                                class="mt-10 text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                                class="mt-10 text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                             >
                                 Ainda no prazo
                             </h2>
@@ -604,7 +604,7 @@ const dayPill = (days: number): string =>
                                                   )
                                                 : undefined
                                         "
-                                        class="min-w-0 truncate rounded font-medium text-zinc-950 focus-ring dark:text-white"
+                                        class="min-w-0 truncate rounded font-medium text-zinc-950 focus-ring dark:text-white pointer-coarse:py-3"
                                         :class="
                                             row.customer_public_id
                                                 ? 'underline-offset-4 hover:underline'
@@ -648,7 +648,7 @@ const dayPill = (days: number): string =>
                         aria-labelledby="prepared-title"
                     >
                         <p
-                            class="flex items-center gap-1.5 text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                            class="flex items-center gap-1.5 text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                         >
                             <Sparkles class="size-3" aria-hidden="true" />
                             Preparado para si

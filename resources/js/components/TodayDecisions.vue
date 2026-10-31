@@ -193,7 +193,7 @@ const kickerClass: Record<Decision['key'], string> = {
                     class="mt-5 rounded-2xl bg-[#f5f5f7] p-4 dark:bg-white/[0.05]"
                 >
                     <p
-                        class="flex flex-wrap items-center gap-x-1.5 text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                        class="flex flex-wrap items-center gap-x-1.5 text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                     >
                         <Sparkles class="size-3" aria-hidden="true" />
                         Lembrete preparado · {{ toneLabel(draft.tone) }}

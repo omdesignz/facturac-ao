@@ -185,12 +185,21 @@ function inspectPeriod(): void {
                         class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-[1fr_1fr_1.5fr_auto] xl:items-end"
                     >
                         <div>
-                            <label class="mb-2 field-label">Data inicial</label>
-                            <DateInput v-model="from" :clearable="false" />
+                            <label for="saft-from" class="mb-2 field-label"
+                                >Data inicial</label
+                            >
+                            <DateInput
+                                id="saft-from"
+                                v-model="from"
+                                :clearable="false"
+                            />
                         </div>
                         <div>
-                            <label class="mb-2 field-label">Data final</label>
+                            <label for="saft-to" class="mb-2 field-label"
+                                >Data final</label
+                            >
                             <DateInput
+                                id="saft-to"
                                 v-model="to"
                                 :clearable="false"
                                 :min-date="from ?? undefined"
@@ -240,7 +249,7 @@ function inspectPeriod(): void {
                             {{ card.label }}
                         </p>
                         <p
-                            class="mt-1 text-[0.6875rem] text-zinc-500 dark:text-zinc-400"
+                            class="mt-1 text-xs text-zinc-500 dark:text-zinc-400"
                         >
                             {{ card.detail }}
                         </p>

@@ -130,7 +130,7 @@ onMounted(() => {
                 class="relative flex h-full flex-col justify-between gap-10 overflow-y-auto p-10 xl:p-16"
             >
                 <p
-                    class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                    class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                 >
                     Facturação electrónica · Angola
                 </p>

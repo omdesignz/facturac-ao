@@ -423,7 +423,7 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                     <div>
                         <Link
                             :href="transportDocumentsIndex.url()"
-                            class="inline-flex items-center gap-2 rounded text-sm font-semibold text-zinc-600 focus-ring hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white"
+                            class="inline-flex items-center gap-2 rounded text-sm font-semibold text-zinc-600 focus-ring hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white pointer-coarse:min-h-11"
                         >
                             <ArrowLeft class="size-4" aria-hidden="true" />
                             Guias e transporte
@@ -566,10 +566,13 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                                     />
                                 </div>
                                 <div>
-                                    <label class="mb-2 field-label"
+                                    <label
+                                        for="guide-date"
+                                        class="mb-2 field-label"
                                         >Data de emissão</label
                                     >
                                     <DateInput
+                                        id="guide-date"
                                         v-model="form.movement_date"
                                         :disabled="readOnly"
                                         :clearable="false"
@@ -579,10 +582,13 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                                     />
                                 </div>
                                 <div>
-                                    <label class="mb-2 field-label"
+                                    <label
+                                        for="guide-start"
+                                        class="mb-2 field-label"
                                         >Início</label
                                     >
                                     <DateInput
+                                        id="guide-start"
                                         v-model="form.movement_start_at"
                                         with-time
                                         :disabled="readOnly"
@@ -597,7 +603,9 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                                 <div
                                     class="sm:col-span-2 xl:col-span-2 xl:col-start-4"
                                 >
-                                    <label class="mb-2 field-label"
+                                    <label
+                                        for="guide-end"
+                                        class="mb-2 field-label"
                                         >Fim previsto
                                         <span
                                             class="font-normal text-zinc-500 dark:text-zinc-400"
@@ -605,6 +613,7 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                                         ></label
                                     >
                                     <DateInput
+                                        id="guide-end"
                                         v-model="form.movement_end_at"
                                         with-time
                                         :disabled="readOnly"
@@ -1116,7 +1125,7 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                                     </div>
                                     <button
                                         type="button"
-                                        class="text-sm underline"
+                                        class="text-sm underline pointer-coarse:min-h-11"
                                         @click="
                                             (line.order_references ??= []).push(
                                                 {

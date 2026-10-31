@@ -54,7 +54,7 @@ function initials(name: string): string {
                 class="absolute top-[calc(100%+0.5rem)] right-0 z-50 max-h-[min(24rem,calc(100dvh-6rem))] w-64 origin-top-right overflow-y-auto overscroll-contain menu-panel p-1.5"
             >
                 <p
-                    class="px-2.5 pt-1.5 pb-2 text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                    class="px-2.5 pt-1.5 pb-2 text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                 >
                     Espaços de trabalho
                 </p>

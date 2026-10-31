@@ -343,7 +343,7 @@ defineExpose({ revealLine });
                             >
                             <span
                                 v-if="hasDiscount(line)"
-                                class="rounded-full bg-zinc-900/[0.07] px-1.5 text-[0.6875rem] font-semibold text-zinc-800 dark:bg-white/10 dark:text-zinc-200"
+                                class="rounded-full bg-zinc-900/[0.07] px-1.5 text-xs font-semibold text-zinc-800 dark:bg-white/10 dark:text-zinc-200"
                                 >−{{
                                     line.discountPercentage.replace('.', ',')
                                 }}%</span

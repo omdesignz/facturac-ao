@@ -621,7 +621,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                 >
                     <div>
                         <p
-                            class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                            class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                         >
                             Facturação · Documentos fiscais
                         </p>
@@ -685,7 +685,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                     class="absolute left-0 z-30 mt-2 w-80 max-w-[calc(100vw-2rem)] origin-top-left menu-panel p-1.5 sm:right-0 sm:left-auto sm:origin-top-right"
                                 >
                                     <p
-                                        class="px-3 pt-2 pb-2 text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-400 uppercase"
+                                        class="px-3 pt-2 pb-2 text-xs font-medium tracking-[0.07em] text-zinc-400 uppercase"
                                     >
                                         O que vai emitir?
                                     </p>
@@ -806,7 +806,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                             Filtros
                             <span
                                 v-if="advancedFilterCount > 0"
-                                class="rounded-full bg-brand-950 px-1.5 text-[0.6875rem] font-semibold text-white dark:bg-zinc-100 dark:text-brand-950"
+                                class="rounded-full bg-brand-950 px-1.5 text-xs font-semibold text-white dark:bg-zinc-100 dark:text-brand-950"
                                 >{{ advancedFilterCount }}</span
                             >
                         </button>
@@ -921,7 +921,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                     :class="{ 'mt-2': groupIndex > 0 }"
                                 >
                                     <h2
-                                        class="text-[0.6875rem] font-medium tracking-[0.07em] uppercase"
+                                        class="text-xs font-medium tracking-[0.07em] uppercase"
                                         :class="
                                             group.key === 'attention'
                                                 ? 'text-rose-600 dark:text-rose-400'
@@ -1123,7 +1123,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                         >
                             <div class="min-w-0 max-lg:pe-12">
                                 <p
-                                    class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                                    class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                                 >
                                     {{ selected.snapshot.type_label }} ·
                                     {{ selected.establishment.name }}
@@ -1241,7 +1241,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                         >
                             <div class="pe-4">
                                 <dt
-                                    class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                                    class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                                 >
                                     Total
                                 </dt>
@@ -1276,7 +1276,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                 class="border-s border-zinc-900/[0.07] px-4 dark:border-white/10"
                             >
                                 <dt
-                                    class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                                    class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                                 >
                                     IVA
                                 </dt>
@@ -1305,7 +1305,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                 class="pe-4 lg:border-s lg:border-zinc-900/[0.07] lg:ps-4 dark:lg:border-white/10"
                             >
                                 <dt
-                                    class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                                    class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                                 >
                                     {{
                                         selected.snapshot.outstanding_minor > 0
@@ -1353,7 +1353,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                 class="col-span-full flex items-center justify-between gap-x-4 gap-y-2 border-t border-zinc-900/[0.07] pt-5 dark:border-white/10"
                             >
                                 <dt
-                                    class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                                    class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                                 >
                                     AGT
                                 </dt>
@@ -1432,7 +1432,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                         <div class="mt-6">
                             <div class="flex items-center justify-between">
                                 <h3
-                                    class="text-[0.6875rem] font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                                    class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                                 >
                                     Histórico
                                 </h3>

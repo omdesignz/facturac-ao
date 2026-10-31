@@ -34,7 +34,7 @@ function isActive(href: string): boolean {
 
 function tabClass(href: string): string {
     return [
-        'flex flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl text-[0.6875rem] font-semibold focus-ring',
+        'flex flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl text-xs font-semibold focus-ring',
         isActive(href)
             ? 'text-zinc-950 dark:text-white'
             : 'text-zinc-500 dark:text-zinc-400',
@@ -99,7 +99,7 @@ function tabClass(href: string): string {
                 <button
                     type="button"
                     aria-haspopup="dialog"
-                    class="flex flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl text-[0.6875rem] font-semibold text-zinc-500 focus-ring dark:text-zinc-400"
+                    class="flex flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl text-xs font-semibold text-zinc-500 focus-ring dark:text-zinc-400"
                     @click="$emit('more')"
                 >
                     <Ellipsis

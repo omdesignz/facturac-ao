@@ -69,7 +69,7 @@ onMounted(() => {
             class="flex items-center gap-2.5 rounded-full p-1 text-left focus-ring transition hover:bg-zinc-900/[0.05] lg:pr-3 dark:hover:bg-white/10"
         >
             <span
-                class="grid size-8 place-items-center rounded-full bg-brand-950 text-[0.6875rem] font-semibold tracking-[0.02em] text-white dark:bg-zinc-100 dark:text-brand-950"
+                class="grid size-8 place-items-center rounded-full bg-brand-950 text-xs font-semibold tracking-[0.02em] text-white dark:bg-zinc-100 dark:text-brand-950"
                 aria-hidden="true"
                 >{{ userInitials }}</span
             >

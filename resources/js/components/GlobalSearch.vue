@@ -135,7 +135,7 @@ function wholeAmount(
 
 /** The key-cap recipe of the header's shortcut hint, reused wherever a key is named. */
 const keyCap =
-    'grid h-5 min-w-5 place-items-center rounded-md bg-white px-1.5 font-sans text-[0.6875rem] leading-none font-medium text-zinc-500 shadow-[0_0_0_1px_rgb(23_23_22/0.08)] dark:bg-white/10 dark:text-zinc-300 dark:shadow-none';
+    'grid h-5 min-w-5 place-items-center rounded-md bg-white px-1.5 font-sans text-xs leading-none font-medium text-zinc-500 shadow-[0_0_0_1px_rgb(23_23_22/0.08)] dark:bg-white/10 dark:text-zinc-300 dark:shadow-none';
 
 function shortDate(isoDate: string): string {
     return new Intl.DateTimeFormat('pt-AO', {
@@ -475,7 +475,7 @@ onBeforeUnmount(() => {
                 <kbd
                     v-for="key in shortcutKeys"
                     :key="key"
-                    class="grid h-5 min-w-5 place-items-center rounded-md bg-white px-1.5 font-sans text-[0.6875rem] leading-none font-medium text-zinc-500 shadow-[0_0_0_1px_rgb(23_23_22/0.08)] dark:bg-white/10 dark:text-zinc-300 dark:shadow-none"
+                    class="grid h-5 min-w-5 place-items-center rounded-md bg-white px-1.5 font-sans text-xs leading-none font-medium text-zinc-500 shadow-[0_0_0_1px_rgb(23_23_22/0.08)] dark:bg-white/10 dark:text-zinc-300 dark:shadow-none"
                     >{{ key }}</kbd
                 >
             </span>
