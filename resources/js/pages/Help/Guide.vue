@@ -314,7 +314,7 @@ function openChapter(id: string | null): void {
                                     v-for="task in popular"
                                     :key="task.chapter"
                                     :href="chapterUrl(task.chapter)"
-                                    class="rounded-full bg-zinc-900/[0.04] px-3 py-1.5 text-sm text-zinc-700 focus-ring transition hover:bg-zinc-900/[0.08] hover:text-zinc-950 dark:bg-white/[0.06] dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-white"
+                                    class="inline-flex items-center rounded-full bg-zinc-900/[0.04] px-3 py-1.5 text-sm text-zinc-700 focus-ring transition hover:bg-zinc-900/[0.08] hover:text-zinc-950 dark:bg-white/[0.06] dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-white pointer-coarse:min-h-11"
                                     @click.prevent="openChapter(task.chapter)"
                                     >{{ task.label }}</Link
                                 >
