@@ -2,10 +2,12 @@
 import { Link } from '@inertiajs/vue3';
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 import AccountMenu from '@/components/AccountMenu.vue';
+import AppTopNav from '@/components/AppTopNav.vue';
 import BrandWordmark from '@/components/BrandWordmark.vue';
 import GlobalSearch from '@/components/GlobalSearch.vue';
 import NotificationsMenu from '@/components/NotificationsMenu.vue';
 import WorkSessionTimer from '@/components/WorkSessionTimer.vue';
+import WorkspaceSwitcher from '@/components/WorkspaceSwitcher.vue';
 import { dashboard } from '@/routes';
 
 /**
@@ -39,7 +41,7 @@ onBeforeUnmount(() => {
     >
         <Link
             :href="dashboard.url()"
-            class="-ml-1 flex min-h-11 items-center rounded-lg focus-ring lg:hidden"
+            class="-ml-1 flex min-h-11 shrink-0 items-center rounded-lg focus-ring lg:mr-4"
         >
             <BrandWordmark
                 class="h-[1.25rem] w-auto text-brand-950 dark:text-stone-50"
@@ -48,9 +50,12 @@ onBeforeUnmount(() => {
             <span class="sr-only">facturac.ao, ir para Hoje</span>
         </Link>
 
-        <GlobalSearch />
+        <AppTopNav />
+
+        <GlobalSearch class="lg:ml-3 lg:justify-end" />
 
         <div class="flex shrink-0 items-center gap-1 sm:gap-2">
+            <WorkspaceSwitcher />
             <WorkSessionTimer />
             <NotificationsMenu />
             <AccountMenu />

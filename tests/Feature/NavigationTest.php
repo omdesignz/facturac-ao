@@ -2,7 +2,7 @@
 
 /**
  * Every page the old sidebar linked to, by its route helper. Grouping the
- * navigation into a rail must never make one of them unreachable.
+ * navigation into five words must never make one of them unreachable.
  */
 dataset('navigable pages', [
     'dashboard' => 'dashboard.url()',
@@ -41,8 +41,8 @@ test('every page stays reachable from the navigation', function (string $href) {
     expect($navigation)->toContain("href: {$href}");
 })->with('navigable pages');
 
-test('the rail and the mobile menu read the same navigation', function () {
-    foreach (['AppRail.vue', 'SidebarNavigation.vue'] as $component) {
+test('the top bar and the mobile menu read the same navigation', function () {
+    foreach (['AppTopNav.vue', 'SidebarNavigation.vue'] as $component) {
         expect((string) file_get_contents(resource_path("js/components/{$component}")))
             ->toContain("import { useNavigation } from '@/lib/navigation';");
     }

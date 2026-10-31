@@ -10,7 +10,7 @@ import { update as switchWorkspace } from '@/routes/workspace/current';
 
 /**
  * The full navigation, used where there is room for words: the menu that
- * slides in on phones and tablets. Desktop uses AppRail; both read the same
+ * slides in on phones and tablets. Desktop uses AppTopNav; both read the same
  * groups from lib/navigation, so a page can never be in one and not the other.
  */
 defineEmits<{

@@ -21,7 +21,6 @@ import {
     watch,
 } from 'vue';
 import AppHeader from '@/components/AppHeader.vue';
-import AppRail from '@/components/AppRail.vue';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import CookieConsent from '@/components/CookieConsent.vue';
 import ImpersonationBanner from '@/components/ImpersonationBanner.vue';
@@ -161,14 +160,8 @@ onBeforeUnmount(() => stopListening?.());
             </Dialog>
         </TransitionRoot>
 
-        <div
-            class="hidden lg:fixed lg:inset-bs-[var(--impersonation-bar,0px)] lg:inset-be-0 lg:z-50 lg:flex lg:w-[4.5rem] lg:flex-col"
-        >
-            <AppRail />
-        </div>
-
         <MobileTabBar @more="sidebarOpen = true" />
-        <div class="lg:pl-[4.5rem]">
+        <div>
             <AppHeader />
 
             <TermsReacceptanceNotice />

@@ -52,6 +52,9 @@ jobs:
       - name: Phone tab bar gate
         run: node --test tests/mobile-tab-bar.test.mjs
 
+      - name: Top navigation gate
+        run: node --test tests/top-navigation.test.mjs
+
       - name: Run CI Checks
         run: composer ci:check
 

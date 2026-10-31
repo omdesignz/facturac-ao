@@ -149,7 +149,7 @@ test('the top bar is one quiet row of shared menus', function () {
         ->and($header)->toContain('<NotificationsMenu />')
         ->toContain('<AccountMenu />');
 
-    foreach (['NotificationsMenu.vue', 'AccountMenu.vue', 'AppRail.vue'] as $component) {
+    foreach (['NotificationsMenu.vue', 'AccountMenu.vue', 'AppTopNav.vue', 'WorkspaceSwitcher.vue'] as $component) {
         expect((string) file_get_contents(resource_path("js/components/{$component}")))
             ->toContain('menu-panel');
     }
@@ -304,6 +304,27 @@ test('the phone gets a tab bar of four words and one gold action, and a header t
         ->toContain('Mais')
         ->toContain('bg-accent-400')
         ->toContain('isFocusedPath')
-        ->and($header)->toContain('lg:hidden')
+        ->and($header)->toContain('BrandWordmark')
         ->not->toContain('Abrir navegação');
+});
+
+test('the desktop navigation is five words along the top, and a company chip', function () {
+    $nav = (string) file_get_contents(resource_path('js/components/AppTopNav.vue'));
+    $map = (string) file_get_contents(resource_path('js/lib/top-navigation.ts'));
+    $header = (string) file_get_contents(resource_path('js/components/AppHeader.vue'));
+    $layout = (string) file_get_contents(resource_path('js/layouts/AppLayout.vue'));
+
+    foreach (['Hoje', 'Vender', 'Cobrar', 'Registos', 'Fiscal', 'Mais'] as $word) {
+        expect($map)->toContain("{$word}'");
+    }
+
+    expect($nav)->toContain('hidden items-center')
+        ->toContain('aria-current')
+        ->toContain('Nova factura')
+        ->and($header)->toContain('<AppTopNav />')
+        ->toContain('<WorkspaceSwitcher />')
+        ->and($layout)->not->toContain('AppRail')
+        ->not->toContain('lg:pl-[4.5rem]');
+
+    expect(file_exists(resource_path('js/components/AppRail.vue')))->toBeFalse();
 });
