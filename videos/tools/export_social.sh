@@ -20,7 +20,7 @@ common=(-pix_fmt yuv420p -color_primaries bt709 -color_trc bt709 -colorspace bt7
 ffmpeg -v error -y -i "$master" \
   -c:v libx264 -preset slow -tune animation -profile:v high -level 4.1 \
   -crf 16 -maxrate 14M -bufsize 28M -g 60 -bf 2 "${common[@]}" \
-  -c:a aac -b:a 192k -ar 48000 -ac 2 \
+  -af "loudnorm=I=-15:TP=-1.5:LRA=11" -c:a aac -b:a 192k -ar 48000 -ac 2 \
   "$out/$name-instagram.mp4"
 
 # WhatsApp status: pre-scaled to its own target, scaled well, sharpened a little.
@@ -28,7 +28,7 @@ ffmpeg -v error -y -i "$master" \
   -vf "scale=720:1280:flags=lanczos+accurate_rnd+full_chroma_int,unsharp=5:5:0.35:3:3:0.0" \
   -c:v libx264 -preset slow -tune animation -profile:v main -level 3.1 \
   -b:v 3500k -maxrate 4200k -bufsize 7000k -g 60 -bf 2 "${common[@]}" \
-  -c:a aac -b:a 128k -ar 44100 -ac 2 \
+  -af "loudnorm=I=-15:TP=-1.5:LRA=11" -c:a aac -b:a 128k -ar 44100 -ac 2 \
   "$out/$name-whatsapp.mp4"
 
 for f in "$out/$name-instagram.mp4" "$out/$name-whatsapp.mp4"; do

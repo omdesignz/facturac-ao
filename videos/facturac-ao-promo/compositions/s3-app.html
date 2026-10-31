@@ -1,0 +1,85 @@
+<template>
+  <style>
+    @font-face { font-family: "Hanken Grotesk"; font-weight: 700; font-style: normal; font-display: block;
+      src: url("assets/fonts/HankenGrotesk-700.woff2") format("woff2"); }
+    #root { position: absolute; inset: 0; width: 1080px; height: 1920px; overflow: hidden;
+      font-family: "Hanken Grotesk", sans-serif; font-weight: 700; color: #171716; background: #ffffff; }
+    .abs { position: absolute; }
+    .t { position: absolute; white-space: pre; line-height: 1; letter-spacing: -0.035em; }
+    .mask { position: absolute; overflow: hidden; }
+    .mask > .t { left: 0; }
+
+    #phone { position: absolute; left: 205px; top: 360px; width: 670px; height: 1394px; border-radius: 112px; background: #c9c5bb;
+      box-shadow: 0 30px 60px rgba(23,23,22,0.18); }
+    #phone .rim { position: absolute; inset: 3px; border-radius: 109px; background: #a9a69c; }
+    #phone .bz { position: absolute; inset: 12px; border-radius: 100px; background: #0b0b0c; }
+    #screen { position: absolute; left: 25px; top: 25px; width: 620px; height: 1344px; border-radius: 87px; overflow: hidden; background: #fff; }
+    #screen img { position: absolute; left: 0; top: 85px; display: block; }
+    #status { position: absolute; left: 0; top: 0; width: 620px; height: 85px; background: #fff; z-index: 3; }
+    #status .time { position: absolute; left: 62px; top: 22px; font-size: 31px; line-height: 1; letter-spacing: 0; color: #000; }
+    #island { position: absolute; left: 212px; top: 17px; width: 196px; height: 58px; border-radius: 29px; background: #000; z-index: 4; }
+    #home { position: absolute; left: 204px; top: 1322px; width: 211px; height: 8px; border-radius: 4px; background: #111; z-index: 4; }
+    .btnside { position: absolute; background: #b3afa5; border-radius: 3px; }
+    #tap { position: absolute; left: 485px; top: 1146px; width: 110px; height: 110px; border-radius: 55px; border: 9px solid #171716; opacity: 0; z-index: 8; }
+    #flood { position: absolute; left: 510px; top: 1171px; width: 60px; height: 60px; border-radius: 30px; background: #f9b233; opacity: 0; z-index: 9; }
+    #dot3 { position: absolute; left: 518.1px; top: 1178.2px; width: 43.7px; height: 43.7px; border-radius: 50%; background: #f9b233; z-index: 7; }
+
+  </style>
+  <div id="root" data-composition-id="s3-app" data-width="1080" data-height="1920">
+    <div class="abs" id="wipe" style="inset:0; background:#ffffff"></div>
+    <div class="mask" style="left:80px; top:178px; width:920px; height:140px"><div class="t h1" data-layout-allow-overflow style="top:16px; font-size:104px; color:#171716">Veja quem deve.</div></div>
+    <div class="mask" style="left:80px; top:178px; width:920px; height:140px"><div class="t h2" data-layout-allow-overflow style="top:16px; font-size:104px; color:#171716">Já está escrito.</div></div>
+    <div class="mask" style="left:80px; top:178px; width:920px; height:140px"><div class="t h3" data-layout-allow-overflow style="top:16px; font-size:104px; color:#171716">Reveja o texto.</div></div>
+    <div class="mask" style="left:80px; top:178px; width:920px; height:140px"><div class="t h4" data-layout-allow-overflow style="top:16px; font-size:104px; color:#171716">Envie.</div></div>
+    <div class="mask" style="left:80px; top:178px; width:920px; height:140px"><div class="t h5" data-layout-allow-overflow style="top:16px; font-size:104px; color:#171716">Enviado.</div></div>
+    <div id="phone" data-layout-allow-overflow>
+      <div class="rim"></div><div class="bz"></div>
+      <div class="btnside" style="left:-4px; top:210px; width:4px; height:46px"></div>
+      <div class="btnside" style="left:-4px; top:300px; width:4px; height:86px"></div>
+      <div class="btnside" style="left:-4px; top:400px; width:4px; height:86px"></div>
+      <div class="btnside" style="right:-4px; top:340px; width:4px; height:130px"></div>
+      <div id="screen">
+        <img data-layout-allow-overflow id="before" src="assets/ui/cobrar-full.png" style="width:623.2px" />
+        <img data-layout-allow-overflow id="after" src="assets/ui/cobrar-sent-full.png" style="width:620px; opacity:0" />
+        <div id="status"><div class="time">9:41</div>
+          <svg class="abs" style="right:52px; top:26px" width="150" height="34" viewBox="0 0 150 34"><rect x="0" y="22" width="7" height="10" rx="2" fill="#000"/><rect x="11" y="16" width="7" height="16" rx="2" fill="#000"/><rect x="22" y="9" width="7" height="23" rx="2" fill="#000"/><rect x="33" y="2" width="7" height="30" rx="2" fill="#000"/><path d="M54 14 a22 22 0 0 1 34 0 M60 21 a14 14 0 0 1 22 0" fill="none" stroke="#000" stroke-width="4.5" stroke-linecap="round"/><circle cx="71" cy="27" r="3.2" fill="#000"/><rect x="100" y="5" width="44" height="24" rx="7" fill="none" stroke="#000" stroke-opacity=".4" stroke-width="2.4"/><rect x="103" y="8" width="34" height="18" rx="4.5" fill="#000"/><rect x="146" y="12" width="3" height="10" rx="1.5" fill="#000" fill-opacity=".4"/></svg>
+        </div>
+        <div id="island"></div><div id="home"></div>
+      </div>
+    </div>
+    <div id="tap"></div>
+    <div id="dot3"></div>
+    <div id="flood" data-layout-allow-overflow></div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+
+      tl.set("#before", { y: 0.0 }, 0);
+      tl.set("#after", { y: -2455.3 }, 0);
+      tl.fromTo("#wipe", { x: 1080 }, { x: 0, duration: 0.27, ease: "power4.inOut" }, 0);
+      tl.fromTo("#phone", { y: 1500 }, { y: 0, duration: 0.85, ease: "power3.out" }, 0.15);
+      // the dot finds the gold segment of the share bar and becomes it
+      tl.to("#dot3", { x: 210, y: -270, duration: 0.55, ease: "power2.inOut" }, 0.75);
+      tl.to("#dot3", { scaleX: 3.32, scaleY: 0.57, duration: 0.22, ease: "power2.out" }, 1.3);
+      tl.set("#dot3", { opacity: 0 }, 1.55);
+      // four verbs, one per bar
+      const rise = (sel, at, out) => { tl.fromTo(sel, { y: 150, opacity: 0 }, { y: 0, opacity: 1, duration: 0.3, ease: "power3.out" }, at); if (out) tl.to(sel, { y: -150, opacity: 0, duration: 0.25, ease: "power3.in" }, out); };
+      rise(".h1", 1.9, 3.62); rise(".h2", 3.81, 5.52); rise(".h3", 5.71, 7.42); rise(".h4", 7.61, 8.4); rise(".h5", 8.57, null);
+      tl.to("#before", { y: -657.3, duration: 0.5, ease: "power3.inOut" }, 1.9);
+      tl.to("#before", { y: -1577.6, duration: 0.55, ease: "power3.inOut" }, 3.81);
+      tl.to("#before", { y: -2676.1, duration: 0.55, ease: "power3.inOut" }, 5.71);
+      // the tap
+      tl.fromTo("#tap", { x: 560, y: 120, opacity: 0, scale: 1.6 }, { x: 0, y: 0, opacity: 1, scale: 1, duration: 0.5, ease: "power2.out" }, 7.45);
+      tl.to("#tap", { scale: 0.8, duration: 0.1, ease: "power2.in" }, 8.1);
+      tl.set("#before", { opacity: 0 }, 8.14);
+      tl.set("#after", { opacity: 1 }, 8.14);
+      tl.to("#tap", { opacity: 0, scale: 1.2, duration: 0.25, ease: "power2.out" }, 8.2);
+      // the button's dot floods the frame
+      tl.set("#flood", { opacity: 1 }, 10.35);
+      tl.to("#flood", { scale: 70, duration: 1.05, ease: "power2.in" }, 10.35);
+
+      window.__timelines["s3-app"] = tl;
+    })();
+  </script>
+</template>

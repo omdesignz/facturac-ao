@@ -1,0 +1,51 @@
+<template>
+  <style>
+    @font-face { font-family: "Hanken Grotesk"; font-weight: 700; font-style: normal; font-display: block;
+      src: url("assets/fonts/HankenGrotesk-700.woff2") format("woff2"); }
+    #root { position: absolute; inset: 0; width: 1080px; height: 1920px; overflow: hidden;
+      font-family: "Hanken Grotesk", sans-serif; font-weight: 700; color: #171716; background: #ffffff; }
+    .abs { position: absolute; }
+    .t { position: absolute; white-space: pre; line-height: 1; letter-spacing: -0.035em; }
+    .mask { position: absolute; overflow: hidden; }
+    .mask > .t { left: 0; }
+
+  </style>
+  <div id="root" data-composition-id="s1-til" data-width="1080" data-height="1920">
+    <div class="abs aword" style="left:79.1px; top:610.4px; width:922px; height:200px">
+      <span class="t ag1" style="left:0.0px; top:0; font-size:200px; color:#171716">f</span>
+      <span class="t ag1" style="left:62.6px; top:0; font-size:200px; color:#171716">a</span>
+      <span class="t ag1" style="left:164.8px; top:0; font-size:200px; color:#171716">c</span>
+      <span class="t ag1" style="left:262.2px; top:0; font-size:200px; color:#171716">t</span>
+      <span class="t ag1" style="left:328.6px; top:0; font-size:200px; color:#171716">u</span>
+      <span class="t ag1" style="left:434.4px; top:0; font-size:200px; color:#171716">r</span>
+      <span class="t ag1" style="left:512.6px; top:0; font-size:200px; color:#171716">a</span>
+      <span class="t ag1" style="left:614.8px; top:0; font-size:200px; color:#171716">c</span>
+      <span class="t ag2" style="left:712.2px; top:0; font-size:200px; color:#171716">a</span>
+      <span class="t ag2" style="left:814.4px; top:0; font-size:200px; color:#171716">o</span>
+      <svg class="abs atilde" style="left:732.8px; top:35.6px" width="68.0" height="28.0" viewBox="0 0 36 14"><path d="M3 9 C 8 1, 14 1, 18 6 S 28 11, 33 3" fill="none" stroke="#171716" stroke-width="5.2" stroke-linecap="round"/></svg>
+      <svg class="abs aced" style="left:660.0px; top:167.6px" width="18.0" height="34.0" viewBox="0 0 9 17"><path d="M3 1 V 6 C 3 11, 8 11, 8 14 C 8 16, 4 16.5, 1.5 15.5" fill="none" stroke="#171716" stroke-width="2.6" stroke-linecap="round"/></svg>
+      <div class="abs adot" style="left:693.2px; top:131.6px; width:38.0px; height:38.0px; border-radius:50%; background:#f9b233"></div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+
+      tl.set(".adot", { y: -287.6 }, 0);
+      tl.from(".ag1, .ag2", { y: 0, duration: 0.001 }, 0);
+      // the til lifts off the a and leaves the frame
+      tl.to(".atilde", { y: -32.0, rotation: -14, transformOrigin: "50% 50%", duration: 0.12, ease: "power2.out" }, 0.40);
+      tl.to(".atilde", { x: 560, y: -900, rotation: 380, opacity: 0, duration: 0.55, ease: "power2.in" }, 0.52);
+      // the cedilla falls out of the bottom
+      tl.to(".aced", { y: 1250, rotation: 35, transformOrigin: "50% 20%", duration: 0.7, ease: "power2.in" }, 0.85);
+      // the word opens a gap
+      tl.to(".ag1", { x: -34.0, duration: 0.32, ease: "power3.inOut" }, 1.28);
+      tl.to(".ag2", { x: 34.0, duration: 0.32, ease: "power3.inOut" }, 1.28);
+      tl.to(".adot", { y: 0, duration: 0.3, ease: "power2.in" }, 1.50);
+      tl.to(".adot", { scaleX: 1.45, scaleY: 0.62, transformOrigin: "50% 100%", duration: 0.05, ease: "power2.out" }, 1.80);
+      tl.to(".adot", { scaleX: 1, scaleY: 1, duration: 0.3, ease: "back.out(2.6)" }, 1.85);
+
+      window.__timelines["s1-til"] = tl;
+    })();
+  </script>
+</template>

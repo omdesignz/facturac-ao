@@ -1,0 +1,36 @@
+<template>
+  <style>
+    @font-face { font-family: "Hanken Grotesk"; font-weight: 700; font-style: normal; font-display: block;
+      src: url("assets/fonts/HankenGrotesk-700.woff2") format("woff2"); }
+    #root { position: absolute; inset: 0; width: 1080px; height: 1920px; overflow: hidden;
+      font-family: "Hanken Grotesk", sans-serif; font-weight: 700; color: #171716; background: #f9b233; }
+    .abs { position: absolute; }
+    .t { position: absolute; white-space: pre; line-height: 1; letter-spacing: -0.035em; }
+    .mask { position: absolute; overflow: hidden; }
+    .mask > .t { left: 0; }
+
+    .sh { stroke-dasharray: 520; stroke-dashoffset: 520; }
+
+  </style>
+  <div id="root" data-composition-id="s4-certificada" data-width="1080" data-height="1920">
+    <svg class="abs" style="left:80px; top:400px" width="250" height="250" viewBox="0 0 24 24" fill="none" stroke="#171716" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path class="sh" d="M12 2.5l7.5 2.8v6.2c0 4.6-3.1 8.3-7.5 10-4.4-1.7-7.5-5.4-7.5-10V5.3z"/><path class="sh" d="M8.5 12.2l2.5 2.5 4.6-4.9"/></svg>
+    <div class="mask" style="left:80px; top:640px; width:940px; height:210px"><div class="t" data-layout-allow-overflow id="c1" style="top:14px; font-size:180px">Certificada</div></div>
+    <div class="mask" style="left:80px; top:810px; width:940px; height:210px"><div class="t" data-layout-allow-overflow id="c2" style="top:14px; font-size:180px">pela AGT<span style="display:inline-block; width:34px; height:34px; border-radius:50%; background:#171716; margin-left:7px"></span></div></div>
+    <div class="mask" style="left:80px; top:1030px; width:940px; height:90px"><div class="t" data-layout-allow-overflow id="c3" style="top:10px; font-size:64px">Certificado n.º</div></div>
+    <div class="mask" style="left:80px; top:1110px; width:940px; height:110px"><div class="t" data-layout-allow-overflow id="c4" style="top:10px; font-size:84px">FE/419/AGT/2026</div></div>
+
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+
+      tl.to(".sh", { strokeDashoffset: 0, duration: 0.7, ease: "power2.out", stagger: 0.2 }, 0.2);
+      tl.fromTo("#c1", { y: 220, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: "power3.out" }, 0.4);
+      tl.fromTo("#c2", { y: 220, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: "power3.out" }, 0.55);
+      tl.fromTo("#c3", { y: 220, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: "power3.out" }, 1.05);
+      tl.fromTo("#c4", { y: 220, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: "power3.out" }, 1.2);
+
+      window.__timelines["s4-certificada"] = tl;
+    })();
+  </script>
+</template>

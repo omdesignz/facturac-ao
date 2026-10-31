@@ -567,7 +567,6 @@ const included: { group: string; items: string[] }[] = [
  */
 const certification = {
     number: 'FE/419/AGT/2026',
-    issuedOn: '28 de outubro de 2026',
     version: '1.1.0',
 };
 
@@ -1131,8 +1130,7 @@ const questions: { question: string; answer: string }[] = [
                                 class="numeric font-semibold text-brand-950 dark:text-white"
                                 >{{ certification.number }}</span
                             >
-                            · emitido a {{ certification.issuedOn }} ·
-                            facturac.ao, versão {{ certification.version }}.
+                            · facturac.ao, versão {{ certification.version }}.
                         </p>
                     </div>
                 </div>

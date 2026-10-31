@@ -1,0 +1,9 @@
+.hyperframes/
+.waveform-cache/
+.thumbnails/
+# regenerate with: python3 tools/mix_voice.py c
+assets/**/*.wav
+renders/*
+!renders/social/
+renders/social/*
+!renders/social/promo-c-*.mp4

@@ -21,6 +21,10 @@
             ],
             "port": 5173,
             "url": "https://vap-invoice.test"
+        },
+        {
+            "name": "site",
+            "url": "https://vap-invoice.test"
         }
     ]
 }

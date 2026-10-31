@@ -1826,3 +1826,15 @@ summary:focus-visible {
     outline: 2px solid var(--color-accent-500);
     outline-offset: 3px;
 }
+
+/*
+ * On a touch screen a link inside a sentence is a thumb-sized target too. Padding
+ * an inline box grows its hit area without moving a single line of text, so the
+ * reading rhythm stays exactly as it was.
+ */
+@media (pointer: coarse) {
+    :where(main p, main li, main dd, main dt, footer p, footer li)
+        a:not([class*='flex']):not([class*='block']):not(.sr-only) {
+        padding-block: 0.7em;
+    }
+}
