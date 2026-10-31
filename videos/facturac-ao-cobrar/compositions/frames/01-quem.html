@@ -1,0 +1,43 @@
+<template>
+  <style>
+    @font-face { font-family: "Hanken Grotesk"; font-weight: 600; font-style: normal; font-display: block;
+      src: url("assets/fonts/HankenGrotesk-600.woff2") format("woff2"); }
+    @font-face { font-family: "Hanken Grotesk"; font-weight: 700; font-style: normal; font-display: block;
+      src: url("assets/fonts/HankenGrotesk-700.woff2") format("woff2"); }
+    #root { position: absolute; inset: 0; width: 1080px; height: 1920px; overflow: hidden;
+      font-family: "Hanken Grotesk", sans-serif; color: #171716; background: #ffffff; }
+    .f01-h { position: absolute; left: 80px; right: 80px; font-weight: 700; letter-spacing: -0.035em; }
+    .dot { display: inline-block; width: 0.17em; height: 0.17em; border-radius: 50%; background: #f9b233; margin-left: 0.04em; }
+    .hl { background: #f9b233; padding: 0 0.16em 0.04em; border-radius: 0.18em; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+
+    .f01-h { font-size: 200px; line-height: 1.1; height: 220px; }
+    .f01-pill { position: absolute; left: 80px; height: 118px; padding: 0 44px; border-radius: 59px; background: #171716; color: #fff;
+      display: flex; align-items: center; gap: 26px; font-weight: 600; font-size: 52px; white-space: nowrap; }
+    .f01-pill b { color: #f9b233; font-weight: 700; }
+    .f01-mark { position: absolute; left: 80px; top: 96px; width: 330px; }
+
+  </style>
+  <div id="root" data-composition-id="01-quem" data-width="1080" data-height="1920">
+    <img class="f01-mark" id="f01-mark" src="assets/facturac-ao.svg" />
+    <div class="f01-h" id="f01-a" style="top: 330px">Quem lhe</div>
+    <div class="f01-h" id="f01-b" style="top: 575px">deve</div>
+    <div class="f01-h" id="f01-c" style="top: 820px">dinheiro?</div>
+    <div class="f01-pill" id="f01-p1" style="top: 1180px">Mavinga &amp; Filhos <b>378 000 Kz</b></div>
+    <div class="f01-pill" id="f01-p2" style="top: 1320px">Coop. Kizomba <b>131 100 Kz</b></div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+
+      tl.set({}, {}, 3.0);
+      tl.fromTo("#f01-mark", { opacity: 0, y: -20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 0.1);
+      ["#f01-a", "#f01-b", "#f01-c"].forEach((s, i) => {
+        tl.fromTo(s, { y: 120, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "back.out(2)" }, 0.25 + i * 0.22);
+      });
+      tl.fromTo("#f01-p1", { x: -160, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: "back.out(1.6)" }, 1.5);
+      tl.fromTo("#f01-p2", { x: -160, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: "back.out(1.6)" }, 1.85);
+
+      window.__timelines["01-quem"] = tl;
+    })();
+  </script>
+</template>

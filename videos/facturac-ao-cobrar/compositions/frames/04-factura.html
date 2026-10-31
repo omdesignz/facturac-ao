@@ -1,0 +1,67 @@
+<template>
+  <style>
+    @font-face { font-family: "Hanken Grotesk"; font-weight: 600; font-style: normal; font-display: block;
+      src: url("assets/fonts/HankenGrotesk-600.woff2") format("woff2"); }
+    @font-face { font-family: "Hanken Grotesk"; font-weight: 700; font-style: normal; font-display: block;
+      src: url("assets/fonts/HankenGrotesk-700.woff2") format("woff2"); }
+    #root { position: absolute; inset: 0; width: 1080px; height: 1920px; overflow: hidden;
+      font-family: "Hanken Grotesk", sans-serif; color: #171716; background: #ffffff; }
+    .f04-h { position: absolute; left: 80px; right: 80px; font-weight: 700; letter-spacing: -0.035em; }
+    .dot { display: inline-block; width: 0.17em; height: 0.17em; border-radius: 50%; background: #f9b233; margin-left: 0.04em; }
+    .hl { background: #f9b233; padding: 0 0.16em 0.04em; border-radius: 0.18em; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+
+    .f04-h { font-size: 124px; line-height: 1.14; top: 250px; }
+    .f04-card { position: absolute; left: 80px; top: 640px; width: 920px; height: 700px; border-radius: 64px; background: #f5f5f7; }
+    .f04-k { position: absolute; left: 56px; top: 50px; font-weight: 600; font-size: 40px; letter-spacing: 0.08em; text-transform: uppercase; color: #57534e; }
+    .f04-no { position: absolute; left: 56px; top: 108px; font-weight: 700; font-size: 58px; letter-spacing: -0.01em; }
+    .f04-cl { position: absolute; left: 56px; top: 190px; font-weight: 600; font-size: 52px; color: #57534e; }
+    .f04-tot { position: absolute; left: 56px; top: 270px; font-weight: 700; font-size: 132px; letter-spacing: -0.04em; }
+    .f04-tot small { font-size: 64px; font-weight: 600; color: #57534e; letter-spacing: 0; margin-left: 14px; }
+    .f04-rail { position: absolute; left: 90px; width: 740px; top: 520px; height: 14px; border-radius: 7px; background: #d6d3d1; }
+    .f04-fill { position: absolute; left: 0; top: 0; height: 14px; border-radius: 7px; background: #171716; width: 0; }
+    .f04-node { position: absolute; top: 507px; width: 40px; height: 40px; border-radius: 20px; background: #d6d3d1; }
+    .f04-lab { position: absolute; top: 580px; font-weight: 600; font-size: 44px; color: #57534e; width: 200px; text-align: center; }
+    .f04-ok { position: absolute; left: 80px; top: 1400px; height: 112px; padding: 0 48px; border-radius: 56px; background: #bef264; color: #1a2e05;
+      display: flex; align-items: center; gap: 22px; font-weight: 700; font-size: 54px; white-space: nowrap; }
+
+  </style>
+  <div id="root" data-composition-id="04-factura" data-width="1080" data-height="1920">
+    <div class="f04-h f01-h" id="f04-h">E para facturar?<br/><span class="hl">Em segundos</span><span class="dot"></span></div>
+    <div class="f04-card" id="f04-card">
+      <div class="f04-k">Factura-recibo</div>
+      <div class="f04-no">FR LOJA2026/00184</div>
+      <div class="f04-cl">Mercearia Kilamba</div>
+      <div class="f04-tot">139 080,00<small>Kz</small></div>
+      <div class="f04-rail"><div class="f04-fill" id="f04-fill"></div></div>
+      <div class="f04-node" id="f04-n0" style="left: 120px"></div>
+      <div class="f04-node" id="f04-n1" style="left: 365px"></div>
+      <div class="f04-node" id="f04-n2" style="left: 610px"></div>
+      <div class="f04-node" id="f04-n3" style="left: 800px"></div>
+      <div class="f04-lab" id="f04-l0" style="left: 40px">Rascunho</div>
+      <div class="f04-lab" id="f04-l1" style="left: 285px">Emitida</div>
+      <div class="f04-lab" id="f04-l2" style="left: 530px">Validada</div>
+      <div class="f04-lab" id="f04-l3" style="left: 720px">Paga</div>
+    </div>
+    <div class="f04-ok" id="f04-ok"><svg width="58" height="58" viewBox="0 0 24 24" fill="none" stroke="#1a2e05" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Assinada e comunicada à AGT</div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+
+      tl.set({}, {}, 4.8);
+      tl.fromTo("#f04-h", { y: 70, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 0.05);
+      tl.fromTo("#f04-card", { y: 180, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, 0.45);
+      const xs = [140, 385, 630, 820];
+      const railLeft = 90;
+      xs.slice(0, 3).forEach((x, i) => {
+        const at = 1.3 + i * 0.5;
+        if (i > 0) tl.to("#f04-fill", { width: x - railLeft, duration: 0.4, ease: "power2.inOut" }, at - 0.4);
+        tl.to("#f04-n" + i, { backgroundColor: i === 2 ? "#f9b233" : "#171716", scale: i === 2 ? 1.5 : 1, duration: 0.25, ease: "back.out(2)" }, at);
+        tl.to("#f04-l" + i, { color: "#171716", duration: 0.25 }, at);
+      });
+      tl.fromTo("#f04-ok", { scale: 0.8, opacity: 0, transformOrigin: "0% 50%" }, { scale: 1, opacity: 1, duration: 0.45, ease: "back.out(2)" }, 3.0);
+
+      window.__timelines["04-factura"] = tl;
+    })();
+  </script>
+</template>

@@ -1,0 +1,51 @@
+<template>
+  <style>
+    @font-face { font-family: "Hanken Grotesk"; font-weight: 600; font-style: normal; font-display: block;
+      src: url("assets/fonts/HankenGrotesk-600.woff2") format("woff2"); }
+    @font-face { font-family: "Hanken Grotesk"; font-weight: 700; font-style: normal; font-display: block;
+      src: url("assets/fonts/HankenGrotesk-700.woff2") format("woff2"); }
+    #root { position: absolute; inset: 0; width: 1080px; height: 1920px; overflow: hidden;
+      font-family: "Hanken Grotesk", sans-serif; color: #171716; background: #ffffff; }
+    .f03-h { position: absolute; left: 80px; right: 80px; font-weight: 700; letter-spacing: -0.035em; }
+    .dot { display: inline-block; width: 0.17em; height: 0.17em; border-radius: 50%; background: #f9b233; margin-left: 0.04em; }
+    .hl { background: #f9b233; padding: 0 0.16em 0.04em; border-radius: 0.18em; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+
+    .phone { position: absolute; left: 190px; top: 560px; width: 700px; height: 1500px; border-radius: 96px; background: #171716; }
+    .island { position: absolute; left: 270px; top: 40px; width: 160px; height: 42px; border-radius: 21px; background: #171716; z-index: 3; }
+    .screen { position: absolute; left: 18px; top: 18px; width: 664px; height: 1464px; border-radius: 78px; overflow: hidden; background: #fff; }
+    .screen img { position: absolute; left: 0; top: 0; width: 672.5px; height: auto; display: block; }
+
+    .f03-h { font-size: 140px; line-height: 1.0; top: 250px; }
+    .f03-tap { position: absolute; left: 480px; top: 1251px; width: 120px; height: 120px; border-radius: 60px; border: 10px solid #171716; z-index: 6; opacity: 0; }
+    .f03-done { position: absolute; left: 150px; top: 760px; width: 780px; height: 360px; border-radius: 70px; background: #171716; z-index: 7;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; opacity: 0; }
+    .f03-done span { font-weight: 700; font-size: 110px; color: #fff; letter-spacing: -0.03em; }
+    .f03-done i { display: grid; place-items: center; width: 120px; height: 120px; border-radius: 60px; background: #f9b233; }
+
+  </style>
+  <div id="root" data-composition-id="03-enviar" data-width="1080" data-height="1920">
+    <div class="f03-h f01-h" id="f03-h">Reveja.<br/>Envie<span class="dot"></span></div>
+    <div class="phone" id="f03-img-phone" data-layout-allow-overflow>
+      <div class="island"></div>
+      <div class="screen"><img id="f03-img" src="assets/ui/cobrar-phone-full.png" data-layout-allow-overflow /></div>
+    </div>
+    <div class="f03-tap" id="f03-tap"></div>
+    <div class="f03-done" id="f03-done"><i><svg width="68" height="68" viewBox="0 0 24 24" fill="none" stroke="#171716" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></i><span>Enviado.</span></div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+
+      tl.set({}, {}, 4.3);
+      tl.set("#f03-img", { y: -1787.7 }, 0);
+      tl.fromTo("#f03-h", { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: "power3.out" }, 0.05);
+      tl.to("#f03-img", { y: -3110.0, duration: 1.1, ease: "power3.inOut" }, 0.5);
+      tl.fromTo("#f03-tap", { scale: 1.7, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.3, ease: "power2.out" }, 2.1);
+      tl.to("#f03-tap", { scale: 0.82, duration: 0.1, ease: "power2.in" }, 2.45);
+      tl.to("#f03-tap", { opacity: 0, duration: 0.2 }, 2.6);
+      tl.fromTo("#f03-done", { scale: 0.7, opacity: 0, transformOrigin: "50% 50%" }, { scale: 1, opacity: 1, duration: 0.45, ease: "back.out(2.2)" }, 2.7);
+
+      window.__timelines["03-enviar"] = tl;
+    })();
+  </script>
+</template>

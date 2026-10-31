@@ -7,6 +7,7 @@ import {
     Menu,
     RotateCcw,
     Search,
+    ShieldCheck,
     X,
 } from '@lucide/vue';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
@@ -560,6 +561,16 @@ const included: { group: string; items: string[] }[] = [
     },
 ];
 
+/**
+ * The AGT certificate, quoted exactly as issued (certificate of 28/10/2026 for
+ * facturac.ao version 1.1.0). Nothing here goes beyond what it states.
+ */
+const certification = {
+    number: 'FE/419/AGT/2026',
+    issuedOn: '28 de outubro de 2026',
+    version: '1.1.0',
+};
+
 /** The four facts a buyer checks first, set as a strip under the hero. */
 const proofFacts: { term: string; value: string }[] = [
     { term: 'FT · FR · RG', value: 'Facturas, facturas-recibo e recibos' },
@@ -807,8 +818,11 @@ const questions: { question: string; answer: string }[] = [
                     >
                         Facturação electrónica para Angola
                         <span
-                            class="rounded-full bg-lime-300 px-2.5 py-1 text-xs font-semibold tracking-normal text-lime-950 normal-case"
-                            >Pronta para 2027</span
+                            class="inline-flex items-center gap-1.5 rounded-full bg-lime-300 px-2.5 py-1 text-xs font-semibold tracking-normal text-lime-950 normal-case"
+                            ><ShieldCheck
+                                class="size-3.5"
+                                aria-hidden="true"
+                            />Certificada pela AGT</span
                         >
                     </p>
                     <h1 class="mt-5 font-display text-hero text-balance">
@@ -1086,6 +1100,42 @@ const questions: { question: string; answer: string }[] = [
                     </div>
                 </dl>
             </div>
+
+            <!-- ------------------------------------------------- certification -->
+            <section
+                id="certificacao"
+                class="mx-auto max-w-6xl px-5 pt-10 sm:px-8"
+                aria-labelledby="certificacao-titulo"
+            >
+                <div
+                    class="flex flex-col gap-5 rounded-3xl bg-[#f5f5f7] p-6 sm:flex-row sm:items-center sm:gap-7 sm:p-8 dark:bg-white/[0.05]"
+                >
+                    <span
+                        class="grid size-14 shrink-0 place-items-center rounded-2xl bg-accent-400 text-brand-950"
+                    >
+                        <ShieldCheck class="size-7" aria-hidden="true" />
+                    </span>
+                    <div class="min-w-0">
+                        <h2
+                            id="certificacao-titulo"
+                            class="font-display text-2xl tracking-[-0.02em] text-brand-950 dark:text-white"
+                        >
+                            Software certificado pela AGT
+                        </h2>
+                        <p
+                            class="mt-1.5 text-[0.95rem] text-brand-600 dark:text-zinc-400"
+                        >
+                            Certificado n.º
+                            <span
+                                class="numeric font-semibold text-brand-950 dark:text-white"
+                                >{{ certification.number }}</span
+                            >
+                            · emitido a {{ certification.issuedOn }} ·
+                            facturac.ao, versão {{ certification.version }}.
+                        </p>
+                    </div>
+                </div>
+            </section>
 
             <!-- ------------------------------------------------------ deadline -->
             <section id="prazo" class="px-5 pt-(--space-section) sm:px-8">
@@ -2253,6 +2303,9 @@ const questions: { question: string; answer: string }[] = [
                         class="mt-4 text-sm text-brand-400 dark:text-zinc-500"
                     >
                         {{ contact.company }}
+                    </p>
+                    <p class="mt-1 text-sm text-brand-400 dark:text-zinc-500">
+                        Certificada pela AGT · {{ certification.number }}
                     </p>
                 </div>
                 <nav aria-label="Produto">

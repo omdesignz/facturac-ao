@@ -1,0 +1,35 @@
+<template>
+  <style>
+    @font-face { font-family: "Hanken Grotesk"; font-weight: 600; font-style: normal; font-display: block;
+      src: url("assets/fonts/HankenGrotesk-600.woff2") format("woff2"); }
+    @font-face { font-family: "Hanken Grotesk"; font-weight: 700; font-style: normal; font-display: block;
+      src: url("assets/fonts/HankenGrotesk-700.woff2") format("woff2"); }
+    #root { position: absolute; inset: 0; width: 1080px; height: 1920px; overflow: hidden;
+      font-family: "Hanken Grotesk", sans-serif; color: #171716; background: #171716; }
+    .f06-h { position: absolute; left: 80px; right: 80px; font-weight: 700; letter-spacing: -0.035em; }
+    .dot { display: inline-block; width: 0.17em; height: 0.17em; border-radius: 50%; background: #f9b233; margin-left: 0.04em; }
+    .hl { background: #f9b233; padding: 0 0.16em 0.04em; border-radius: 0.18em; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+
+    .f06-h { font-size: 200px; line-height: 0.96; top: 500px; color: #fff; }
+    .f06-rule { position: absolute; left: 80px; top: 1100px; width: 220px; height: 12px; border-radius: 6px; background: #f9b233; }
+    .f06-sub { position: absolute; left: 80px; right: 80px; top: 1170px; font-weight: 600; font-size: 62px; line-height: 1.2; color: #e7e5e4; }
+
+  </style>
+  <div id="root" data-composition-id="06-prazo" data-width="1080" data-height="1920">
+    <div class="f06-h f01-h" id="f06-h">1 de janeiro<br/>de 2027<span class="dot"></span></div>
+    <div class="f06-rule" id="f06-rule"></div>
+    <div class="f06-sub" id="f06-sub">Todas as empresas emitem factura electrónica.</div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+
+      tl.set({}, {}, 3.8);
+      tl.fromTo("#f06-h", { y: 90, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: "power3.out" }, 0.1);
+      tl.fromTo("#f06-rule", { scaleX: 0, opacity: 1, transformOrigin: "0% 50%" }, { scaleX: 1, opacity: 1, duration: 0.5, ease: "power3.out" }, 0.9);
+      tl.fromTo("#f06-sub", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 1.2);
+
+      window.__timelines["06-prazo"] = tl;
+    })();
+  </script>
+</template>

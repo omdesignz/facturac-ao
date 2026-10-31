@@ -1,0 +1,39 @@
+<template>
+  <style>
+    @font-face { font-family: "Hanken Grotesk"; font-weight: 600; font-style: normal; font-display: block;
+      src: url("assets/fonts/HankenGrotesk-600.woff2") format("woff2"); }
+    @font-face { font-family: "Hanken Grotesk"; font-weight: 700; font-style: normal; font-display: block;
+      src: url("assets/fonts/HankenGrotesk-700.woff2") format("woff2"); }
+    #root { position: absolute; inset: 0; width: 1080px; height: 1920px; overflow: hidden;
+      font-family: "Hanken Grotesk", sans-serif; color: #171716; background: #ffffff; }
+    .f07-h { position: absolute; left: 80px; right: 80px; font-weight: 700; letter-spacing: -0.035em; }
+    .dot { display: inline-block; width: 0.17em; height: 0.17em; border-radius: 50%; background: #f9b233; margin-left: 0.04em; }
+    .hl { background: #f9b233; padding: 0 0.16em 0.04em; border-radius: 0.18em; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+
+    .f07-mark { position: absolute; left: 130px; top: 470px; width: 820px; }
+    .f07-h { font-size: 124px; line-height: 1.05; top: 770px; }
+    .f07-cta { position: absolute; left: 80px; top: 1090px; height: 150px; padding: 0 70px; border-radius: 75px; background: #f9b233; color: #171716;
+      display: flex; align-items: center; font-weight: 700; font-size: 66px; letter-spacing: -0.02em; white-space: nowrap; }
+    .f07-foot { position: absolute; left: 80px; right: 80px; top: 1300px; font-weight: 600; font-size: 52px; color: #57534e; }
+
+  </style>
+  <div id="root" data-composition-id="07-comece" data-width="1080" data-height="1920">
+    <img class="f07-mark" id="f07-mark" src="assets/facturac-ao.svg" />
+    <div class="f07-h f01-h" id="f07-h">Abra a sua conta<br/>grátis<span class="dot"></span></div>
+    <div class="f07-cta" id="f07-cta">facturac.ao</div>
+    <div class="f07-foot" id="f07-foot">Sem cartão. Sem contrato.</div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+
+      tl.set({}, {}, 4.0);
+      tl.fromTo("#f07-mark", { scale: 0.88, opacity: 0, transformOrigin: "50% 50%" }, { scale: 1, opacity: 1, duration: 0.6, ease: "back.out(1.6)" }, 0.1);
+      tl.fromTo("#f07-h", { y: 70, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 0.55);
+      tl.fromTo("#f07-cta", { scale: 0.8, opacity: 0, transformOrigin: "0% 50%" }, { scale: 1, opacity: 1, duration: 0.45, ease: "back.out(2)" }, 1.1);
+      tl.fromTo("#f07-foot", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 1.5);
+
+      window.__timelines["07-comece"] = tl;
+    })();
+  </script>
+</template>

@@ -1,0 +1,46 @@
+<template>
+  <style>
+    @font-face { font-family: "Hanken Grotesk"; font-weight: 600; font-style: normal; font-display: block;
+      src: url("assets/fonts/HankenGrotesk-600.woff2") format("woff2"); }
+    @font-face { font-family: "Hanken Grotesk"; font-weight: 700; font-style: normal; font-display: block;
+      src: url("assets/fonts/HankenGrotesk-700.woff2") format("woff2"); }
+    #root { position: absolute; inset: 0; width: 1080px; height: 1920px; overflow: hidden;
+      font-family: "Hanken Grotesk", sans-serif; color: #171716; background: #ffffff; }
+    .f02-h { position: absolute; left: 80px; right: 80px; font-weight: 700; letter-spacing: -0.035em; }
+    .dot { display: inline-block; width: 0.17em; height: 0.17em; border-radius: 50%; background: #f9b233; margin-left: 0.04em; }
+    .hl { background: #f9b233; padding: 0 0.16em 0.04em; border-radius: 0.18em; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+
+    .phone { position: absolute; left: 190px; top: 560px; width: 700px; height: 1500px; border-radius: 96px; background: #171716; }
+    .island { position: absolute; left: 270px; top: 40px; width: 160px; height: 42px; border-radius: 21px; background: #171716; z-index: 3; }
+    .screen { position: absolute; left: 18px; top: 18px; width: 664px; height: 1464px; border-radius: 78px; overflow: hidden; background: #fff; }
+    .screen img { position: absolute; left: 0; top: 0; width: 672.5px; height: auto; display: block; }
+
+    .f02-h { font-size: 116px; line-height: 1.0; top: 250px; }
+    .f02-note { position: absolute; right: 70px; top: 508px; height: 96px; padding: 0 38px; border-radius: 48px; background: #f9b233;
+      display: flex; align-items: center; font-weight: 700; font-size: 46px; color: #171716; white-space: nowrap; z-index: 5; }
+
+  </style>
+  <div id="root" data-composition-id="02-lembrete" data-width="1080" data-height="1920">
+    <div class="f02-h f01-h" id="f02-h">O lembrete<br/>já está <span class="hl">escrito</span><span class="dot"></span></div>
+    <div class="f02-note" id="f02-note">Nada é enviado até confirmar</div>
+    <div class="phone" id="f02-img-phone" data-layout-allow-overflow>
+      <div class="island"></div>
+      <div class="screen"><img id="f02-img" src="assets/ui/cobrar-phone-full.png" data-layout-allow-overflow /></div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+
+      tl.set({}, {}, 5.6);
+      tl.set("#f02-img", { y: -187.3 }, 0);
+      tl.fromTo("#f02-h", { y: 70, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 0.05);
+      tl.fromTo("#f02-img-phone", { y: 220, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, 0.15);
+      tl.to("#f02-img", { y: -737.8, duration: 0.9, ease: "power3.inOut" }, 1.6);
+      tl.to("#f02-img", { y: -1787.7, duration: 1.1, ease: "power3.inOut" }, 3.0);
+      tl.fromTo("#f02-note", { scale: 0.6, opacity: 0, transformOrigin: "100% 50%" }, { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(2)" }, 4.3);
+
+      window.__timelines["02-lembrete"] = tl;
+    })();
+  </script>
+</template>
