@@ -409,7 +409,7 @@ test('postgres credential expiry is rechecked after a lock wait using the databa
     }
     $results = commandProcesses(function (int $i, string $directory) use ($f): array {
         if ($i === 0) {
-            DB::table('integration_credentials')->where('id', $f['context']->credentialId)->update(['expires_at' => DB::raw("clock_timestamp()+interval '500 milliseconds'")]);
+            DB::table('integration_credentials')->where('id', $f['context']->credentialId)->update(['expires_at' => DB::raw("(clock_timestamp()+interval '500 milliseconds') AT TIME ZONE '".config('app.timezone')."'")]);
             DB::beginTransaction();
             DB::table('integrations')->where('id', $f['context']->integrationId)->lockForUpdate()->first();
             file_put_contents("$directory/held", 'yes');
