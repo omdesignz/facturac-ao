@@ -277,3 +277,28 @@ test('the pricing section shows packages with the shared period switch and keeps
         ->toContain('card.price.monthly_equivalent')
         ->not->toContain('amount_minor');
 });
+
+test('links to the homepage carry a share card that names the certification', function () {
+    $html = (string) $this->get('/')->assertOk()->getContent();
+
+    expect($html)->toContain('property="og:image" content="'.url('/brand/share-card.png').'"')
+        ->toContain('property="og:image:width" content="1200"')
+        ->toContain('name="twitter:image"')
+        ->toContain('rel="canonical"')
+        ->and(file_exists(public_path('brand/share-card.png')))->toBeTrue()
+        ->and(getimagesize(public_path('brand/share-card.png'))[0])->toBe(1200);
+
+    expect($html)->toContain('property="og:title" content="facturac.ao · Facturação electrónica para Angola"')
+        ->toContain('name="twitter:card" content="summary_large_image"')
+        ->toContain('FE/419/AGT/2026');
+});
+
+test('every call to open an account says the same thing', function () {
+    $page = (string) file_get_contents(resource_path('js/pages/Landing.vue'));
+
+    foreach (['Mudar agora', 'Começar a mudança', 'Experimentar grátis'] as $retired) {
+        expect($page)->not->toContain($retired);
+    }
+
+    expect(substr_count($page, 'Abrir conta grátis'))->toBeGreaterThanOrEqual(6);
+});

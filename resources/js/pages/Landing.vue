@@ -758,7 +758,8 @@ const questions: { question: string; answer: string }[] = [
                         :href="register.url()"
                         class="inline-flex h-10 items-center rounded-full bg-accent-400 px-3.5 text-sm font-semibold whitespace-nowrap text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1)] focus-ring transition hover:bg-accent-300 sm:px-4"
                     >
-                        Abrir conta
+                        <span class="sm:hidden">Abrir conta</span>
+                        <span class="hidden sm:inline">Abrir conta grátis</span>
                     </Link>
                     <button
                         ref="menuButton"
@@ -1186,10 +1187,10 @@ const questions: { question: string; answer: string }[] = [
                             </template>
                         </p>
                         <div class="mt-7 flex flex-wrap gap-3">
-                            <a
-                                href="#mudar"
+                            <Link
+                                :href="register.url()"
                                 class="inline-flex h-11 items-center rounded-full bg-accent-400 px-5 text-sm font-semibold text-brand-950 focus-ring-inverted transition hover:bg-accent-300"
-                                >Mudar agora</a
+                                >Abrir conta grátis</Link
                             >
                             <a
                                 href="#perguntas"
@@ -1670,7 +1671,7 @@ const questions: { question: string; answer: string }[] = [
                         :href="register.url()"
                         class="mt-8 inline-flex h-13 items-center gap-2 rounded-full bg-brand-950 px-6 text-base font-semibold text-white focus-ring transition hover:bg-brand-800"
                     >
-                        Começar a mudança
+                        Abrir conta grátis
                         <ArrowRight class="size-4" aria-hidden="true" />
                     </Link>
                 </div>
@@ -1932,11 +1933,7 @@ const questions: { question: string; answer: string }[] = [
                                     :href="register.url()"
                                     class="flex h-12 items-center justify-center gap-2 rounded-full bg-accent-400 px-5 text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1)] focus-ring transition hover:bg-accent-300"
                                 >
-                                    {{
-                                        card.offer.trial_days > 0
-                                            ? 'Experimentar grátis'
-                                            : 'Abrir conta'
-                                    }}<span class="sr-only">
+                                    Abrir conta grátis<span class="sr-only">
                                         com o pacote {{ card.offer.name }}</span
                                     >
                                     <ArrowRight
@@ -1949,11 +1946,7 @@ const questions: { question: string; answer: string }[] = [
                                     :href="register.url()"
                                     class="flex h-12 items-center justify-center gap-2 rounded-full bg-white px-5 text-sm font-semibold text-brand-950 ring-1 ring-zinc-900/15 focus-ring transition hover:ring-zinc-900/40 dark:bg-transparent dark:text-white dark:ring-white/20 dark:hover:ring-white/50"
                                 >
-                                    {{
-                                        card.offer.trial_days > 0
-                                            ? 'Experimentar grátis'
-                                            : 'Abrir conta'
-                                    }}<span class="sr-only">
+                                    Abrir conta grátis<span class="sr-only">
                                         com o pacote {{ card.offer.name }}</span
                                     >
                                 </Link>

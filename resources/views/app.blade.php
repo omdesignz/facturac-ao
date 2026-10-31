@@ -8,6 +8,20 @@
         <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
         <meta name="theme-color" content="#171716" media="(prefers-color-scheme: dark)">
 
+        <meta property="og:type" content="website">
+        <meta property="og:title" content="facturac.ao · Facturação electrónica para Angola">
+        <meta property="og:description" content="Software certificado pela AGT (FE/419/AGT/2026). Passe facturas, recibos e notas, comunicadas à AGT, com SAF-T e contas correntes.">
+        <meta name="twitter:card" content="summary_large_image">
+        <meta property="og:site_name" content="{{ config('app.name') }}">
+        <meta property="og:locale" content="pt_AO">
+        <meta property="og:url" content="{{ url()->current() }}">
+        <meta property="og:image" content="{{ url('/brand/share-card.png') }}">
+        <meta property="og:image:width" content="1200">
+        <meta property="og:image:height" content="630">
+        <meta property="og:image:alt" content="facturac.ao: Facturação sempre acabou em .ao. Software certificado pela AGT.">
+        <meta name="twitter:image" content="{{ url('/brand/share-card.png') }}">
+        <link rel="canonical" href="{{ url()->current() }}">
+
         <link rel="icon" href="/favicon.ico" sizes="any">
         <link rel="icon" href="/favicon.svg" type="image/svg+xml">
         <link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32">
