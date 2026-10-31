@@ -522,7 +522,7 @@ test('postgres guarded retained capacity reaches its bound without blocking auth
     expect($plan[0]['Plan']['Node Type'])->toBe('Index Scan')->and($plan[0]['Plan']['Actual Rows'])->toEqual(1)
         ->and($plan[0]['Execution Time'])->toBeLessThan(100);
     $nif = json_decode(DB::selectOne('EXPLAIN (ANALYZE,BUFFERS,FORMAT JSON) SELECT id FROM customers WHERE legal_entity_id=? AND tax_identification_number=?', [$f['context']->entityId, '5401234567'])->{'QUERY PLAN'}, true);
-    file_put_contents('/private/tmp/phase5a-postgres-plans.json', json_encode(['ledger_rows' => 100000, 'ledger' => $plan, 'nif' => $nif], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
+    file_put_contents(sys_get_temp_dir().'/phase5a-postgres-plans.json', json_encode(['ledger_rows' => 100000, 'ledger' => $plan, 'nif' => $nif], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
 });
 
 test('postgres default price-list deletion linearizes safely in both orders against customer creation', function (bool $commandFirst) {

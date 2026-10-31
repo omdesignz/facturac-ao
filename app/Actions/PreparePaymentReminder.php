@@ -46,14 +46,14 @@ class PreparePaymentReminder
             ->filter(fn (FiscalDocument $document): bool => $this->receivables->outstandingMinor($document) > 0)
             ->values();
 
-        $rows = $documents
+        $rows = array_values($documents
             ->map(fn (FiscalDocument $document): array => [
                 'document_no' => (string) $document->document_no,
                 'due_date' => $document->due_date->toDateString(),
                 'days_past_due' => max(1, (int) floor($document->due_date->startOfDay()->diffInDays($today))),
                 'outstanding_minor' => $this->receivables->outstandingMinor($document),
             ])
-            ->all();
+            ->all());
 
         $total = array_sum(array_column($rows, 'outstanding_minor'));
         $company = $legalEntity->trade_name ?? $legalEntity->legal_name;

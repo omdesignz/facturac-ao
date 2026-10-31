@@ -543,7 +543,7 @@ test('postgres service guarded retained capacity reaches its bound without block
     expect($nif[0]['Plan']['Actual Rows'])->toEqual(1)->and($nif[0]['Execution Time'])->toBeLessThan(100);
     $empty = json_decode(DB::selectOne("EXPLAIN (ANALYZE,BUFFERS,FORMAT JSON) SELECT * FROM external_command_operations WHERE integration_id=? AND workspace_id=? AND legal_entity_id=? AND environment='production' AND command='catalogue.services.create' AND capability_version=1 AND key_hash=?", [$f['context']->integrationId, $f['context']->workspaceId, $f['context']->entityId, hash('sha256', 'absent')])->{'QUERY PLAN'}, true);
     expect($empty[0]['Plan']['Actual Rows'])->toEqual(0)->and($empty[0]['Execution Time'])->toBeLessThan(100);
-    file_put_contents('/private/tmp/phase5b-postgres-plans.json', json_encode(['empty_ledger' => $zeroLedger, 'ledger_rows' => 100000, 'ledger' => $plan, 'catalogue_rows' => 100002, 'catalogue' => $nif, 'absent_key' => $empty], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
+    file_put_contents(sys_get_temp_dir().'/phase5b-postgres-plans.json', json_encode(['empty_ledger' => $zeroLedger, 'ledger_rows' => 100000, 'ledger' => $plan, 'catalogue_rows' => 100002, 'catalogue' => $nif, 'absent_key' => $empty], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
 });
 
 test('postgres service entity currency and regime updates serialize against complete service creation', function (bool $commandFirst, string $field) {
