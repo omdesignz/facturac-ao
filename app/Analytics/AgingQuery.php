@@ -38,7 +38,7 @@ class AgingQuery
     /**
      * Every customer with money outstanding, oldest debt first.
      *
-     * @return list<array<string, mixed>>
+     * @return list<array{customer_public_id: string|null, name: string, credit_limit_minor: int|null, payment_terms_days: int, outstanding_minor: int, overdue_minor: int, document_count: int, oldest_days_past_due: int, last_opened_by_customer_at: string|null, buckets: array<string, int>, over_limit: bool}>
      */
     public function byCustomer(LegalEntity $legalEntity): array
     {
@@ -68,6 +68,7 @@ class AgingQuery
                 'overdue_minor' => 0,
                 'document_count' => 0,
                 'oldest_days_past_due' => 0,
+                'last_opened_by_customer_at' => null,
                 'buckets' => array_fill_keys(
                     array_column(self::buckets(), 'key'),
                     0,
@@ -80,6 +81,10 @@ class AgingQuery
             $rows[$key]['outstanding_minor'] += $outstanding;
             $rows[$key]['buckets'][$bucket] += $outstanding;
             $rows[$key]['document_count']++;
+            $rows[$key]['last_opened_by_customer_at'] = max(
+                $rows[$key]['last_opened_by_customer_at'],
+                $document->last_opened_by_customer_at?->toIso8601String(),
+            );
 
             if ($daysPastDue > 0) {
                 $rows[$key]['overdue_minor'] += $outstanding;

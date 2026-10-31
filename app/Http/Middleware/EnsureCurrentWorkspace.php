@@ -35,7 +35,12 @@ class EnsureCurrentWorkspace
         }
 
         if ($membership === null) {
-            return redirect()->route('workspace.setup');
+            return $request->is('api/mobile/*')
+                ? response()->json(['error' => [
+                    'code' => 'NO_WORKSPACE',
+                    'message' => 'Esta conta ainda não pertence a nenhuma empresa.',
+                ]], Response::HTTP_CONFLICT)
+                : redirect()->route('workspace.setup');
         }
 
         if ($user->current_workspace_id !== $membership->workspace_id) {

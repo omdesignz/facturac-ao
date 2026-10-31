@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { decisionsFor } from '../resources/js/lib/today-decisions.ts';
 
@@ -152,4 +153,28 @@ test('each card offers one quieter second choice beside its verb', () => {
             { label: 'Mais tarde' },
         ],
     );
+});
+
+test('the cards match the shared contract with the phone app', () => {
+    const { cases } = JSON.parse(
+        readFileSync(
+            new URL('./Fixtures/today-decisions-cases.json', import.meta.url),
+        ),
+    );
+
+    for (const { name, input, expected } of cases) {
+        const cards = decisionsFor(input, hrefs).map((card) => ({
+            key: card.key,
+            kicker: card.kicker,
+            headline: card.headline,
+            detail: card.detail,
+            action: card.action,
+            kind: card.kind,
+            secondary_label: card.secondary.label,
+            customer: card.customer ?? null,
+            amount_minor: card.amountMinor ?? null,
+        }));
+
+        assert.deepEqual(cards, expected, name);
+    }
 });

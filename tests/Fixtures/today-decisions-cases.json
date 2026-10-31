@@ -1,0 +1,65 @@
+{
+    "cases": [
+        {
+            "name": "a quiet day",
+            "input": { "focus": null, "collections": { "customers": [] }, "lowStock": null },
+            "expected": []
+        },
+        {
+            "name": "a merely overdue focus is not a fiscal card",
+            "input": {
+                "focus": { "reason": "overdue", "document_no": "FT 2026/1", "agt_message": null },
+                "collections": null,
+                "lowStock": null
+            },
+            "expected": []
+        },
+        {
+            "name": "all three cards, in order",
+            "input": {
+                "focus": { "reason": "invalid", "document_no": "FT 2026/118", "agt_message": "Falta o código de isenção na linha 2." },
+                "collections": {
+                    "customers": [
+                        { "customer_public_id": null, "name": "Sem ficha", "overdue_minor": 90000, "oldest_days_past_due": 60 },
+                        { "customer_public_id": "cus_1", "name": "Mavinga & Filhos", "overdue_minor": 37800000, "oldest_days_past_due": 49 }
+                    ]
+                },
+                "lowStock": { "name": "Cimento 42,5 N", "quantity": 6, "unit": "sacos" }
+            },
+            "expected": [
+                { "key": "fiscal", "kicker": "Fiscal", "headline": "FT 2026/118 foi devolvida pela AGT.", "detail": "Falta o código de isenção na linha 2.", "action": "Corrigir", "kind": "link", "secondary_label": "Ver documentos", "customer": null, "amount_minor": null },
+                { "key": "collection", "kicker": "Cobrança", "headline": "Mavinga & Filhos deve", "detail": "há 49 dias. Lembrete preparado. Nada é enviado até confirmar.", "action": "Rever e enviar", "kind": "remind", "secondary_label": "Mais tarde", "customer": { "public_id": "cus_1", "name": "Mavinga & Filhos" }, "amount_minor": 37800000 },
+                { "key": "stock", "kicker": "Stock", "headline": "Cimento 42,5 N: restam 6 sacos.", "detail": null, "action": "Ver stock", "kind": "link", "secondary_label": "Mais tarde", "customer": null, "amount_minor": null }
+            ]
+        },
+        {
+            "name": "contingency with no number, and one day late",
+            "input": {
+                "focus": { "reason": "contingency", "document_no": null, "agt_message": null },
+                "collections": {
+                    "customers": [
+                        { "customer_public_id": "cus_2", "name": "Lobito Construções", "overdue_minor": 100, "oldest_days_past_due": 1 }
+                    ]
+                },
+                "lowStock": null
+            },
+            "expected": [
+                { "key": "fiscal", "kicker": "Fiscal", "headline": "Um documento está em contingência.", "detail": null, "action": "Corrigir", "kind": "link", "secondary_label": "Ver documentos", "customer": null, "amount_minor": null },
+                { "key": "collection", "kicker": "Cobrança", "headline": "Lobito Construções deve", "detail": "há 1 dia. Lembrete preparado. Nada é enviado até confirmar.", "action": "Rever e enviar", "kind": "remind", "secondary_label": "Mais tarde", "customer": { "public_id": "cus_2", "name": "Lobito Construções" }, "amount_minor": 100 }
+            ]
+        },
+        {
+            "name": "owing nothing overdue makes no collection card",
+            "input": {
+                "focus": null,
+                "collections": {
+                    "customers": [
+                        { "customer_public_id": "cus_3", "name": "Em dia, Lda.", "overdue_minor": 0, "oldest_days_past_due": 0 }
+                    ]
+                },
+                "lowStock": null
+            },
+            "expected": []
+        }
+    ]
+}

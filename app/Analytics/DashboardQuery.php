@@ -116,7 +116,7 @@ class DashboardQuery
     /**
      * Who owes the most for the longest, and the age of all debt together.
      *
-     * @return array{customers: list<array<string, mixed>>, customer_count: int, totals: list<array{key: string, label: string, total_minor: int}>, outstanding_minor: int}
+     * @return array{customers: list<array{customer_public_id: string|null, name: string, outstanding_minor: int, overdue_minor: int, document_count: int, oldest_days_past_due: int, buckets: array<string, int>}>, customer_count: int, totals: list<array{key: string, label: string, total_minor: int}>, outstanding_minor: int}
      */
     public function collections(LegalEntity $legalEntity, int $limit = 4): array
     {
