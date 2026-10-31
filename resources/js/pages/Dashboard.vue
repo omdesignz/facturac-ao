@@ -19,6 +19,7 @@ import ReminderDialog from '@/components/ReminderDialog.vue';
 import TodayDecisions from '@/components/TodayDecisions.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { agingBucketColours, agingShare } from '@/lib/aging';
+import { decisionsFor } from '@/lib/today-decisions';
 import { onboarding } from '@/routes';
 import { show as agtConnection } from '@/routes/agt/connection';
 import { index as agtSubmissions } from '@/routes/agt/submissions';
@@ -31,6 +32,7 @@ import {
 import { index as importIndex } from '@/routes/imports';
 import { create as invoiceCreate } from '@/routes/invoices';
 import { security } from '@/routes/settings';
+import { index as stockIndex } from '@/routes/stock';
 
 interface CompanyReadiness {
     configured: boolean;
@@ -126,6 +128,15 @@ function openReminder(customer: { public_id: string; name: string }): void {
     reminderFor.value = customer;
     reminderOpen.value = true;
 }
+
+/** What needs a decision today, worked out from figures this page already has. */
+const decisions = computed(() =>
+    decisionsFor(props, {
+        fiscal: agtSubmissions.url(),
+        documents: documentsIndex.url({ query: { status: 'attention' } }),
+        stock: stockIndex.url({ query: { low: '1' } }),
+    }),
+);
 
 const page = usePage();
 const workspace = computed(() => page.props.currentWorkspace);
@@ -535,34 +546,6 @@ const reviewStatement = computed(() => {
                     </div>
                     <div class="flex flex-wrap items-center gap-2.5">
                         <Link
-                            :href="agtConnection.url()"
-                            class="inline-flex h-10 items-center gap-2 rounded-full bg-zinc-900/[0.045] pr-4 pl-1.5 text-sm font-medium text-zinc-900 focus-ring transition hover:bg-zinc-900/[0.07] dark:bg-white/[0.06] dark:text-white dark:hover:bg-white/10"
-                        >
-                            <span
-                                class="grid size-7 place-items-center rounded-full bg-brand-950 dark:bg-zinc-100"
-                                aria-hidden="true"
-                            >
-                                <span
-                                    class="size-2.5 rounded-full"
-                                    :class="
-                                        agtReadiness.verified
-                                            ? 'bg-accent-400'
-                                            : 'bg-zinc-500'
-                                    "
-                                />
-                            </span>
-                            {{
-                                agtReadiness.verified
-                                    ? 'AGT ligada'
-                                    : 'AGT por verificar'
-                            }}
-                            <span
-                                v-if="review && review.attention_count > 0"
-                                class="text-accent-700 dark:text-accent-300"
-                                >· {{ review.attention_count }} por rever</span
-                            >
-                        </Link>
-                        <Link
                             :href="invoiceCreate.url()"
                             class="inline-flex h-10 items-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300"
                         >
@@ -782,20 +765,18 @@ const reviewStatement = computed(() => {
                     um saldo histórico nem o movimento bancário do período.
                 </p>
 
-                <TodayDecisions
-                    class="mt-6 md:hidden"
-                    :focus="focus"
-                    :collections="collections"
-                    :low-stock="lowStock"
-                    :currency-label="currencyLabel()"
-                    :format-amount="formatAmount"
-                    @remind="openReminder"
-                />
-
                 <!-- --------------------------------------- focus and review -->
                 <div
                     class="mt-8 grid grid-cols-[minmax(0,1fr)] gap-5 xl:grid-cols-[minmax(0,1fr)_27.5rem]"
                 >
+                    <!-- What needs deciding leads; the focus document below is the desk's longer view of the same thing. -->
+                    <TodayDecisions
+                        :decisions="decisions"
+                        :currency-label="currencyLabel()"
+                        :format-amount="formatAmount"
+                        @remind="openReminder"
+                    />
+
                     <!-- Setup: the checklist leads until the company can invoice. -->
                     <section
                         v-if="setupIncomplete"
@@ -921,6 +902,7 @@ const reviewStatement = computed(() => {
                     <!-- The one document the page leads with. -->
                     <section
                         v-else
+                        :class="decisions.length > 0 ? 'md:hidden' : ''"
                         class="flex flex-col rounded-3xl bg-zinc-900/[0.04] p-6 dark:bg-white/[0.04]"
                         aria-labelledby="focus-title"
                     >

@@ -33,7 +33,6 @@ test('the screens that used a banner now use the shared page header', function (
     'Invoices/Create',
     'Customers/Index',
     'Customers/Show',
-    'Debts/Index',
     'Catalogue/Index',
     'PriceLists/Index',
     'Stock/Index',

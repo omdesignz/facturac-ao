@@ -34,6 +34,8 @@ export interface Decision {
     /** `remind` opens the reminder for a customer; `link` goes to `href`. */
     kind: 'link' | 'remind';
     href?: string;
+    /** The quieter second choice, shown beside the action. */
+    secondary: { label: string; href?: string };
     customer?: { public_id: string; name: string };
     /** The overdue amount, in minor units, for a collection card. */
     amountMinor?: number;
@@ -41,7 +43,7 @@ export interface Decision {
 
 export function decisionsFor(
     input: DecisionInput,
-    hrefs: { fiscal: string; stock: string },
+    hrefs: { fiscal: string; documents: string; stock: string },
 ): Decision[] {
     const decisions: Decision[] = [];
     const { focus, collections, lowStock } = input;
@@ -63,6 +65,7 @@ export function decisionsFor(
             action: 'Corrigir',
             kind: 'link',
             href: hrefs.fiscal,
+            secondary: { label: 'Ver documentos', href: hrefs.documents },
         });
     }
 
@@ -82,6 +85,7 @@ export function decisionsFor(
                     : 'Lembrete preparado. Nada é enviado até confirmar.',
             action: 'Rever e enviar',
             kind: 'remind',
+            secondary: { label: 'Mais tarde' },
             customer: {
                 public_id: debtor.customer_public_id,
                 name: debtor.name,
@@ -99,6 +103,7 @@ export function decisionsFor(
             action: 'Ver stock',
             kind: 'link',
             href: hrefs.stock,
+            secondary: { label: 'Mais tarde' },
         });
     }
 

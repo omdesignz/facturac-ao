@@ -19,10 +19,13 @@ class PreparePaymentReminder
 {
     public const string EVENT = 'payment-reminder-sent';
 
+    /** Past this many days, or after an earlier reminder, the wording firms up. */
+    public const int FIRM_AFTER_DAYS = 30;
+
     public function __construct(private ReceivablesQuery $receivables) {}
 
     /**
-     * @return array{customer_name: string, to: string|null, subject: string, body: string, documents: list<array{document_no: string, due_date: string, days_past_due: int, outstanding_minor: int}>, total_minor: int, currency_code: string, last_sent_at: string|null}
+     * @return array{customer_name: string, to: string|null, subject: string, tone: 'cordial'|'firm', body: string, documents: list<array{document_no: string, due_date: string, days_past_due: int, outstanding_minor: int}>, total_minor: int, currency_code: string, last_sent_at: string|null}
      */
     public function execute(Customer $customer): array
     {
@@ -58,27 +61,33 @@ class PreparePaymentReminder
 
         $email = is_string($customer->email) && trim($customer->email) !== '' ? trim($customer->email) : null;
 
+        $lastSentAt = Activity::query()
+            ->where('subject_type', $customer->getMorphClass())
+            ->where('subject_id', $customer->getKey())
+            ->where('event', self::EVENT)
+            ->latest('id')
+            ->first()?->created_at;
+
+        $oldest = $rows === [] ? 0 : max(array_column($rows, 'days_past_due'));
+        $tone = $oldest > self::FIRM_AFTER_DAYS || $lastSentAt !== null ? 'firm' : 'cordial';
+
         return [
             'customer_name' => $customer->name,
             'to' => $email,
             'subject' => "Lembrete de pagamento · {$company}",
-            'body' => $rows === [] ? '' : $this->body($customer->name, $company, $rows, $total, $currency),
+            'tone' => $tone,
+            'body' => $rows === [] ? '' : $this->body($customer->name, $company, $rows, $total, $currency, $tone),
             'documents' => $rows,
             'total_minor' => $total,
             'currency_code' => $legalEntity->currency_code,
-            'last_sent_at' => Activity::query()
-                ->where('subject_type', $customer->getMorphClass())
-                ->where('subject_id', $customer->getKey())
-                ->where('event', self::EVENT)
-                ->latest('id')
-                ->first()?->created_at?->toIso8601String(),
+            'last_sent_at' => $lastSentAt?->toIso8601String(),
         ];
     }
 
     /**
      * @param  list<array{document_no: string, due_date: string, days_past_due: int, outstanding_minor: int}>  $rows
      */
-    private function body(string $customer, string $company, array $rows, int $total, string $currency): string
+    private function body(string $customer, string $company, array $rows, int $total, string $currency, string $tone): string
     {
         $lines = array_map(
             fn (array $row): string => sprintf(
@@ -100,7 +109,9 @@ class PreparePaymentReminder
             '',
             "Total em atraso: {$this->amount($total)} {$currency}.",
             '',
-            'Agradecemos que regularize o pagamento. Se já o fez, ignore esta mensagem e aceite os nossos agradecimentos.',
+            $tone === 'firm'
+                ? 'Pedimos que regularize o pagamento com a maior brevidade. Se já o fez, ignore esta mensagem e aceite os nossos agradecimentos.'
+                : 'Agradecemos que regularize o pagamento. Se já o fez, ignore esta mensagem e aceite os nossos agradecimentos.',
             '',
             'Com os melhores cumprimentos,',
             $company,

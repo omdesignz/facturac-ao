@@ -83,6 +83,22 @@ test('the draft lists what is overdue, oldest first, and nothing that is not', f
         ->toContain('VAP Lembretes, Lda.');
 });
 
+test('a debt past a month, or one already chased, gets the firmer wording', function () {
+    $fixture = reminderFixture();
+    reminderInvoice($fixture, now()->subDays(5)->toDateString(), 1_000_000, 'FT 2026/11');
+
+    $recent = app(PreparePaymentReminder::class)->execute($fixture['customer']);
+
+    reminderInvoice($fixture, now()->subDays(45)->toDateString(), 2_000_000, 'FT 2026/12');
+
+    $old = app(PreparePaymentReminder::class)->execute($fixture['customer']);
+
+    expect($recent['tone'])->toBe('cordial')
+        ->and($recent['body'])->toContain('Agradecemos que regularize')
+        ->and($old['tone'])->toBe('firm')
+        ->and($old['body'])->toContain('com a maior brevidade');
+});
+
 test('the preview endpoint returns the draft as json and sends nothing', function () {
     Notification::fake();
     $fixture = reminderFixture();

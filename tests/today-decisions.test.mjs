@@ -2,7 +2,11 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { decisionsFor } from '../resources/js/lib/today-decisions.ts';
 
-const hrefs = { fiscal: '/agt/submissions', stock: '/inventario?low=1' };
+const hrefs = {
+    fiscal: '/agt/submissions',
+    documents: '/documentos?status=attention',
+    stock: '/inventario?low=1',
+};
 
 const debtor = {
     customer_public_id: 'cus_1',
@@ -124,4 +128,28 @@ test('stock that is running out is the last card', () => {
     );
     assert.equal(cards[1].headline, 'Rolo térmico 80 mm: restam 3 un.');
     assert.equal(cards[1].href, '/inventario?low=1');
+});
+
+test('each card offers one quieter second choice beside its verb', () => {
+    const cards = decisionsFor(
+        {
+            focus: {
+                reason: 'invalid',
+                document_no: 'FT 1',
+                agt_message: null,
+            },
+            collections: { customers: [debtor] },
+            lowStock: { name: 'Papel A4', quantity: 2, unit: 'resmas' },
+        },
+        hrefs,
+    );
+
+    assert.deepEqual(
+        cards.map((card) => card.secondary),
+        [
+            { label: 'Ver documentos', href: '/documentos?status=attention' },
+            { label: 'Mais tarde' },
+            { label: 'Mais tarde' },
+        ],
+    );
 });

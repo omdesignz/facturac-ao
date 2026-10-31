@@ -5,26 +5,11 @@ import { computed, ref, watch } from 'vue';
 import FormError from '@/components/FormError.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
 import { buttonGold, buttonOutline } from '@/lib/pos-ui';
+import type { ReminderDraft } from '@/lib/reminder-draft';
 import {
     show as showReminder,
     store as storeReminder,
 } from '@/routes/debts/reminder';
-
-interface ReminderDraft {
-    customer_name: string;
-    to: string | null;
-    subject: string;
-    body: string;
-    documents: {
-        document_no: string;
-        due_date: string;
-        days_past_due: number;
-        outstanding_minor: number;
-    }[];
-    total_minor: number;
-    currency_code: string;
-    last_sent_at: string | null;
-}
 
 const props = defineProps<{
     open: boolean;
