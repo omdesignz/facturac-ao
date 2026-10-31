@@ -2,6 +2,7 @@
 import { Head, router, useForm } from '@inertiajs/vue3';
 import {
     ArrowDownRight,
+    ArrowLeftRight,
     ArrowUpRight,
     Boxes,
     LoaderCircle,
@@ -10,6 +11,7 @@ import {
     TriangleAlert,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import EmptyState from '@/components/EmptyState.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
 import FormError from '@/components/FormError.vue';
 import PageHeader from '@/components/PageHeader.vue';
@@ -295,22 +297,21 @@ function isInbound(quantity: string): boolean {
                         </label>
                     </div>
 
-                    <div
+                    <EmptyState
                         v-if="levels.length === 0"
-                        class="flex flex-col items-center gap-2 px-4 py-16 text-center"
-                    >
-                        <Boxes
-                            class="size-8 text-zinc-300 dark:text-zinc-600"
-                            aria-hidden="true"
-                        />
-                        <p class="text-sm/6 text-zinc-500 dark:text-zinc-400">
-                            {{
-                                summary.tracked_items === 0
-                                    ? 'Nenhum artigo controla inventário. Active o controlo na ficha do artigo.'
-                                    : 'Nenhum artigo em inventário para este filtro.'
-                            }}
-                        </p>
-                    </div>
+                        bare
+                        :icon="Boxes"
+                        :title="
+                            summary.tracked_items === 0
+                                ? 'Nenhum artigo controla inventário'
+                                : 'Nenhum artigo neste filtro'
+                        "
+                        :description="
+                            summary.tracked_items === 0
+                                ? 'Active o controlo de inventário na ficha do artigo e as existências aparecem aqui.'
+                                : 'Mude o filtro para ver os outros artigos.'
+                        "
+                    />
 
                     <div v-else class="overflow-x-auto">
                         <table class="min-w-full text-left text-sm">
@@ -421,12 +422,13 @@ function isInbound(quantity: string): boolean {
                         </p>
                     </header>
 
-                    <div
+                    <EmptyState
                         v-if="movements.length === 0"
-                        class="px-4 py-12 text-center text-sm/6 text-zinc-500 dark:text-zinc-400"
-                    >
-                        Ainda não houve movimentos.
-                    </div>
+                        bare
+                        :icon="ArrowLeftRight"
+                        title="Ainda não houve movimentos"
+                        description="Cada entrada e saída aparece aqui, incluindo as dos documentos emitidos."
+                    />
 
                     <ul
                         v-else

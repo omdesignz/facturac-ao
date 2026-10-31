@@ -1806,3 +1806,23 @@ tbody tr {
 [role='status'][aria-live='polite']:empty {
     margin: 0;
 }
+
+/*
+ * A plain disclosure keeps the browser's marker but not its default look: quiet,
+ * clearly clickable, and with the same focus ring as every other control. The
+ * ones that draw their own chevron hide the marker and are untouched.
+ */
+summary {
+    cursor: pointer;
+}
+
+summary::marker {
+    color: var(--color-zinc-400);
+    font-size: 0.75em;
+}
+
+summary:focus-visible {
+    border-radius: 0.5rem;
+    outline: 2px solid var(--color-accent-500);
+    outline-offset: 3px;
+}

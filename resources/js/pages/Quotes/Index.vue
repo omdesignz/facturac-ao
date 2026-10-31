@@ -2,6 +2,7 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import { FileText, Plus } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import EmptyState from '@/components/EmptyState.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import SelectInput from '@/components/SelectInput.vue';
@@ -131,18 +132,12 @@ function decodeEntities(label: string): string {
                     </template>
                 </PageHeader>
 
-                <div
+                <EmptyState
                     v-if="quotes.data.length === 0"
-                    class="flex flex-col items-center gap-2 rounded-3xl bg-zinc-900/[0.04] px-4 py-16 text-center dark:bg-white/[0.04]"
-                >
-                    <FileText
-                        class="size-8 text-zinc-300 dark:text-zinc-600"
-                        aria-hidden="true"
-                    />
-                    <p class="text-sm/6 text-zinc-500 dark:text-zinc-400">
-                        Ainda não há orçamentos neste filtro.
-                    </p>
-                </div>
+                    :icon="FileText"
+                    title="Ainda não há orçamentos"
+                    description="Nenhum corresponde a este filtro. Mude o filtro ou crie um novo orçamento."
+                />
 
                 <div
                     v-else

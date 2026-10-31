@@ -484,7 +484,7 @@ const suggestionClasses =
     <AppLayout>
         <Head title="Assistente" />
         <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-            <div class="mx-auto max-w-3xl space-y-7">
+            <div class="max-w-3xl space-y-7">
                 <PageHeader
                     eyebrow="Assistente · Só leitura"
                     title="Assistente"

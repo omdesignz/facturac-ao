@@ -1044,7 +1044,7 @@ const iconButton =
         <Head title="Pacotes de subscrição" />
 
         <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-            <div class="mx-auto max-w-4xl space-y-6">
+            <div class="max-w-4xl space-y-6">
                 <FlashBanner />
 
                 <PageHeader

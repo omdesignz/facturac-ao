@@ -363,3 +363,34 @@ test('the product has no blue: informational notes use the neutral ramp, and cha
             ->toContain('--viz-primary');
     }
 });
+
+test('the invoice, the quote and the transport guide open their cards with one heading', function (string $page) {
+    expect((string) file_get_contents(resource_path("js/pages/{$page}.vue")))
+        ->toContain("import SectionHeading from '@/components/SectionHeading.vue';")
+        ->toContain('<SectionHeading');
+})->with(['Invoices/Create', 'Quotes/Form', 'TransportDocuments/Form']);
+
+test('a list with nothing in it says so in one shape', function (string $page) {
+    expect((string) file_get_contents(resource_path("js/{$page}.vue")))
+        ->toContain("import EmptyState from '@/components/EmptyState.vue';")
+        ->toContain('<EmptyState');
+})->with([
+    'pages/Quotes/Index',
+    'pages/Recurring/Index',
+    'pages/PriceLists/Index',
+    'pages/Notifications/Index',
+    'pages/Stock/Index',
+    'components/pos/PosOpenShift',
+]);
+
+test('no working screen leaves the date to the browser, so every date reads dd/mm/aaaa', function () {
+    $native = [];
+
+    foreach (File::allFiles(resource_path('js')) as $file) {
+        if ($file->getExtension() === 'vue' && preg_match('/type="(date|datetime-local|time|month)"/', $file->getContents())) {
+            $native[] = $file->getRelativePathname();
+        }
+    }
+
+    expect($native)->toBe([]);
+});

@@ -10,6 +10,7 @@ import {
     Users,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import EmptyState from '@/components/EmptyState.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
 import FormError from '@/components/FormError.vue';
 import PageHeader from '@/components/PageHeader.vue';
@@ -280,23 +281,12 @@ function toggleDefault(): void {
                     </template>
                 </PageHeader>
 
-                <div
+                <EmptyState
                     v-if="lists.length === 0"
-                    class="flex flex-col items-center gap-3 rounded-3xl bg-zinc-900/[0.04] px-6 py-16 text-center dark:bg-white/[0.04]"
+                    :icon="Tags"
+                    title="Ainda não há tabelas"
+                    description="Crie uma para o preço que pratica com um grupo de clientes — revenda, grossista, contrato. Depois basta pôr cada cliente na sua."
                 >
-                    <Tags class="size-8 text-zinc-400" aria-hidden="true" />
-                    <p
-                        class="text-base font-semibold text-zinc-950 dark:text-white"
-                    >
-                        Ainda não há tabelas
-                    </p>
-                    <p
-                        class="max-w-md text-sm/6 text-zinc-500 dark:text-zinc-400"
-                    >
-                        Crie uma para o preço que pratica com um grupo de
-                        clientes — revenda, grossista, contrato. Depois basta
-                        pôr cada cliente na sua.
-                    </p>
                     <button
                         v-if="canManage"
                         type="button"
@@ -306,7 +296,7 @@ function toggleDefault(): void {
                         <Plus class="size-4" aria-hidden="true" />
                         Criar a primeira tabela
                     </button>
-                </div>
+                </EmptyState>
 
                 <div v-else class="grid gap-6 lg:grid-cols-[18rem_1fr]">
                     <nav class="space-y-2" aria-label="Tabelas">

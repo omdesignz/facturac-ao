@@ -21,6 +21,7 @@ import DateInput from '@/components/DateInput.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
 import FormError from '@/components/FormError.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
+import SectionHeading from '@/components/SectionHeading.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -498,25 +499,13 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                         class="space-y-6 disabled:opacity-90"
                     >
                         <section class="rounded-2xl surface p-5 sm:p-6">
-                            <div class="flex items-start gap-3">
-                                <Truck
-                                    class="mt-0.5 size-5 text-brand-600 dark:text-brand-300"
-                                    aria-hidden="true"
-                                />
-                                <div>
-                                    <h2
-                                        class="font-semibold text-zinc-950 dark:text-white"
-                                    >
-                                        Documento e horário
-                                    </h2>
-                                    <p
-                                        class="mt-1 text-sm text-zinc-500 dark:text-zinc-400"
-                                    >
-                                        O início do transporte deve ocorrer na
-                                        data indicada.
-                                    </p>
-                                </div>
-                            </div>
+                            <SectionHeading :icon="Truck">
+                                Documento e horário
+                                <template #description>
+                                    O início do transporte deve ocorrer na data
+                                    indicada.
+                                </template></SectionHeading
+                            >
 
                             <div
                                 class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-5"
@@ -629,37 +618,24 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
 
                         <section class="grid gap-6 xl:grid-cols-2">
                             <article class="rounded-2xl surface p-5 sm:p-6">
-                                <div class="flex items-start gap-3">
-                                    <UserRound
-                                        class="mt-0.5 size-5 text-brand-600 dark:text-brand-300"
-                                        aria-hidden="true"
-                                    />
-                                    <div>
-                                        <h2
-                                            class="font-semibold text-zinc-950 dark:text-white"
-                                        >
-                                            {{
-                                                isReturnNote
-                                                    ? 'Fornecedor da devolução'
-                                                    : 'Destinatário'
-                                            }}
-                                        </h2>
-                                        <p
-                                            class="mt-1 text-sm text-zinc-500 dark:text-zinc-400"
-                                        >
-                                            <template v-if="isReturnNote">
-                                                Registe o fornecedor a quem os
-                                                bens serão devolvidos. O SAF-T
-                                                irá identificá-lo como
-                                                SupplierID.
-                                            </template>
-                                            <template v-else>
-                                                Seleccione um cliente ou registe
-                                                os dados desta entrega.
-                                            </template>
-                                        </p>
-                                    </div>
-                                </div>
+                                <SectionHeading :icon="UserRound">
+                                    {{
+                                        isReturnNote
+                                            ? 'Fornecedor da devolução'
+                                            : 'Destinatário'
+                                    }}
+                                    <template #description>
+                                        <template v-if="isReturnNote">
+                                            Registe o fornecedor a quem os bens
+                                            serão devolvidos. O SAF-T irá
+                                            identificá-lo como SupplierID.
+                                        </template>
+                                        <template v-else>
+                                            Seleccione um cliente ou registe os
+                                            dados desta entrega.
+                                        </template>
+                                    </template></SectionHeading
+                                >
                                 <div class="mt-5 space-y-4">
                                     <div v-if="!isReturnNote">
                                         <label class="mb-2 field-label"
@@ -734,30 +710,17 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                             </article>
 
                             <article class="rounded-2xl surface p-5 sm:p-6">
-                                <div class="flex items-start gap-3">
-                                    <MapPin
-                                        class="mt-0.5 size-5 text-brand-600 dark:text-brand-300"
-                                        aria-hidden="true"
-                                    />
-                                    <div>
-                                        <h2
-                                            class="font-semibold text-zinc-950 dark:text-white"
-                                        >
-                                            {{
-                                                isReturnNote
-                                                    ? 'Morada do fornecedor'
-                                                    : 'Morada do destinatário'
-                                            }}
-                                        </h2>
-                                        <p
-                                            class="mt-1 text-sm text-zinc-500 dark:text-zinc-400"
-                                        >
-                                            Esta morada identifica a
-                                            contraparte, mesmo quando o destino
-                                            físico é outro.
-                                        </p>
-                                    </div>
-                                </div>
+                                <SectionHeading :icon="MapPin">
+                                    {{
+                                        isReturnNote
+                                            ? 'Morada do fornecedor'
+                                            : 'Morada do destinatário'
+                                    }}
+                                    <template #description>
+                                        Esta morada identifica a contraparte,
+                                        mesmo quando o destino físico é outro.
+                                    </template></SectionHeading
+                                >
                                 <div class="mt-5 grid gap-4 sm:grid-cols-2">
                                     <label class="block sm:col-span-2">
                                         <span
@@ -807,25 +770,13 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                         </section>
 
                         <section class="rounded-2xl surface p-5 sm:p-6">
-                            <div class="flex items-start gap-3">
-                                <MapPin
-                                    class="mt-0.5 size-5 text-brand-600 dark:text-brand-300"
-                                    aria-hidden="true"
-                                />
-                                <div>
-                                    <h2
-                                        class="font-semibold text-zinc-950 dark:text-white"
-                                    >
-                                        Percurso
-                                    </h2>
-                                    <p
-                                        class="mt-1 text-sm text-zinc-500 dark:text-zinc-400"
-                                    >
-                                        Registe o ponto exacto de carga e o
-                                        local onde a mercadoria será entregue.
-                                    </p>
-                                </div>
-                            </div>
+                            <SectionHeading :icon="MapPin">
+                                Percurso
+                                <template #description>
+                                    Registe o ponto exacto de carga e o local
+                                    onde a mercadoria será entregue.
+                                </template></SectionHeading
+                            >
                             <div class="mt-5 grid gap-6 lg:grid-cols-2">
                                 <div
                                     class="rounded-xl border border-zinc-200 p-4 dark:border-white/10"
@@ -951,26 +902,13 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                             <div
                                 class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
                             >
-                                <div class="flex items-start gap-3">
-                                    <Box
-                                        class="mt-0.5 size-5 text-brand-600 dark:text-brand-300"
-                                        aria-hidden="true"
-                                    />
-                                    <div>
-                                        <h2
-                                            class="font-semibold text-zinc-950 dark:text-white"
-                                        >
-                                            Mercadorias
-                                        </h2>
-                                        <p
-                                            class="mt-1 text-sm text-zinc-500 dark:text-zinc-400"
-                                        >
-                                            Quantidade e unidade são
-                                            obrigatórias; o valor unitário
-                                            alimenta o SAF-T.
-                                        </p>
-                                    </div>
-                                </div>
+                                <SectionHeading :icon="Box">
+                                    Mercadorias
+                                    <template #description>
+                                        Quantidade e unidade são obrigatórias; o
+                                        valor unitário alimenta o SAF-T.
+                                    </template></SectionHeading
+                                >
                                 <button
                                     type="button"
                                     class="inline-flex h-10 items-center justify-center gap-2 rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring ring-inset hover:bg-zinc-50 disabled:hidden dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
@@ -1225,25 +1163,13 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
 
                         <section class="grid gap-6 xl:grid-cols-2">
                             <article class="rounded-2xl surface p-5 sm:p-6">
-                                <div class="flex items-start gap-3">
-                                    <PackagePlus
-                                        class="mt-0.5 size-5 text-brand-600 dark:text-brand-300"
-                                        aria-hidden="true"
-                                    />
-                                    <div>
-                                        <h2
-                                            class="font-semibold text-zinc-950 dark:text-white"
-                                        >
-                                            Transporte e carga
-                                        </h2>
-                                        <p
-                                            class="mt-1 text-sm text-zinc-500 dark:text-zinc-400"
-                                        >
-                                            Dados úteis para identificar o
-                                            veículo e a carga.
-                                        </p>
-                                    </div>
-                                </div>
+                                <SectionHeading :icon="PackagePlus">
+                                    Transporte e carga
+                                    <template #description>
+                                        Dados úteis para identificar o veículo e
+                                        a carga.
+                                    </template></SectionHeading
+                                >
                                 <div class="mt-5 grid gap-4 sm:grid-cols-2">
                                     <label class="block sm:col-span-2"
                                         ><span

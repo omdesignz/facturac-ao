@@ -2,6 +2,7 @@
 import { Link, useForm } from '@inertiajs/vue3';
 import { LoaderCircle, LockKeyhole, Plus, Store } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import EmptyState from '@/components/EmptyState.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
 import FormError from '@/components/FormError.vue';
 import PageHeader from '@/components/PageHeader.vue';
@@ -107,7 +108,7 @@ function submit(): void {
 
 <template>
     <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-        <div class="mx-auto max-w-3xl space-y-6">
+        <div class="max-w-3xl space-y-6">
             <FlashBanner />
 
             <PageHeader
@@ -139,39 +140,25 @@ function submit(): void {
                 </p>
             </div>
 
-            <div
+            <EmptyState
                 v-else-if="visibleRegisters.length === 0"
-                :class="[wellSection, 'px-6 py-14 text-center']"
+                :icon="Store"
+                title="Ainda não há caixas"
+                :description="
+                    canManageRegisters
+                        ? 'Uma caixa é o balcão onde se vende. Crie a primeira para abrir um turno.'
+                        : 'Peça a um administrador para criar a primeira caixa.'
+                "
             >
-                <Store
-                    class="mx-auto size-8 text-zinc-400 dark:text-zinc-500"
-                    aria-hidden="true"
-                />
-                <p class="mt-4 font-semibold text-zinc-900 dark:text-white">
-                    Ainda não há caixas.
-                </p>
-                <template v-if="canManageRegisters">
-                    <p
-                        class="mx-auto mt-1 max-w-sm text-sm/6 text-zinc-600 dark:text-zinc-400"
-                    >
-                        Uma caixa é o balcão onde se vende. Crie a primeira para
-                        abrir um turno.
-                    </p>
-                    <Link
-                        :href="registersIndex.url()"
-                        :class="[buttonGold, 'mt-6']"
-                    >
-                        <Plus class="size-4" aria-hidden="true" />
-                        Criar caixa
-                    </Link>
-                </template>
-                <p
-                    v-else
-                    class="mx-auto mt-1 max-w-sm text-sm/6 text-zinc-600 dark:text-zinc-400"
+                <Link
+                    v-if="canManageRegisters"
+                    :href="registersIndex.url()"
+                    :class="buttonGold"
                 >
-                    Peça a um administrador para criar a primeira caixa.
-                </p>
-            </div>
+                    <Plus class="size-4" aria-hidden="true" />
+                    Criar caixa
+                </Link>
+            </EmptyState>
 
             <form
                 v-else

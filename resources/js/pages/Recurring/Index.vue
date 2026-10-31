@@ -11,6 +11,7 @@ import {
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import DateInput from '@/components/DateInput.vue';
+import EmptyState from '@/components/EmptyState.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
 import FormError from '@/components/FormError.vue';
 import PageHeader from '@/components/PageHeader.vue';
@@ -278,19 +279,12 @@ const dueCount = computed(
                     </template>
                 </PageHeader>
 
-                <div
+                <EmptyState
                     v-if="profiles.length === 0"
-                    class="flex flex-col items-center gap-2 rounded-3xl bg-zinc-900/[0.04] px-4 py-16 text-center dark:bg-white/[0.04]"
-                >
-                    <CalendarSync
-                        class="size-8 text-zinc-300 dark:text-zinc-600"
-                        aria-hidden="true"
-                    />
-                    <p class="text-sm/6 text-zinc-500 dark:text-zinc-400">
-                        Sem avenças. Crie uma para facturar um serviço contínuo
-                        sem ter de se lembrar todos os meses.
-                    </p>
-                </div>
+                    :icon="CalendarSync"
+                    title="Ainda não há avenças"
+                    description="Crie uma para facturar um serviço contínuo sem ter de se lembrar todos os meses."
+                />
 
                 <ul v-else class="space-y-4">
                     <li

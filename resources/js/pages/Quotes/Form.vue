@@ -1,10 +1,19 @@
 <script setup lang="ts">
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import { ArrowLeft, LoaderCircle, Plus, Receipt, Trash2 } from '@lucide/vue';
+import {
+    ArrowLeft,
+    ListOrdered,
+    LoaderCircle,
+    Plus,
+    Receipt,
+    Trash2,
+    UserRound,
+} from '@lucide/vue';
 import { computed } from 'vue';
 import DateInput from '@/components/DateInput.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
 import FormError from '@/components/FormError.vue';
+import SectionHeading from '@/components/SectionHeading.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -482,13 +491,15 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                 <form class="space-y-6" @submit.prevent="submit">
                     <fieldset :disabled="readOnly" class="space-y-6">
                         <section class="rounded-2xl surface p-5">
-                            <h2
-                                class="text-sm font-semibold text-zinc-950 dark:text-white"
-                            >
+                            <SectionHeading :icon="UserRound">
                                 Cliente e validade
-                            </h2>
+                                <template #description
+                                    >Quem recebe o orçamento e até quando
+                                    vale.</template
+                                >
+                            </SectionHeading>
 
-                            <div class="mt-4 grid gap-5 sm:grid-cols-2">
+                            <div class="mt-6 grid gap-5 sm:grid-cols-2">
                                 <div>
                                     <label class="field-label"
                                         >Estabelecimento</label
@@ -596,11 +607,13 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                             <header
                                 class="flex items-center justify-between border-b border-zinc-100 p-5 dark:border-white/10"
                             >
-                                <h2
-                                    class="text-sm font-semibold text-zinc-950 dark:text-white"
-                                >
+                                <SectionHeading :icon="ListOrdered">
                                     Linhas
-                                </h2>
+                                    <template #description
+                                        >O que está a propor, com o IVA de cada
+                                        linha.</template
+                                    >
+                                </SectionHeading>
                                 <button
                                     type="button"
                                     class="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-700 ring-1 ring-zinc-300 focus-ring transition hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"

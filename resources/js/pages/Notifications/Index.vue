@@ -11,6 +11,7 @@ import {
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import type { Component } from 'vue';
+import EmptyState from '@/components/EmptyState.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -136,7 +137,7 @@ function decodeEntities(label: string): string {
         <Head title="Notificações" />
 
         <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-            <div class="mx-auto max-w-4xl space-y-6">
+            <div class="max-w-4xl space-y-6">
                 <FlashBanner />
 
                 <header
@@ -224,28 +225,16 @@ function decodeEntities(label: string): string {
                     </div>
                 </div>
 
-                <div
+                <EmptyState
                     v-if="notifications.data.length === 0"
-                    class="flex flex-col items-center gap-3 rounded-2xl surface px-6 py-16 text-center"
-                >
-                    <BellOff class="size-8 text-zinc-400" aria-hidden="true" />
-                    <p
-                        class="text-base font-semibold text-zinc-950 dark:text-white"
-                    >
-                        {{
-                            filters.estado === 'nao-lidas'
-                                ? 'Nada por ler'
-                                : 'Ainda não há notificações'
-                        }}
-                    </p>
-                    <p
-                        class="max-w-md text-sm/6 text-zinc-500 dark:text-zinc-400"
-                    >
-                        Avisamos quando a AGT responder a um documento, quando
-                        uma factura vencer, quando um orçamento for aceite e
-                        quando uma avença gerar o documento do período.
-                    </p>
-                </div>
+                    :icon="BellOff"
+                    :title="
+                        filters.estado === 'nao-lidas'
+                            ? 'Nada por ler'
+                            : 'Ainda não há notificações'
+                    "
+                    description="Avisamos quando a AGT responder a um documento, quando uma factura vencer, quando um orçamento for aceite e quando uma avença gerar o documento do período."
+                />
 
                 <ul v-else class="overflow-hidden rounded-2xl surface">
                     <li

@@ -36,6 +36,7 @@ import {
 import DateInput from '@/components/DateInput.vue';
 import FormError from '@/components/FormError.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import SectionHeading from '@/components/SectionHeading.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -1489,27 +1490,13 @@ function confirmIssue(): void {
                         <div
                             class="flex items-center gap-3 border-b border-zinc-100 px-5 py-5 sm:px-6 dark:border-white/10"
                         >
-                            <span
-                                class="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-100 text-brand-700 dark:bg-brand-400/10 dark:text-brand-300"
-                            >
-                                <ReceiptText
-                                    class="size-5"
-                                    aria-hidden="true"
-                                />
-                            </span>
-                            <div>
-                                <h2
-                                    class="font-semibold text-zinc-950 dark:text-white"
-                                >
-                                    Dados do documento
-                                </h2>
-                                <p
-                                    class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400"
-                                >
+                            <SectionHeading :icon="ReceiptText">
+                                Dados do documento
+                                <template #description>
                                     {{ form.document_type }} ·
                                     {{ documentTypeLabel }} em Kwanza
-                                </p>
-                            </div>
+                                </template></SectionHeading
+                            >
                         </div>
 
                         <div
@@ -1783,12 +1770,12 @@ function confirmIssue(): void {
                                     class="field-label"
                                     >Disponibilização dos bens / serviços</label
                                 >
-                                <input
+                                <DateInput
                                     id="goods-available-at"
                                     v-model="form.goods_available_at"
-                                    type="datetime-local"
-                                    class="mt-2 block form-input"
-                                    aria-describedby="availability-help"
+                                    mode="datetime"
+                                    class="mt-2"
+                                    describedby="availability-help"
                                 />
                                 <p
                                     id="availability-help"
