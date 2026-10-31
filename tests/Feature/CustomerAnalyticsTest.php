@@ -188,8 +188,8 @@ test('an overdue invoice is counted only while money remains on it', function ()
         $fixture,
         FiscalDocumentType::Invoice,
         400_000,
-        date: now()->subMonths(2)->toDateString(),
-        dueDate: now()->subMonth()->toDateString(),
+        date: now()->subMonthsNoOverflow(2)->toDateString(),
+        dueDate: now()->subMonthNoOverflow()->toDateString(),
     );
 
     $receivables = app(ReceivablesQuery::class);
@@ -330,7 +330,7 @@ test('the analytics page reports the period against the one before it', function
         $fixture,
         FiscalDocumentType::Invoice,
         400_000,
-        date: $now->subMonth()->startOfMonth()->addDay()->toDateString(),
+        date: $now->subMonthNoOverflow()->startOfMonth()->addDay()->toDateString(),
     );
 
     $this->actingAs($fixture['owner'])

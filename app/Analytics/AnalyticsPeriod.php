@@ -45,7 +45,7 @@ class AnalyticsPeriod
         $now = CarbonImmutable::now('Africa/Luanda');
 
         return match ($key) {
-            'last_month' => self::monthly($now->subMonth()),
+            'last_month' => self::monthly($now->subMonthNoOverflow()),
             'this_quarter' => self::spanning(
                 key: 'this_quarter',
                 label: 'Este trimestre',
@@ -70,10 +70,10 @@ class AnalyticsPeriod
                 key: 'last_12_months',
                 label: 'Últimos 12 meses',
                 comparisonLabel: '12 meses anteriores',
-                start: $now->subMonths(11)->startOfMonth(),
+                start: $now->subMonthsNoOverflow(11)->startOfMonth(),
                 end: $now->endOfDay(),
-                previousStart: $now->subMonths(23)->startOfMonth(),
-                previousEnd: $now->subMonths(12)->endOfMonth(),
+                previousStart: $now->subMonthsNoOverflow(23)->startOfMonth(),
+                previousEnd: $now->subMonthsNoOverflow(12)->endOfMonth(),
                 granularity: 'month',
             ),
             default => self::monthly($now, key: 'this_month', label: 'Este mês'),
@@ -91,8 +91,8 @@ class AnalyticsPeriod
             comparisonLabel: 'Mês anterior',
             start: $anchor->startOfMonth(),
             end: $key === 'this_month' ? CarbonImmutable::now('Africa/Luanda')->endOfDay() : $anchor->endOfMonth(),
-            previousStart: $anchor->subMonth()->startOfMonth(),
-            previousEnd: $anchor->subMonth()->endOfMonth(),
+            previousStart: $anchor->subMonthNoOverflow()->startOfMonth(),
+            previousEnd: $anchor->subMonthNoOverflow()->endOfMonth(),
             granularity: 'day',
         );
     }
@@ -165,6 +165,6 @@ class AnalyticsPeriod
 
         return $this->bucketKey($this->granularity === 'day'
             ? $moment->copy()->addDays((int) $this->previousStart->diffInDays($this->start))
-            : $moment->copy()->addMonths((int) $offsetMonths));
+            : $moment->copy()->addMonthsNoOverflow((int) $offsetMonths));
     }
 }

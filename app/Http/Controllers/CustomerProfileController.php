@@ -146,7 +146,7 @@ class CustomerProfileController extends Controller
         // Grouped by day in SQL, then folded into months here: at most a couple
         // of years of dates rather than every document ever issued.
         foreach ($this->receivables->dailyBilled(
-            $query->clone()->where('document_date', '>=', $now->subMonths(23)->startOfMonth()->toDateString()),
+            $query->clone()->where('document_date', '>=', $now->subMonthsNoOverflow(23)->startOfMonth()->toDateString()),
         ) as $date => $total) {
             $key = substr($date, 0, 7);
             $monthly[$key] = ($monthly[$key] ?? 0) + $total;
@@ -155,7 +155,7 @@ class CustomerProfileController extends Controller
         $points = [];
 
         for ($offset = 11; $offset >= 0; $offset--) {
-            $month = $now->subMonths($offset)->startOfMonth();
+            $month = $now->subMonthsNoOverflow($offset)->startOfMonth();
 
             $points[] = [
                 'label' => $month->translatedFormat('M'),
