@@ -853,9 +853,7 @@ function cell(value: string | number | null, key: string): string {
                             Excel editável (.xlsx), com tabelas filtráveis,
                             cabeçalhos fixos e valores numéricos prontos para
                             fórmulas e tabelas dinâmicas. Até
-                            {{
-                                maxDocuments.toLocaleString('pt-AO')
-                            }}
+                            {{ maxDocuments.toLocaleString('pt-AO') }}
                             documentos e 20 000 linhas de detalhe por
                             exportação.
                         </p>

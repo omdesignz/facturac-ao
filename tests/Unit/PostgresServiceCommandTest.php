@@ -66,7 +66,7 @@ function servicePgProcesses(Closure $operation, int $workers = 2, bool $killed =
                     $value = $operation($i, $directory);
                     $result = ['ok' => true, 'value' => $value];
                 } catch (Throwable $error) {
-                    $result = ['ok' => false, 'exception' => $error::class,
+                    $result = ['ok' => false, 'exception' => $error::class, 'message' => $error->getMessage(),
                         'status' => $error instanceof HttpExceptionInterface ? $error->getStatusCode() : 503];
                 }
                 file_put_contents("$directory/result-$i", json_encode($result, JSON_THROW_ON_ERROR));
@@ -427,7 +427,8 @@ test('postgres service credential expiry is rechecked after a lock wait using th
 
         return servicePgHttp($f, 'expiry-wait');
     });
-    expect($results[1]['value']['status'])->toBe(401)->and(CatalogueItem::count())->toBe($replay ? 1 : 0)
+    expect(array_key_exists('value', $results[1]))->toBe(true, json_encode($results))
+        ->and($results[1]['value']['status'])->toBe(401)->and(CatalogueItem::count())->toBe($replay ? 1 : 0)
         ->and(DB::table('external_command_operations')->count())->toBe($replay ? 1 : 0);
 })->with([false, true]);
 
