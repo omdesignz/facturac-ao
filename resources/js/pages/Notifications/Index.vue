@@ -201,7 +201,7 @@ function decodeEntities(label: string): string {
                             ]"
                             :key="option.value"
                             type="button"
-                            class="rounded-lg px-3 py-1.5 text-sm font-medium focus-ring transition"
+                            class="rounded-lg px-3 py-1.5 text-sm font-medium focus-ring transition pointer-coarse:min-h-11"
                             :class="
                                 filters.estado === option.value
                                     ? 'bg-white text-zinc-950 shadow-sm dark:bg-white/10 dark:text-white'

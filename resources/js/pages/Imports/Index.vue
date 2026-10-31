@@ -1156,7 +1156,7 @@ function historyUrl(publicId: string): string {
                             <a
                                 v-if="selectedTemplate"
                                 :href="selectedTemplate.template_url"
-                                class="inline-flex shrink-0 items-center gap-2 text-sm font-semibold text-brand-700 hover:text-brand-600 dark:text-amber-300 dark:hover:text-amber-200"
+                                class="inline-flex shrink-0 items-center gap-2 text-sm font-semibold text-brand-700 hover:text-brand-600 dark:text-amber-300 dark:hover:text-amber-200 pointer-coarse:min-h-11"
                             >
                                 <Download class="size-4" aria-hidden="true" />
                                 Descarregar modelo

@@ -1051,7 +1051,7 @@ function formatDate(value: string | null): string {
                                 href="https://portaldoparceiro.minfin.gov.ao/doc-agt/faturacao-electronica/1/index.html"
                                 target="_blank"
                                 rel="noreferrer"
-                                class="mt-5 inline-flex items-center gap-1.5 text-xs font-semibold text-brand-700 hover:text-brand-600 dark:text-brand-300"
+                                class="mt-5 inline-flex items-center gap-1.5 text-xs font-semibold text-brand-700 hover:text-brand-600 dark:text-brand-300 pointer-coarse:min-h-11"
                             >
                                 Documentação oficial
                                 <ArrowUpRight

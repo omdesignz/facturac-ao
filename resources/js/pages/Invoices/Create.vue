@@ -3783,7 +3783,7 @@ function confirmIssue(): void {
                             <Link
                                 v-if="!guardrails.mfa_enabled"
                                 :href="security.url()"
-                                class="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-brand-700 hover:text-brand-600 dark:text-brand-300"
+                                class="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-brand-700 hover:text-brand-600 dark:text-brand-300 pointer-coarse:min-h-11"
                             >
                                 <LockKeyhole
                                     class="size-3.5"
