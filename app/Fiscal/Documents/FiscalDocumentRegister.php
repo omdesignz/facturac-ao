@@ -10,6 +10,7 @@ use App\Models\FiscalDocument;
 use App\Models\LegalEntity;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 final class FiscalDocumentRegister
 {
@@ -109,47 +110,7 @@ final class FiscalDocumentRegister
         array $filters,
         bool $canPrepareDocuments,
     ): array {
-        $query = FiscalDocument::query()
-            ->where('workspace_id', $legalEntity->workspace_id)
-            ->where('legal_entity_id', $legalEntity->id)
-            ->select([
-                'id',
-                'public_id',
-                'workspace_id',
-                'legal_entity_id',
-                'establishment_id',
-                'customer_id',
-                'document_type',
-                'status',
-                'document_no',
-                'document_date',
-                'due_date',
-                'currency_code',
-                'customer_name',
-                'customer_tax_identification_number',
-                'gross_total_minor',
-                'issued_at',
-                'sent_to_customer_at',
-                'sent_to_email',
-                'send_count',
-                'first_opened_by_customer_at',
-                'open_count',
-                'created_at',
-                'updated_at',
-            ])
-            ->with([
-                'customer:id,public_id,email',
-                'establishment:id,public_id,name,code',
-                'submissions:id,public_id,fiscal_document_id,status,request_id,safe_message,updated_at,qualified_projection,reducer_version',
-            ]);
-
-        $this->applyFilters($query, $legalEntity, $filters);
-
-        $documents = $query
-            ->latest('document_date')
-            ->latest('id')
-            ->paginate(25)
-            ->withQueryString();
+        $documents = $this->paginate($legalEntity, $filters);
 
         return [
             'documents' => [
@@ -207,6 +168,65 @@ final class FiscalDocumentRegister
     }
 
     /**
+     * One page of the register, newest first, matching the filters.
+     *
+     * @param  array{
+     *     q: string,
+     *     status: string,
+     *     family: string,
+     *     type: string,
+     *     establishment: string,
+     *     from: string,
+     *     to: string
+     * }  $filters
+     * @return LengthAwarePaginator<int, FiscalDocument>
+     */
+    public function paginate(LegalEntity $legalEntity, array $filters): LengthAwarePaginator
+    {
+        $query = FiscalDocument::query()
+            ->where('workspace_id', $legalEntity->workspace_id)
+            ->where('legal_entity_id', $legalEntity->id)
+            ->select([
+                'id',
+                'public_id',
+                'workspace_id',
+                'legal_entity_id',
+                'establishment_id',
+                'customer_id',
+                'document_type',
+                'status',
+                'document_no',
+                'document_date',
+                'due_date',
+                'currency_code',
+                'customer_name',
+                'customer_tax_identification_number',
+                'gross_total_minor',
+                'issued_at',
+                'sent_to_customer_at',
+                'sent_to_email',
+                'send_count',
+                'first_opened_by_customer_at',
+                'open_count',
+                'created_at',
+                'updated_at',
+            ])
+            ->with([
+                'customer:id,public_id,email',
+                'establishment:id,public_id,name,code',
+                'submissions:id,public_id,fiscal_document_id,status,request_id,safe_message,updated_at,qualified_projection,reducer_version',
+            ]);
+
+        $this->applyFilters($query, $legalEntity, $filters);
+
+        return $query
+            ->latest('document_date')
+            ->latest('id')
+            ->paginate(25)
+            ->withQueryString();
+    }
+
+    /**
      * @param  Builder<FiscalDocument>  $query
      * @param  array{
      *     q: string,
@@ -228,9 +248,9 @@ final class FiscalDocumentRegister
 
             $query->where(function (Builder $matching) use ($search): void {
                 $matching
-                    ->where('document_no', 'like', $search)
-                    ->orWhere('customer_name', 'like', $search)
-                    ->orWhere('customer_tax_identification_number', 'like', $search);
+                    ->whereLike('document_no', $search)
+                    ->orWhereLike('customer_name', $search)
+                    ->orWhereLike('customer_tax_identification_number', $search);
             });
         }
 
@@ -315,7 +335,7 @@ final class FiscalDocumentRegister
     }
 
     /** @return array<string, mixed> */
-    private function present(FiscalDocument $document, bool $canPrepareDocuments): array
+    public function present(FiscalDocument $document, bool $canPrepareDocuments): array
     {
         $submission = $document->submissions->first();
         $workflowStatus = CurrentAgtState::status($document)->value;
