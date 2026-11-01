@@ -3,14 +3,12 @@
 namespace App\Actions;
 
 use App\Billing\SubscriptionAccess;
-use App\CatalogueItemType;
 use App\Exceptions\BillingActionRefused;
 use App\Exceptions\FiscalFinalizationBlocked;
+use App\Fiscal\Documents\CatalogueDocumentLines;
 use App\Fiscal\Pos\FinalConsumer;
 use App\Fiscal\Pos\PosSeriesResolver;
 use App\FiscalDocumentType;
-use App\FiscalOperationType;
-use App\Models\CatalogueItem;
 use App\Models\Customer;
 use App\Models\FiscalSeries;
 use App\Models\PosSale;
@@ -55,7 +53,7 @@ final readonly class CompletePosSale
     public function __construct(
         private SaveFiscalDocumentDraft $saveDraft,
         private IssueFiscalDocument $issue,
-        private ResolveCustomerPrices $resolvePrices,
+        private CatalogueDocumentLines $catalogueLines,
         private PosSeriesResolver $series,
     ) {}
 
@@ -117,7 +115,7 @@ final readonly class CompletePosSale
 
         $legalEntity = $locked->legalEntity;
         $customer = $this->savedCustomer($locked, $sale['customer_public_id']);
-        $lines = $this->lines($locked, $customer, $sale['lines']);
+        $lines = $this->catalogueLines->for($legalEntity, $locked->currency_code, $customer, $sale['lines']);
 
         $type = $this->documentType($sale, $lines);
 
@@ -271,71 +269,6 @@ final readonly class CompletePosSale
     }
 
     /**
-     * The fiscal lines, built from the catalogue as it stands now.
-     *
-     * @param  list<SaleLine>  $requested
-     * @return list<array{
-     *     operation_type: string,
-     *     operation_date: string|null,
-     *     product_code: string,
-     *     product_description: string,
-     *     quantity: string,
-     *     unit_of_measure: string,
-     *     unit_price: string,
-     *     discount_percentage: string,
-     *     tax_type: string,
-     *     tax_code: string|null,
-     *     tax_percentage: string,
-     *     tax_exemption_code: string|null
-     * }>
-     */
-    private function lines(PosSession $session, ?Customer $customer, array $requested): array
-    {
-        $items = CatalogueItem::query()
-            ->where('workspace_id', $session->workspace_id)
-            ->where('legal_entity_id', $session->legal_entity_id)
-            ->where('is_active', true)
-            ->where('currency_code', $session->currency_code)
-            ->whereIn('public_id', array_column($requested, 'catalogue_item_public_id'))
-            ->get()
-            ->keyBy('public_id');
-
-        // The same precedence as the invoice editor: a price agreed with this
-        // buyer, then their tabela, then the catalogue.
-        $agreed = $customer instanceof Customer ? $this->resolvePrices->forCustomer($customer) : [];
-        $lines = [];
-
-        foreach ($requested as $index => $line) {
-            $item = $items->get($line['catalogue_item_public_id']);
-
-            if (! $item instanceof CatalogueItem) {
-                throw ValidationException::withMessages([
-                    "lines.{$index}.catalogue_item_public_id" => 'Este artigo já não está disponível para venda.',
-                ]);
-            }
-
-            $lines[] = [
-                'operation_type' => $item->type === CatalogueItemType::Service
-                    ? FiscalOperationType::GeneralService->value
-                    : FiscalOperationType::GoodsTransfer->value,
-                'operation_date' => null,
-                'product_code' => $item->code,
-                'product_description' => mb_substr($item->name, 0, 200),
-                'quantity' => $line['quantity'],
-                'unit_of_measure' => $item->unit_of_measure,
-                'unit_price' => $this->decimal($agreed[$item->public_id] ?? $item->unit_price_minor),
-                'discount_percentage' => $line['discount_percentage'],
-                'tax_type' => $item->tax_type,
-                'tax_code' => $item->tax_code,
-                'tax_percentage' => (string) $item->tax_percentage,
-                'tax_exemption_code' => $item->tax_exemption_code,
-            ];
-        }
-
-        return $lines;
-    }
-
-    /**
      * @param  Sale  $sale
      * @return array{name: string, tax_identification_number: string, country_code: string, address_line: string|null}
      */
@@ -393,11 +326,5 @@ final readonly class CompletePosSale
         }
 
         return [$tendered, $tendered - $total];
-    }
-
-    /** Minor units as the "123.45" string the calculator reads, without a float. */
-    private function decimal(int $minor): string
-    {
-        return intdiv($minor, 100).'.'.str_pad((string) ($minor % 100), 2, '0', STR_PAD_LEFT);
     }
 }
