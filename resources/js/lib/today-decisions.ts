@@ -17,6 +17,8 @@ export interface DecisionInput {
                   name: string;
                   overdue_minor: number;
                   oldest_days_past_due: number;
+                  /** Reminded lately, so left alone for now. */
+                  recently_reminded?: boolean;
               }[];
           }
         | null
@@ -71,7 +73,9 @@ export function decisionsFor(
 
     const debtor = collections?.customers.find(
         (customer) =>
-            customer.customer_public_id !== null && customer.overdue_minor > 0,
+            customer.customer_public_id !== null &&
+            customer.overdue_minor > 0 &&
+            !customer.recently_reminded,
     );
 
     if (debtor !== undefined && debtor.customer_public_id !== null) {

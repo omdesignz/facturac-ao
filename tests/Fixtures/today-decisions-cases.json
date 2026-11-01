@@ -60,6 +60,35 @@
                 "lowStock": null
             },
             "expected": []
+        },
+        {
+            "name": "someone reminded lately gives way to the next customer",
+            "input": {
+                "focus": null,
+                "collections": {
+                    "customers": [
+                        { "customer_public_id": "cus_1", "name": "Mavinga & Filhos", "overdue_minor": 37800000, "oldest_days_past_due": 49, "recently_reminded": true },
+                        { "customer_public_id": "cus_2", "name": "Cooperativa Kizomba", "overdue_minor": 13110000, "oldest_days_past_due": 35, "recently_reminded": false }
+                    ]
+                },
+                "lowStock": null
+            },
+            "expected": [
+                { "key": "collection", "kicker": "Cobrança", "headline": "Cooperativa Kizomba deve", "detail": "há 35 dias. Lembrete preparado. Nada é enviado até confirmar.", "action": "Rever e enviar", "kind": "remind", "secondary_label": "Mais tarde", "customer": { "public_id": "cus_2", "name": "Cooperativa Kizomba" }, "amount_minor": 13110000 }
+            ]
+        },
+        {
+            "name": "everyone late was reminded lately",
+            "input": {
+                "focus": null,
+                "collections": {
+                    "customers": [
+                        { "customer_public_id": "cus_1", "name": "Mavinga & Filhos", "overdue_minor": 37800000, "oldest_days_past_due": 49, "recently_reminded": true }
+                    ]
+                },
+                "lowStock": null
+            },
+            "expected": []
         }
     ]
 }

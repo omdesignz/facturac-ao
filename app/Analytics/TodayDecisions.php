@@ -15,7 +15,7 @@ class TodayDecisions
 {
     /**
      * @param  array<string, mixed>|null  $focus
-     * @param  array{customers: list<array{customer_public_id: string|null, name: string, overdue_minor: int, oldest_days_past_due: int}>}|null  $collections
+     * @param  array{customers: list<array{customer_public_id: string|null, name: string, overdue_minor: int, oldest_days_past_due: int, recently_reminded?: bool}>}|null  $collections
      * @param  array{name: string, quantity: int|string, unit: string}|null  $lowStock
      * @return list<Decision>
      */
@@ -57,13 +57,15 @@ class TodayDecisions
     }
 
     /**
-     * @param  array{customers: list<array{customer_public_id: string|null, name: string, overdue_minor: int, oldest_days_past_due: int}>}|null  $collections
+     * @param  array{customers: list<array{customer_public_id: string|null, name: string, overdue_minor: int, oldest_days_past_due: int, recently_reminded?: bool}>}|null  $collections
      * @return Decision|null
      */
     private function collection(?array $collections): ?array
     {
         $debtor = collect($collections['customers'] ?? [])->first(
-            fn (array $customer): bool => is_string($customer['customer_public_id']) && $customer['overdue_minor'] > 0,
+            fn (array $customer): bool => is_string($customer['customer_public_id'])
+                && $customer['overdue_minor'] > 0
+                && ! ($customer['recently_reminded'] ?? false),
         );
 
         if ($debtor === null) {

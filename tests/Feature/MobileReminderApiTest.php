@@ -2,6 +2,8 @@
 
 use App\Actions\PreparePaymentReminder;
 use App\Actions\SignInMobileDevice;
+use App\Analytics\DashboardQuery;
+use App\Analytics\ReminderHistory;
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
 use App\Models\Customer;
@@ -278,4 +280,53 @@ test('cobrar says when each customer was last reminded', function () {
 
     $this->withToken($company['token'])->getJson(route('mobile.v1.collections'))
         ->assertJsonPath('data.customers.0.last_reminder_sent_at', $receipt->json('data.sent_at'));
+});
+
+test('someone just reminded leaves hoje for a week, and the next customer takes their place', function () {
+    $company = reminderCompanyForPhone();
+    reminderInvoiceForPhone($company, 40, 2_000_000);
+
+    $next = Customer::factory()->create([
+        'workspace_id' => $company['legalEntity']->workspace_id,
+        'legal_entity_id' => $company['legalEntity']->id,
+        'name' => 'Cooperativa Kizomba',
+    ]);
+    reminderInvoiceForPhone([...$company, 'customer' => $next], 5);
+
+    $this->withToken($company['token'])->getJson(route('mobile.v1.today'))
+        ->assertJsonPath('data.decisions.0.customer.name', 'Mavinga & Filhos');
+
+    $this->withToken($company['token'])
+        ->postJson(route('mobile.v1.reminders.store', $company['customer']->public_id), reminderWords())
+        ->assertCreated();
+
+    $this->withToken($company['token'])->getJson(route('mobile.v1.today'))
+        ->assertJsonPath('data.decisions.0.customer.name', 'Cooperativa Kizomba')
+        ->assertJsonCount(2, 'data.debtors');
+
+    expect(app(DashboardQuery::class)->collections($company['legalEntity'])['customers'][0]['recently_reminded'])->toBeTrue();
+
+    $this->travel(ReminderHistory::QUIET_DAYS)->days();
+    $this->travel(1)->minutes();
+
+    $this->withToken($company['token'])->getJson(route('mobile.v1.today'))
+        ->assertJsonPath('data.decisions.0.customer.name', 'Mavinga & Filhos');
+});
+
+test('a reminded customer comes back early when they owe more late', function () {
+    $company = reminderCompanyForPhone();
+    reminderInvoiceForPhone($company, 5);
+
+    $this->withToken($company['token'])
+        ->postJson(route('mobile.v1.reminders.store', $company['customer']->public_id), reminderWords())
+        ->assertCreated();
+
+    $this->withToken($company['token'])->getJson(route('mobile.v1.today'))
+        ->assertJsonPath('data.decisions', []);
+
+    reminderInvoiceForPhone($company, 2, 500_000);
+
+    $this->withToken($company['token'])->getJson(route('mobile.v1.today'))
+        ->assertJsonPath('data.decisions.0.customer.name', 'Mavinga & Filhos')
+        ->assertJsonPath('data.decisions.0.amount_minor', 1_500_000);
 });

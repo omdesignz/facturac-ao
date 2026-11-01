@@ -13,6 +13,9 @@ use Spatie\Activitylog\Models\Activity;
  */
 class ReminderHistory
 {
+    /** How long a reminded customer stays off Hoje, unless they owe more late than the reminder said. */
+    public const int QUIET_DAYS = 7;
+
     /**
      * @param  list<string>  $customerPublicIds
      * @return array<string, string> ISO 8601 times, by customer public id
@@ -33,5 +36,31 @@ class ReminderHistory
                 $publicIds[$row->subject_id] => CarbonImmutable::parse($row->sent_at)->toIso8601String(),
             ])
             ->all();
+    }
+
+    /**
+     * The customers among these who were reminded recently enough to leave alone.
+     *
+     * @param  array<int, array{customer_public_id: string|null, overdue_minor: int}>  $rows
+     * @return list<string> customer public ids
+     */
+    public function recentlyReminded(array $rows): array
+    {
+        $overdue = collect($rows)
+            ->filter(fn (array $row): bool => $row['customer_public_id'] !== null)
+            ->pluck('overdue_minor', 'customer_public_id');
+        $publicIds = Customer::query()->whereIn('public_id', $overdue->keys())->pluck('public_id', 'id');
+
+        return array_values(Activity::query()
+            ->where('subject_type', (new Customer)->getMorphClass())
+            ->whereIn('subject_id', $publicIds->keys())
+            ->where('event', PreparePaymentReminder::EVENT)
+            ->where('created_at', '>=', now()->subDays(self::QUIET_DAYS))
+            ->orderBy('id')
+            ->get()
+            ->keyBy('subject_id')
+            ->filter(fn (Activity $sent): bool => $overdue[$publicIds[$sent->subject_id]] <= (int) $sent->properties['total_minor'])
+            ->map(fn (Activity $sent): string => $publicIds[$sent->subject_id])
+            ->all());
     }
 }

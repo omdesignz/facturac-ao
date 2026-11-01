@@ -25,6 +25,7 @@ class DashboardQuery
         private ReceivablesQuery $receivables,
         private AgingQuery $aging,
         private DocumentSnapshot $snapshot,
+        private ReminderHistory $reminders,
     ) {}
 
     /**
@@ -116,11 +117,13 @@ class DashboardQuery
     /**
      * Who owes the most for the longest, and the age of all debt together.
      *
-     * @return array{customers: list<array{customer_public_id: string|null, name: string, outstanding_minor: int, overdue_minor: int, document_count: int, oldest_days_past_due: int, buckets: array<string, int>}>, customer_count: int, totals: list<array{key: string, label: string, total_minor: int}>, outstanding_minor: int}
+     * @return array{customers: list<array{customer_public_id: string|null, name: string, outstanding_minor: int, overdue_minor: int, document_count: int, oldest_days_past_due: int, buckets: array<string, int>, recently_reminded: bool}>, customer_count: int, totals: list<array{key: string, label: string, total_minor: int}>, outstanding_minor: int}
      */
     public function collections(LegalEntity $legalEntity, int $limit = 4): array
     {
         $rows = $this->aging->byCustomer($legalEntity);
+        $shown = array_slice($rows, 0, $limit);
+        $recentlyReminded = $this->reminders->recentlyReminded($shown);
 
         return [
             'customers' => array_map(
@@ -132,8 +135,9 @@ class DashboardQuery
                     'document_count' => $row['document_count'],
                     'oldest_days_past_due' => $row['oldest_days_past_due'],
                     'buckets' => $row['buckets'],
+                    'recently_reminded' => in_array($row['customer_public_id'], $recentlyReminded, true),
                 ],
-                array_slice($rows, 0, $limit),
+                $shown,
             ),
             'customer_count' => count($rows),
             'totals' => $this->aging->totals($rows),
