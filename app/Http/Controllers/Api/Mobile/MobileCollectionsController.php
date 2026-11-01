@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Mobile;
 
 use App\Analytics\AgingQuery;
+use App\Analytics\ReminderHistory;
 use App\Models\Customer;
 use App\Models\LegalEntity;
 use Illuminate\Http\JsonResponse;
@@ -11,7 +12,10 @@ use Illuminate\Support\Facades\Gate;
 
 class MobileCollectionsController
 {
-    public function __construct(private readonly AgingQuery $aging) {}
+    public function __construct(
+        private readonly AgingQuery $aging,
+        private readonly ReminderHistory $reminders,
+    ) {}
 
     public function __invoke(Request $request): JsonResponse
     {
@@ -20,12 +24,16 @@ class MobileCollectionsController
         /** @var LegalEntity $legalEntity */
         $legalEntity = $request->attributes->get('currentLegalEntity');
         $rows = $this->aging->byCustomer($legalEntity);
+        $lastReminders = $this->reminders->lastSentAt(
+            array_values(array_filter(array_column($rows, 'customer_public_id'))),
+        );
 
         return response()->json(['data' => [
             'currency_code' => $legalEntity->currency_code,
             'outstanding_minor' => array_sum(array_column($rows, 'outstanding_minor')),
             'overdue_minor' => array_sum(array_column($rows, 'overdue_minor')),
             'customers' => array_map(fn (array $row): array => [
+                'last_reminder_sent_at' => $lastReminders[$row['customer_public_id']] ?? null,
                 'customer_public_id' => $row['customer_public_id'],
                 'name' => $row['name'],
                 'outstanding_minor' => $row['outstanding_minor'],

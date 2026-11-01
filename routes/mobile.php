@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\Mobile\MobileCollectionsController;
 use App\Http\Controllers\Api\Mobile\MobileProfileController;
+use App\Http\Controllers\Api\Mobile\MobileReminderController;
 use App\Http\Controllers\Api\Mobile\MobileSessionController;
 use App\Http\Controllers\Api\Mobile\MobileTodayController;
 use App\Http\Middleware\EnsureMobileCompany;
@@ -21,6 +22,10 @@ Route::name('mobile.v1.')->group(function (): void {
         Route::middleware(['workspace', EnsureMobileCompany::class])->group(function (): void {
             Route::get('today', MobileTodayController::class)->name('today');
             Route::get('collections', MobileCollectionsController::class)->name('collections');
+            Route::get('customers/{customerPublicId}/reminder', [MobileReminderController::class, 'show'])->name('reminders.show');
+            Route::post('customers/{customerPublicId}/reminder', [MobileReminderController::class, 'store'])
+                ->middleware('throttle:6,1')
+                ->name('reminders.store');
         });
     });
 });
