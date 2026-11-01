@@ -161,3 +161,48 @@ test('the figures need a token', function () {
     $this->getJson(route('mobile.v1.today'))->assertUnauthorized();
     $this->getJson(route('mobile.v1.collections'))->assertUnauthorized();
 });
+
+test('hoje gives sixty days of billing, oldest first, with quiet days at zero', function () {
+    $company = mobileCompany();
+    mobileInvoice($company, 0, 1_000_000, ['document_date' => now()->toDateString()]);
+    mobileInvoice($company, 0, 500_000, ['document_date' => now()->subDays(3)->toDateString()]);
+    mobileInvoice($company, 0, 900_000, ['document_date' => now()->subDays(60)->toDateString()]);
+
+    $trend = $this->withToken($company['token'])->getJson(route('mobile.v1.today'))
+        ->assertOk()
+        ->json('data.billing_trend');
+
+    expect($trend)->toHaveCount(60)
+        ->and($trend[59])->toBe(['date' => now()->toDateString(), 'billed_minor' => 1_000_000])
+        ->and($trend[56])->toBe(['date' => now()->subDays(3)->toDateString(), 'billed_minor' => 500_000])
+        ->and($trend[58]['billed_minor'])->toBe(0)
+        ->and($trend[0]['date'])->toBe(now()->subDays(59)->toDateString())
+        ->and(array_sum(array_column($trend, 'billed_minor')))->toBe(1_500_000);
+});
+
+test('the billing trend never shows another company', function () {
+    $company = mobileCompany();
+    mobileInvoice($company, 0, 1_000_000, ['document_date' => now()->toDateString()]);
+    $stranger = mobileCompany('Outra Empresa');
+
+    $trend = $this->withToken($stranger['token'])->getJson(route('mobile.v1.today'))->json('data.billing_trend');
+
+    expect(array_sum(array_column($trend, 'billed_minor')))->toBe(0);
+});
+
+test('cobrar gives the age of the debt, and each customer\'s share of it', function () {
+    $company = mobileCompany();
+    mobileInvoice($company, 10, 1_000_000);
+    mobileInvoice($company, 45, 500_000);
+
+    $response = $this->withToken($company['token'])->getJson(route('mobile.v1.collections'))->assertOk();
+    $aging = collect($response->json('data.aging'))->keyBy('key');
+
+    expect($aging->keys()->all())->toBe(['current', 'd1_30', 'd31_60', 'd61_90', 'd90_plus'])
+        ->and($aging['d1_30']['total_minor'])->toBe(1_000_000)
+        ->and($aging['d1_30']['label'])->toBe('1–30 dias')
+        ->and($aging['d31_60']['total_minor'])->toBe(500_000)
+        ->and($aging['current']['total_minor'])->toBe(0)
+        ->and($response->json('data.customers.0.buckets.d1_30'))->toBe(1_000_000)
+        ->and($response->json('data.customers.0.buckets.d31_60'))->toBe(500_000);
+});

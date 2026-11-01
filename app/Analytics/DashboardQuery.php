@@ -115,6 +115,26 @@ class DashboardQuery
     }
 
     /**
+     * What was billed on each of the last days, oldest first, with quiet days
+     * at zero so a chart spaces them truthfully.
+     *
+     * @return list<array{date: string, billed_minor: int}>
+     */
+    public function billingTrend(LegalEntity $legalEntity, CarbonImmutable $now, int $days = 60): array
+    {
+        $first = $now->subDays($days - 1)->startOfDay();
+        $totals = $this->receivables->dailyBilled(
+            $this->receivables->forLegalEntity($legalEntity)->whereBetween('document_date', [$first, $now->endOfDay()]),
+        );
+
+        return array_map(function (int $offset) use ($first, $totals): array {
+            $date = $first->addDays($offset)->toDateString();
+
+            return ['date' => $date, 'billed_minor' => $totals[$date] ?? 0];
+        }, range(0, $days - 1));
+    }
+
+    /**
      * Who owes the most for the longest, and the age of all debt together.
      *
      * @return array{customers: list<array{customer_public_id: string|null, name: string, outstanding_minor: int, overdue_minor: int, document_count: int, oldest_days_past_due: int, buckets: array<string, int>, recently_reminded: bool}>, customer_count: int, totals: list<array{key: string, label: string, total_minor: int}>, outstanding_minor: int}

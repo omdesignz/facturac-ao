@@ -32,6 +32,7 @@ class MobileCollectionsController
             'currency_code' => $legalEntity->currency_code,
             'outstanding_minor' => array_sum(array_column($rows, 'outstanding_minor')),
             'overdue_minor' => array_sum(array_column($rows, 'overdue_minor')),
+            'aging' => $this->aging->totals($rows),
             'customers' => array_map(fn (array $row): array => [
                 'last_reminder_sent_at' => $lastReminders[$row['customer_public_id']] ?? null,
                 'customer_public_id' => $row['customer_public_id'],
@@ -40,6 +41,7 @@ class MobileCollectionsController
                 'overdue_minor' => $row['overdue_minor'],
                 'document_count' => $row['document_count'],
                 'oldest_days_past_due' => $row['oldest_days_past_due'],
+                'buckets' => $row['buckets'],
                 'over_limit' => $row['over_limit'],
                 'last_opened_by_customer_at' => $row['last_opened_by_customer_at'],
             ], $rows),

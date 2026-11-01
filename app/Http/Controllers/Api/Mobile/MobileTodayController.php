@@ -40,6 +40,7 @@ class MobileTodayController
                 'billed_minor' => $kpis['billed_today_minor'],
                 'issued_count' => $kpis['issued_today'],
             ],
+            'billing_trend' => $this->dashboard->billingTrend($legalEntity, $now),
             'debtors' => array_map(fn (array $customer): array => [
                 'customer_public_id' => $customer['customer_public_id'],
                 'name' => $customer['name'],
