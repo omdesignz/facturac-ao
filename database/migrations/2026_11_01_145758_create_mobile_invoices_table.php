@@ -5,8 +5,9 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * The document is the invoice; this row only remembers the client key that makes
- * a retried request from the phone come back as the same invoice, not a second.
+ * The document is the invoice or receipt; this row only remembers the client key
+ * that makes a retried request from the phone come back as the same document,
+ * not a second.
  */
 return new class extends Migration
 {

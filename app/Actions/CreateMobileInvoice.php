@@ -83,12 +83,12 @@ final readonly class CreateMobileInvoice
             ->first();
     }
 
-    public function canBeNumbered(LegalEntity $legalEntity): bool
+    public function canBeNumbered(LegalEntity $legalEntity, FiscalDocumentType $type = FiscalDocumentType::Invoice): bool
     {
         $establishment = $this->establishment($legalEntity);
 
         return $establishment instanceof Establishment
-            && $this->series->exists($legalEntity, $establishment, FiscalDocumentType::Invoice);
+            && $this->series->exists($legalEntity, $establishment, $type);
     }
 
     /**

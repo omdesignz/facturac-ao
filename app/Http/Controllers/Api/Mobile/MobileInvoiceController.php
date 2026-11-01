@@ -7,13 +7,11 @@ use App\Billing\SubscriptionAccess;
 use App\Exceptions\BillingActionRefused;
 use App\Exceptions\FiscalFinalizationBlocked;
 use App\Exceptions\SubscriptionRequired;
-use App\Fiscal\Documents\FiscalDocumentPresenter;
-use App\Fiscal\Documents\FiscalDocumentRegister;
+use App\Fiscal\Documents\MobileDocumentReceipt;
 use App\Http\Requests\PreviewMobileInvoiceRequest;
 use App\Http\Requests\StoreMobileInvoiceRequest;
 use App\Models\FiscalDocument;
 use App\Models\LegalEntity;
-use App\Models\MobileInvoice;
 use App\Models\User;
 use App\SubscriptionFeature;
 use Illuminate\Http\JsonResponse;
@@ -69,7 +67,7 @@ class MobileInvoiceController
         )]);
     }
 
-    public function store(StoreMobileInvoiceRequest $request, FiscalDocumentRegister $register, FiscalDocumentPresenter $presenter): JsonResponse
+    public function store(StoreMobileInvoiceRequest $request, MobileDocumentReceipt $receipt): JsonResponse
     {
         $user = $this->user($request);
         $legalEntity = $this->legalEntity($request);
@@ -102,30 +100,9 @@ class MobileInvoiceController
         }
 
         return response()->json(
-            ['data' => $this->receipt($invoice, $legalEntity, $register, $presenter)],
+            ['data' => $receipt->for($invoice, $legalEntity)],
             $invoice->replayed ? Response::HTTP_OK : Response::HTTP_CREATED,
         );
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function receipt(MobileInvoice $invoice, LegalEntity $legalEntity, FiscalDocumentRegister $register, FiscalDocumentPresenter $presenter): array
-    {
-        $document = $invoice->fiscalDocument;
-        $selected = (array) $register->selected($legalEntity, $document->public_id, false);
-
-        return [
-            'public_id' => $document->public_id,
-            'document_no' => $document->document_no,
-            'customer_name' => $document->customer_name,
-            'gross_total_minor' => $document->gross_total_minor,
-            'currency_code' => $document->currency_code,
-            'status_label' => $selected['workflow_label'],
-            'is_issued' => $document->document_no !== null,
-            'share_url' => $document->document_no === null ? null : $presenter->signedUrl($document),
-            'replayed' => $invoice->replayed,
-        ];
     }
 
     private function legalEntity(Request $request): LegalEntity

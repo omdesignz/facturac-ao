@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Mobile\MobileCustomerTaxIdentificationController;
 use App\Http\Controllers\Api\Mobile\MobileDocumentController;
 use App\Http\Controllers\Api\Mobile\MobileInvoiceController;
 use App\Http\Controllers\Api\Mobile\MobileItemController;
+use App\Http\Controllers\Api\Mobile\MobilePaymentController;
 use App\Http\Controllers\Api\Mobile\MobileProfileController;
 use App\Http\Controllers\Api\Mobile\MobileReminderController;
 use App\Http\Controllers\Api\Mobile\MobileSessionController;
@@ -41,6 +42,10 @@ Route::name('mobile.v1.')->group(function (): void {
             Route::patch('customers/{customerPublicId}/tax-identification', MobileCustomerTaxIdentificationController::class)
                 ->middleware('throttle:20,1')
                 ->name('customers.tax-identification');
+            Route::get('customers/{customerPublicId}/payment', [MobilePaymentController::class, 'show'])->name('payments.show');
+            Route::post('customers/{customerPublicId}/payment', [MobilePaymentController::class, 'store'])
+                ->middleware('throttle:10,1')
+                ->name('payments.store');
             Route::get('customers/{customerPublicId}/reminder', [MobileReminderController::class, 'show'])->name('reminders.show');
             Route::post('customers/{customerPublicId}/reminder', [MobileReminderController::class, 'store'])
                 ->middleware('throttle:6,1')
