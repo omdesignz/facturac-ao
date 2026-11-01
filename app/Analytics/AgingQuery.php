@@ -157,7 +157,8 @@ class AgingQuery
             $movement = 0;
 
             if ($this->receivables->isBillable($type)) {
-                $movement = $document->gross_total_minor;
+                // Listed, because it happened, but it adds nothing to what is owed.
+                $movement = $this->receivables->isReturnedByAgt($document) ? 0 : $document->gross_total_minor;
             } elseif ($type->reducesReceivable()) {
                 $movement = -$document->gross_total_minor;
             } elseif ($type->settlesOtherDocuments()) {

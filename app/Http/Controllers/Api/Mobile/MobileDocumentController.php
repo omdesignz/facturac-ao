@@ -58,12 +58,15 @@ class MobileDocumentController
             ...$this->row($selected),
             'type_label' => $selected['document_type_label'],
             'customer_public_id' => $selected['customer_public_id'],
+            'customer_tax_identification_number' => $document->customer->tax_identification_number ?? $selected['customer_tax_identification_number'],
+            'is_returned' => $selected['workflow_status'] === 'invalid',
             'due_date' => $selected['due_date'],
             'outstanding_minor' => $snapshot['outstanding_minor'],
             'days_past_due' => $snapshot['days_past_due'],
             'message' => $selected['workflow_message'],
             'can_remind' => $selected['customer_public_id'] !== null && $snapshot['days_past_due'] > 0,
-            'share_url' => $selected['can_print'] ? $presenter->signedUrl($document) : null,
+            // A document the AGT refused is not something to hand a customer.
+            'share_url' => $selected['can_print'] && $selected['workflow_status'] !== 'invalid' ? $presenter->signedUrl($document) : null,
             'web_url' => route('documents.index', ['documento' => $documentPublicId]),
             'history' => array_map(fn (array $event): array => [
                 'label' => $event['label'],

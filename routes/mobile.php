@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\Mobile\MobileCollectionsController;
 use App\Http\Controllers\Api\Mobile\MobileCustomerController;
+use App\Http\Controllers\Api\Mobile\MobileCustomerTaxIdentificationController;
 use App\Http\Controllers\Api\Mobile\MobileDocumentController;
 use App\Http\Controllers\Api\Mobile\MobileInvoiceController;
 use App\Http\Controllers\Api\Mobile\MobileItemController;
@@ -37,6 +38,9 @@ Route::name('mobile.v1.')->group(function (): void {
             Route::get('customers', MobileCustomerController::class)->name('customers.index');
             Route::get('items', MobileItemController::class)->name('items.index');
             Route::get('stock', MobileStockController::class)->name('stock.index');
+            Route::patch('customers/{customerPublicId}/tax-identification', MobileCustomerTaxIdentificationController::class)
+                ->middleware('throttle:20,1')
+                ->name('customers.tax-identification');
             Route::get('customers/{customerPublicId}/reminder', [MobileReminderController::class, 'show'])->name('reminders.show');
             Route::post('customers/{customerPublicId}/reminder', [MobileReminderController::class, 'store'])
                 ->middleware('throttle:6,1')

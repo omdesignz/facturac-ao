@@ -12,6 +12,7 @@ use App\Models\AgtSubmissionObservation;
 use App\Models\FiscalDocument;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 final class CurrentAgtState
 {
@@ -76,24 +77,37 @@ final class CurrentAgtState
                 $state->orWhere('status', FiscalDocumentStatus::Draft);
             }
             $state->orWhere(function (Builder $issued) use ($statuses, $instant): void {
-                $issued->where('status', '!=', FiscalDocumentStatus::Draft)->whereHas('submissions', function (Builder $submission) use ($statuses, $instant): void {
-                    $submission->where(function (Builder $qualified) use ($statuses, $instant): void {
-                        $qualified->where('reducer_version', 1)->whereIn('qualified_projection->operational_status', $statuses)
-                            ->where(function (Builder $consistent): void {
-                                $consistent->where('qualified_projection->operational_status', 'unknown')
-                                    ->orWhereColumn('status', 'qualified_projection->operational_status');
-                            })->where(fn (Builder $observed) => $observed->whereNull('qualified_projection->observed_at')->orWhere('qualified_projection->observed_at', '<=', $instant));
-
-                        if (in_array('unknown', $statuses, true)) {
-                            $qualified->orWhereNull('qualified_projection')
-                                ->orWhereColumn('status', '!=', 'qualified_projection->operational_status')
-                                ->orWhere('qualified_projection->observed_at', '>', $instant);
-                        }
-                    });
-                });
+                $issued->where('status', '!=', FiscalDocumentStatus::Draft)
+                    ->whereHas('submissions', fn (Builder $submission) => self::submissionsIn($submission, $statuses, $instant));
             });
             if (in_array('unknown', $statuses, true)) {
                 $state->orWhere(fn (Builder $legacy) => $legacy->where('status', '!=', FiscalDocumentStatus::Draft)->whereDoesntHave('submissions'));
+            }
+        });
+    }
+
+    /**
+     * The submissions whose qualified state is one of these.
+     *
+     * @template TModel of Model
+     *
+     * @param  Builder<TModel>  $submission
+     * @param  list<string>  $statuses
+     * @return Builder<TModel>
+     */
+    public static function submissionsIn(Builder $submission, array $statuses, string $instant): Builder
+    {
+        return $submission->where(function (Builder $qualified) use ($statuses, $instant): void {
+            $qualified->where('reducer_version', 1)->whereIn('qualified_projection->operational_status', $statuses)
+                ->where(function (Builder $consistent): void {
+                    $consistent->where('qualified_projection->operational_status', 'unknown')
+                        ->orWhereColumn('status', 'qualified_projection->operational_status');
+                })->where(fn (Builder $observed) => $observed->whereNull('qualified_projection->observed_at')->orWhere('qualified_projection->observed_at', '<=', $instant));
+
+            if (in_array('unknown', $statuses, true)) {
+                $qualified->orWhereNull('qualified_projection')
+                    ->orWhereColumn('status', '!=', 'qualified_projection->operational_status')
+                    ->orWhere('qualified_projection->observed_at', '>', $instant);
             }
         });
     }

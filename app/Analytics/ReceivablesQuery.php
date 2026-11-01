@@ -2,6 +2,7 @@
 
 namespace App\Analytics;
 
+use App\Fiscal\Documents\CurrentAgtState;
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
 use App\Models\FiscalDocument;
@@ -20,6 +21,11 @@ use InvalidArgumentException;
  * the credit notes that reference it and by the receipts that settle it, an
  * invoice-receipt (FR) is paid the moment it is issued, and a standalone receipt
  * is not a receivable at all — it is the payment.
+ *
+ * A document the AGT has reported invalid is owed by nobody: it stays on record,
+ * and in what was billed, but no customer can be asked to pay it. Only the AGT's
+ * own report counts here. A delivery that failed or a status not yet proven says
+ * nothing about the document, so those stay owed until someone knows better.
  *
  * Every total is computed by the database, grouped, rather than by loading
  * documents into memory: a workspace issuing tens of thousands of documents a
@@ -103,7 +109,12 @@ class ReceivablesQuery
                 ['adjustments as credited_minor' => fn (Builder $nested) => self::issued($nested)
                     ->where('document_type', FiscalDocumentType::CreditNote)],
                 'gross_total_minor',
-            );
+            )
+            ->withExists(['submissions as returned_by_agt' => fn (Builder $submission) => CurrentAgtState::submissionsIn(
+                $submission,
+                ['invalid'],
+                CarbonImmutable::now('UTC')->toIso8601String(),
+            )]);
     }
 
     /**
@@ -351,7 +362,7 @@ class ReceivablesQuery
      */
     private function outstandingExpression(): string
     {
-        return 'CASE WHEN d.document_type IN ('.$this->placeholders(self::owableTypes()).')'
+        return 'CASE WHEN d.returned_by_agt THEN 0 WHEN d.document_type IN ('.$this->placeholders(self::owableTypes()).')'
             .' THEN CASE WHEN d.gross_total_minor - COALESCE(d.settled_minor, 0)'
             .' - COALESCE(d.credited_minor, 0) > 0'
             .' THEN d.gross_total_minor - COALESCE(d.settled_minor, 0)'
@@ -394,9 +405,15 @@ class ReceivablesQuery
         return in_array($type->value, self::billableTypes(), true);
     }
 
+    /** Reads the flag `withBalances` attaches. */
+    public function isReturnedByAgt(FiscalDocument $document): bool
+    {
+        return (bool) $document->getAttribute('returned_by_agt');
+    }
+
     public function outstandingMinor(FiscalDocument $document): int
     {
-        if (! in_array($document->document_type->value, self::owableTypes(), true)) {
+        if ($this->isReturnedByAgt($document) || ! in_array($document->document_type->value, self::owableTypes(), true)) {
             return 0;
         }
 
