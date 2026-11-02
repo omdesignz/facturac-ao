@@ -9,6 +9,7 @@ use App\Fiscal\AssistantProviderPermit;
 use App\Fiscal\AssistantProviderProfile;
 use App\Fiscal\AssistantProviderTransport;
 use App\Fiscal\TenantAiLegacyAccounting;
+use App\Fiscal\TenantAiVerificationAdmission;
 use App\Models\Customer;
 use App\Models\FiscalDocument;
 use Carbon\CarbonImmutable;
@@ -156,8 +157,12 @@ test('postgres provider finalized usage remains in original UTC windows across m
     $f = assistantFixture();
     providerApprovals($f, $this->secret);
     $usageBudgetId = config('tenant_ai.legacy_accounting.'.config('assistant.provider.budget_id').'.usage_budget_id');
+    // The approval is checked against both the travelled app clock and the
+    // database's real clock, so it must outlive whichever is later.
+    $databaseNow = TenantAiVerificationAdmission::instant();
+    $latest = now()->greaterThan($databaseNow) ? now()->toImmutable() : $databaseNow;
     expect(DB::table('assistant_provider_controls')->where('budget_id', $usageBudgetId)
-        ->update(['approval_expires_at' => now()->addDay(), 'revision' => DB::raw('revision + 1')]))->toBe(1);
+        ->update(['approval_expires_at' => $latest->addDay(), 'revision' => DB::raw('revision + 1')]))->toBe(1);
     $id = providerPgReserve(providerTestInvocation($f));
     $this->travel(2)->seconds();
     app(AssistantProviderLedger::class)->finalize($id, ['input' => 10, 'output' => 5], true, false);
