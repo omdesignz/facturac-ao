@@ -38,7 +38,7 @@ class DocumentOpenedByCustomer extends WorkspaceNotification
 
     public function body(): string
     {
-        return 'Abriu o documento pela ligação que lhe enviou por email.';
+        return 'Abriu o documento pela ligação que lhe enviou.';
     }
 
     public function url(): ?string
@@ -49,6 +49,12 @@ class DocumentOpenedByCustomer extends WorkspaceNotification
     public function workspaceId(): ?int
     {
         return $this->workspace;
+    }
+
+    /** @return array{type: 'document', public_id: string, label: string} */
+    public function pushTarget(): array
+    {
+        return ['type' => 'document', 'public_id' => $this->documentPublicId, 'label' => $this->documentNo];
     }
 
     /** One notice per document, however many times it is opened afterwards. */

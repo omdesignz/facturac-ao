@@ -89,6 +89,47 @@ abstract class WorkspaceNotification extends Notification implements ShouldQueue
     }
 
     /**
+     * What the phone app opens when the notification is tapped, or null to
+     * just open the app. The web link is no use there.
+     *
+     * @return array{type: 'document'|'customer', public_id: string, label: string}|null
+     */
+    public function pushTarget(): ?array
+    {
+        return null;
+    }
+
+    /**
+     * The message Apple shows on the phone, with what the app needs to open
+     * the right screen when it is tapped.
+     *
+     * @return array<string, mixed>
+     */
+    public function toPush(User $notifiable): array
+    {
+        $workspace = $this->workspaceId() === null ? null : Workspace::query()->find($this->workspaceId());
+
+        $alert = ['title' => $this->title(), 'body' => $this->body()];
+
+        // Someone who keeps the books for two companies needs to know which
+        // one this is about before they open it.
+        if ($workspace !== null && $notifiable->workspaces()->count() > 1) {
+            $alert['subtitle'] = $workspace->name;
+        }
+
+        return array_filter([
+            'aps' => [
+                'alert' => $alert,
+                'sound' => 'default',
+                'thread-id' => $this->topic()->value,
+            ],
+            'topic' => $this->topic()->value,
+            'workspace' => $workspace?->public_id,
+            'target' => $this->pushTarget(),
+        ], fn (mixed $value): bool => $value !== null);
+    }
+
+    /**
      * Sends this to everyone who works in the company it concerns.
      *
      * Each recipient's own preferences still decide the channels, so one

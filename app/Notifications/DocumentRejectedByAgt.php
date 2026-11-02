@@ -54,6 +54,12 @@ class DocumentRejectedByAgt extends WorkspaceNotification
         return $this->workspace;
     }
 
+    /** @return array{type: 'document', public_id: string, label: string} */
+    public function pushTarget(): array
+    {
+        return ['type' => 'document', 'public_id' => $this->documentPublicId, 'label' => $this->documentNo];
+    }
+
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)

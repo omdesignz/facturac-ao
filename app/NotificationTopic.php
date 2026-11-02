@@ -48,7 +48,7 @@ enum NotificationTopic: string
         return match ($this) {
             self::DocumentAccepted => 'Quando a AGT confirma um documento comunicado.',
             self::DocumentRejected => 'Quando a AGT recusa um documento e é preciso corrigi-lo.',
-            self::DocumentOpened => 'Na primeira vez que o cliente abre o documento que lhe enviou por email.',
+            self::DocumentOpened => 'Na primeira vez que o cliente abre a ligação do documento que lhe enviou.',
             self::InvoiceOverdue => 'No dia seguinte ao vencimento de uma factura por pagar.',
             self::QuoteAccepted => 'Quando um orçamento passa a aceite e pode virar factura.',
             self::QuoteExpiring => 'Três dias antes de um orçamento perder a validade.',
@@ -76,9 +76,11 @@ enum NotificationTopic: string
      * Where a topic goes when the user has not said otherwise.
      *
      * Everything lands in the app; only what needs acting on outside the app
-     * also lands in an inbox, so email stays worth reading.
+     * also lands in an inbox, so email stays worth reading. The phone buzzes
+     * only for news about customers and money that someone can act on from
+     * the phone itself; every acceptance by the AGT would be noise there.
      *
-     * @return array{database: bool, mail: bool}
+     * @return array{database: bool, mail: bool, push: bool}
      */
     public function defaults(): array
     {
@@ -90,6 +92,15 @@ enum NotificationTopic: string
                 self::CreditLimitExceeded,
                 self::ImportCompleted,
                 self::BillingActivity,
+                self::SupportAccess => true,
+                default => false,
+            },
+            'push' => match ($this) {
+                self::DocumentRejected,
+                self::DocumentOpened,
+                self::InvoiceOverdue,
+                self::QuoteAccepted,
+                self::CreditLimitExceeded,
                 self::SupportAccess => true,
                 default => false,
             },

@@ -40,6 +40,14 @@ class NotificationPreferenceController extends Controller
                 'database' => (bool) $submitted[$topic->value]['database'],
                 'mail' => (bool) $submitted[$topic->value]['mail'],
             ];
+
+            // The phone's choices are made on the phone; this form does not
+            // show them, so saving it must not reset them.
+            $savedPush = $user->notification_preferences[$topic->value]['push'] ?? null;
+
+            if (is_bool($savedPush)) {
+                $preferences[$topic->value]['push'] = $savedPush;
+            }
         }
 
         $user->forceFill(['notification_preferences' => $preferences])->save();

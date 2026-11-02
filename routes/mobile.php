@@ -7,8 +7,10 @@ use App\Http\Controllers\Api\Mobile\MobileCustomerTaxIdentificationController;
 use App\Http\Controllers\Api\Mobile\MobileDocumentController;
 use App\Http\Controllers\Api\Mobile\MobileInvoiceController;
 use App\Http\Controllers\Api\Mobile\MobileItemController;
+use App\Http\Controllers\Api\Mobile\MobileNotificationPreferenceController;
 use App\Http\Controllers\Api\Mobile\MobilePaymentController;
 use App\Http\Controllers\Api\Mobile\MobileProfileController;
+use App\Http\Controllers\Api\Mobile\MobilePushDeviceController;
 use App\Http\Controllers\Api\Mobile\MobileReminderController;
 use App\Http\Controllers\Api\Mobile\MobileSessionController;
 use App\Http\Controllers\Api\Mobile\MobileStockController;
@@ -26,6 +28,9 @@ Route::name('mobile.v1.')->group(function (): void {
         Route::get('sessions', [MobileSessionController::class, 'index'])->name('sessions.index');
         Route::delete('sessions/current', [MobileSessionController::class, 'destroyCurrent'])->name('sessions.destroy-current');
         Route::delete('sessions/{tokenId}', [MobileSessionController::class, 'destroy'])->whereNumber('tokenId')->name('sessions.destroy');
+        Route::put('push-device', [MobilePushDeviceController::class, 'update'])->name('push-device.update');
+        Route::get('notification-preferences', [MobileNotificationPreferenceController::class, 'show'])->name('notification-preferences.show');
+        Route::put('notification-preferences', [MobileNotificationPreferenceController::class, 'update'])->name('notification-preferences.update');
 
         Route::middleware(['workspace', EnsureMobileCompany::class])->group(function (): void {
             Route::get('today', MobileTodayController::class)->name('today');

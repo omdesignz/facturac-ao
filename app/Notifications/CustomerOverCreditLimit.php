@@ -59,6 +59,12 @@ class CustomerOverCreditLimit extends WorkspaceNotification
         return $this->workspace;
     }
 
+    /** @return array{type: 'customer', public_id: string, label: string} */
+    public function pushTarget(): array
+    {
+        return ['type' => 'customer', 'public_id' => $this->customerPublicId, 'label' => $this->customerName];
+    }
+
     public function dedupeKey(): ?string
     {
         return "credit_limit:{$this->customerPublicId}";

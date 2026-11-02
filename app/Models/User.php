@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Notifications\ApnsClient;
+use App\Notifications\PushChannel;
 use App\NotificationTopic;
 use Database\Factories\UserFactory;
 use Illuminate\Auth\MustVerifyEmail;
@@ -30,7 +32,7 @@ use Laravel\Sanctum\HasApiTokens;
  * @property string $password
  * @property int|null $current_workspace_id
  * @property int $work_session_minutes
- * @property array<string, array{database?: bool, mail?: bool}>|null $notification_preferences
+ * @property array<string, array{database?: bool, mail?: bool, push?: bool}>|null $notification_preferences
  * @property bool $is_support_staff
  * @property string|null $remember_token
  * @property Carbon|null $created_at
@@ -106,10 +108,24 @@ class User extends Authenticatable implements MustVerifyEmailContract, PasskeyUs
      */
     public function notificationChannels(NotificationTopic $topic): array
     {
-        return array_values(array_filter(
+        $channels = array_values(array_filter(
             ['database', 'mail'],
             fn (string $channel): bool => $this->wantsNotification($topic, $channel),
         ));
+
+        // Asked last and only when wanted, so a user without the app costs no
+        // query and queues no job that would find nowhere to deliver.
+        if ($this->wantsNotification($topic, 'push') && ApnsClient::isConfigured() && $this->pushDevices()->signedIn()->exists()) {
+            $channels[] = PushChannel::class;
+        }
+
+        return $channels;
+    }
+
+    /** @return HasMany<PushDevice, $this> */
+    public function pushDevices(): HasMany
+    {
+        return $this->hasMany(PushDevice::class);
     }
 
     /** @return HasMany<WorkspaceMembership, $this> */

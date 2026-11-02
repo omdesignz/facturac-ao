@@ -34,6 +34,15 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
 
+    // Apple's push service, signed with a .p8 key from the developer account.
+    // The key is either a path to the file or its contents with \n escapes.
+    'apns' => [
+        'key_id' => env('APNS_KEY_ID'),
+        'team_id' => env('APNS_TEAM_ID'),
+        'private_key' => env('APNS_PRIVATE_KEY'),
+        'bundle_id' => env('APNS_BUNDLE_ID', 'ao.facturac.app'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
