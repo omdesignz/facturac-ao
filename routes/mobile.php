@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\Mobile\MobileCollectionsController;
 use App\Http\Controllers\Api\Mobile\MobileCustomerController;
+use App\Http\Controllers\Api\Mobile\MobileCustomerProfileController;
 use App\Http\Controllers\Api\Mobile\MobileCustomerTaxIdentificationController;
 use App\Http\Controllers\Api\Mobile\MobileDocumentController;
 use App\Http\Controllers\Api\Mobile\MobileInvoiceController;
@@ -37,6 +38,7 @@ Route::name('mobile.v1.')->group(function (): void {
                 ->middleware('throttle:10,1')
                 ->name('invoices.store');
             Route::get('customers', MobileCustomerController::class)->name('customers.index');
+            Route::get('customers/{customerPublicId}', MobileCustomerProfileController::class)->name('customers.show');
             Route::get('items', MobileItemController::class)->name('items.index');
             Route::get('stock', MobileStockController::class)->name('stock.index');
             Route::patch('customers/{customerPublicId}/tax-identification', MobileCustomerTaxIdentificationController::class)

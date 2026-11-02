@@ -225,6 +225,52 @@ class ReceivablesQuery
     }
 
     /**
+     * Money received per calendar day, for the trend charts.
+     *
+     * An invoice-receipt or sales ticket is paid the day it is issued. A
+     * receipt counts on the day the payment was made, for what it settled on
+     * the documents in `$query`, so a customer's history includes money taken
+     * against their invoices whoever the receipt names. A draft receipt has
+     * received nothing.
+     *
+     * @param  Builder<FiscalDocument>  $query
+     * @return array<string, int>
+     */
+    public function dailyPaid(Builder $query): array
+    {
+        $paid = [];
+        $onIssue = $query->clone()
+            ->whereIn('document_type', [FiscalDocumentType::InvoiceReceipt, FiscalDocumentType::SalesTicket])
+            ->reorder()
+            ->toBase()
+            ->groupBy('document_date')
+            ->selectRaw('document_date AS paid_on, COALESCE(SUM(gross_total_minor), 0) AS total_minor')
+            ->pluck('total_minor', 'paid_on');
+        $settled = DB::table('fiscal_document_settlements')
+            ->join('fiscal_documents as receipts', 'receipts.id', '=', 'fiscal_document_settlements.fiscal_document_id')
+            ->whereNot('receipts.status', FiscalDocumentStatus::Draft->value)
+            ->whereIn('fiscal_document_settlements.settled_document_id', $query->clone()
+                ->reorder()
+                ->whereIn('document_type', self::owableTypes())
+                ->select('fiscal_documents.id'))
+            ->groupByRaw('COALESCE(receipts.payment_date, receipts.document_date)')
+            ->selectRaw('COALESCE(receipts.payment_date, receipts.document_date) AS paid_on')
+            ->selectRaw('COALESCE(SUM(fiscal_document_settlements.amount_minor), 0) AS total_minor')
+            ->pluck('total_minor', 'paid_on');
+
+        foreach ([$onIssue, $settled] as $totals) {
+            foreach ($totals as $date => $total) {
+                $day = substr((string) $date, 0, 10);
+                $paid[$day] = ($paid[$day] ?? 0) + (int) $total;
+            }
+        }
+
+        ksort($paid);
+
+        return $paid;
+    }
+
+    /**
      * The customers who were billed most, highest first.
      *
      * @param  Builder<FiscalDocument>  $query
