@@ -1885,3 +1885,46 @@ summary:focus-visible {
         padding-block: 0.7em;
     }
 }
+
+/*
+ * The homepage's one bold move: the dot from the wordmark, rising behind the
+ * product. It moves once, on load, and not at all for anyone who asked for less.
+ */
+.hero-sun {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 50%;
+    inline-size: max(56rem, 110vw);
+    aspect-ratio: 1;
+    border-radius: 9999px;
+    background-color: var(--color-accent-400);
+    translate: -50% 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .hero-sun {
+        animation: hero-sun-rise 1.2s var(--ease-out) both;
+    }
+
+    .hero-window,
+    .hero-phone {
+        animation: hero-lift 0.9s var(--ease-out) 0.2s both;
+    }
+
+    .hero-phone {
+        animation-delay: 0.4s;
+    }
+}
+
+@keyframes hero-sun-rise {
+    from {
+        translate: -50% 7rem;
+    }
+}
+
+@keyframes hero-lift {
+    from {
+        opacity: 0;
+        translate: 0 2rem;
+    }
+}

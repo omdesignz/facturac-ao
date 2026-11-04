@@ -1,22 +1,12 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import {
-    ArrowRight,
-    Check,
-    ChevronDown,
-    Menu,
-    RotateCcw,
-    Search,
-    ShieldCheck,
-    X,
-} from '@lucide/vue';
+import { Check, ChevronDown, Menu, RotateCcw, X } from '@lucide/vue';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import PeriodSwitch from '@/components/billing/PeriodSwitch.vue';
 import BrandWordmark from '@/components/BrandWordmark.vue';
 import CookieConsent from '@/components/CookieConsent.vue';
 import { initialPeriod, periodOptions } from '@/lib/packages';
 import { currencyLabel } from '@/lib/pos-ui';
-import { vReveal } from '@/lib/reveal';
 import { login, register } from '@/routes';
 import { show as legalShow } from '@/routes/legal';
 
@@ -54,6 +44,10 @@ const props = defineProps<{
 }>();
 
 const menuOpen = ref(false);
+
+/** The one device frame on the page, so every phone is the same object. */
+const phoneFrame =
+    'overflow-hidden rounded-[2.25rem] bg-white shadow-[0_0_0_8px_#171716,0_30px_60px_-24px_rgb(23_23_22/0.5)]';
 
 /*
  * Packages are priced for one payment period at a time. Only the periods some
@@ -152,16 +146,13 @@ const pricingTerms: { term: string; value: string }[] = [
         value: 'O preço é por espaço de trabalho, não por documento emitido.',
     },
     {
-        term: 'O arquivo continua seu',
+        term: 'Arquivo sempre disponível',
         value: 'A consulta dos documentos e o SAF-T ficam disponíveis após o fim da assinatura.',
     },
 ];
 const menuButton = ref<HTMLButtonElement | null>(null);
 const selectedMomentIndex = ref(0);
-const selectedLifecycleIndex = ref(0);
 const closingWordmark = ref<InstanceType<typeof BrandWordmark> | null>(null);
-
-let lifecycleTimer: number | undefined;
 
 /**
  * Escape closes the menu, which is the one shortcut people try without asking,
@@ -175,42 +166,8 @@ function closeOnEscape(event: KeyboardEvent): void {
     }
 }
 
-function stopLifecycleTour(): void {
-    if (lifecycleTimer !== undefined) {
-        window.clearInterval(lifecycleTimer);
-        lifecycleTimer = undefined;
-    }
-}
-
-/**
- * Walks the hero document from draft to paid once, so a visitor who never
- * touches it still sees the dot travel to its full stop. Anyone who asked for
- * stillness gets the finished, paid document on first paint.
- */
-onMounted(() => {
-    window.addEventListener('keydown', closeOnEscape);
-
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        selectedLifecycleIndex.value = lifecycle.length - 1;
-
-        return;
-    }
-
-    lifecycleTimer = window.setInterval(() => {
-        if (selectedLifecycleIndex.value >= lifecycle.length - 1) {
-            stopLifecycleTour();
-
-            return;
-        }
-
-        selectedLifecycleIndex.value += 1;
-    }, 1100);
-});
-
-onUnmounted(() => {
-    window.removeEventListener('keydown', closeOnEscape);
-    stopLifecycleTour();
-});
+onMounted(() => window.addEventListener('keydown', closeOnEscape));
+onUnmounted(() => window.removeEventListener('keydown', closeOnEscape));
 
 const sections = [
     { href: '#momentos', label: 'Como funciona' },
@@ -248,59 +205,6 @@ const daysUntilMandatory = computed(() => {
 });
 
 /**
- * The real statuses a document moves through, in order.
- *
- * A genuine sequence: each stage is a state the record is actually in, and the
- * reader needs to know a document is not legal until it is validated. The four
- * stages are also the brand's signature line, each one closed by the dot.
- */
-const lifecycle: {
-    status: string;
-    time: string;
-    detail: string;
-    proofLabel: string;
-    proofValue: string;
-}[] = [
-    {
-        status: 'Rascunho',
-        time: '09:40',
-        detail: 'Nenhum número é consumido. Corrige, apaga e volta atrás as vezes que quiser.',
-        proofLabel: 'Pode alterar',
-        proofValue: 'Todos os campos',
-    },
-    {
-        status: 'Emitida',
-        time: '09:41',
-        detail: 'A série dá o número seguinte, sem saltos nem repetições. Daqui em diante é imutável.',
-        proofLabel: 'Assinatura',
-        proofValue: '9F2C·A104·7B3E',
-    },
-    {
-        status: 'Validada',
-        time: '09:41',
-        detail: 'Assinada e comunicada à AGT. A resposta fica guardada com o documento, como prova.',
-        proofLabel: 'Validação AGT',
-        proofValue: '4192/AGT/2026',
-    },
-    {
-        status: 'Paga',
-        time: '09:41',
-        detail: 'O pagamento abate na conta do cliente e o que falta receber fica à vista.',
-        proofLabel: 'Saldo do documento',
-        proofValue: '0,00 Kz',
-    },
-];
-
-const selectedLifecycle = computed(
-    () => lifecycle[selectedLifecycleIndex.value]!,
-);
-
-function selectLifecycle(index: number): void {
-    stopLifecycleTour();
-    selectedLifecycleIndex.value = index;
-}
-
-/**
  * The page's argument, written as moments rather than as features.
  *
  * Someone deciding whether to pay for invoicing software is remembering the
@@ -317,13 +221,13 @@ const moments: {
         status: string;
         tone: 'valid' | 'pending' | 'neutral';
         rows: { label: string; value: string; numeric?: boolean }[];
-        note: string;
+        note?: string;
     };
 }[] = [
     {
         tag: 'FR',
         situation: 'O cliente está à sua frente e pede a factura.',
-        answer: 'Passa uma factura-recibo ali mesmo, do telemóvel, já com número, assinatura e QR. O cliente sai com o documento.',
+        answer: 'Passa a factura-recibo no telemóvel. O cliente recebe o documento com número, assinatura e QR.',
         proof: {
             eyebrow: 'Documento emitido',
             title: 'FR LOJA2026/00184',
@@ -332,15 +236,14 @@ const moments: {
             rows: [
                 { label: 'Cliente', value: 'Mercearia Kilamba' },
                 { label: 'Total', value: '139 080,00 Kz', numeric: true },
-                { label: 'Validação', value: '4192/AGT/2026' },
+                { label: 'Pagamento', value: 'Multicaixa' },
             ],
-            note: 'PDF assinado, guardado e pronto para entregar ao cliente.',
         },
     },
     {
         tag: 'PDV',
         situation: 'Tem fila ao balcão e cada cliente quer o talão.',
-        answer: 'Toca no artigo ou lê o código de barras. A venda sai como factura-recibo já comunicada à AGT, com o troco calculado.',
+        answer: 'Toca no artigo ou lê o código de barras. A venda sai como factura-recibo, com o troco calculado.',
         proof: {
             eyebrow: 'Venda ao balcão',
             title: 'FR LOJA2026/00185',
@@ -358,7 +261,7 @@ const moments: {
     {
         tag: 'Conta',
         situation: 'Vendeu fiado e já não sabe ao certo quem lhe deve.',
-        answer: 'Cada cliente tem a sua conta corrente: o que comprou, o que pagou, o que falta e desde quando.',
+        answer: 'Cada cliente tem conta corrente com o que comprou, o que pagou e o que ainda deve.',
         proof: {
             eyebrow: 'Conta corrente',
             title: 'Mercearia Kilamba',
@@ -369,32 +272,29 @@ const moments: {
                 { label: 'Recebido', value: '139 080,00 Kz', numeric: true },
                 { label: 'Documentos em aberto', value: '1', numeric: true },
             ],
-            note: 'O saldo nasce dos documentos e recibos, não de contas feitas à parte.',
         },
     },
     {
         tag: 'Rede',
         situation: 'A internet foi-se abaixo a meio da manhã.',
-        answer: 'Continua a facturar. O que ficou por comunicar à AGT segue assim que a ligação voltar, sem repetir nada.',
+        answer: 'Continua a facturar. Os documentos seguem para a AGT quando a ligação voltar.',
         proof: {
-            eyebrow: 'Fila de comunicação',
-            title: '3 documentos protegidos',
+            eyebrow: 'Por comunicar à AGT',
+            title: '3 documentos',
             status: 'À espera de ligação',
             tone: 'neutral',
             rows: [
                 { label: 'Assinados e guardados', value: '3', numeric: true },
-                { label: 'Envios duplicados', value: '0', numeric: true },
                 { label: 'Próxima tentativa', value: 'Automática' },
             ],
-            note: 'Quando a rede regressar, a fila continua do ponto exacto onde parou.',
         },
     },
     {
         tag: 'NC',
         situation: 'Enganou-se no valor de uma factura já emitida.',
-        answer: 'Emite uma nota de crédito que aponta para a original e diz porquê. A emitida não se apaga, nem devia.',
+        answer: 'Emite uma nota de crédito ligada à factura original, com o motivo da correcção.',
         proof: {
-            eyebrow: 'Correcção fiscal',
+            eyebrow: 'Nota de crédito',
             title: 'NC LOJA2026/00012',
             status: 'Ligada à original',
             tone: 'neutral',
@@ -403,15 +303,14 @@ const moments: {
                 { label: 'Motivo', value: 'Valor facturado a mais' },
                 { label: 'Ajuste', value: '−12 400,00 Kz', numeric: true },
             ],
-            note: 'A correcção fica auditável sem reescrever a história do documento.',
         },
     },
     {
         tag: 'SAF-T',
         situation: 'O contabilista pediu o ficheiro do trimestre.',
-        answer: 'Escolhe as datas e descarrega o SAF-T (AO). Sem exportar folhas de cálculo nem remendar ficheiros à mão.',
+        answer: 'Escolhe as datas e descarrega o ficheiro SAF-T (AO).',
         proof: {
-            eyebrow: 'Exportação fiscal',
+            eyebrow: 'Exportação SAF-T',
             title: '2.º trimestre de 2026',
             status: 'Ficheiro validado',
             tone: 'valid',
@@ -420,24 +319,22 @@ const moments: {
                 { label: 'Versão', value: 'SAF-T (AO) 1.01_01' },
                 { label: 'Documentos', value: '184', numeric: true },
             ],
-            note: 'Um ficheiro pronto para entregar, com a ordem exigida pelo esquema.',
         },
     },
     {
         tag: 'Estado',
         situation: 'Vendeu ao Estado e retiveram-lhe parte do imposto.',
-        answer: 'A retenção na fonte e o IVA cativo ficam no documento, cada um sobre a base certa, sem contas à parte.',
+        answer: 'A retenção na fonte e o IVA cativo ficam registados no documento, cada um na sua base.',
         proof: {
-            eyebrow: 'Liquidação',
-            title: 'Venda ao Estado',
+            eyebrow: 'Venda ao Estado',
+            title: 'Impostos no documento',
             status: 'Bases separadas',
             tone: 'neutral',
             rows: [
                 { label: 'IVA cativo', value: 'Apurado no documento' },
-                { label: 'Retenção', value: 'Evidenciada à parte' },
-                { label: 'Líquido a receber', value: 'Calculado sozinho' },
+                { label: 'Retenção', value: 'Indicada à parte' },
+                { label: 'Líquido a receber', value: 'Calculado no documento' },
             ],
-            note: 'Cada imposto fica visível na base que lhe corresponde.',
         },
     },
 ];
@@ -479,10 +376,9 @@ function proofToneClasses(tone: 'valid' | 'pending' | 'neutral'): string {
  * contradict the picker the day the map changes again.
  */
 const forSmallBusiness = computed(() => [
-    'Não precisa de contabilista para começar.',
-    `Em português, em kwanzas, com as ${props.provinceCount} províncias.`,
-    'Uma loja hoje, várias amanhã, sem mudar de programa.',
-    'Quem factura ao estrangeiro escolhe a moeda e o câmbio.',
+    `Em português e em kwanzas, com as ${props.provinceCount} províncias.`,
+    'Vários estabelecimentos na mesma conta.',
+    'Facturas noutras moedas, com o câmbio indicado.',
 ]);
 
 /** What the till promises, in the order a sale happens. */
@@ -506,11 +402,11 @@ const openingAnAccount: { term: string; value: string }[] = [
     },
     {
         term: 'Ambiente de testes',
-        value: 'Emite à vontade sem consumir numeração. Só passa a produção quando quiser.',
+        value: 'Faça testes sem consumir numeração. Passa a produção quando decidir.',
     },
     {
-        term: 'Sem ficar preso',
-        value: 'Os documentos e os clientes saem consigo, num arquivo aberto, quando pedir.',
+        term: 'Exportação dos dados',
+        value: 'Exporte os documentos e os clientes em ficheiros abertos.',
     },
 ];
 
@@ -518,19 +414,19 @@ const openingAnAccount: { term: string; value: string }[] = [
 const obligations: { term: string; value: string }[] = [
     {
         term: 'Comunicação à AGT',
-        value: 'Cada documento assinado e submetido, com a resposta arquivada junto ao registo.',
+        value: 'Cada documento é assinado e submetido, e a resposta fica guardada.',
     },
     {
         term: 'SAF-T (AO) 1.01_01',
-        value: 'O ficheiro de auditoria do período gerado a pedido, na ordem que o esquema exige.',
+        value: 'O ficheiro de auditoria do período, quando precisar.',
     },
     {
         term: 'Conservação legal',
-        value: 'Documentos dentro do prazo não se apagam, nem a pedido de quem os emitiu.',
+        value: 'Os documentos ficam guardados durante o prazo legal.',
     },
     {
-        term: 'Os dados são seus',
-        value: 'Exporta tudo num arquivo aberto, quando quiser, sem ter de pedir a ninguém.',
+        term: 'Exportação dos dados',
+        value: 'Exporte tudo em ficheiros abertos, quando quiser.',
     },
 ];
 
@@ -549,7 +445,7 @@ const included: { group: string; items: string[] }[] = [
         ],
     },
     {
-        group: 'A casa em ordem',
+        group: 'Gestão',
         items: [
             'Ponto de venda com abertura e fecho de caixa',
             'Clientes com prazos e limite de crédito',
@@ -568,95 +464,8 @@ const included: { group: string; items: string[] }[] = [
 const certification = {
     number: 'FE/419/AGT/2026',
     version: '1.1.0',
+    issuedOn: '28/10/2026',
 };
-
-/** The four facts a buyer checks first, set as a strip under the hero. */
-const proofFacts: { term: string; value: string }[] = [
-    { term: 'FT · FR · RG', value: 'Facturas, facturas-recibo e recibos' },
-    { term: 'NC · ND', value: 'Correcções ligadas ao original' },
-    { term: 'SAF-T (AO)', value: 'O ficheiro do período, a pedido' },
-    { term: 'Sem rede?', value: 'Continua a facturar e envia depois' },
-];
-
-/** Illustration only: the phone shows what the screen looks like, not data. */
-const exampleReceivables: {
-    initials: string;
-    customer: string;
-    when: string;
-    amount: string;
-    tone: string;
-}[] = [
-    {
-        initials: 'MK',
-        customer: 'Mercearia Kilamba',
-        when: 'há 6 dias',
-        amount: '62 000',
-        tone: 'bg-rose-100 text-rose-900',
-    },
-    {
-        initials: 'RM',
-        customer: 'Restaurante Mufete',
-        when: 'vence amanhã',
-        amount: '78 000',
-        tone: 'bg-lime-100 text-lime-900',
-    },
-    {
-        initials: 'OK',
-        customer: 'Obras Kilamba',
-        when: 'vence 14 out',
-        amount: '172 000',
-        tone: 'bg-sky-100 text-sky-900',
-    },
-];
-
-/** The same story as the hero document: the latest sale and the one before. */
-const exampleRecentDocuments: {
-    number: string;
-    customer: string;
-    amount: string;
-    status: string;
-    tone: string;
-}[] = [
-    {
-        number: 'FT LOJA2026/00041',
-        customer: 'Restaurante Mufete',
-        amount: '78 000',
-        status: 'Emitida',
-        tone: 'text-brand-500 dark:text-zinc-400',
-    },
-    {
-        number: 'FR LOJA2026/00184',
-        customer: 'Mercearia Kilamba',
-        amount: '139 080',
-        status: 'Validada',
-        tone: 'text-lime-800 dark:text-lime-300',
-    },
-];
-
-/**
- * Illustration only: the selling screen shows what the till looks like. The
- * three sold lines are the hero document's own, so every total on the page
- * agrees (122 000 before tax, 17 080 of IVA, 139 080 to charge).
- */
-const counterProducts: {
-    name: string;
-    price: string;
-    count?: number;
-    stock?: string;
-}[] = [
-    { name: 'Prateleira metálica', price: '32 000', count: 2 },
-    { name: 'Balança digital', price: '38 000' },
-    { name: 'Cesto de compras', price: '1 000' },
-    { name: 'Etiquetas de preço', price: '2 500' },
-    { name: 'Rolo térmico', price: '1 800', stock: '12 un.' },
-    { name: 'Saco de papel', price: '250' },
-];
-
-const counterSaleLines: { name: string; quantity: string; total: string }[] = [
-    { name: 'Prateleira metálica', quantity: '2 × 32 000', total: '64 000' },
-    { name: 'Balança digital', quantity: '1 × 38 000', total: '38 000' },
-    { name: 'Cesto de compras', quantity: '20 × 1 000', total: '20 000' },
-];
 
 /** Moving over is a real sequence, so it is the one place numbers are used. */
 const switchingSteps: { title: string; detail: string }[] = [
@@ -666,11 +475,11 @@ const switchingSteps: { title: string; detail: string }[] = [
     },
     {
         title: 'Carregue e confira',
-        detail: 'Mostramos o que vai entrar, e o que precisa de revisão, antes de gravar seja o que for.',
+        detail: 'Vê o que vai entrar e o que precisa de revisão antes de gravar.',
     },
     {
         title: 'Confirme',
-        detail: 'Clientes e artigos ficam prontos para facturar. Nada é gravado sem a sua confirmação.',
+        detail: 'Clientes e artigos ficam prontos para facturar.',
     },
 ];
 
@@ -681,15 +490,15 @@ const questions: { question: string; answer: string }[] = [
     },
     {
         question: 'Preciso de contabilista para começar?',
-        answer: 'Não. Cria a conta, preenche o NIF e os dados da empresa, e o IVA, as retenções e a comunicação à AGT são tratados por si. Quando o contabilista precisar, gera o SAF-T do período.',
+        answer: 'Não. Cria a conta e preenche o NIF e os dados da empresa. O IVA, as retenções e a comunicação à AGT são tratados pela aplicação. Quando o contabilista precisar, gera o SAF-T do período.',
     },
     {
         question: 'E se a internet falhar?',
-        answer: 'Continua a facturar. Os documentos ficam assinados e na fila, e seguem para a AGT assim que a ligação voltar, sem repetir nada.',
+        answer: 'Continua a facturar. Os documentos ficam assinados e seguem para a AGT quando a ligação voltar.',
     },
     {
         question: 'Enganei-me numa factura já emitida. E agora?',
-        answer: 'Emite uma nota de crédito que aponta para a original e diz porquê. A factura emitida não se apaga, porque a lei não deixa, mas a correcção fica ligada a ela.',
+        answer: 'Emite uma nota de crédito ligada à factura original, com o motivo. Uma factura emitida não se apaga, por lei.',
     },
     {
         question: 'Como se escreve o vosso nome?',
@@ -700,10 +509,10 @@ const questions: { question: string; answer: string }[] = [
 
 <template>
     <Head>
-        <title>facturac.ao · Facturação electrónica para Angola</title>
+        <title>facturac.ao: facturação electrónica certificada pela AGT</title>
         <meta
             name="description"
-            content="Passe facturas, recibos e notas com comunicação à AGT, SAF-T e contas correntes. Pronto para a factura electrónica obrigatória a 1 de janeiro de 2027."
+            content="Software de facturação certificado pela AGT: facturas, recibos, ponto de venda, SAF-T e contas correntes. A factura electrónica é obrigatória a 1 de janeiro de 2027."
         />
     </Head>
 
@@ -808,342 +617,106 @@ const questions: { question: string; answer: string }[] = [
 
         <main id="conteudo" tabindex="-1" class="focus:outline-hidden">
             <!-- ---------------------------------------------------------- hero -->
-            <section
-                id="topo"
-                class="mx-auto grid max-w-6xl items-center gap-14 px-5 pt-14 pb-16 sm:px-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-16 lg:pt-24 lg:pb-20"
-            >
-                <div>
-                    <p
-                        class="flex flex-wrap items-center gap-2.5 text-xs font-medium tracking-[0.08em] text-brand-500 uppercase dark:text-zinc-400"
+            <section id="topo" class="overflow-clip">
+                <div
+                    class="mx-auto max-w-5xl px-5 pt-12 text-center sm:px-8 lg:pt-14"
+                >
+                    <h1
+                        class="font-display text-[length:clamp(2.75rem,1.45rem+6vw,6rem)] leading-[1.04] font-bold tracking-[-0.018em] text-balance [font-variant-ligatures:none]"
                     >
-                        Facturação electrónica para Angola
-                        <span
-                            class="inline-flex items-center gap-1.5 rounded-full bg-lime-300 px-2.5 py-1 text-xs font-semibold tracking-normal text-lime-950 normal-case"
-                            ><ShieldCheck
-                                class="size-3.5"
-                                aria-hidden="true"
-                            />Certificada pela AGT</span
-                        >
-                    </p>
-                    <h1 class="mt-5 font-display text-hero text-balance">
-                        Facturação sempre acabou em
-                        <span class="whitespace-nowrap"
-                            ><span class="brand-dot" aria-hidden="true" /><span
-                                class="sr-only"
-                                >.</span
-                            >ao</span
-                        >
+                        Facture com software certificado pela AGT
                     </h1>
                     <p
-                        class="mt-6 max-w-xl text-lg/7 text-brand-600 sm:text-xl/8 dark:text-zinc-400"
+                        class="mx-auto mt-6 max-w-2xl text-lg/7 text-pretty text-brand-600 sm:text-xl/8 dark:text-zinc-400"
                     >
-                        Passe a factura. O número, a assinatura, a comunicação à
-                        AGT e o comprovativo acontecem sozinhos, enquanto atende
-                        o cliente seguinte.
+                        Facturas, recibos e ponto de venda, no telemóvel ou no
+                        computador. Cada documento sai assinado e é comunicado à
+                        AGT.
                     </p>
-                    <div class="mt-9 flex flex-wrap gap-3">
+                    <div class="mt-8 flex flex-wrap justify-center gap-3">
                         <Link
                             :href="register.url()"
-                            class="inline-flex h-13 items-center gap-2 rounded-full bg-accent-400 px-6 text-base font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300"
+                            class="inline-flex h-13 items-center rounded-full bg-brand-950 px-7 text-base font-semibold text-white focus-ring transition hover:bg-brand-800 dark:bg-white dark:text-brand-950 dark:hover:bg-zinc-200"
                         >
                             Abrir conta grátis
                         </Link>
                         <a
-                            href="#momentos"
-                            class="inline-flex h-13 items-center rounded-full px-6 text-base font-semibold text-brand-950 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-brand-50 dark:text-white dark:ring-white/15 dark:hover:bg-white/5"
+                            href="#precos"
+                            class="inline-flex h-13 items-center rounded-full px-7 text-base font-semibold text-brand-950 ring-1 ring-zinc-900/15 focus-ring transition ring-inset hover:bg-brand-50 dark:text-white dark:ring-white/20 dark:hover:bg-white/5"
                         >
-                            Ver o que resolve
+                            Ver preços
                         </a>
                     </div>
                     <p class="mt-4 text-sm text-brand-500 dark:text-zinc-400">
-                        Sem cartão. Sem contrato. Os seus dados saem consigo se
-                        um dia quiser sair.
+                        {{ trialDays }} dias grátis, sem cartão.
                     </p>
                 </div>
 
                 <!--
-                    The signature: one real document moving through its states,
-                    with the gold dot travelling to its full stop. The steps are
-                    buttons, so the reader can walk it themselves.
+                    The dot from the wordmark, rising behind the real product.
+                    The one bold thing on the page: everything below stays quiet.
                 -->
-                <div class="relative mx-auto w-full max-w-md lg:max-w-none">
-                    <div
-                        class="ml-auto w-full max-w-sm rounded-md bg-white p-6 text-[0.72rem]/[1.45] text-zinc-800 shadow-[0_2px_6px_rgb(23_23_22/0.06),0_40px_70px_-36px_rgb(23_23_22/0.38)] ring-1 ring-zinc-900/5"
-                        aria-label="Exemplo de uma factura-recibo"
-                        role="img"
-                    >
-                        <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <span
-                                    class="grid size-8 place-items-center rounded-md bg-[#2c4a3b] text-[0.65rem] font-semibold text-[#f2efe2]"
-                                    >LK</span
-                                >
-                                <p class="mt-2 text-[0.78rem] font-semibold">
-                                    Loja Kianda, Lda.
-                                </p>
-                                <p class="text-zinc-400">
-                                    NIF 5417 880 214 · Talatona
-                                </p>
-                            </div>
-                            <div class="text-right">
-                                <p
-                                    class="text-[0.68rem] font-semibold tracking-[0.08em]"
-                                >
-                                    FACTURA-RECIBO
-                                </p>
-                                <p class="font-mono text-[0.78rem] font-medium">
-                                    {{
-                                        selectedLifecycleIndex === 0
-                                            ? 'Ainda sem número'
-                                            : 'FR LOJA2026/00184'
-                                    }}
-                                </p>
-                                <p class="text-zinc-400">05-10-2026</p>
-                            </div>
-                        </div>
-                        <div class="mt-4 grid grid-cols-2 gap-3">
-                            <div>
-                                <p
-                                    class="text-[0.56rem] font-semibold tracking-[0.08em] text-zinc-400 uppercase"
-                                >
-                                    Cliente
-                                </p>
-                                <p class="font-semibold">Mercearia Kilamba</p>
-                                <p class="text-zinc-400">NIF 5000 412 778</p>
-                            </div>
-                            <div>
-                                <p
-                                    class="text-[0.56rem] font-semibold tracking-[0.08em] text-zinc-400 uppercase"
-                                >
-                                    Pagamento
-                                </p>
-                                <p>Multicaixa</p>
-                                <p class="text-zinc-400">Pago no acto</p>
-                            </div>
-                        </div>
-                        <table class="mt-4 w-full numeric">
-                            <thead>
-                                <tr
-                                    class="text-[0.56rem] tracking-[0.08em] text-zinc-400 uppercase"
-                                >
-                                    <th
-                                        class="border-b border-zinc-200 py-1 text-left font-semibold"
-                                    >
-                                        Artigo
-                                    </th>
-                                    <th
-                                        class="border-b border-zinc-200 py-1 text-right font-semibold"
-                                    >
-                                        Qtd
-                                    </th>
-                                    <th
-                                        class="border-b border-zinc-200 py-1 text-right font-semibold"
-                                    >
-                                        Total
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody
-                                class="[&_td]:border-b [&_td]:border-zinc-100 [&_td]:py-1.5"
-                            >
-                                <tr>
-                                    <td>Prateleira metálica, 5 níveis</td>
-                                    <td class="text-right">2</td>
-                                    <td class="text-right">64 000,00</td>
-                                </tr>
-                                <tr>
-                                    <td>Balança digital 30 kg</td>
-                                    <td class="text-right">1</td>
-                                    <td class="text-right">38 000,00</td>
-                                </tr>
-                                <tr>
-                                    <td>Cesto de compras</td>
-                                    <td class="text-right">20</td>
-                                    <td class="text-right">20 000,00</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                        <dl class="mt-3 ml-auto grid w-3/5 gap-1 numeric">
-                            <div class="flex justify-between">
-                                <dt>Ilíquido</dt>
-                                <dd>122 000,00</dd>
-                            </div>
-                            <div class="flex justify-between">
-                                <dt>IVA 14%</dt>
-                                <dd>17 080,00</dd>
-                            </div>
-                            <div
-                                class="mt-1 flex justify-between border-t border-zinc-800 pt-1.5 text-[0.85rem] font-semibold"
-                            >
-                                <dt>Total Kz</dt>
-                                <dd>139 080,00</dd>
-                            </div>
-                        </dl>
-                        <p class="mt-4 text-zinc-400">
-                            {{ selectedLifecycle.proofLabel }} ·
-                            <span class="font-mono text-zinc-600">{{
-                                selectedLifecycle.proofValue
-                            }}</span>
-                        </p>
-                    </div>
-
-                    <div
-                        class="relative -mt-10 rounded-[1.25rem] bg-white p-5 shadow-[0_1px_2px_rgb(23_23_22/0.05),0_12px_28px_-12px_rgb(23_23_22/0.22)] ring-1 ring-zinc-900/5 sm:mr-8 dark:bg-zinc-900 dark:ring-white/10"
-                    >
+                <div class="relative mt-14">
+                    <div class="hero-sun" aria-hidden="true" />
+                    <div class="relative mx-auto max-w-6xl px-5 pt-12 sm:px-8">
                         <div
-                            class="flex items-baseline justify-between gap-4 text-sm"
+                            class="hero-window hidden aspect-[16/8.6] overflow-hidden rounded-t-2xl bg-white shadow-[0_0_0_1px_rgb(23_23_22/0.12),0_40px_80px_-30px_rgb(92_54_0/0.55)] sm:block"
                         >
-                            <span
-                                class="font-mono text-xs text-brand-500 dark:text-zinc-400"
-                                >FR LOJA2026/00184</span
-                            >
-                            <span class="font-semibold" aria-live="polite"
-                                >{{ selectedLifecycle.status
-                                }}<span class="brand-dot" aria-hidden="true"
-                            /></span>
+                            <img
+                                src="/images/landing/documents-1440.webp"
+                                srcset="
+                                    /images/landing/documents-1440.webp 1440w,
+                                    /images/landing/documents-2880.webp 2880w
+                                "
+                                sizes="(min-width: 72rem) 68rem, 100vw"
+                                width="1440"
+                                height="900"
+                                fetchpriority="high"
+                                class="block h-auto w-full"
+                                alt="O ecrã Documentos da aplicação: a lista de facturas validadas e, ao lado, os detalhes de uma factura com o seu estado na AGT."
+                            />
                         </div>
                         <div
-                            class="relative mx-2 mt-4 h-5"
-                            role="group"
-                            aria-label="Escolher estado do documento"
+                            class="hero-phone mx-auto -mb-28 w-64 sm:absolute sm:right-10 sm:bottom-0 sm:mb-0 sm:w-52 sm:translate-y-16 lg:right-0 lg:w-60"
                         >
-                            <span
-                                class="absolute inset-x-0 top-2 h-0.5 rounded bg-zinc-200 dark:bg-white/10"
-                            />
-                            <span
-                                class="absolute top-2 left-0 h-0.5 rounded bg-brand-950 transition-[width] duration-[450ms] ease-in-out-strong motion-reduce:transition-none dark:bg-white"
-                                :style="{
-                                    width: `${(selectedLifecycleIndex / (lifecycle.length - 1)) * 100}%`,
-                                }"
-                            />
-                            <button
-                                v-for="(stage, index) in lifecycle"
-                                :key="stage.status"
-                                type="button"
-                                class="absolute top-0 -ml-2.5 grid size-5 place-items-center rounded-full focus-ring after:absolute after:-inset-3 after:content-['']"
-                                :style="{
-                                    left: `${(index / (lifecycle.length - 1)) * 100}%`,
-                                }"
-                                :aria-pressed="index === selectedLifecycleIndex"
-                                :aria-label="stage.status"
-                                @click="selectLifecycle(index)"
-                            >
-                                <span
-                                    class="size-2.5 rounded-full ring-4 ring-white dark:ring-zinc-900"
-                                    :class="
-                                        index <= selectedLifecycleIndex
-                                            ? 'bg-brand-950 dark:bg-white'
-                                            : 'bg-zinc-300 dark:bg-zinc-600'
-                                    "
+                            <div :class="phoneFrame">
+                                <img
+                                    src="/images/landing/phone-today.webp"
+                                    width="780"
+                                    height="1688"
+                                    fetchpriority="high"
+                                    class="block h-auto w-full"
+                                    alt="O ecrã Hoje no telemóvel, com o total facturado no dia e o valor por receber."
                                 />
-                            </button>
-                            <span
-                                class="pointer-events-none absolute top-0 -ml-2.5 size-5 rounded-full bg-accent-400 shadow-[0_0_0_4px_white,0_6px_14px_-4px_rgb(150_95_0/0.55)] transition-[left] duration-[450ms] ease-in-out-strong motion-reduce:transition-none dark:shadow-[0_0_0_4px_var(--color-zinc-900)]"
-                                :style="{
-                                    left: `${(selectedLifecycleIndex / (lifecycle.length - 1)) * 100}%`,
-                                }"
-                                aria-hidden="true"
-                            />
+                            </div>
                         </div>
-                        <div
-                            class="mt-3 grid grid-cols-4 text-xs font-semibold"
-                        >
-                            <span
-                                v-for="(stage, index) in lifecycle"
-                                :key="stage.status"
-                                :class="[
-                                    index === 0
-                                        ? 'text-left'
-                                        : index === lifecycle.length - 1
-                                          ? 'text-right'
-                                          : 'text-center',
-                                    index <= selectedLifecycleIndex
-                                        ? 'text-brand-950 dark:text-white'
-                                        : 'text-brand-300 dark:text-zinc-600',
-                                ]"
-                                >{{ stage.status
-                                }}<span
-                                    class="block font-normal text-brand-500 dark:text-zinc-400"
-                                    >{{ stage.time }}</span
-                                ></span
-                            >
-                        </div>
-                        <p
-                            class="mt-4 border-t border-zinc-900/5 pt-3 text-sm/6 text-brand-600 dark:border-white/10 dark:text-zinc-400"
-                        >
-                            {{ selectedLifecycle.detail }}
-                        </p>
                     </div>
                 </div>
             </section>
 
-            <!-- ---------------------------------------------------- proof strip -->
-            <div class="mx-auto max-w-6xl px-5 sm:px-8">
-                <dl
-                    class="grid grid-cols-2 gap-px border-y border-zinc-900/10 bg-zinc-900/10 lg:grid-cols-4 dark:border-white/10 dark:bg-white/10"
-                >
-                    <div
-                        v-for="fact in proofFacts"
-                        :key="fact.term"
-                        class="bg-white py-5 pr-5 dark:bg-zinc-950 [&:nth-child(2n)]:pl-5 lg:[&:nth-child(n+2)]:pl-5"
-                    >
-                        <dt
-                            class="font-display text-2xl tracking-[-0.02em] text-brand-950 dark:text-white"
-                        >
-                            {{ fact.term }}
-                        </dt>
-                        <dd
-                            class="mt-1 text-sm text-brand-600 dark:text-zinc-400"
-                        >
-                            {{ fact.value }}
-                        </dd>
-                    </div>
-                </dl>
-            </div>
-
             <!-- ------------------------------------------------- certification -->
             <section
                 id="certificacao"
-                class="mx-auto max-w-6xl px-5 pt-10 sm:px-8"
-                aria-labelledby="certificacao-titulo"
+                class="mx-auto flex max-w-6xl flex-col gap-3 px-5 pt-10 text-sm text-brand-600 sm:px-8 lg:flex-row lg:items-baseline lg:justify-between dark:text-zinc-400"
             >
-                <div
-                    class="flex flex-col gap-5 rounded-3xl bg-[#f5f5f7] p-6 sm:flex-row sm:items-center sm:gap-7 sm:p-8 dark:bg-white/[0.05]"
-                >
-                    <span
-                        class="grid size-14 shrink-0 place-items-center rounded-2xl bg-accent-400 text-brand-950"
-                    >
-                        <ShieldCheck class="size-7" aria-hidden="true" />
-                    </span>
-                    <div class="min-w-0">
-                        <h2
-                            id="certificacao-titulo"
-                            class="font-display text-2xl tracking-[-0.02em] text-brand-950 dark:text-white"
-                        >
-                            Software certificado pela AGT
-                        </h2>
-                        <p
-                            class="mt-1.5 text-[0.95rem] text-brand-600 dark:text-zinc-400"
-                        >
-                            Certificado n.º
-                            <span
-                                class="numeric font-semibold text-brand-950 dark:text-white"
-                                >{{ certification.number }}</span
-                            >
-                            · facturac.ao, versão {{ certification.version }}.
-                        </p>
-                    </div>
-                </div>
+                <h2 class="font-semibold text-brand-950 dark:text-white">
+                    Certificado da AGT n.º
+                    <span class="numeric">{{ certification.number }}</span
+                    >, de {{ certification.issuedOn }}, para a versão
+                    {{ certification.version }}.
+                </h2>
+                <p>Imagens da aplicação com dados de demonstração.</p>
             </section>
 
             <!-- ------------------------------------------------------ deadline -->
             <section id="prazo" class="px-5 pt-(--space-section) sm:px-8">
                 <div
-                    v-reveal
                     class="mx-auto grid max-w-6xl items-end gap-10 rounded-[2rem] bg-brand-950 p-8 text-white sm:p-12 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:p-16 dark:bg-zinc-900 dark:ring-1 dark:ring-white/10"
                 >
                     <div>
-                        <h2 class="font-display text-stamp whitespace-nowrap">
+                        <h2
+                            class="font-display text-stamp font-bold whitespace-nowrap"
+                        >
                             <span aria-hidden="true"
                                 >atenc<span class="brand-dot" />ao</span
                             ><span class="sr-only">Atenção</span>
@@ -1153,7 +726,7 @@ const questions: { question: string; answer: string }[] = [
                             class="mt-6 flex items-baseline gap-3"
                         >
                             <span
-                                class="font-display numeric text-5xl tracking-[-0.03em] sm:text-6xl"
+                                class="font-display numeric text-6xl font-bold tracking-[-0.03em] sm:text-7xl"
                                 >{{ daysUntilMandatory }}</span
                             >
                             <span class="text-zinc-400"
@@ -1170,10 +743,9 @@ const questions: { question: string; answer: string }[] = [
                                 <strong class="font-semibold text-white"
                                     >A partir de 1 de janeiro de 2027,</strong
                                 >
-                                todas as empresas do Regime Geral e do Regime
-                                Simplificado passam a emitir factura
-                                electrónica. Quem ainda factura em papel ou em
-                                Excel tem de mudar este ano.
+                                a factura electrónica é obrigatória para todas
+                                as empresas do Regime Geral e do Regime
+                                Simplificado.
                             </template>
                             <template v-else>
                                 <strong class="font-semibold text-white"
@@ -1193,7 +765,7 @@ const questions: { question: string; answer: string }[] = [
                             <a
                                 href="#perguntas"
                                 class="inline-flex h-11 items-center rounded-full px-5 text-sm font-semibold text-white ring-1 ring-white/20 focus-ring-inverted transition ring-inset hover:bg-white/5"
-                                >O que muda para mim?</a
+                                >O que muda</a
                             >
                         </div>
                     </div>
@@ -1206,13 +778,11 @@ const questions: { question: string; answer: string }[] = [
                 class="mx-auto max-w-6xl px-5 pt-(--space-section) sm:px-8"
             >
                 <div class="max-w-2xl">
-                    <h2 class="font-display text-section text-balance">
-                        Feito para o que acontece num dia de trabalho
+                    <h2
+                        class="font-display text-section font-bold text-balance"
+                    >
+                        O que fazer em cada situação
                     </h2>
-                    <p class="mt-4 text-lg text-brand-600 dark:text-zinc-400">
-                        Escolha uma situação. Ao lado está o que acontece aqui,
-                        e o documento que fica.
-                    </p>
                 </div>
 
                 <div
@@ -1243,15 +813,6 @@ const questions: { question: string; answer: string }[] = [
                             @keydown="moveMoment($event, index)"
                         >
                             <span>{{ moment.situation }}</span>
-                            <span
-                                class="shrink-0 font-mono text-xs font-normal"
-                                :class="
-                                    index === selectedMomentIndex
-                                        ? 'text-accent-700 dark:text-accent-400'
-                                        : 'text-brand-500 dark:text-zinc-400'
-                                "
-                                >{{ moment.tag }}</span
-                            >
                         </button>
                     </div>
 
@@ -1273,7 +834,7 @@ const questions: { question: string; answer: string }[] = [
                                 class="flex items-center justify-between gap-3"
                             >
                                 <span
-                                    class="text-[0.7rem] font-medium tracking-[0.07em] text-brand-500 uppercase dark:text-zinc-400"
+                                    class="text-sm text-brand-500 dark:text-zinc-400"
                                     >{{ selectedMoment.proof.eyebrow }}</span
                                 >
                                 <span
@@ -1310,6 +871,7 @@ const questions: { question: string; answer: string }[] = [
                             </dl>
                         </div>
                         <p
+                            v-if="selectedMoment.proof.note"
                             class="mt-4 text-sm text-brand-600 dark:text-zinc-400"
                         >
                             {{ selectedMoment.proof.note }}
@@ -1318,334 +880,179 @@ const questions: { question: string; answer: string }[] = [
                 </div>
             </section>
 
-            <!-- ------------------------------------------------ small business -->
+            <!-- ---------------------------------------------------------- today -->
             <section
-                id="pequenos"
-                class="mx-auto grid max-w-6xl items-center gap-14 px-5 pt-(--space-section) sm:px-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-20"
+                id="dia"
+                class="mx-auto max-w-6xl px-5 pt-(--space-section) sm:px-8"
             >
-                <div v-reveal>
-                    <h2 class="font-display text-section text-balance">
-                        Comece pelo telemóvel que já tem no bolso
-                    </h2>
-                    <p class="mt-4 text-lg text-brand-600 dark:text-zinc-400">
-                        A primeira coisa que vê de manhã é quanto recebeu. A
-                        segunda é um botão para facturar.
-                    </p>
-                    <ul
-                        class="mt-8 border-t border-zinc-900/10 dark:border-white/10"
+                <div class="grid gap-4 lg:grid-cols-2 lg:gap-14">
+                    <h2
+                        class="font-display text-section font-bold text-balance"
                     >
-                        <li
-                            v-for="promise in forSmallBusiness"
-                            :key="promise"
-                            class="flex gap-4 border-b border-zinc-900/10 py-4 text-base dark:border-white/10"
-                        >
-                            <span
-                                class="mt-2 size-2 shrink-0 rounded-full bg-accent-400"
-                                aria-hidden="true"
-                            />
-                            {{ promise }}
-                        </li>
-                    </ul>
+                        O dia do seu negócio num só ecrã
+                    </h2>
+                    <p
+                        class="text-lg/8 text-pretty text-brand-600 dark:text-zinc-400"
+                    >
+                        Quanto facturou hoje, quem lhe deve e há quanto tempo. O
+                        lembrete ao cliente já vem escrito, e só sai quando o
+                        confirmar.
+                    </p>
                 </div>
-
-                <!-- Example data only: the phone illustrates, it does not report. -->
                 <div
-                    v-reveal="1"
-                    class="relative mx-auto flex aspect-[390/820] w-72 flex-col overflow-hidden rounded-[2.75rem] bg-white text-[0.78rem] text-brand-950 shadow-[0_0_0_9px_#1c1c1b,0_0_0_10px_#3a3a37,0_50px_80px_-40px_rgb(0_0_0/0.5)] dark:bg-zinc-950 dark:text-white"
-                    role="img"
-                    aria-label="Exemplo do ecrã inicial no telemóvel: recebido este mês, facturas por receber e últimos documentos"
+                    class="mt-10 overflow-hidden rounded-2xl bg-white shadow-[0_0_0_1px_rgb(23_23_22/0.1),0_30px_60px_-34px_rgb(23_23_22/0.35)]"
                 >
-                    <span
-                        class="absolute top-2.5 left-1/2 h-7 w-24 -translate-x-1/2 rounded-full bg-black"
+                    <img
+                        src="/images/landing/today-1440.webp"
+                        srcset="
+                            /images/landing/today-1440.webp 1440w,
+                            /images/landing/today-2880.webp 2880w
+                        "
+                        sizes="(min-width: 72rem) 68rem, 100vw"
+                        width="1440"
+                        height="900"
+                        loading="lazy"
+                        decoding="async"
+                        class="block h-auto w-full"
+                        alt="O ecrã Hoje da aplicação: total facturado no dia, valor por receber e um lembrete de pagamento pronto a enviar."
                     />
-                    <p class="px-6 pt-4 text-xs font-semibold">9:41</p>
-                    <div class="flex flex-1 flex-col px-4 pbe-6 pt-4">
-                        <p
-                            class="text-[0.58rem] font-medium tracking-[0.07em] text-brand-400 uppercase"
-                        >
-                            Loja Kianda · outubro
-                        </p>
-                        <p class="mt-1 text-xl tracking-[-0.02em]">
-                            Olá, Joana
-                        </p>
-                        <div
-                            class="mt-3 rounded-2xl bg-brand-50 p-3.5 dark:bg-white/5"
-                        >
-                            <p
-                                class="text-[0.58rem] font-medium tracking-[0.07em] text-brand-400 uppercase"
+                </div>
+            </section>
+
+            <!-- ------------------------------------------------ small business -->
+            <section id="pequenos" class="pt-(--space-section)">
+                <div class="overflow-clip bg-[#f5f5f7] dark:bg-white/[0.05]">
+                    <div
+                        class="mx-auto grid max-w-6xl items-center gap-12 px-5 pt-14 sm:px-8 lg:grid-cols-2 lg:gap-14 lg:pt-20"
+                    >
+                        <div class="lg:pb-20">
+                            <h2
+                                class="font-display text-section font-bold text-balance"
                             >
-                                Recebido este mês
+                                Comece pelo telemóvel que já tem
+                            </h2>
+                            <p
+                                class="mt-4 text-lg/8 text-pretty text-brand-600 dark:text-zinc-400"
+                            >
+                                Passe facturas, veja o que tem por receber e
+                                lembre os clientes, sem instalar nada e sem
+                                contabilista.
                             </p>
-                            <p
-                                class="mt-2 flex items-baseline gap-1.5 numeric text-3xl tracking-[-0.04em]"
+                            <ul
+                                class="mt-6 grid gap-2 text-base text-brand-800 dark:text-zinc-200"
                             >
-                                845 000<span
-                                    class="text-xs tracking-normal text-brand-400"
-                                    >Kz</span
+                                <li
+                                    v-for="promise in forSmallBusiness"
+                                    :key="promise"
                                 >
-                            </p>
+                                    {{ promise }}
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="flex justify-center gap-5 sm:gap-8">
                             <div
-                                class="mt-3 h-1 overflow-hidden rounded bg-zinc-200 dark:bg-white/10"
+                                :class="phoneFrame"
+                                class="-mb-16 w-56 sm:w-64"
                             >
-                                <div
-                                    class="h-full w-[73%] bg-brand-950 dark:bg-white"
+                                <img
+                                    src="/images/landing/phone-debts.webp"
+                                    width="780"
+                                    height="1688"
+                                    loading="lazy"
+                                    decoding="async"
+                                    class="block h-auto w-full"
+                                    alt="O ecrã Dívidas no telemóvel, com o total por receber e os clientes em atraso."
                                 />
                             </div>
-                            <p
-                                class="mt-2 text-[0.66rem] text-brand-600 dark:text-zinc-400"
-                            >
-                                Faltam receber <b>312 000 Kz</b> de 3 clientes
-                            </p>
-                        </div>
-                        <p
-                            class="mt-3 grid h-11 place-items-center rounded-2xl bg-accent-400 text-sm font-semibold text-brand-950"
-                        >
-                            + Nova factura
-                        </p>
-                        <div
-                            v-for="row in exampleReceivables"
-                            :key="row.initials"
-                            class="grid grid-cols-[1.75rem_minmax(0,1fr)_auto] items-center gap-2.5 border-b border-zinc-900/5 py-2.5 last:border-b-0 dark:border-white/10"
-                        >
-                            <span
-                                class="grid size-7 place-items-center rounded-full text-[0.55rem] font-semibold"
-                                :class="row.tone"
-                                >{{ row.initials }}</span
-                            >
-                            <span class="min-w-0">
-                                <b class="block truncate text-[0.72rem]">{{
-                                    row.customer
-                                }}</b>
-                                <span class="text-[0.62rem] text-brand-400">{{
-                                    row.when
-                                }}</span>
-                            </span>
-                            <span
-                                class="text-right numeric text-[0.72rem] font-semibold"
-                                >{{ row.amount }}
-                                <span
-                                    class="block text-[0.6rem] text-accent-700 dark:text-accent-400"
-                                    >Lembrar</span
-                                ></span
-                            >
-                        </div>
-                        <div class="mbs-auto">
-                            <p
-                                class="mbs-3 text-[0.58rem] font-medium tracking-[0.07em] text-brand-500 uppercase dark:text-zinc-400"
-                            >
-                                Últimos documentos
-                            </p>
                             <div
-                                v-for="doc in exampleRecentDocuments"
-                                :key="doc.number"
-                                class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2.5 border-be border-zinc-900/5 py-2 last:border-be-0 dark:border-white/10"
+                                :class="phoneFrame"
+                                class="-mb-16 hidden w-64 translate-y-12 sm:block"
                             >
-                                <span class="min-w-0">
-                                    <span
-                                        class="block truncate font-mono text-[0.66rem] font-medium"
-                                        >{{ doc.number }}</span
-                                    >
-                                    <span
-                                        class="block truncate text-[0.62rem] text-brand-500 dark:text-zinc-400"
-                                        >{{ doc.customer }}</span
-                                    >
-                                </span>
-                                <span
-                                    class="text-end numeric text-[0.72rem] font-semibold whitespace-nowrap"
-                                    >{{ doc.amount
-                                    }}<span
-                                        class="ms-1 text-[0.55rem] font-normal text-brand-500 dark:text-zinc-400"
-                                        >Kz</span
-                                    ><span
-                                        class="block text-[0.6rem] font-medium"
-                                        :class="doc.tone"
-                                        >{{ doc.status }}</span
-                                    ></span
-                                >
+                                <img
+                                    src="/images/landing/phone-today.webp"
+                                    width="780"
+                                    height="1688"
+                                    loading="lazy"
+                                    decoding="async"
+                                    class="block h-auto w-full"
+                                    alt="O ecrã Hoje no telemóvel, com o total facturado no dia e o valor por receber."
+                                />
                             </div>
                         </div>
                     </div>
-                    <span
-                        class="absolute inset-x-0 inset-be-1.5 mx-auto h-1 w-24 rounded-full bg-brand-950/85 dark:bg-white/80"
-                    />
                 </div>
             </section>
 
             <!-- ------------------------------------------------------- counter -->
             <section
                 id="balcao"
-                class="mx-auto grid max-w-6xl items-center gap-14 px-5 pt-(--space-section) sm:px-8 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:gap-20"
+                class="mx-auto max-w-6xl px-5 pt-(--space-section) sm:px-8"
             >
-                <div>
-                    <h2 class="font-display text-section text-balance">
-                        Ao balcão, é tocar e cobrar
-                    </h2>
-                    <p class="mbs-4 text-lg text-brand-600 dark:text-zinc-400">
-                        Cada venda sai como factura-recibo, assinada e
-                        comunicada à AGT, enquanto o cliente guarda o troco.
-                    </p>
-                    <ul
-                        class="mbs-8 border-bs border-zinc-900/10 dark:border-white/10"
-                    >
-                        <li
-                            v-for="promise in atTheCounter"
-                            :key="promise"
-                            class="flex gap-4 border-be border-zinc-900/10 py-4 text-base dark:border-white/10"
+                <div class="grid gap-6 lg:grid-cols-2 lg:gap-14">
+                    <div>
+                        <h2
+                            class="font-display text-section font-bold text-balance"
                         >
-                            <span
-                                class="mbs-2 size-2 shrink-0 rounded-full bg-accent-400"
-                                aria-hidden="true"
-                            />
-                            {{ promise }}
-                        </li>
-                    </ul>
-                    <p class="mbs-4 text-sm text-brand-500 dark:text-zinc-400">
-                        O talão sai em impressoras térmicas de 80 mm.
-                    </p>
-                </div>
-
-                <!--
-                    Example data only: the selling screen illustrates, it does
-                    not report. Paper like the hero document, so it stays white
-                    in both themes and its wells need no dark pair.
-                -->
-                <div
-                    v-reveal
-                    class="mx-auto w-full max-w-sm rounded-md bg-white p-3.5 text-[0.72rem]/[1.45] text-zinc-800 shadow-[0_2px_6px_rgb(23_23_22/0.06),0_40px_70px_-36px_rgb(23_23_22/0.38)] ring-1 ring-zinc-900/5 sm:max-w-xl sm:p-5 lg:order-first"
-                    aria-hidden="true"
-                >
-                    <div
-                        class="grid sm:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]"
-                    >
-                        <div class="flex min-w-0 flex-col sm:pe-5">
-                            <div
-                                class="flex h-9 items-center gap-2 rounded-full bg-zinc-900/[0.04] px-3 text-[0.68rem] text-zinc-500"
-                            >
-                                <Search class="size-3.5 shrink-0" />
-                                <span class="min-w-0 truncate"
-                                    >Nome, código ou código de barras…</span
-                                >
-                            </div>
-                            <div
-                                class="mbs-3 grid flex-1 auto-rows-fr grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))] gap-2"
-                            >
-                                <div
-                                    v-for="product in counterProducts"
-                                    :key="product.name"
-                                    class="relative flex min-h-[4.75rem] flex-col rounded-xl bg-zinc-900/[0.04] p-2"
-                                >
-                                    <span class="font-medium text-balance">{{
-                                        product.name
-                                    }}</span>
-                                    <span
-                                        v-if="product.stock"
-                                        class="text-[0.62rem] text-zinc-500"
-                                        >{{ product.stock }}</span
-                                    >
-                                    <span
-                                        class="mbs-auto flex items-baseline gap-1 pbs-1 numeric font-semibold whitespace-nowrap"
-                                        >{{ product.price
-                                        }}<span
-                                            class="text-[0.6rem] font-normal text-zinc-500"
-                                            >Kz</span
-                                        ></span
-                                    >
-                                    <span
-                                        v-if="product.count"
-                                        class="absolute -inset-e-1.5 -inset-bs-1.5 grid size-5 place-items-center rounded-full bg-brand-950 text-[0.62rem] font-semibold text-white ring-2 ring-white"
-                                        >{{ product.count }}</span
-                                    >
-                                </div>
-                            </div>
-                        </div>
-
-                        <div
-                            class="mbs-4 min-w-0 border-bs border-zinc-900/10 pbs-4 sm:mbs-0 sm:border-s sm:border-bs-0 sm:ps-5 sm:pbs-0"
+                            Ao balcão, é tocar e cobrar
+                        </h2>
+                        <p
+                            class="mbs-4 text-lg/8 text-pretty text-brand-600 dark:text-zinc-400"
                         >
-                            <div
-                                class="flex items-center justify-between gap-2"
-                            >
-                                <p class="text-[0.8rem] font-semibold">Venda</p>
-                                <span
-                                    class="rounded-full bg-zinc-900/[0.06] px-2.5 py-1 text-[0.65rem] font-medium whitespace-nowrap text-zinc-600"
-                                    >Consumidor final</span
-                                >
-                            </div>
-                            <ul class="mbs-3 numeric">
-                                <li
-                                    v-for="line in counterSaleLines"
-                                    :key="line.name"
-                                    class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-be border-zinc-900/5 py-2"
-                                >
-                                    <span class="min-w-0">
-                                        <span class="block font-medium">{{
-                                            line.name
-                                        }}</span>
-                                        <span
-                                            class="block whitespace-nowrap text-zinc-500"
-                                            >{{ line.quantity }}</span
-                                        >
-                                    </span>
-                                    <span
-                                        class="font-semibold whitespace-nowrap"
-                                        >{{ line.total }}</span
-                                    >
-                                </li>
-                            </ul>
-                            <dl class="mbs-2 grid gap-1 numeric text-zinc-600">
-                                <div class="flex justify-between gap-3">
-                                    <dt>Ilíquido</dt>
-                                    <dd class="whitespace-nowrap">
-                                        122 000,00
-                                    </dd>
-                                </div>
-                                <div class="flex justify-between gap-3">
-                                    <dt>IVA 14%</dt>
-                                    <dd class="whitespace-nowrap">17 080,00</dd>
-                                </div>
-                            </dl>
-                            <div class="mbs-3 border-bs border-zinc-800 pbs-2">
-                                <p
-                                    class="text-[0.6rem] font-semibold tracking-[0.08em] text-zinc-500 uppercase"
-                                >
-                                    Total
-                                </p>
-                                <p
-                                    class="flex items-baseline gap-1.5 numeric text-2xl font-semibold tracking-[-0.03em] whitespace-nowrap"
-                                >
-                                    139 080,00<span
-                                        class="text-xs font-normal tracking-normal text-zinc-500"
-                                        >Kz</span
-                                    >
-                                </p>
-                            </div>
-                            <p
-                                class="mbs-3 grid h-11 place-items-center rounded-full bg-accent-400 text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1)]"
-                            >
-                                Cobrar 139 080 Kz
-                            </p>
-                        </div>
+                            Cada venda sai como factura-recibo, assinada e
+                            comunicada à AGT.
+                        </p>
                     </div>
+                    <div>
+                        <ul
+                            class="grid gap-2 text-base text-brand-800 dark:text-zinc-200"
+                        >
+                            <li v-for="promise in atTheCounter" :key="promise">
+                                {{ promise }}
+                            </li>
+                        </ul>
+                        <p
+                            class="mbs-3 text-sm text-brand-500 dark:text-zinc-400"
+                        >
+                            O talão sai em impressoras térmicas de 80 mm.
+                        </p>
+                    </div>
+                </div>
+                <div
+                    class="mt-10 aspect-[1440/790] overflow-hidden rounded-2xl bg-white shadow-[0_0_0_1px_rgb(23_23_22/0.1),0_30px_60px_-34px_rgb(23_23_22/0.35)]"
+                >
+                    <img
+                        src="/images/landing/till-1440.webp"
+                        srcset="
+                            /images/landing/till-1440.webp 1440w,
+                            /images/landing/till-2880.webp 2880w
+                        "
+                        sizes="(min-width: 72rem) 68rem, 100vw"
+                        width="1440"
+                        height="900"
+                        loading="lazy"
+                        decoding="async"
+                        class="block h-auto w-full"
+                        alt="O ponto de venda da aplicação: os artigos à esquerda e a venda em curso à direita, com o total e o botão para cobrar."
+                    />
                 </div>
             </section>
 
             <!-- ----------------------------------------------------- switching -->
             <section id="mudar" class="px-5 pt-(--space-section) sm:px-8">
                 <div
-                    v-reveal
                     class="mx-auto max-w-6xl rounded-[2rem] bg-accent-400 p-8 text-brand-950 [--wordmark-dot:var(--color-brand-950)] sm:p-12 lg:p-16"
                 >
                     <div class="flex flex-wrap items-end justify-between gap-6">
                         <h2
-                            class="font-display text-[length:clamp(2.75rem,0.5rem+11vw,6.5rem)] leading-[0.9] tracking-[-0.04em] whitespace-nowrap"
+                            class="font-display text-[length:clamp(2.75rem,0.5rem+11vw,6.5rem)] leading-[0.9] font-bold tracking-[-0.03em] whitespace-nowrap"
                         >
                             <span aria-hidden="true"
                                 >migrac<span class="brand-dot" />ao</span
                             ><span class="sr-only">Migração</span>
                         </h2>
                         <p class="max-w-sm text-lg/7 text-accent-950">
-                            Traga o que já tem. Clientes e artigos mudam
-                            consigo, e vê tudo antes de gravar.
+                            Clientes e artigos mudam consigo, a partir de Excel
+                            ou CSV.
                         </p>
                     </div>
                     <ol class="mt-10 grid gap-4 md:grid-cols-3">
@@ -1654,9 +1061,10 @@ const questions: { question: string; answer: string }[] = [
                             :key="step.title"
                             class="grid content-start gap-2 rounded-2xl bg-white/55 p-5"
                         >
-                            <span class="font-mono text-xs text-accent-900">{{
-                                index + 1
-                            }}</span>
+                            <span
+                                class="text-sm font-semibold text-accent-900"
+                                >{{ index + 1 }}</span
+                            >
                             <span class="text-lg font-semibold">{{
                                 step.title
                             }}</span>
@@ -1670,7 +1078,6 @@ const questions: { question: string; answer: string }[] = [
                         class="mt-8 inline-flex h-13 items-center gap-2 rounded-full bg-brand-950 px-6 text-base font-semibold text-white focus-ring transition hover:bg-brand-800"
                     >
                         Abrir conta grátis
-                        <ArrowRight class="size-4" aria-hidden="true" />
                     </Link>
                 </div>
             </section>
@@ -1681,19 +1088,14 @@ const questions: { question: string; answer: string }[] = [
                 class="mx-auto max-w-6xl px-5 pt-(--space-section) sm:px-8"
             >
                 <h2
-                    v-reveal
-                    class="max-w-3xl font-display text-section text-balance"
+                    class="max-w-3xl font-display text-section font-bold text-balance"
                 >
-                    Tudo o que a AGT pede, e o resto que o seu negócio precisa
+                    O que vem incluído
                 </h2>
                 <div class="mt-12 grid gap-10 lg:grid-cols-3">
-                    <div
-                        v-for="(group, index) in included"
-                        :key="group.group"
-                        v-reveal="index"
-                    >
+                    <div v-for="group in included" :key="group.group">
                         <h3
-                            class="border-b border-brand-950 pb-3 text-xs font-semibold tracking-[0.07em] text-brand-500 uppercase dark:border-white dark:text-zinc-400"
+                            class="border-b border-brand-950 pb-3 font-semibold dark:border-white"
                         >
                             {{ group.group }}
                         </h3>
@@ -1707,11 +1109,11 @@ const questions: { question: string; answer: string }[] = [
                             </li>
                         </ul>
                     </div>
-                    <div v-reveal="2">
+                    <div>
                         <h3
-                            class="border-b border-brand-950 pb-3 text-xs font-semibold tracking-[0.07em] text-brand-500 uppercase dark:border-white dark:text-zinc-400"
+                            class="border-b border-brand-950 pb-3 font-semibold dark:border-white"
                         >
-                            Fiscal e confiança
+                            Fiscal
                         </h3>
                         <dl>
                             <div
@@ -1740,16 +1142,16 @@ const questions: { question: string; answer: string }[] = [
                     class="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between"
                 >
                     <div class="max-w-2xl">
-                        <h2 class="font-display text-section text-balance">
-                            Experimente primeiro. Decida depois.
+                        <h2
+                            class="font-display text-section font-bold text-balance"
+                        >
+                            Preços
                         </h2>
                         <p
                             class="mt-4 text-lg text-pretty text-brand-600 dark:text-zinc-400"
                         >
-                            Use todas as funcionalidades durante
-                            {{ trialDays }} dias desde a criação do espaço de
-                            trabalho. Depois, escolha o pacote que serve o seu
-                            negócio.
+                            Experimente tudo durante {{ trialDays }} dias, sem
+                            cartão. Depois, escolha um pacote.
                         </p>
                     </div>
                     <div
@@ -1815,7 +1217,6 @@ const questions: { question: string; answer: string }[] = [
                         <article
                             v-for="(card, index) in packageCards"
                             :key="card.offer.name"
-                            v-reveal="index"
                             :aria-labelledby="`pacote-${index}`"
                             :class="[
                                 card.offer.is_featured
@@ -2026,7 +1427,7 @@ const questions: { question: string; answer: string }[] = [
                         the cards answer most visitors; this is for the one
                         comparing line by line.
                     -->
-                    <details v-if="showComparison" v-reveal class="group mt-10">
+                    <details v-if="showComparison" class="group mt-10">
                         <summary
                             class="mx-auto flex w-fit cursor-pointer list-none items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold ring-1 ring-zinc-900/15 focus-ring transition hover:ring-zinc-900/40 dark:ring-white/20 dark:hover:ring-white/50 [&::-webkit-details-marker]:hidden"
                         >
@@ -2052,7 +1453,7 @@ const questions: { question: string; answer: string }[] = [
                                     >
                                         <th
                                             scope="col"
-                                            class="w-2/5 pb-3 text-xs font-semibold tracking-[0.07em] text-brand-500 uppercase dark:text-zinc-400"
+                                            class="w-2/5 pb-3 text-sm font-semibold text-brand-500 normal-case dark:text-zinc-400"
                                         >
                                             Funcionalidade
                                         </th>
@@ -2127,9 +1528,8 @@ const questions: { question: string; answer: string }[] = [
                     class="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3"
                 >
                     <article
-                        v-for="(plan, index) in plans"
+                        v-for="plan in plans"
                         :key="plan.name"
-                        v-reveal="index"
                         class="flex flex-col rounded-3xl bg-brand-50 p-7 dark:bg-white/5"
                     >
                         <div class="flex items-center justify-between gap-3">
@@ -2183,7 +1583,7 @@ const questions: { question: string; answer: string }[] = [
                     </article>
                 </div>
 
-                <dl v-else v-reveal class="mt-12 grid gap-4 md:grid-cols-3">
+                <dl v-else class="mt-12 grid gap-4 md:grid-cols-3">
                     <div
                         v-for="assurance in openingAnAccount"
                         :key="assurance.term"
@@ -2207,8 +1607,8 @@ const questions: { question: string; answer: string }[] = [
                 id="perguntas"
                 class="mx-auto grid max-w-6xl gap-10 px-5 pt-(--space-section) sm:px-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16"
             >
-                <h2 class="font-display text-section text-balance">
-                    O que as pessoas perguntam antes de mudar
+                <h2 class="font-display text-section font-bold text-balance">
+                    Perguntas frequentes
                 </h2>
                 <div
                     class="faq border-t border-zinc-900/10 dark:border-white/10"
@@ -2296,12 +1696,12 @@ const questions: { question: string; answer: string }[] = [
                         {{ contact.company }}
                     </p>
                     <p class="mt-1 text-sm text-brand-400 dark:text-zinc-500">
-                        Certificada pela AGT · {{ certification.number }}
+                        Certificado da AGT n.º {{ certification.number }}
                     </p>
                 </div>
                 <nav aria-label="Produto">
                     <p
-                        class="text-xs font-medium tracking-[0.07em] text-brand-500 uppercase dark:text-zinc-400"
+                        class="text-sm font-semibold text-brand-950 dark:text-white"
                     >
                         Produto
                     </p>
@@ -2320,7 +1720,7 @@ const questions: { question: string; answer: string }[] = [
                 </nav>
                 <nav aria-label="Legal">
                     <p
-                        class="text-xs font-medium tracking-[0.07em] text-brand-500 uppercase dark:text-zinc-400"
+                        class="text-sm font-semibold text-brand-950 dark:text-white"
                     >
                         Legal
                     </p>

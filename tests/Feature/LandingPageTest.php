@@ -31,19 +31,54 @@ test('the landing page asks a first-time visitor about cookie choices', function
         ->toContain('<CookieConsent />');
 });
 
-test('the landing page offers interactive product proof with accessible motion', function () {
+test('the landing page proves itself with the real product and accessible motion', function () {
     $landing = (string) file_get_contents(resource_path('js/pages/Landing.vue'));
     $wordmark = (string) file_get_contents(resource_path('js/components/BrandWordmark.vue'));
+    $css = (string) file_get_contents(resource_path('css/app.css'));
 
     expect($landing)
         ->toContain("import BrandWordmark from '@/components/BrandWordmark.vue';")
         ->toContain('aria-label="Escolher um momento do negócio"')
-        ->toContain('aria-label="Escolher estado do documento"')
-        ->toContain('@click="selectLifecycle(index)"')
-        ->toContain('(prefers-reduced-motion: reduce)')
+        ->toContain('Imagens da aplicação com dados de demonstração.')
+        ->and($css)->toContain('.hero-sun')
+        ->toMatch('/prefers-reduced-motion: no-preference\) \{\s+\.hero-sun/')
         ->and($wordmark)
         ->toContain('role="img"')
         ->toContain('@media (prefers-reduced-motion: reduce)');
+});
+
+test('every product image exists, is described, and keeps its size reserved', function () {
+    $landing = (string) file_get_contents(resource_path('js/pages/Landing.vue'));
+
+    preg_match_all('#/images/landing/[a-z0-9-]+\.webp#', $landing, $sources);
+
+    expect($sources[0])->not->toBeEmpty();
+
+    foreach (array_unique($sources[0]) as $source) {
+        expect(public_path($source))->toBeFile()
+            ->and(filesize(public_path($source)))->toBeLessThan(250 * 1024);
+    }
+
+    preg_match_all('/<img\b[^>]*>/s', $landing, $images);
+
+    foreach ($images[0] as $image) {
+        expect($image)->toContain('width=')->toContain('height=')->toMatch('/alt="[^"]{10,}"/');
+    }
+});
+
+test('the page keeps the wording it chose to drop out of the copy', function () {
+    $page = (string) file_get_contents(resource_path('js/pages/Landing.vue'));
+
+    foreach ([
+        'Sem cartão. Sem contrato.',
+        'Experimente primeiro. Decida depois.',
+        'Tudo o que a AGT pede',
+        'Feito para o que acontece',
+        'sempre acabou em',
+        'nem devia',
+    ] as $phrase) {
+        expect($page)->not->toContain($phrase);
+    }
 });
 
 test('the wordmark is drawn as outlines so it never depends on a font file', function () {
@@ -172,9 +207,9 @@ test('the counter section sells the till with four promises and nothing it canno
         ->toContain('O stock desce sozinho a cada venda.')
         ->toContain('Abre e fecha a caixa com a contagem do dinheiro.')
         ->toContain('O talão sai em impressoras térmicas de 80 mm.')
-        ->toContain('Cobrar 139 080 Kz')
-        // The mock is decorative: nothing in it is read out or focusable.
-        ->toContain('aria-hidden="true"')
+        // The till is shown as the real screen, described for a screen reader.
+        ->toContain('/images/landing/till-1440.webp')
+        ->toContain('O ponto de venda da aplicação')
         // The till is reachable from the footer, but the header keeps four links.
         ->toContain("{ href: '#balcao', label: 'Ponto de venda' }")
         ->toContain('v-for="section in footerSections"');
@@ -194,8 +229,8 @@ test('the counter shows up as a situation, a feature and a section that agree', 
         ->toContain("tag: 'PDV'")
         ->toContain('Tem fila ao balcão e cada cliente quer o talão.')
         ->toContain('O talão imprime numa impressora térmica de 80 mm.')
-        // Listed first under "A casa em ordem".
-        ->toContain("group: 'A casa em ordem',\n        items: [\n            'Ponto de venda com abertura e fecho de caixa',")
+        // Listed first under "Gestão".
+        ->toContain("group: 'Gestão',\n        items: [\n            'Ponto de venda com abertura e fecho de caixa',")
         // The header links stay at four.
         ->toContain("{ href: '#perguntas', label: 'Perguntas' },\n];");
 
@@ -205,13 +240,6 @@ test('the counter shows up as a situation, a feature and a section that agree', 
         // The counter sits between the phone and the migration banner.
         ->and(strpos($page, 'id="pequenos"'))->toBeLessThan(strpos($page, 'id="balcao"'))
         ->and(strpos($page, 'id="balcao"'))->toBeLessThan(strpos($page, 'id="mudar"'));
-
-    // Every total in the selling screen is the hero document's own.
-    expect($page)
-        ->toContain('122 000,00')
-        ->toContain('17 080,00')
-        ->toContain('139 080,00')
-        ->toContain("{ name: 'Prateleira metálica', quantity: '2 × 32 000', total: '64 000' }");
 });
 
 test('no package is advertised while none is published', function () {
