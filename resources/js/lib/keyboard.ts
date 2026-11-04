@@ -26,6 +26,13 @@ export function isTypingInFormField(target: EventTarget | null): boolean {
         return false;
     }
 
+    if (
+        target instanceof HTMLInputElement &&
+        ['checkbox', 'radio'].includes(target.type)
+    ) {
+        return false;
+    }
+
     return (
         target.isContentEditable ||
         ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)
@@ -42,6 +49,11 @@ export function isDialogOpen(): boolean {
 /** An open menu or list owns the arrow keys and every letter (it type-aheads). */
 export function isPopupOpen(): boolean {
     return document.querySelector('[role="menu"], [role="listbox"]') !== null;
+}
+
+/** The till itself, not the shift and register lists filed under the same path. */
+export function isTillUrl(url: string): boolean {
+    return url.split(/[?#]/)[0].replace(/\/$/, '') === '/ponto-de-venda';
 }
 
 /** The rows a list has marked for j/k, in the order they are on screen. */

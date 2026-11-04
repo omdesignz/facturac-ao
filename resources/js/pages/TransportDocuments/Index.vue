@@ -348,6 +348,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                 >
                                     <td class="px-5 py-4">
                                         <Link
+                                            data-nav-row
                                             :href="
                                                 editTransportDocument.url(
                                                     document.public_id,

@@ -177,6 +177,7 @@ function decodeEntities(label: string): string {
                                 >
                                     <td class="px-5 py-3">
                                         <Link
+                                            data-nav-row
                                             :href="
                                                 editQuote.url(quote.public_id)
                                             "

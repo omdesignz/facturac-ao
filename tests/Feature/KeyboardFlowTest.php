@@ -16,9 +16,22 @@ test('the app layout carries the shortcuts, and lists mark their rows for them',
         ->and(pageSource('pages/Customers/Index.vue'))->toContain('data-nav-row');
 });
 
+test('every list with a row to open can be walked with the keyboard', function (string $page) {
+    expect(pageSource("pages/{$page}"))->toContain('data-nav-row');
+})->with([
+    'Quotes/Index.vue',
+    'TransportDocuments/Index.vue',
+    'Agt/Submissions/Index.vue',
+    'Imports/Index.vue',
+    'PriceLists/Index.vue',
+    'Catalogue/Index.vue',
+    'Pos/Sessions/Index.vue',
+]);
+
 test('the shortcuts keep off the till, where scanners type letters', function () {
     expect(pageSource('components/KeyboardShortcuts.vue'))
-        ->toContain("page.url.startsWith('/ponto-de-venda')")
+        ->toContain('isTillUrl(page.url)')
+        ->toContain("closest('[data-nav-item]')")
         ->toContain('isTypingInFormField(event.target)');
 });
 

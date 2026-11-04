@@ -165,6 +165,7 @@ function pageLabel(label: string): string {
                                 >
                                     <td class="px-3 py-3 sm:px-4">
                                         <Link
+                                            data-nav-row
                                             :href="
                                                 sessionShow.url(row.public_id)
                                             "

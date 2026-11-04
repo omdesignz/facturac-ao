@@ -7,6 +7,7 @@ import {
     detectApplePlatform,
     isDialogOpen,
     isPopupOpen,
+    isTillUrl,
     isTypingInFormField,
     keyCap,
     navigableRows,
@@ -61,6 +62,7 @@ const sections = computed(() => [
             { keys: ['j'], label: 'Linha seguinte' },
             { keys: ['k'], label: 'Linha anterior' },
             { keys: ['↵'], label: 'Abrir a linha' },
+            { keys: ['x'], label: 'Escolher a linha, nos documentos' },
         ],
     },
     {
@@ -84,7 +86,7 @@ let openTimer: ReturnType<typeof setTimeout> | undefined;
 
 /** The till takes barcode scanners, which type letters as if from a keyboard. */
 function isKeyboardReserved(): boolean {
-    return page.url.startsWith('/ponto-de-venda');
+    return isTillUrl(page.url);
 }
 
 function moveRow(direction: 1 | -1): boolean {
@@ -146,6 +148,15 @@ function handleKeydown(event: KeyboardEvent): void {
     } else if (event.key === 'k' || (event.key === 'ArrowUp' && onRow)) {
         if (moveRow(-1)) {
             event.preventDefault();
+        }
+    } else if (event.key === 'x' && onRow) {
+        const tick = document.activeElement
+            ?.closest('[data-nav-item]')
+            ?.querySelector<HTMLInputElement>('input[type="checkbox"]');
+
+        if (tick) {
+            event.preventDefault();
+            tick.click();
         }
     } else if (event.key === 'g') {
         awaitingDestination = true;

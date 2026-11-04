@@ -370,6 +370,7 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                                             class="flex justify-end gap-1"
                                         >
                                             <button
+                                                data-nav-row
                                                 type="button"
                                                 class="icon-button text-zinc-500 focus-ring transition hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-white/5 dark:hover:text-white"
                                                 @click="openEdit(item)"

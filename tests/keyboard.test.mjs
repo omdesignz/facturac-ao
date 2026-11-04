@@ -1,8 +1,17 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { nextRow } from '../resources/js/lib/keyboard.ts';
+import { isTillUrl, nextRow } from '../resources/js/lib/keyboard.ts';
 
 const row = (ariaCurrent = null) => ({ ariaCurrent });
+
+test('only the till itself keeps the keyboard for its scanners', () => {
+    assert.equal(isTillUrl('/ponto-de-venda'), true);
+    assert.equal(isTillUrl('/ponto-de-venda/'), true);
+    assert.equal(isTillUrl('/ponto-de-venda?caixa=1'), true);
+    assert.equal(isTillUrl('/ponto-de-venda/turnos'), false);
+    assert.equal(isTillUrl('/ponto-de-venda/turnos?page=2'), false);
+    assert.equal(isTillUrl('/documentos'), false);
+});
 
 test('j and k walk from the focused row and stop at the ends', () => {
     const rows = [row(), row(), row()];

@@ -303,6 +303,7 @@ function toggleDefault(): void {
                         <button
                             v-for="list in lists"
                             :key="list.public_id"
+                            data-nav-row
                             type="button"
                             class="w-full rounded-2xl px-4 py-3 text-left ring-1 focus-ring transition"
                             :class="

@@ -1282,6 +1282,7 @@ function historyUrl(publicId: string): string {
                                 :key="dataImport.public_id"
                             >
                                 <Link
+                                    data-nav-row
                                     :href="historyUrl(dataImport.public_id)"
                                     preserve-scroll
                                     class="group flex items-start gap-3 px-5 py-4 transition hover:bg-zinc-50 sm:px-6 dark:hover:bg-white/[0.03]"

@@ -456,6 +456,7 @@ function abbreviate(value: string | null): string {
                                                     class="py-4 pr-5 pl-3 text-right sm:pr-8"
                                                 >
                                                     <Link
+                                                        data-nav-row
                                                         :href="
                                                             index({
                                                                 query: {
