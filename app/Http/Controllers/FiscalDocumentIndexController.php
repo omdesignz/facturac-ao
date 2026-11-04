@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Fiscal\Documents\FiscalDocumentRegister;
 use App\Http\Requests\IndexFiscalDocumentsRequest;
+use App\Models\Customer;
 use App\Models\FiscalDocument;
 use App\Models\LegalEntity;
 use Illuminate\Http\RedirectResponse;
@@ -31,6 +32,7 @@ class FiscalDocumentIndexController extends Controller
 
         return Inertia::render('Documents/Index', [
             ...$register->for($legalEntity, $request->filters(), $canPrepareDocuments),
+            'canRemindCustomers' => $request->user()?->can('create', Customer::class) === true,
             // Loaded on its own when a row is opened, so picking a document
             // never re-runs the list query.
             'selected' => fn (): ?array => $selected === null

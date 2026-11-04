@@ -27,6 +27,7 @@ use App\Http\Controllers\DataImportMappingController;
 use App\Http\Controllers\DataImportTemplateController;
 use App\Http\Controllers\DebtController;
 use App\Http\Controllers\EstablishmentController;
+use App\Http\Controllers\FiscalDocumentBulkDownloadController;
 use App\Http\Controllers\FiscalDocumentController;
 use App\Http\Controllers\FiscalDocumentDeliveryController;
 use App\Http\Controllers\FiscalDocumentIndexController;
@@ -360,6 +361,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::get('/documentos', FiscalDocumentIndexController::class)
             ->middleware('cache.headers:private;no_store')
             ->name('documents.index');
+        Route::get('/documentos-em-lote/pdf', FiscalDocumentBulkDownloadController::class)
+            ->middleware('throttle:10,1')
+            ->name('documents.bulk-pdf');
         Route::get('/documents/invoices/create', [FiscalDocumentController::class, 'create'])
             ->name('invoices.create');
         Route::post('/documents/invoices', [FiscalDocumentController::class, 'store'])

@@ -6,6 +6,7 @@ import {
     Check,
     ChevronDown,
     Clock3,
+    BellRing,
     Download,
     FileText,
     FilterX,
@@ -30,9 +31,12 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { confirmAction } from '@/lib/confirm';
 import { statusTone } from '@/lib/document-status';
 import { usePaletteActions } from '@/lib/palette-actions';
+import { buttonOutlineSmall, buttonQuiet } from '@/lib/pos-ui';
 import { index as agtSubmissions } from '@/routes/agt/submissions';
 import { show as customerShow } from '@/routes/customers';
+import { index as debtsIndex } from '@/routes/debts';
 import {
+    bulkPdf,
     index as documentsIndex,
     pdf as documentPdf,
     print as printDocument,
@@ -150,8 +154,47 @@ const props = defineProps<{
     };
     options: FilterOptions;
     permissions: { create: boolean };
+    canRemindCustomers: boolean;
     selected: SelectedDocument | null;
 }>();
+
+/* -------------------------------------------- several documents at once */
+
+const chosen = ref<string[]>([]);
+
+watch(
+    () => props.documents.data,
+    (documents) => {
+        chosen.value = chosen.value.filter((id) =>
+            documents.some((document) => document.public_id === id),
+        );
+    },
+);
+
+function toggleChosen(publicId: string): void {
+    chosen.value = chosen.value.includes(publicId)
+        ? chosen.value.filter((id) => id !== publicId)
+        : [...chosen.value, publicId];
+}
+
+const chosenCustomers = computed(() => [
+    ...new Set(
+        props.documents.data.flatMap((document) =>
+            document.customer_public_id !== null &&
+            chosen.value.includes(document.public_id)
+                ? [document.customer_public_id]
+                : [],
+        ),
+    ),
+]);
+
+const downloadChosenUrl = computed(() =>
+    bulkPdf.url({ query: { documentos: chosen.value } }),
+);
+
+const remindChosenUrl = computed(() =>
+    debtsIndex.url({ query: { clientes: chosenCustomers.value } }),
+);
 
 const search = ref(props.filters.q);
 const status = ref(props.filters.status);
@@ -1006,112 +1049,211 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                         {{ group.label }}
                                     </h2>
                                 </div>
-                                <Link
+                                <div
                                     v-for="document in group.documents"
                                     :key="document.public_id"
-                                    data-nav-row="open"
-                                    :href="documentUrl(document.public_id)"
-                                    preserve-state
-                                    preserve-scroll
-                                    replace
-                                    prefetch
-                                    cache-for="5s"
-                                    :only="['selected']"
-                                    :title="
-                                        document.workflow_message ?? undefined
-                                    "
-                                    :aria-current="
-                                        selected?.public_id ===
-                                        document.public_id
-                                            ? 'true'
-                                            : undefined
-                                    "
-                                    class="block w-full rounded-2xl px-3.5 py-2 text-left focus-ring transition pointer-coarse:py-3"
-                                    :class="
-                                        selected?.public_id ===
-                                        document.public_id
-                                            ? 'bg-white shadow-[inset_0_0_0_1.5px_var(--color-accent-400),0_10px_26px_-16px_rgb(143_91_0/0.4)] dark:bg-zinc-900'
-                                            : 'hover:bg-zinc-900/[0.04] dark:hover:bg-white/[0.05]'
-                                    "
-                                    @click.capture="
-                                        skipReopening(
-                                            $event,
-                                            document.public_id,
-                                        )
-                                    "
-                                    @start="startOpening(document.public_id)"
-                                    @finish="finishOpening(document.public_id)"
+                                    data-nav-item
+                                    class="group flex items-center"
                                 >
-                                    <span
-                                        class="flex items-baseline justify-between gap-3"
+                                    <label
+                                        class="grid w-7 shrink-0 cursor-pointer place-items-center self-stretch transition group-hover:opacity-100 focus-within:opacity-100 pointer-coarse:w-9 pointer-coarse:opacity-100"
+                                        :class="
+                                            chosen.length > 0
+                                                ? 'opacity-100'
+                                                : 'opacity-0'
+                                        "
+                                        :aria-hidden="!document.can_print"
+                                    >
+                                        <template v-if="document.can_print">
+                                            <span class="sr-only"
+                                                >Escolher
+                                                {{ rowNumber(document) }}</span
+                                            >
+                                            <input
+                                                type="checkbox"
+                                                class="form-checkbox"
+                                                :checked="
+                                                    chosen.includes(
+                                                        document.public_id,
+                                                    )
+                                                "
+                                                @change="
+                                                    toggleChosen(
+                                                        document.public_id,
+                                                    )
+                                                "
+                                            />
+                                        </template>
+                                    </label>
+                                    <Link
+                                        data-nav-row="open"
+                                        :href="documentUrl(document.public_id)"
+                                        preserve-state
+                                        preserve-scroll
+                                        replace
+                                        prefetch
+                                        cache-for="5s"
+                                        :only="['selected']"
+                                        :title="
+                                            document.workflow_message ??
+                                            undefined
+                                        "
+                                        :aria-current="
+                                            selected?.public_id ===
+                                            document.public_id
+                                                ? 'true'
+                                                : undefined
+                                        "
+                                        class="block min-w-0 flex-1 rounded-2xl px-3.5 py-2 text-left focus-ring transition pointer-coarse:py-3"
+                                        :class="
+                                            selected?.public_id ===
+                                            document.public_id
+                                                ? 'bg-white shadow-[inset_0_0_0_1.5px_var(--color-accent-400),0_10px_26px_-16px_rgb(143_91_0/0.4)] dark:bg-zinc-900'
+                                                : 'hover:bg-zinc-900/[0.04] dark:hover:bg-white/[0.05]'
+                                        "
+                                        @click.capture="
+                                            skipReopening(
+                                                $event,
+                                                document.public_id,
+                                            )
+                                        "
+                                        @start="
+                                            startOpening(document.public_id)
+                                        "
+                                        @finish="
+                                            finishOpening(document.public_id)
+                                        "
                                     >
                                         <span
-                                            :title="document.customer_name"
-                                            class="truncate text-sm font-medium text-zinc-950 dark:text-white"
-                                            >{{ document.customer_name }}</span
+                                            class="flex items-baseline justify-between gap-3"
                                         >
-                                        <span
-                                            class="shrink-0 numeric text-sm font-medium text-zinc-950 dark:text-white"
-                                            >{{
-                                                wholeAmount(
-                                                    document.gross_total_minor,
-                                                )
-                                            }}
                                             <span
-                                                class="text-xs font-normal text-zinc-400"
+                                                :title="document.customer_name"
+                                                class="truncate text-sm font-medium text-zinc-950 dark:text-white"
                                                 >{{
-                                                    currencyLabel(
-                                                        document.currency_code,
+                                                    document.customer_name
+                                                }}</span
+                                            >
+                                            <span
+                                                class="shrink-0 numeric text-sm font-medium text-zinc-950 dark:text-white"
+                                                >{{
+                                                    wholeAmount(
+                                                        document.gross_total_minor,
+                                                    )
+                                                }}
+                                                <span
+                                                    class="text-xs font-normal text-zinc-400"
+                                                    >{{
+                                                        currencyLabel(
+                                                            document.currency_code,
+                                                        )
+                                                    }}</span
+                                                ></span
+                                            >
+                                        </span>
+                                        <span
+                                            class="mt-0.5 flex items-center justify-between gap-3"
+                                        >
+                                            <span
+                                                class="min-w-0 truncate text-xs text-zinc-500 dark:text-zinc-400"
+                                                ><span
+                                                    :title="rowNumber(document)"
+                                                    class="font-mono"
+                                                    >{{
+                                                        rowNumber(document)
+                                                    }}</span
+                                                >
+                                                ·
+                                                {{
+                                                    formatShortDate(
+                                                        document.document_date,
                                                     )
                                                 }}</span
-                                            ></span
-                                        >
-                                    </span>
-                                    <span
-                                        class="mt-0.5 flex items-center justify-between gap-3"
-                                    >
-                                        <span
-                                            class="min-w-0 truncate text-xs text-zinc-500 dark:text-zinc-400"
-                                            ><span
-                                                :title="rowNumber(document)"
-                                                class="font-mono"
-                                                >{{ rowNumber(document) }}</span
                                             >
-                                            ·
-                                            {{
-                                                formatShortDate(
-                                                    document.document_date,
-                                                )
-                                            }}</span
-                                        >
-                                        <span
-                                            class="flex shrink-0 items-center gap-1.5"
-                                        >
-                                            <LoaderCircle
-                                                v-if="
-                                                    openingDocument ===
-                                                    document.public_id
-                                                "
-                                                class="size-3.5 animate-spin-delayed text-zinc-400"
-                                                aria-hidden="true"
-                                            />
-                                            <StatusBadge
-                                                :label="document.workflow_label"
-                                                :tone="
-                                                    statusTone(
-                                                        document.workflow_status,
-                                                    )
-                                                "
-                                                :pulse="
-                                                    workflowIsActive(
-                                                        document.workflow_status,
-                                                    )
-                                                "
-                                            />
+                                            <span
+                                                class="flex shrink-0 items-center gap-1.5"
+                                            >
+                                                <LoaderCircle
+                                                    v-if="
+                                                        openingDocument ===
+                                                        document.public_id
+                                                    "
+                                                    class="size-3.5 animate-spin-delayed text-zinc-400"
+                                                    aria-hidden="true"
+                                                />
+                                                <StatusBadge
+                                                    :label="
+                                                        document.workflow_label
+                                                    "
+                                                    :tone="
+                                                        statusTone(
+                                                            document.workflow_status,
+                                                        )
+                                                    "
+                                                    :pulse="
+                                                        workflowIsActive(
+                                                            document.workflow_status,
+                                                        )
+                                                    "
+                                                />
+                                            </span>
                                         </span>
-                                    </span>
-                                </Link>
+                                    </Link>
+                                </div>
                             </template>
+
+                            <div
+                                v-if="chosen.length > 0"
+                                class="sticky bottom-20 z-10 mt-2 flex flex-wrap items-center gap-2 rounded-2xl bg-white p-2 pl-4 shadow-[0_0_0_1px_rgb(23_23_22/0.08),0_10px_26px_-12px_rgb(23_23_22/0.3)] lg:bottom-3 dark:bg-zinc-900 dark:shadow-[0_0_0_1px_rgb(255_255_255/0.12)]"
+                                role="group"
+                                aria-label="Acções para os documentos escolhidos"
+                            >
+                                <p
+                                    class="me-auto text-sm font-medium text-zinc-950 dark:text-white"
+                                    aria-live="polite"
+                                >
+                                    {{ chosen.length }}
+                                    {{
+                                        chosen.length === 1
+                                            ? 'escolhido'
+                                            : 'escolhidos'
+                                    }}
+                                </p>
+                                <Link
+                                    v-if="
+                                        canRemindCustomers &&
+                                        chosenCustomers.length > 0
+                                    "
+                                    :href="remindChosenUrl"
+                                    :class="buttonOutlineSmall"
+                                >
+                                    <BellRing
+                                        class="size-3.5"
+                                        aria-hidden="true"
+                                    />
+                                    <span class="sr-only">Preparar</span>
+                                    Lembretes
+                                </Link>
+                                <a
+                                    :href="downloadChosenUrl"
+                                    :class="buttonOutlineSmall"
+                                >
+                                    <Download
+                                        class="size-3.5"
+                                        aria-hidden="true"
+                                    />
+                                    <span class="sr-only">Descarregar</span>
+                                    PDF
+                                </a>
+                                <button
+                                    type="button"
+                                    :class="buttonQuiet"
+                                    class="h-9 pointer-coarse:h-11"
+                                    @click="chosen = []"
+                                >
+                                    Limpar
+                                </button>
+                            </div>
 
                             <div
                                 class="mt-3 flex flex-wrap items-center justify-between gap-3 px-1 text-xs text-zinc-500 dark:text-zinc-400"
