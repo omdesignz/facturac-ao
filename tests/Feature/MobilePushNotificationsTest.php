@@ -261,7 +261,7 @@ test('a notice reaches Apple signed, addressed and ready to open the document', 
             ->and(openssl_verify("{$header}.{$claims}", joseToDer(base64UrlDecode($signature)), $publicKey, OPENSSL_ALGO_SHA256))->toBe(1)
             ->and($request->data())->toBe([
                 'aps' => [
-                    'alert' => ['title' => 'FT 2026/41 venceu há 3 dia(s)', 'body' => 'Padaria Cazenga tem 125 000,00 AOA por pagar.'],
+                    'alert' => ['title' => 'FT 2026/41 venceu há 3 dias', 'body' => 'Padaria Cazenga tem 125 000,00 AOA por pagar.'],
                     'sound' => 'default',
                     'thread-id' => 'invoice_overdue',
                 ],

@@ -37,7 +37,7 @@ class QuoteExpiringSoon extends WorkspaceNotification
     {
         return $this->daysLeft === 0
             ? "{$this->reference} expira hoje"
-            : "{$this->reference} expira em {$this->daysLeft} dia(s)";
+            : "{$this->reference} expira em ".($this->daysLeft === 1 ? '1 dia' : "{$this->daysLeft} dias");
     }
 
     public function body(): string

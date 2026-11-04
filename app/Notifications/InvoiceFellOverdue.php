@@ -40,7 +40,9 @@ class InvoiceFellOverdue extends WorkspaceNotification
 
     public function title(): string
     {
-        return "{$this->documentNo} venceu há {$this->daysPastDue} dia(s)";
+        $days = $this->daysPastDue === 1 ? '1 dia' : "{$this->daysPastDue} dias";
+
+        return "{$this->documentNo} venceu há {$days}";
     }
 
     public function body(): string

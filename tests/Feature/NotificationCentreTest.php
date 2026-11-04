@@ -94,7 +94,7 @@ test('a stored notification carries its own words and link', function () {
 
     // The browser never has to know what an "invoice_overdue" is to render one.
     expect($data['topic'])->toBe('invoice_overdue')
-        ->and($data['title'])->toContain('venceu há 10 dia(s)')
+        ->and($data['title'])->toContain('venceu há 10 dias')
         ->and($data['body'])->toContain('Padaria Cazenga')
         ->and($data['url'])->toBeString()
         ->and($data['tone'])->toBe('warning')
@@ -367,7 +367,7 @@ test('a quote about to lapse is flagged before it does', function () {
     $data = DatabaseNotification::query()->sole()->data;
 
     expect($data['topic'])->toBe(NotificationTopic::QuoteExpiring->value)
-        ->and($data['title'])->toContain('expira em 2 dia(s)');
+        ->and($data['title'])->toContain('expira em 2 dias');
 });
 
 test('a customer past their limit is reported once', function () {
