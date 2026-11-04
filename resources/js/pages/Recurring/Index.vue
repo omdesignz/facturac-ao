@@ -245,12 +245,12 @@ const dueCount = computed(
     <AppLayout>
         <Head title="Avenças" />
 
-        <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+        <div class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
             <div class="page-shell space-y-6">
                 <FlashBanner />
 
                 <PageHeader
-                    eyebrow="Documentos · Avenças"
+                    eyebrow="Vender"
                     title="Avenças"
                     description="Facturação que se repete sozinha, na frequência que escolher. Por omissão deixamos um rascunho para rever — emitir é irreversível, por isso só acontece se o pedir."
                 >
@@ -310,7 +310,7 @@ const dueCount = computed(
 
                             <StatusBadge
                                 :tone="
-                                    profile.is_active ? 'success' : 'neutral'
+                                    profile.is_active ? 'neutral' : 'draft'
                                 "
                                 :label="profile.is_active ? 'Activa' : 'Parada'"
                             />

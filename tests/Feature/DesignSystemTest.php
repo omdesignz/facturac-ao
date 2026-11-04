@@ -338,7 +338,7 @@ test('every working screen shares one width, so the ground never shifts between 
 
         $contents = $file->getContents();
 
-        if (str_contains($contents, 'px-4 py-8 sm:px-6 lg:px-8 lg:py-10')
+        if (str_contains($contents, 'px-4 py-6 sm:px-6 lg:px-8 lg:py-7')
             && preg_match('/mx-auto max-w-(5xl|6xl|7xl|\[100rem\])[" ]/', $contents)) {
             $stray[] = $file->getRelativePathname();
         }

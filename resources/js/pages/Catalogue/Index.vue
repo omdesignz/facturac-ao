@@ -195,10 +195,10 @@ async function deactivate(item: CatalogueItem): Promise<void> {
     <AppLayout>
         <Head title="Artigos e serviços" />
 
-        <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+        <div class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
             <div class="page-shell space-y-6">
                 <PageHeader
-                    eyebrow="Artigos"
+                    eyebrow="Registos"
                     title="Artigos e serviços"
                     description="O que vende, com o preço e o IVA já definidos. Numa factura basta escolher — os valores entram sozinhos."
                 >
@@ -337,13 +337,17 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                                         {{ formatMoney(item.unit_price_minor) }}
                                         <span
                                             class="text-xs font-normal text-zinc-400"
-                                            >{{ item.currency_code }}</span
+                                            >{{
+                                                item.currency_code === 'AOA'
+                                                    ? 'Kz'
+                                                    : item.currency_code
+                                            }}</span
                                         >
                                     </td>
                                     <td
                                         class="hidden px-4 py-3 text-right numeric text-zinc-600 md:table-cell dark:text-zinc-400"
                                     >
-                                        {{ item.tax_percentage }}%
+                                        {{ Number(item.tax_percentage) }}%
                                     </td>
                                     <td class="px-4 py-3">
                                         <StatusBadge
@@ -354,14 +358,15 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                                             "
                                             :tone="
                                                 item.is_active
-                                                    ? 'success'
-                                                    : 'neutral'
+                                                    ? 'neutral'
+                                                    : 'draft'
                                             "
                                         />
                                     </td>
                                     <td class="px-4 py-3 text-right">
                                         <div
                                             v-if="canManage"
+                                            data-row-actions
                                             class="flex justify-end gap-1"
                                         >
                                             <button

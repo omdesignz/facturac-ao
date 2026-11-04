@@ -129,12 +129,12 @@ function canDelete(register: RegisterRow): boolean {
     <AppLayout>
         <Head title="Caixas" />
 
-        <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+        <div class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
             <div class="max-w-4xl space-y-6">
                 <FlashBanner />
 
                 <PageHeader
-                    eyebrow="Vendas · Ponto de venda"
+                    eyebrow="Vender · Ponto de venda"
                     title="Caixas"
                     description="Cada caixa é um balcão onde se vende, num estabelecimento. Só uma pessoa de cada vez tem um turno aberto numa caixa."
                 >
@@ -220,8 +220,8 @@ function canDelete(register: RegisterRow): boolean {
                                         "
                                         :tone="
                                             register.is_active
-                                                ? 'success'
-                                                : 'neutral'
+                                                ? 'neutral'
+                                                : 'draft'
                                         "
                                     />
                                     <StatusBadge

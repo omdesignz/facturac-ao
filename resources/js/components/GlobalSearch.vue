@@ -9,13 +9,14 @@ import {
     TransitionChild,
     TransitionRoot,
 } from '@headlessui/vue';
-import { router, useHttp, usePage } from '@inertiajs/vue3';
+import { router, useHttp } from '@inertiajs/vue3';
 import {
     CornerDownLeft,
     FilePlus2,
     FileSignature,
     FileText,
     LoaderCircle,
+    Keyboard,
     Search,
     Truck,
     UserRound,
@@ -25,7 +26,15 @@ import type { Component } from 'vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import { statusTone } from '@/lib/document-status';
 import type { StatusTone } from '@/lib/document-status';
-import { useNavigation } from '@/lib/navigation';
+import {
+    detectApplePlatform,
+    isDialogOpen,
+    isTypingInFormField,
+    keyCap,
+    shortcutsSheetOpen,
+} from '@/lib/keyboard';
+import { useCanPrepareDocuments, useNavigation } from '@/lib/navigation';
+import { paletteActions } from '@/lib/palette-actions';
 import { search } from '@/routes';
 import { show as showCustomer } from '@/routes/customers';
 import { index as documentsIndex } from '@/routes/documents';
@@ -62,7 +71,9 @@ interface Result {
     key: string;
     label: string;
     hint: string;
-    href: string;
+    /** Where choosing it goes; `run` takes its place for an action on the page. */
+    href?: string;
+    run?: () => void;
     icon: Component;
     /** Documents and customers get two lines; everything else gets one. */
     detail?: boolean;
@@ -83,7 +94,6 @@ interface ResultGroup {
 const MIN_QUERY_LENGTH = 2;
 const DEBOUNCE_MS = 160;
 
-const page = usePage();
 const { groups: navigationGroups } = useNavigation();
 
 const open = ref(false);
@@ -108,13 +118,7 @@ const shortcutKeys = computed(() =>
 );
 
 /** Viewers can look but not prepare, so they are not offered shortcuts to. */
-const canPrepareDocuments = computed(() => {
-    const current = page.props.auth.workspaces.find(
-        (workspace) => workspace.current,
-    );
-
-    return current !== undefined && current.role !== 'viewer';
-});
+const canPrepareDocuments = useCanPrepareDocuments();
 
 /** Accent- and case-blind, so "facturacao" finds "Facturação". */
 function normalise(value: string): string {
@@ -132,10 +136,6 @@ function wholeAmount(
         currency: currencyCode === 'AOA' ? 'Kz' : currencyCode,
     };
 }
-
-/** The key-cap recipe of the header's shortcut hint, reused wherever a key is named. */
-const keyCap =
-    'grid h-5 min-w-5 place-items-center rounded-md bg-white px-1.5 font-sans text-xs leading-none font-medium text-zinc-500 shadow-[0_0_0_1px_rgb(23_23_22/0.08)] dark:bg-white/10 dark:text-zinc-300 dark:shadow-none';
 
 function shortDate(isoDate: string): string {
     return new Intl.DateTimeFormat('pt-AO', {
@@ -187,6 +187,30 @@ const pages = computed<Result[]>(() =>
     ),
 );
 
+/** What the page has open comes first: it is why the palette was opened. */
+const pageActions = computed<Result[]>(() =>
+    paletteActions.value.map((action) => ({
+        key: `here:${action.key}`,
+        label: action.label,
+        hint: action.hint ?? '',
+        icon: action.icon,
+        run: action.run,
+    })),
+);
+
+/** A touch screen has no keys to learn. */
+const hasKeyboard = ref(false);
+
+const shortcutsEntry: Result = {
+    key: 'help:shortcuts',
+    label: 'Atalhos de teclado',
+    hint: '?',
+    icon: Keyboard,
+    run: () => {
+        shortcutsSheetOpen.value = true;
+    },
+};
+
 function matchesQuery(result: Result): boolean {
     const needle = normalise(trimmedQuery.value);
 
@@ -200,8 +224,13 @@ function matchesQuery(result: Result): boolean {
 const resultGroups = computed<ResultGroup[]>(() => {
     if (trimmedQuery.value === '') {
         return [
+            { name: 'Nesta página', results: pageActions.value },
             { name: 'Criar', results: actions.value },
             { name: 'Ir para', results: pages.value.slice(0, 8) },
+            {
+                name: 'Ajuda',
+                results: hasKeyboard.value ? [shortcutsEntry] : [],
+            },
         ].filter((group) => group.results.length > 0);
     }
 
@@ -268,6 +297,10 @@ const resultGroups = computed<ResultGroup[]>(() => {
             : [];
 
     return [
+        {
+            name: 'Nesta página',
+            results: pageActions.value.filter(matchesQuery),
+        },
         { name: 'Documentos', results: documentResults },
         { name: 'Clientes', results: customerResults },
         {
@@ -275,6 +308,12 @@ const resultGroups = computed<ResultGroup[]>(() => {
             results: pages.value.filter(matchesQuery).slice(0, 5),
         },
         { name: 'Criar', results: actions.value.filter(matchesQuery) },
+        {
+            name: 'Ajuda',
+            results: hasKeyboard.value
+                ? [shortcutsEntry].filter(matchesQuery)
+                : [],
+        },
         { name: 'Mais', results: everywhere },
     ].filter((group) => group.results.length > 0);
 });
@@ -383,32 +422,19 @@ function choose(result: Result | null): void {
     }
 
     closePalette();
-    router.visit(result.href);
-}
 
-function isTypingInFormField(target: EventTarget | null): boolean {
-    if (!(target instanceof HTMLElement)) {
-        return false;
+    if (result.run) {
+        result.run();
+    } else if (result.href) {
+        router.visit(result.href);
     }
-
-    return (
-        target.isContentEditable ||
-        ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)
-    );
-}
-
-/** Another dialog already has the user's attention, and the page behind it is inert. */
-function isAnotherDialogOpen(): boolean {
-    return (
-        document.querySelector('[role="dialog"], [role="alertdialog"]') !== null
-    );
 }
 
 function handleGlobalKeydown(event: KeyboardEvent): void {
     const modifier = isApplePlatform.value ? event.metaKey : event.ctrlKey;
 
     if ((event.key === 'k' || event.key === 'K') && modifier && !event.altKey) {
-        if (!open.value && isAnotherDialogOpen()) {
+        if (!open.value && isDialogOpen()) {
             return;
         }
 
@@ -423,29 +449,16 @@ function handleGlobalKeydown(event: KeyboardEvent): void {
         event.key === '/' &&
         !open.value &&
         !isTypingInFormField(event.target) &&
-        !isAnotherDialogOpen()
+        !isDialogOpen()
     ) {
         event.preventDefault();
         openPalette();
     }
 }
 
-function detectApplePlatform(): boolean {
-    if (typeof navigator === 'undefined') {
-        return false;
-    }
-
-    const platform =
-        (navigator as { userAgentData?: { platform?: string } }).userAgentData
-            ?.platform ??
-        navigator.platform ??
-        '';
-
-    return /mac|iphone|ipad|ipod/i.test(platform);
-}
-
 onMounted(() => {
     isApplePlatform.value = detectApplePlatform();
+    hasKeyboard.value = window.matchMedia('(pointer: fine)').matches;
     window.addEventListener('keydown', handleGlobalKeydown);
 });
 
@@ -456,20 +469,20 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div class="flex min-w-0 flex-1 items-center max-sm:justify-end">
+    <div class="flex min-w-0 flex-1 items-center max-xl:justify-end">
         <button
             type="button"
-            class="group flex h-10 w-full max-w-md min-w-0 items-center gap-3 rounded-full bg-zinc-900/[0.04] pr-2 pl-3.5 text-left text-sm text-zinc-500 focus-ring transition hover:bg-zinc-900/[0.07] hover:text-zinc-700 max-sm:size-10 max-sm:w-10 max-sm:justify-center max-sm:px-0 dark:bg-white/[0.06] dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-zinc-200"
+            class="group flex h-10 w-full max-w-md min-w-0 items-center gap-3 rounded-full bg-zinc-900/[0.04] pr-2 pl-3.5 text-left text-sm text-zinc-500 focus-ring transition hover:bg-zinc-900/[0.07] hover:text-zinc-700 max-xl:size-10 max-xl:w-10 max-xl:justify-center max-xl:px-0 xl:min-w-44 dark:bg-white/[0.06] dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-zinc-200"
             aria-haspopup="dialog"
             :aria-keyshortcuts="isApplePlatform ? 'Meta+K' : 'Control+K'"
             @click="openPalette"
         >
             <Search class="size-4 shrink-0" aria-hidden="true" />
-            <span class="min-w-0 flex-1 truncate max-sm:sr-only">
+            <span class="min-w-0 flex-1 truncate max-xl:sr-only">
                 Pesquisar factura, cliente ou NIF…
             </span>
             <span
-                class="hidden shrink-0 items-center gap-1 sm:flex"
+                class="hidden shrink-0 items-center gap-1 xl:flex"
                 aria-hidden="true"
             >
                 <kbd

@@ -319,7 +319,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
 <template>
     <AppLayout>
         <Head :title="customer.name" />
-        <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+        <div class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
             <div class="page-shell min-w-0 space-y-6">
                 <Link
                     :href="customersIndex.url()"
@@ -331,10 +331,10 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
 
                 <FlashBanner />
 
-                <PageHeader eyebrow="Clientes · Cliente" :title="customer.name">
+                <PageHeader eyebrow="Cobrar · Clientes" :title="customer.name">
                     <template #meta>
                         <StatusBadge
-                            :tone="customer.is_active ? 'success' : 'neutral'"
+                            :tone="customer.is_active ? 'neutral' : 'draft'"
                             :label="customer.is_active ? 'Activo' : 'Inactivo'"
                         />
                         <span

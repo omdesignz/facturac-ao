@@ -259,12 +259,12 @@ function toggleDefault(): void {
     <AppLayout>
         <Head title="Tabelas de preços" />
 
-        <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+        <div class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
             <div class="page-shell space-y-6">
                 <FlashBanner />
 
                 <PageHeader
-                    eyebrow="Artigos · Tabelas de preços"
+                    eyebrow="Registos"
                     title="Tabelas de preços"
                     description="Um preço combinado com um cliente vale sempre mais que a tabela dele; a tabela vale mais que o preço do artigo."
                 >

@@ -147,6 +147,28 @@ function draftOf(id: string | null): ReminderDraft | null {
     return draft === undefined || draft === 'failed' ? null : draft;
 }
 
+/** A long-owing customer's invoices fold after the two oldest, until asked for. */
+const VISIBLE_DOCUMENTS = 2;
+const unfolded = ref<string[]>([]);
+
+function shownDocuments(id: string | null): ReminderDraft['documents'] {
+    const documents = draftOf(id)?.documents ?? [];
+
+    return id !== null && unfolded.value.includes(id)
+        ? documents
+        : documents.slice(0, VISIBLE_DOCUMENTS);
+}
+
+function hiddenDocumentCount(id: string | null): number {
+    return (draftOf(id)?.documents.length ?? 0) - shownDocuments(id).length;
+}
+
+function showAllDocuments(id: string | null): void {
+    if (id !== null) {
+        unfolded.value = [...unfolded.value, id];
+    }
+}
+
 function toggle(id: string): void {
     selected.value = selected.value.includes(id)
         ? selected.value.filter((chosen) => chosen !== id)
@@ -236,7 +258,7 @@ const dayPill = (days: number): string =>
 <template>
     <AppLayout>
         <Head title="Dívidas" />
-        <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+        <div class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
             <div class="page-shell">
                 <FlashBanner class="mb-6" />
 
@@ -334,7 +356,7 @@ const dayPill = (days: number): string =>
                     <p
                         class="mt-4 max-w-2xl text-sm/6 text-zinc-600 dark:text-zinc-400"
                     >
-                        {{ concentrationLine(shares) }}
+                        {{ concentrationLine(shares, summary.customer_count) }}
                     </p>
                 </template>
 
@@ -374,7 +396,7 @@ const dayPill = (days: number): string =>
 
                 <div
                     v-else
-                    class="mt-10 grid grid-cols-[minmax(0,1fr)] items-start gap-8 lg:grid-cols-[minmax(0,1fr)_26rem]"
+                    class="mt-7 grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[minmax(0,1fr)_26rem]"
                 >
                     <!-- -------------------------------- choose whom to remind -->
                     <section aria-labelledby="choose-title" class="min-w-0">
@@ -393,16 +415,16 @@ const dayPill = (days: number): string =>
                             lembrete aparece aqui, já escrito.
                         </p>
 
-                        <ul v-else role="list" class="mt-4 grid gap-3">
+                        <ul v-else role="list" class="mt-3 grid gap-2">
                             <li
                                 v-for="row in overdue"
                                 :key="row.customer_public_id ?? row.name"
-                                class="rounded-3xl bg-white p-5 transition dark:bg-[#1c1c1e]"
+                                class="rounded-3xl bg-white px-5 py-4 transition dark:bg-[#1c1c1e]"
                                 :class="
                                     selected.includes(
                                         row.customer_public_id ?? '',
                                     )
-                                        ? 'ring-[1.5px] ring-zinc-950 dark:ring-white'
+                                        ? 'ring-1 ring-zinc-900/25 dark:ring-white/30'
                                         : 'surface'
                                 "
                             >
@@ -492,9 +514,9 @@ const dayPill = (days: number): string =>
                                             class="mt-4 divide-y divide-zinc-900/[0.07] border-t border-zinc-900/[0.07] dark:divide-white/10 dark:border-white/10"
                                         >
                                             <li
-                                                v-for="document in draftOf(
+                                                v-for="document in shownDocuments(
                                                     row.customer_public_id,
-                                                )!.documents"
+                                                )"
                                                 :key="document.document_no"
                                                 class="flex items-center gap-3 py-2.5 text-sm"
                                             >
@@ -540,6 +562,27 @@ const dayPill = (days: number): string =>
                                         <div
                                             class="mt-3 flex flex-wrap items-center gap-2"
                                         >
+                                            <button
+                                                v-if="
+                                                    hiddenDocumentCount(
+                                                        row.customer_public_id,
+                                                    ) > 0
+                                                "
+                                                type="button"
+                                                class="rounded-full px-2.5 py-1 text-xs font-medium text-zinc-700 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
+                                                @click="
+                                                    showAllDocuments(
+                                                        row.customer_public_id,
+                                                    )
+                                                "
+                                            >
+                                                Mais
+                                                {{
+                                                    hiddenDocumentCount(
+                                                        row.customer_public_id,
+                                                    )
+                                                }}
+                                            </button>
                                             <span
                                                 v-if="
                                                     draftOf(
@@ -644,7 +687,7 @@ const dayPill = (days: number): string =>
 
                     <!-- ------------------------------------- prepared for you -->
                     <aside
-                        class="rounded-3xl surface bg-white p-6 lg:sticky lg:top-24 dark:bg-[#1c1c1e]"
+                        class="rounded-3xl surface bg-white p-6 lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto lg:overscroll-contain dark:bg-[#1c1c1e]"
                         aria-labelledby="prepared-title"
                     >
                         <p

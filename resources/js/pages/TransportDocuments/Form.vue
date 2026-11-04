@@ -413,7 +413,7 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
     <AppLayout>
         <Head :title="transportDocument?.document_no ?? 'Nova guia'" />
 
-        <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+        <div class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
             <div class="page-shell space-y-6">
                 <FlashBanner />
 

@@ -254,10 +254,10 @@ async function deactivate(customer: Customer): Promise<void> {
     <AppLayout>
         <Head title="Clientes" />
 
-        <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+        <div class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
             <div class="page-shell space-y-6">
                 <PageHeader
-                    eyebrow="Clientes"
+                    eyebrow="Cobrar"
                     title="Clientes"
                     description="Quem factura com mais frequência. Guarde uma vez e escolha na factura, sem voltar a escrever o NIF."
                 >
@@ -402,6 +402,7 @@ async function deactivate(customer: Customer): Promise<void> {
                                 >
                                     <td class="px-3 py-3 sm:px-4">
                                         <Link
+                                            data-nav-row
                                             :href="show.url(customer.public_id)"
                                             class="rounded font-semibold [overflow-wrap:anywhere] text-zinc-900 underline-offset-4 focus-ring hover:underline dark:text-white"
                                         >
@@ -430,8 +431,8 @@ async function deactivate(customer: Customer): Promise<void> {
                                             "
                                             :tone="
                                                 customer.is_active
-                                                    ? 'success'
-                                                    : 'neutral'
+                                                    ? 'neutral'
+                                                    : 'draft'
                                             "
                                         />
                                     </td>
@@ -483,14 +484,15 @@ async function deactivate(customer: Customer): Promise<void> {
                                             "
                                             :tone="
                                                 customer.is_active
-                                                    ? 'success'
-                                                    : 'neutral'
+                                                    ? 'neutral'
+                                                    : 'draft'
                                             "
                                         />
                                     </td>
                                     <td class="px-3 py-3 text-right sm:px-4">
                                         <div
                                             v-if="canManage"
+                                            data-row-actions
                                             class="flex justify-end gap-1"
                                         >
                                             <button

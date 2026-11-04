@@ -137,7 +137,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral'> = {
     <AppLayout>
         <Head title="Reclamações" />
 
-        <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+        <div class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
             <div class="page-shell space-y-6">
                 <header
                     class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"

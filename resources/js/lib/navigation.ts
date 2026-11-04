@@ -432,3 +432,16 @@ export function useNavigation(): {
         activeGroup: computed(() => currentGroup(groups.value, page.url)),
     };
 }
+
+/** Viewers can look but not prepare, so they are not offered shortcuts to. */
+export function useCanPrepareDocuments(): ComputedRef<boolean> {
+    const page = usePage();
+
+    return computed(() => {
+        const current = page.props.auth.workspaces.find(
+            (workspace) => workspace.current,
+        );
+
+        return current !== undefined && current.role !== 'viewer';
+    });
+}

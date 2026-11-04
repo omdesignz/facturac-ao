@@ -441,10 +441,10 @@ function cell(value: string | number | null, key: string): string {
 <template>
     <Head title="Exportar transacções" />
     <AppLayout>
-        <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+        <div class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
             <div class="report-page">
                 <PageHeader
-                    eyebrow="Análises · Excel"
+                    eyebrow="Fiscal · Análises"
                     title="Os seus dados, o seu relatório"
                     :description="`${companyName} · Escolha os movimentos e organize as colunas para trabalhar no Excel.`"
                 />

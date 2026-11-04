@@ -53,7 +53,7 @@ defineProps<{
         </header>
         <dl
             v-if="$slots.stats"
-            class="mt-7 grid grid-cols-2 gap-y-6 sm:flex sm:flex-wrap"
+            class="mt-5 grid grid-cols-2 gap-y-6 sm:flex sm:flex-wrap"
         >
             <slot name="stats" />
         </dl>

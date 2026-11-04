@@ -100,12 +100,12 @@ function decodeEntities(label: string): string {
     <AppLayout>
         <Head title="Orçamentos" />
 
-        <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+        <div class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
             <div class="page-shell space-y-6">
                 <FlashBanner />
 
                 <PageHeader
-                    eyebrow="Documentos · Orçamentos"
+                    eyebrow="Vender"
                     title="Orçamentos"
                     description="Uma proposta não é uma factura: o rascunho fica editável e congela quando o enviar. O SAF-T regista o orçamento como documento de trabalho."
                 >
@@ -135,8 +135,8 @@ function decodeEntities(label: string): string {
                 <EmptyState
                     v-if="quotes.data.length === 0"
                     :icon="FileText"
-                    title="Ainda não há orçamentos"
-                    description="Nenhum corresponde a este filtro. Mude o filtro ou crie um novo orçamento."
+                    title="Nenhum orçamento neste filtro"
+                    description="Mude o filtro ou crie um novo orçamento."
                 />
 
                 <div

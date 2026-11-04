@@ -13,7 +13,6 @@ import {
     Check,
     CircleAlert,
     FilePenLine,
-    Info,
     ListChecks,
     LoaderCircle,
     LockKeyhole,
@@ -545,6 +544,68 @@ const form = useForm({
     lines: props.document.lines.map((line) => editableLine(line)),
 });
 const issueDialogOpen = ref(false);
+
+/**
+ * Most documents go out with the defaults, so these fields wait behind a line
+ * saying what they hold. They stay in the page, and open by themselves when the
+ * document type needs more or the server has something to say about one.
+ */
+const documentDetailsOpen = ref(false);
+
+const DOCUMENT_DETAIL_FIELDS = [
+    'document_type',
+    'references_document_public_id',
+    'adjustment_reason',
+    'payment_method',
+    'payment_date',
+    'establishment_public_id',
+    'currency_code',
+    'exchange_rate',
+    'document_date',
+    'due_date',
+    'goods_available_at',
+    'goods_available_location',
+] as const;
+
+const documentDetailsRequired = computed(
+    () =>
+        isAdjustment.value ||
+        isReceipt.value ||
+        isForeignCurrency.value ||
+        DOCUMENT_DETAIL_FIELDS.some((field) => Boolean(form.errors[field])),
+);
+
+const showDocumentDetails = computed(
+    () => documentDetailsOpen.value || documentDetailsRequired.value,
+);
+
+function shortIsoDate(isoDate: string): string {
+    return isoDate.slice(0, 10).split('-').reverse().join('/');
+}
+
+const documentDetailsSummary = computed(() =>
+    [
+        `${form.document_type} · ${documentTypeLabel.value}`,
+        establishmentOptions.value.find(
+            (option) => option.value === form.establishment_public_id,
+        )?.label,
+        form.document_date ? shortIsoDate(form.document_date) : null,
+        form.due_date ? `vence ${shortIsoDate(form.due_date)}` : null,
+    ]
+        .filter(Boolean)
+        .join(' · '),
+);
+
+/** Mod+S keeps the draft, wherever the cursor is; the browser's save has no use here. */
+function saveOnShortcut(event: KeyboardEvent): void {
+    if ((event.metaKey || event.ctrlKey) && event.key === 's') {
+        event.preventDefault();
+        submit();
+    }
+}
+
+onMounted(() => window.addEventListener('keydown', saveOnShortcut));
+onBeforeUnmount(() => window.removeEventListener('keydown', saveOnShortcut));
 const issueForm = useForm({
     revision: props.document.revision,
     series_public_id: '',
@@ -1380,7 +1441,7 @@ function confirmIssue(): void {
         />
 
         <form
-            class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10"
+            class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7"
             @submit.prevent="submit"
         >
             <p
@@ -1396,8 +1457,8 @@ function confirmIssue(): void {
                 <PageHeader
                     :eyebrow="
                         document.public_id === null
-                            ? 'Documentos · Novo documento'
-                            : 'Documentos · Rascunho'
+                            ? 'Registos · Novo documento'
+                            : 'Registos · Rascunho'
                     "
                     :title="
                         document.public_id === null
@@ -1414,10 +1475,6 @@ function confirmIssue(): void {
                             "
                             :label="`Corrige ${document.references_document_no}`"
                             tone="warning"
-                        />
-                        <StatusBadge
-                            :label="`Contrato AGT ${guardrails.schema_version}`"
-                            tone="neutral"
                         />
                         <span
                             v-if="document.revision > 0"
@@ -1485,21 +1542,44 @@ function confirmIssue(): void {
                     </div>
                 </div>
 
-                <div class="grid gap-6 xl:grid-cols-2">
+                <div
+                    class="grid gap-6"
+                    :class="showDocumentDetails ? 'xl:grid-cols-2' : ''"
+                >
                     <section class="overflow-hidden rounded-2xl surface">
                         <div
-                            class="flex items-center gap-3 border-b border-zinc-100 px-5 py-5 sm:px-6 dark:border-white/10"
+                            class="flex items-center justify-between gap-3 px-5 sm:px-6 dark:border-white/10"
+                            :class="
+                                showDocumentDetails
+                                    ? 'border-b border-zinc-100 py-5'
+                                    : 'py-3'
+                            "
                         >
                             <SectionHeading :icon="ReceiptText">
                                 Dados do documento
                                 <template #description>
-                                    {{ form.document_type }} ·
-                                    {{ documentTypeLabel }} em Kwanza
+                                    {{ documentDetailsSummary }}
                                 </template></SectionHeading
                             >
+                            <button
+                                v-if="!documentDetailsRequired"
+                                type="button"
+                                class="inline-flex h-8 shrink-0 items-center rounded-full px-3 text-[0.8125rem] font-semibold text-zinc-700 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5 pointer-coarse:h-11"
+                                :aria-expanded="showDocumentDetails"
+                                aria-controls="document-details"
+                                @click="
+                                    documentDetailsOpen = !documentDetailsOpen
+                                "
+                            >
+                                {{
+                                    documentDetailsOpen ? 'Esconder' : 'Alterar'
+                                }}
+                            </button>
                         </div>
 
                         <div
+                            v-show="showDocumentDetails"
+                            id="document-details"
                             class="grid grid-cols-1 gap-6 p-5 sm:grid-cols-6 sm:p-6"
                         >
                             <div class="sm:col-span-3">
@@ -1815,9 +1895,11 @@ function confirmIssue(): void {
                         </div>
                     </section>
 
-                    <section class="overflow-hidden rounded-2xl surface">
+                    <section
+                        class="@container overflow-hidden rounded-2xl surface"
+                    >
                         <div
-                            class="flex flex-col gap-4 border-b border-zinc-100 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6 dark:border-white/10"
+                            class="flex flex-col gap-4 border-b border-zinc-100 px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-6 dark:border-white/10"
                         >
                             <div class="flex items-center gap-3">
                                 <span
@@ -1853,9 +1935,9 @@ function confirmIssue(): void {
                         </div>
 
                         <div
-                            class="grid grid-cols-1 gap-6 p-5 sm:grid-cols-6 sm:p-6"
+                            class="grid grid-cols-1 gap-6 p-5 sm:grid-cols-6 sm:p-6 @4xl:grid-cols-12 @4xl:gap-4"
                         >
-                            <div class="sm:col-span-6">
+                            <div class="sm:col-span-6 @4xl:col-span-4">
                                 <label for="saved-customer" class="field-label">
                                     Procurar nos clientes guardados
                                 </label>
@@ -1876,7 +1958,7 @@ function confirmIssue(): void {
                                 />
                             </div>
 
-                            <div class="sm:col-span-4">
+                            <div class="sm:col-span-4 @4xl:col-span-5">
                                 <label for="customer-name" class="field-label">
                                     Nome ou denominação
                                 </label>
@@ -1897,7 +1979,7 @@ function confirmIssue(): void {
                                 />
                             </div>
 
-                            <div class="sm:col-span-2">
+                            <div class="sm:col-span-2 @4xl:col-span-3">
                                 <label for="customer-nif" class="field-label">
                                     NIF
                                 </label>
@@ -1937,7 +2019,7 @@ function confirmIssue(): void {
                                 />
                             </div>
 
-                            <div class="sm:col-span-2">
+                            <div class="sm:col-span-2 @4xl:col-span-2">
                                 <label
                                     for="customer-country"
                                     class="field-label"
@@ -1965,7 +2047,7 @@ function confirmIssue(): void {
                                 />
                             </div>
 
-                            <div class="sm:col-span-4">
+                            <div class="sm:col-span-4 @4xl:col-span-10">
                                 <label
                                     for="customer-address"
                                     class="field-label"
@@ -2164,186 +2246,6 @@ function confirmIssue(): void {
                     <FormError
                         :id="errorId('settlements')"
                         :message="form.errors.settlements"
-                    />
-                </section>
-
-                <!--
-                    Optional, and empty for almost every document: only some
-                    buyers — the State, large taxpayers, banks — keep tax back
-                    and pay it to the AGT themselves.
-                -->
-                <section
-                    v-if="requiresLines"
-                    class="overflow-hidden rounded-2xl surface"
-                >
-                    <div
-                        class="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-100 px-5 py-5 sm:px-6 dark:border-white/10"
-                    >
-                        <div>
-                            <h2
-                                class="font-semibold text-zinc-950 dark:text-white"
-                            >
-                                Retenção na fonte e cativação
-                            </h2>
-                            <p
-                                class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400"
-                            >
-                                Imposto que o adquirente retém e entrega
-                                directamente à AGT. Informativo: não altera o
-                                total do documento.
-                            </p>
-                        </div>
-                        <button
-                            id="add-withholding"
-                            type="button"
-                            :disabled="
-                                form.withholdings.length >=
-                                withholdingTypes.length
-                            "
-                            class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-white px-[1.125rem] text-sm font-semibold text-zinc-900 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
-                            @click="addWithholding"
-                        >
-                            <Plus class="size-4" aria-hidden="true" />
-                            Adicionar retenção
-                        </button>
-                    </div>
-
-                    <p
-                        v-if="form.withholdings.length === 0"
-                        class="px-5 py-6 text-sm text-zinc-500 sm:px-6 dark:text-zinc-400"
-                    >
-                        Nada retido. A maioria dos clientes paga o total da
-                        factura; adicione uma retenção só quando o adquirente a
-                        praticar.
-                    </p>
-
-                    <ul
-                        v-else
-                        class="divide-y divide-zinc-100 dark:divide-white/10"
-                    >
-                        <li
-                            v-for="(row, index) in form.withholdings"
-                            :key="index"
-                            class="grid gap-4 px-5 py-4 sm:grid-cols-[minmax(0,1fr)_9rem_minmax(0,10rem)_auto] sm:items-end sm:px-6"
-                        >
-                            <div>
-                                <label
-                                    :for="`withholding-type-${index}`"
-                                    class="field-label"
-                                >
-                                    Imposto retido
-                                </label>
-                                <SelectInput
-                                    :id="`withholding-type-${index}`"
-                                    :invalid="
-                                        invalid(`withholdings.${index}.type`)
-                                    "
-                                    :describedby="
-                                        describedBy(
-                                            '',
-                                            `withholdings.${index}.type`,
-                                        )
-                                    "
-                                    :model-value="row.type"
-                                    class="mt-2"
-                                    :options="withholdingTypeOptions"
-                                    @update:model-value="
-                                        (value: string) =>
-                                            changeWithholdingType(index, value)
-                                    "
-                                />
-                                <FormError
-                                    :id="errorId(`withholdings.${index}.type`)"
-                                    :message="
-                                        errorFor(`withholdings.${index}.type`)
-                                    "
-                                />
-                            </div>
-
-                            <div>
-                                <label
-                                    :for="`withholding-rate-${index}`"
-                                    class="field-label"
-                                >
-                                    Taxa (%)
-                                </label>
-                                <input
-                                    :id="`withholding-rate-${index}`"
-                                    :aria-invalid="
-                                        invalid(
-                                            `withholdings.${index}.rate_percentage`,
-                                        )
-                                    "
-                                    :aria-describedby="
-                                        describedBy(
-                                            '',
-                                            `withholdings.${index}.rate_percentage`,
-                                        )
-                                    "
-                                    v-model="row.rate_percentage"
-                                    type="text"
-                                    inputmode="decimal"
-                                    class="mt-2 block form-input text-right font-mono numeric"
-                                />
-                                <FormError
-                                    :id="
-                                        errorId(
-                                            `withholdings.${index}.rate_percentage`,
-                                        )
-                                    "
-                                    :message="
-                                        errorFor(
-                                            `withholdings.${index}.rate_percentage`,
-                                        )
-                                    "
-                                />
-                            </div>
-
-                            <div class="sm:text-right">
-                                <span
-                                    class="block text-sm font-medium text-zinc-900 dark:text-white"
-                                >
-                                    Valor retido
-                                </span>
-                                <span
-                                    class="mt-2 block py-2.5 numeric text-sm font-semibold text-zinc-950 dark:text-white"
-                                >
-                                    {{
-                                        formatMoney(
-                                            withholdingPreview[index]?.amount ??
-                                                0n,
-                                        )
-                                    }}
-                                </span>
-                                <span
-                                    class="block text-xs text-zinc-500 dark:text-zinc-400"
-                                >
-                                    sobre
-                                    {{
-                                        formatMoney(
-                                            withholdingPreview[index]?.base ??
-                                                0n,
-                                        )
-                                    }}
-                                </span>
-                            </div>
-
-                            <button
-                                :id="`remove-withholding-${index}`"
-                                type="button"
-                                class="icon-button justify-self-start text-zinc-500 focus-ring hover:bg-rose-50 hover:text-rose-700 sm:justify-self-auto dark:hover:bg-rose-400/10 dark:hover:text-rose-400"
-                                @click="removeWithholding(index)"
-                            >
-                                <span class="sr-only"
-                                    >Remover retenção {{ index + 1 }}</span
-                                >
-                                <Trash2 class="size-4" aria-hidden="true" />
-                            </button>
-                        </li>
-                    </ul>
-                    <FormError
-                        :id="errorId('withholdings')"
-                        :message="form.errors.withholdings"
                     />
                 </section>
 
@@ -3527,6 +3429,186 @@ function confirmIssue(): void {
                     </details>
                 </section>
 
+                <!--
+                    Optional, and empty for almost every document: only some
+                    buyers — the State, large taxpayers, banks — keep tax back
+                    and pay it to the AGT themselves.
+                -->
+                <section
+                    v-if="requiresLines"
+                    class="overflow-hidden rounded-2xl surface"
+                >
+                    <div
+                        class="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-100 px-5 py-5 sm:px-6 dark:border-white/10"
+                    >
+                        <div>
+                            <h2
+                                class="font-semibold text-zinc-950 dark:text-white"
+                            >
+                                Retenção na fonte e cativação
+                            </h2>
+                            <p
+                                class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400"
+                            >
+                                Imposto que o adquirente retém e entrega
+                                directamente à AGT. Informativo: não altera o
+                                total do documento.
+                            </p>
+                        </div>
+                        <button
+                            id="add-withholding"
+                            type="button"
+                            :disabled="
+                                form.withholdings.length >=
+                                withholdingTypes.length
+                            "
+                            class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-white px-[1.125rem] text-sm font-semibold text-zinc-900 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
+                            @click="addWithholding"
+                        >
+                            <Plus class="size-4" aria-hidden="true" />
+                            Adicionar retenção
+                        </button>
+                    </div>
+
+                    <p
+                        v-if="form.withholdings.length === 0"
+                        class="px-5 py-6 text-sm text-zinc-500 sm:px-6 dark:text-zinc-400"
+                    >
+                        Nada retido. A maioria dos clientes paga o total da
+                        factura; adicione uma retenção só quando o adquirente a
+                        praticar.
+                    </p>
+
+                    <ul
+                        v-else
+                        class="divide-y divide-zinc-100 dark:divide-white/10"
+                    >
+                        <li
+                            v-for="(row, index) in form.withholdings"
+                            :key="index"
+                            class="grid gap-4 px-5 py-4 sm:grid-cols-[minmax(0,1fr)_9rem_minmax(0,10rem)_auto] sm:items-end sm:px-6"
+                        >
+                            <div>
+                                <label
+                                    :for="`withholding-type-${index}`"
+                                    class="field-label"
+                                >
+                                    Imposto retido
+                                </label>
+                                <SelectInput
+                                    :id="`withholding-type-${index}`"
+                                    :invalid="
+                                        invalid(`withholdings.${index}.type`)
+                                    "
+                                    :describedby="
+                                        describedBy(
+                                            '',
+                                            `withholdings.${index}.type`,
+                                        )
+                                    "
+                                    :model-value="row.type"
+                                    class="mt-2"
+                                    :options="withholdingTypeOptions"
+                                    @update:model-value="
+                                        (value: string) =>
+                                            changeWithholdingType(index, value)
+                                    "
+                                />
+                                <FormError
+                                    :id="errorId(`withholdings.${index}.type`)"
+                                    :message="
+                                        errorFor(`withholdings.${index}.type`)
+                                    "
+                                />
+                            </div>
+
+                            <div>
+                                <label
+                                    :for="`withholding-rate-${index}`"
+                                    class="field-label"
+                                >
+                                    Taxa (%)
+                                </label>
+                                <input
+                                    :id="`withholding-rate-${index}`"
+                                    :aria-invalid="
+                                        invalid(
+                                            `withholdings.${index}.rate_percentage`,
+                                        )
+                                    "
+                                    :aria-describedby="
+                                        describedBy(
+                                            '',
+                                            `withholdings.${index}.rate_percentage`,
+                                        )
+                                    "
+                                    v-model="row.rate_percentage"
+                                    type="text"
+                                    inputmode="decimal"
+                                    class="mt-2 block form-input text-right font-mono numeric"
+                                />
+                                <FormError
+                                    :id="
+                                        errorId(
+                                            `withholdings.${index}.rate_percentage`,
+                                        )
+                                    "
+                                    :message="
+                                        errorFor(
+                                            `withholdings.${index}.rate_percentage`,
+                                        )
+                                    "
+                                />
+                            </div>
+
+                            <div class="sm:text-right">
+                                <span
+                                    class="block text-sm font-medium text-zinc-900 dark:text-white"
+                                >
+                                    Valor retido
+                                </span>
+                                <span
+                                    class="mt-2 block py-2.5 numeric text-sm font-semibold text-zinc-950 dark:text-white"
+                                >
+                                    {{
+                                        formatMoney(
+                                            withholdingPreview[index]?.amount ??
+                                                0n,
+                                        )
+                                    }}
+                                </span>
+                                <span
+                                    class="block text-xs text-zinc-500 dark:text-zinc-400"
+                                >
+                                    sobre
+                                    {{
+                                        formatMoney(
+                                            withholdingPreview[index]?.base ??
+                                                0n,
+                                        )
+                                    }}
+                                </span>
+                            </div>
+
+                            <button
+                                :id="`remove-withholding-${index}`"
+                                type="button"
+                                class="icon-button justify-self-start text-zinc-500 focus-ring hover:bg-rose-50 hover:text-rose-700 sm:justify-self-auto dark:hover:bg-rose-400/10 dark:hover:text-rose-400"
+                                @click="removeWithholding(index)"
+                            >
+                                <span class="sr-only"
+                                    >Remover retenção {{ index + 1 }}</span
+                                >
+                                <Trash2 class="size-4" aria-hidden="true" />
+                            </button>
+                        </li>
+                    </ul>
+                    <FormError
+                        :id="errorId('withholdings')"
+                        :message="form.errors.withholdings"
+                    />
+                </section>
+
                 <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_23rem]">
                     <div class="min-w-0 space-y-6">
                         <section class="rounded-2xl surface p-5 sm:p-6">
@@ -3680,54 +3762,6 @@ function confirmIssue(): void {
                         </section>
 
                         <section class="rounded-2xl surface p-5">
-                            <div class="flex gap-3">
-                                <span
-                                    class="grid size-9 shrink-0 place-items-center rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300"
-                                >
-                                    <ShieldCheck
-                                        class="size-5"
-                                        aria-hidden="true"
-                                    />
-                                </span>
-                                <div>
-                                    <h2
-                                        class="text-sm font-semibold text-zinc-950 dark:text-white"
-                                    >
-                                        Guardas fiscais activas
-                                    </h2>
-                                    <ul
-                                        class="mt-3 space-y-2 text-xs/5 text-zinc-600 dark:text-zinc-400"
-                                    >
-                                        <li class="flex gap-2">
-                                            <Check
-                                                class="mt-0.5 size-3.5 shrink-0 text-emerald-600"
-                                                aria-hidden="true"
-                                            />
-                                            Valores monetários sem ponto
-                                            flutuante
-                                        </li>
-                                        <li class="flex gap-2">
-                                            <Check
-                                                class="mt-0.5 size-3.5 shrink-0 text-emerald-600"
-                                                aria-hidden="true"
-                                            />
-                                            Imposto arredondado por excesso ao
-                                            cêntimo
-                                        </li>
-                                        <li class="flex gap-2">
-                                            <Check
-                                                class="mt-0.5 size-3.5 shrink-0 text-emerald-600"
-                                                aria-hidden="true"
-                                            />
-                                            Isolamento por empresa e entidade
-                                            fiscal
-                                        </li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </section>
-
-                        <section class="rounded-2xl surface p-5">
                             <div class="flex items-start gap-3">
                                 <span
                                     class="grid size-9 shrink-0 place-items-center rounded-lg bg-brand-100 text-brand-700 dark:bg-brand-400/10 dark:text-brand-300"
@@ -3815,27 +3849,6 @@ function confirmIssue(): void {
                                 <Send class="size-4" aria-hidden="true" />
                                 Emitir e enviar à AGT
                             </button>
-                        </section>
-
-                        <section
-                            class="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-900 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-200"
-                        >
-                            <div class="flex gap-3">
-                                <Info
-                                    class="mt-0.5 size-5 shrink-0"
-                                    aria-hidden="true"
-                                />
-                                <div>
-                                    <h2 class="text-sm font-semibold">
-                                        Ainda não é uma factura emitida
-                                    </h2>
-                                    <p class="mt-1 text-xs/5 opacity-80">
-                                        O rascunho não tem número fiscal,
-                                        assinatura JWS, QR fiscal nem
-                                        confirmação da AGT.
-                                    </p>
-                                </div>
-                            </div>
                         </section>
 
                         <button

@@ -101,6 +101,7 @@ const kickerClass: Record<Decision['key'], string> = {
         >
             Precisa de si
             <span
+                v-if="visible.length > 1"
                 class="grid h-6 min-w-6 place-items-center rounded-full bg-zinc-900/[0.07] px-1.5 text-xs font-semibold text-zinc-700 dark:bg-white/10 dark:text-zinc-200"
                 >{{ visible.length }}</span
             >

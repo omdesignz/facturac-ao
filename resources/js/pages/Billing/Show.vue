@@ -26,6 +26,7 @@ import {
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import PeriodSwitch from '@/components/billing/PeriodSwitch.vue';
+import FlashBanner from '@/components/FlashBanner.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageStat from '@/components/PageStat.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
@@ -358,8 +359,9 @@ function submitCheckout(): void {
     <AppLayout>
         <Head title="Plano e cobrança" />
 
-        <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+        <div class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
             <div class="page-shell space-y-8">
+                <FlashBanner />
                 <PageHeader
                     eyebrow="Configuração · Plano e cobrança"
                     title="Plano e cobrança"

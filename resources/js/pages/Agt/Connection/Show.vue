@@ -205,10 +205,10 @@ function formatDate(value: string | null): string {
     <AppLayout>
         <Head title="Ligação AGT" />
 
-        <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+        <div class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
             <div class="page-shell space-y-8">
                 <PageHeader
-                    eyebrow="AGT · Ligação"
+                    eyebrow="Fiscal"
                     title="Ligação à AGT"
                     description="Associe o acesso da sua empresa, verifique a ligação e prepare a série da primeira factura. Não precisa de homologar o software."
                 >

@@ -66,14 +66,14 @@ onMounted(() => {
 <template>
     <Menu as="div" class="relative">
         <MenuButton
-            class="flex items-center gap-2.5 rounded-full p-1 text-left focus-ring transition hover:bg-zinc-900/[0.05] lg:pr-3 dark:hover:bg-white/10"
+            class="flex items-center gap-2.5 rounded-full p-1 text-left focus-ring transition hover:bg-zinc-900/[0.05] 2xl:pr-3 dark:hover:bg-white/10"
         >
             <span
                 class="grid size-8 place-items-center rounded-full bg-brand-950 text-xs font-semibold tracking-[0.02em] text-white dark:bg-zinc-100 dark:text-brand-950"
                 aria-hidden="true"
                 >{{ userInitials }}</span
             >
-            <span class="hidden min-w-0 lg:block">
+            <span class="hidden min-w-0 2xl:block">
                 <span
                     class="block max-w-40 truncate text-[0.8125rem] leading-tight font-semibold text-zinc-950 dark:text-white"
                     >{{ currentUser?.name }}</span
@@ -83,9 +83,9 @@ onMounted(() => {
                     >{{ currentWorkspace?.role_label ?? 'Utilizador' }}</span
                 >
             </span>
-            <span class="sr-only lg:hidden">Abrir menu da conta</span>
+            <span class="sr-only 2xl:hidden">Abrir menu da conta</span>
             <ChevronDown
-                class="hidden size-4 text-zinc-400 lg:block"
+                class="hidden size-4 text-zinc-400 2xl:block"
                 aria-hidden="true"
             />
         </MenuButton>

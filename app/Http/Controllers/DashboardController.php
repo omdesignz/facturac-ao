@@ -6,6 +6,7 @@ use App\AgtConnectionStatus;
 use App\AgtEnvironment;
 use App\Analytics\DashboardQuery;
 use App\Models\CatalogueItem;
+use App\Models\Customer;
 use App\Models\LegalEntity;
 use App\Models\Workspace;
 use Carbon\CarbonImmutable;
@@ -71,6 +72,7 @@ class DashboardController extends Controller
                 ? $this->dashboard->lowStock($legalEntity)
                 : null,
             // Ageing walks every open invoice, so it arrives after first paint.
+            'canRemindCustomers' => Gate::allows('create', Customer::class),
             'collections' => Inertia::defer(fn (): ?array => $legalEntity instanceof LegalEntity
                 ? $this->dashboard->collections($legalEntity)
                 : null),

@@ -214,10 +214,10 @@ function abbreviate(value: string | null): string {
     <AppLayout>
         <Head title="Monitor AGT" />
 
-        <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+        <div class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
             <div class="page-shell space-y-7">
                 <PageHeader
-                    eyebrow="AGT · Monitor"
+                    eyebrow="Fiscal"
                     title="Onde está cada factura"
                     description="Acompanhe cada documento desde a fila segura até ao resultado final devolvido pela AGT, sem repetir uma emissão."
                 >

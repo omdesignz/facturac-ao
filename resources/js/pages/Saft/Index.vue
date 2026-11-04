@@ -127,7 +127,7 @@ function inspectPeriod(): void {
     <AppLayout>
         <Head title="SAF-T (AO)" />
 
-        <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+        <div class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
             <div class="page-shell space-y-6">
                 <FlashBanner />
 
@@ -136,7 +136,7 @@ function inspectPeriod(): void {
                 >
                     <div>
                         <p class="eyebrow text-zinc-500 dark:text-zinc-400">
-                            Ficheiro normalizado de auditoria
+                            Fiscal
                         </p>
                         <h1
                             class="mt-2.5 text-[2.125rem] leading-[1.08] display text-zinc-950 dark:text-white"

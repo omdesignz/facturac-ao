@@ -107,12 +107,12 @@ function submit(): void {
 </script>
 
 <template>
-    <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+    <div class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
         <div class="max-w-3xl space-y-6">
             <FlashBanner />
 
             <PageHeader
-                eyebrow="Vendas · Ponto de venda"
+                eyebrow="Vender · Ponto de venda"
                 title="Ponto de venda"
                 description="Abra uma caixa para começar a vender. Cada venda sai como factura-recibo por defeito, com envio para a AGT."
             >
@@ -266,7 +266,12 @@ function submit(): void {
                         :message="form.errors.pos_register_public_id"
                     />
                     <p
-                        v-if="freeRegisters.length === 0"
+                        v-if="
+                            freeRegisters.length === 0 &&
+                            visibleRegisters.every(
+                                (register) => stateOf(register) === 'busy',
+                            )
+                        "
                         class="mt-3 text-sm/6 text-zinc-600 dark:text-zinc-400"
                         role="status"
                     >

@@ -159,14 +159,14 @@ const submissionHealth = computed(() => [
 <template>
     <AppLayout>
         <Head title="Análises" />
-        <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+        <div class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
             <div class="page-shell space-y-6">
                 <header
                     class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
                 >
                     <div>
                         <p class="eyebrow text-zinc-500 dark:text-zinc-400">
-                            Negócio
+                            Fiscal
                         </p>
                         <h1
                             class="mt-2.5 text-[2.125rem] leading-[1.08] display text-zinc-950 dark:text-white"

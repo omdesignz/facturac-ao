@@ -103,12 +103,12 @@ const linkClass =
     <AppLayout>
         <Head :title="`Turno · ${session.register_name}`" />
 
-        <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+        <div class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
             <div id="pos-report" class="page-shell space-y-6">
                 <FlashBanner />
 
                 <PageHeader
-                    eyebrow="Vendas · Turnos"
+                    eyebrow="Vender · Turnos"
                     :title="`Turno · ${session.register_name}`"
                     :description="`${session.establishment_name} · aberto por ${session.opened_by_name} em ${formatDayAndClock(session.opened_at)}${session.closed_at ? `, fechado${session.closed_by_name ? ` por ${session.closed_by_name}` : ''} em ${formatDayAndClock(session.closed_at)}` : ''}`"
                 >

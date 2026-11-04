@@ -47,7 +47,10 @@ export function debtShares(
     }));
 }
 
-export function concentrationLine(shares: DebtShare[]): string | null {
+export function concentrationLine(
+    shares: DebtShare[],
+    customerCount: number,
+): string | null {
     const [first] = shares;
 
     if (first === undefined) {
@@ -58,5 +61,5 @@ export function concentrationLine(shares: DebtShare[]): string | null {
         return `${first.name} concentra ${first.percent}% do que lhe devem. É aí que um lembrete rende mais.`;
     }
 
-    return `O que lhe devem está repartido por ${shares.length} ${shares.length === 1 ? 'cliente' : 'clientes'}; ${first.name} é o maior, com ${first.percent}%.`;
+    return `O que lhe devem está repartido por ${customerCount} ${customerCount === 1 ? 'cliente' : 'clientes'}; ${first.name} é o maior, com ${first.percent}%.`;
 }

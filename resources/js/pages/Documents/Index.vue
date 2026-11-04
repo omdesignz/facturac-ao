@@ -12,6 +12,7 @@ import {
     LoaderCircle,
     PencilLine,
     Plus,
+    UserRound,
     Printer,
     Search,
     Send,
@@ -28,6 +29,7 @@ import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { confirmAction } from '@/lib/confirm';
 import { statusTone } from '@/lib/document-status';
+import { usePaletteActions } from '@/lib/palette-actions';
 import { index as agtSubmissions } from '@/routes/agt/submissions';
 import { show as customerShow } from '@/routes/customers';
 import {
@@ -579,6 +581,79 @@ function eventMeta(event: HistoryEvent): string {
         .join(' · ');
 }
 
+/** The open document's own buttons, reachable from the palette. */
+usePaletteActions(() => {
+    const document = props.selected;
+
+    if (!document) {
+        return [];
+    }
+
+    const number = document.document_no ?? 'Rascunho';
+    const actions = [];
+
+    if (document.can_edit) {
+        actions.push({
+            key: 'edit',
+            label: 'Continuar rascunho',
+            hint: number,
+            icon: PencilLine,
+            run: () => router.visit(editInvoice.url(document.public_id)),
+        });
+    }
+
+    if (document.can_send) {
+        actions.push({
+            key: 'send',
+            label: document.sent_at
+                ? 'Reenviar ao cliente'
+                : 'Enviar ao cliente',
+            hint: number,
+            icon: Send,
+            run: () => void sendDocument(document),
+        });
+    }
+
+    if (document.can_print) {
+        actions.push(
+            {
+                key: 'pdf',
+                label: 'Descarregar PDF',
+                hint: number,
+                icon: Download,
+                run: () => {
+                    window.location.assign(documentPdf.url(document.public_id));
+                },
+            },
+            {
+                key: 'print',
+                label: 'Abrir para imprimir',
+                hint: number,
+                icon: Printer,
+                run: () => {
+                    window.location.assign(
+                        printDocument.url(document.public_id),
+                    );
+                },
+            },
+        );
+    }
+
+    if (document.customer_public_id) {
+        const customerUrl = customerShow.url(document.customer_public_id);
+
+        actions.push({
+            key: 'customer',
+            label: 'Ver cliente',
+            hint: document.customer_name,
+            icon: UserRound,
+            run: () => router.visit(customerUrl),
+        });
+    }
+
+    return actions;
+});
+
 async function sendDocument(document: RegisterDocument): Promise<void> {
     const confirmed = await confirmAction({
         title: `Enviar ${document.document_no ?? 'este documento'}?`,
@@ -611,7 +686,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
     <AppLayout>
         <Head title="Documentos fiscais" />
 
-        <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+        <div class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
             <div class="page-shell">
                 <FlashBanner />
 
@@ -623,7 +698,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                         <p
                             class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                         >
-                            Facturação · Documentos fiscais
+                            Registos
                         </p>
                         <h1
                             class="mt-2.5 text-page-title leading-[1.08] font-light tracking-[-0.028em] text-zinc-950 dark:text-white"
@@ -734,64 +809,64 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
 
                 <!-- ---------------------------------------------- segments -->
                 <div
-                    class="mt-6 flex flex-wrap items-center gap-1"
-                    role="group"
-                    aria-label="Filtrar por estado"
-                >
-                    <button
-                        v-for="segment in statusSegments"
-                        :key="segment.value"
-                        type="button"
-                        :aria-pressed="status === segment.value"
-                        class="inline-flex h-[2.125rem] items-center gap-1.5 rounded-full px-3.5 text-[0.8125rem] font-medium focus-ring transition pointer-coarse:h-11"
-                        :class="
-                            status === segment.value
-                                ? 'bg-brand-950 text-white dark:bg-zinc-100 dark:text-brand-950'
-                                : 'text-zinc-600 hover:bg-zinc-900/[0.05] hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-white/5 dark:hover:text-white'
-                        "
-                        @click="selectStatus(segment.value)"
-                    >
-                        {{ segment.label }}
-                        <span
-                            class="numeric"
-                            :class="
-                                status === segment.value
-                                    ? 'text-white/60 dark:text-brand-950/60'
-                                    : segment.value === 'attention' &&
-                                        segment.count > 0
-                                      ? 'font-semibold text-rose-600 dark:text-rose-400'
-                                      : 'text-zinc-400'
-                            "
-                            >{{ segment.count }}</span
-                        >
-                    </button>
-                </div>
-
-                <div
-                    class="mt-3 flex flex-wrap items-center justify-between gap-3 border-b border-zinc-900/10 dark:border-white/10"
+                    class="mt-5 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b border-zinc-900/10 pb-3 dark:border-white/10"
                 >
                     <div
-                        class="-mb-px flex flex-wrap gap-5"
+                        class="flex flex-wrap items-center gap-1"
                         role="group"
-                        aria-label="Família de documentos"
+                        aria-label="Filtrar por estado"
                     >
                         <button
-                            v-for="option in options.families"
-                            :key="String(option.value)"
+                            v-for="segment in statusSegments"
+                            :key="segment.value"
                             type="button"
-                            :aria-pressed="family === option.value"
-                            class="border-b-2 pt-1 pb-2.5 text-sm font-medium focus-ring transition pointer-coarse:min-h-11"
+                            :aria-pressed="status === segment.value"
+                            class="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[0.8125rem] font-medium focus-ring transition pointer-coarse:h-11"
                             :class="
-                                family === option.value
-                                    ? 'border-brand-950 text-zinc-950 dark:border-white dark:text-white'
-                                    : 'border-transparent text-zinc-500 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'
+                                status === segment.value
+                                    ? 'bg-brand-950 text-white dark:bg-zinc-100 dark:text-brand-950'
+                                    : 'text-zinc-600 hover:bg-zinc-900/[0.05] hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-white/5 dark:hover:text-white'
                             "
-                            @click="selectFamily(String(option.value))"
+                            @click="selectStatus(segment.value)"
                         >
-                            {{ option.label }}
+                            {{ segment.label }}
+                            <span
+                                class="numeric"
+                                :class="
+                                    status === segment.value
+                                        ? 'text-white/60 dark:text-brand-950/60'
+                                        : segment.value === 'attention' &&
+                                            segment.count > 0
+                                          ? 'font-semibold text-rose-600 dark:text-rose-400'
+                                          : 'text-zinc-400'
+                                "
+                                >{{ segment.count }}</span
+                            >
                         </button>
                     </div>
-                    <div class="flex items-center gap-1.5 pb-2">
+
+                    <div class="flex flex-wrap items-center gap-1">
+                        <div
+                            class="flex flex-wrap items-center gap-1"
+                            role="group"
+                            aria-label="Família de documentos"
+                        >
+                            <button
+                                v-for="option in options.families"
+                                :key="String(option.value)"
+                                type="button"
+                                :aria-pressed="family === option.value"
+                                class="inline-flex h-8 items-center rounded-full px-3 text-[0.8125rem] font-medium focus-ring transition pointer-coarse:h-11"
+                                :class="
+                                    family === option.value
+                                        ? 'bg-zinc-900/[0.06] text-zinc-950 dark:bg-white/10 dark:text-white'
+                                        : 'text-zinc-500 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'
+                                "
+                                @click="selectFamily(String(option.value))"
+                            >
+                                {{ option.label }}
+                            </button>
+                        </div>
                         <button
                             type="button"
                             :aria-expanded="showFilters"
@@ -858,7 +933,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
 
                 <!-- ------------------------------------------ queue + detail -->
                 <div
-                    class="mt-6 grid items-start gap-5 xl:grid-cols-[26rem_minmax(0,1fr)]"
+                    class="mt-4 grid items-start gap-5 xl:grid-cols-[26rem_minmax(0,1fr)]"
                 >
                     <section
                         aria-label="Documentos"
@@ -910,7 +985,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                             </Link>
                         </div>
 
-                        <div v-else class="grid gap-1.5">
+                        <div v-else class="grid gap-0.5">
                             <template
                                 v-for="(group, groupIndex) in queueGroups"
                                 :key="group.key"
@@ -928,30 +1003,35 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                                 : 'text-zinc-500 dark:text-zinc-400'
                                         "
                                     >
-                                        {{ group.label }} ·
-                                        {{ group.documents.length }}
+                                        {{ group.label }}
                                     </h2>
                                 </div>
                                 <Link
                                     v-for="document in group.documents"
                                     :key="document.public_id"
+                                    data-nav-row="open"
                                     :href="documentUrl(document.public_id)"
                                     preserve-state
                                     preserve-scroll
                                     replace
+                                    prefetch
+                                    cache-for="5s"
                                     :only="['selected']"
+                                    :title="
+                                        document.workflow_message ?? undefined
+                                    "
                                     :aria-current="
                                         selected?.public_id ===
                                         document.public_id
                                             ? 'true'
                                             : undefined
                                     "
-                                    class="block w-full rounded-[1.125rem] px-4 py-3.5 text-left focus-ring transition"
+                                    class="block w-full rounded-2xl px-3.5 py-2 text-left focus-ring transition pointer-coarse:py-3"
                                     :class="
                                         selected?.public_id ===
                                         document.public_id
                                             ? 'bg-white shadow-[inset_0_0_0_1.5px_var(--color-accent-400),0_10px_26px_-16px_rgb(143_91_0/0.4)] dark:bg-zinc-900'
-                                            : 'bg-zinc-900/[0.04] hover:bg-zinc-900/[0.07] dark:bg-white/[0.04] dark:hover:bg-white/[0.07]'
+                                            : 'hover:bg-zinc-900/[0.04] dark:hover:bg-white/[0.05]'
                                     "
                                     @click.capture="
                                         skipReopening(
@@ -963,12 +1043,46 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                     @finish="finishOpening(document.public_id)"
                                 >
                                     <span
-                                        class="flex items-center justify-between gap-3"
+                                        class="flex items-baseline justify-between gap-3"
                                     >
                                         <span
-                                            :title="rowNumber(document)"
-                                            class="truncate font-mono text-[0.8125rem] text-zinc-600 dark:text-zinc-300"
-                                            >{{ rowNumber(document) }}</span
+                                            :title="document.customer_name"
+                                            class="truncate text-sm font-medium text-zinc-950 dark:text-white"
+                                            >{{ document.customer_name }}</span
+                                        >
+                                        <span
+                                            class="shrink-0 numeric text-sm font-medium text-zinc-950 dark:text-white"
+                                            >{{
+                                                wholeAmount(
+                                                    document.gross_total_minor,
+                                                )
+                                            }}
+                                            <span
+                                                class="text-xs font-normal text-zinc-400"
+                                                >{{
+                                                    currencyLabel(
+                                                        document.currency_code,
+                                                    )
+                                                }}</span
+                                            ></span
+                                        >
+                                    </span>
+                                    <span
+                                        class="mt-0.5 flex items-center justify-between gap-3"
+                                    >
+                                        <span
+                                            class="min-w-0 truncate text-xs text-zinc-500 dark:text-zinc-400"
+                                            ><span
+                                                :title="rowNumber(document)"
+                                                class="font-mono"
+                                                >{{ rowNumber(document) }}</span
+                                            >
+                                            ·
+                                            {{
+                                                formatShortDate(
+                                                    document.document_date,
+                                                )
+                                            }}</span
                                         >
                                         <span
                                             class="flex shrink-0 items-center gap-1.5"
@@ -995,61 +1109,6 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                                 "
                                             />
                                         </span>
-                                    </span>
-                                    <span
-                                        class="mt-2 flex items-baseline justify-between gap-3"
-                                    >
-                                        <span
-                                            :title="document.customer_name"
-                                            class="truncate text-[0.9375rem] font-medium text-zinc-950 dark:text-white"
-                                            >{{ document.customer_name }}</span
-                                        >
-                                        <span
-                                            class="shrink-0 numeric text-[0.9375rem] font-medium text-zinc-950 dark:text-white"
-                                            >{{
-                                                wholeAmount(
-                                                    document.gross_total_minor,
-                                                )
-                                            }}
-                                            <span
-                                                class="text-xs font-normal text-zinc-400"
-                                                >{{
-                                                    currencyLabel(
-                                                        document.currency_code,
-                                                    )
-                                                }}</span
-                                            ></span
-                                        >
-                                    </span>
-                                    <span
-                                        class="mt-1 flex justify-between gap-3 text-xs text-zinc-500 dark:text-zinc-400"
-                                    >
-                                        <span class="truncate"
-                                            >{{
-                                                formatShortDate(
-                                                    document.document_date,
-                                                )
-                                            }}
-                                            ·
-                                            {{
-                                                document.establishment.name
-                                            }}</span
-                                        >
-                                        <span
-                                            v-if="
-                                                groupFor(document) ===
-                                                    'attention' &&
-                                                document.workflow_message
-                                            "
-                                            :title="
-                                                document.workflow_message ??
-                                                undefined
-                                            "
-                                            class="truncate text-rose-600 dark:text-rose-400"
-                                            >{{
-                                                document.workflow_message
-                                            }}</span
-                                        >
                                     </span>
                                 </Link>
                             </template>

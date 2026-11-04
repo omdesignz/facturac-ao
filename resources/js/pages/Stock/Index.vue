@@ -185,12 +185,12 @@ function isInbound(quantity: string): boolean {
     <AppLayout>
         <Head title="Inventário" />
 
-        <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+        <div class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
             <div class="page-shell space-y-6">
                 <FlashBanner />
 
                 <PageHeader
-                    eyebrow="Artigos · Inventário"
+                    eyebrow="Registos"
                     title="Inventário"
                     description="O que tem em cada estabelecimento. Emitir uma factura dá baixa automaticamente; uma nota de crédito devolve."
                 >
@@ -304,12 +304,16 @@ function isInbound(quantity: string): boolean {
                         :title="
                             summary.tracked_items === 0
                                 ? 'Nenhum artigo controla inventário'
-                                : 'Nenhum artigo neste filtro'
+                                : search || establishmentFilter || lowOnly
+                                  ? 'Nenhum artigo neste filtro'
+                                  : 'Ainda sem movimentos de inventário'
                         "
                         :description="
                             summary.tracked_items === 0
                                 ? 'Active o controlo de inventário na ficha do artigo e as existências aparecem aqui.'
-                                : 'Mude o filtro para ver os outros artigos.'
+                                : search || establishmentFilter || lowOnly
+                                  ? 'Mude o filtro para ver os outros artigos.'
+                                  : 'Registe a primeira entrada e o artigo aparece aqui, com o saldo de cada estabelecimento.'
                         "
                     />
 

@@ -121,7 +121,7 @@ const endedByLabel: Record<string, string> = {
     <AppLayout>
         <Head title="Apoio" />
 
-        <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+        <div class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
             <div class="page-shell space-y-6">
                 <header>
                     <p class="eyebrow text-zinc-500 dark:text-zinc-400">

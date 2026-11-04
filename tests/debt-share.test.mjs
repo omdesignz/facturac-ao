@@ -39,12 +39,12 @@ test('debtors past the shown few are folded into Outros', () => {
 
 test('nothing owed means no shares and no sentence', () => {
     assert.deepEqual(debtShares([], 0), []);
-    assert.equal(concentrationLine([]), null);
+    assert.equal(concentrationLine([], 0), null);
 });
 
 test('one company holding most of the debt is named; an even spread is not', () => {
     assert.match(
-        concentrationLine(debtShares(debtors, 100)),
+        concentrationLine(debtShares(debtors, 100), 3),
         /Mavinga concentra 74%/,
     );
 
@@ -56,6 +56,7 @@ test('one company holding most of the debt is named; an even spread is not', () 
     assert.match(
         concentrationLine(
             debtShares([...even, { name: 'C9', outstanding_minor: 30 }], 80),
+            30,
         ),
         /repartido/,
     );

@@ -37,7 +37,7 @@ function initials(name: string): string {
 <template>
     <Menu as="div" class="relative hidden lg:block">
         <MenuButton
-            class="grid size-9 place-items-center rounded-xl bg-accent-400 text-xs font-bold text-brand-950 focus-ring transition hover:bg-accent-300"
+            class="grid size-9 place-items-center rounded-xl bg-zinc-900/[0.05] text-xs font-semibold text-zinc-800 focus-ring transition hover:bg-zinc-900/[0.09] dark:bg-white/10 dark:text-zinc-100 dark:hover:bg-white/15"
             :aria-label="`Mudar de espaço de trabalho. Actual: ${displayName}`"
         >
             <span aria-hidden="true">{{ initials(displayName) }}</span>

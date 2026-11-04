@@ -117,6 +117,8 @@ const props = defineProps<{
     focus: FocusDocument | null;
     review: Review | null;
     collections?: Collections | null;
+    /** Viewers may read the ledger, but reminders are not theirs to prepare. */
+    canRemindCustomers: boolean;
     lowStock?: { name: string; quantity: number; unit: string } | null;
 }>();
 
@@ -131,11 +133,17 @@ function openReminder(customer: { public_id: string; name: string }): void {
 
 /** What needs a decision today, worked out from figures this page already has. */
 const decisions = computed(() =>
-    decisionsFor(props, {
-        fiscal: agtSubmissions.url(),
-        documents: documentsIndex.url({ query: { status: 'attention' } }),
-        stock: stockIndex.url({ query: { low: '1' } }),
-    }),
+    decisionsFor(
+        {
+            ...props,
+            collections: props.canRemindCustomers ? props.collections : null,
+        },
+        {
+            fiscal: agtSubmissions.url(),
+            documents: documentsIndex.url({ query: { status: 'attention' } }),
+            stock: stockIndex.url({ query: { low: '1' } }),
+        },
+    ),
 );
 
 const page = usePage();
@@ -399,10 +407,6 @@ const reviewCauses = computed<ReviewCause[]>(() => {
     ].filter((cause) => cause.count > 0);
 });
 
-const largestCause = computed(() =>
-    Math.max(1, ...reviewCauses.value.map((cause) => cause.count)),
-);
-
 const reviewActions = computed<ReviewAction[]>(() => {
     if (!props.review) {
         return [];
@@ -521,7 +525,7 @@ const reviewStatement = computed(() => {
 <template>
     <AppLayout>
         <Head title="Painel" />
-        <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+        <div class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
             <div class="page-shell">
                 <!-- -------------------------------------------------- header -->
                 <header
@@ -539,6 +543,7 @@ const reviewStatement = computed(() => {
                             {{ greeting }}
                         </h1>
                         <p
+                            v-if="setupIncomplete || reviewCauses.length === 0"
                             class="mt-2 text-sm text-zinc-600 dark:text-zinc-400"
                         >
                             {{ headline }}
@@ -558,7 +563,7 @@ const reviewStatement = computed(() => {
                 <!-- ---------------------------------------------------- KPIs -->
                 <dl
                     v-if="kpis"
-                    class="mt-8 grid grid-cols-2 gap-y-6 md:grid-cols-3 xl:grid-cols-5"
+                    class="mt-6 grid grid-cols-2 gap-y-6 md:grid-cols-3 xl:grid-cols-5"
                 >
                     <div class="@container min-w-0 pr-5">
                         <dt
@@ -757,17 +762,9 @@ const reviewStatement = computed(() => {
                     </div>
                 </dl>
 
-                <p
-                    class="mt-8 max-w-3xl text-xs/5 text-zinc-500 dark:text-zinc-400"
-                >
-                    Valores limitados à moeda da empresa. Saldos e recebimentos
-                    representam o estado actual das facturas seleccionadas, não
-                    um saldo histórico nem o movimento bancário do período.
-                </p>
-
                 <!-- --------------------------------------- focus and review -->
                 <div
-                    class="mt-8 grid grid-cols-[minmax(0,1fr)] gap-5 xl:grid-cols-[minmax(0,1fr)_27.5rem]"
+                    class="mt-7 grid grid-cols-[minmax(0,1fr)] gap-5 xl:grid-cols-[minmax(0,1fr)_27.5rem]"
                 >
                     <!-- What needs deciding leads; the focus document below is the desk's longer view of the same thing. -->
                     <TodayDecisions
@@ -790,7 +787,7 @@ const reviewStatement = computed(() => {
                         </p>
                         <h2
                             id="setup-title"
-                            class="mt-3 text-[1.4375rem] font-normal tracking-[-0.02em] text-zinc-950 dark:text-white"
+                            class="mt-3 text-[1.375rem] font-normal tracking-[-0.02em] text-zinc-950 dark:text-white"
                         >
                             {{ readinessDone }} de {{ readiness.length }} passos
                             concluídos
@@ -868,7 +865,7 @@ const reviewStatement = computed(() => {
                     >
                         <div class="max-w-md">
                             <h2
-                                class="text-[1.4375rem] font-normal tracking-[-0.02em] text-zinc-950 dark:text-white"
+                                class="text-[1.375rem] font-normal tracking-[-0.02em] text-zinc-950 dark:text-white"
                             >
                                 Ainda não emitiu nenhum documento
                             </h2>
@@ -928,7 +925,7 @@ const reviewStatement = computed(() => {
                                 </span>
                                 <h2
                                     id="focus-title"
-                                    class="mt-4 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[1.4375rem] font-normal tracking-[-0.02em] text-zinc-950 dark:text-white"
+                                    class="mt-4 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[1.375rem] font-normal tracking-[-0.02em] text-zinc-950 dark:text-white"
                                 >
                                     <span class="font-mono text-[1.25rem]">{{
                                         focus.document_no ?? 'Sem número'
@@ -1206,47 +1203,12 @@ const reviewStatement = computed(() => {
 
                         <template v-if="review">
                             <p
-                                class="mt-5 text-[1.3125rem] leading-[1.3] tracking-[-0.02em] text-balance text-zinc-950 dark:text-white"
+                                class="mt-5 text-[1.375rem] leading-[1.3] tracking-[-0.02em] text-balance text-zinc-950 dark:text-white"
                             >
                                 {{ reviewStatement }}
                             </p>
 
                             <template v-if="reviewCauses.length > 0">
-                                <p
-                                    class="mt-5 text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
-                                >
-                                    O que encontrámos
-                                </p>
-                                <ul role="list" class="mt-1">
-                                    <li
-                                        v-for="cause in reviewCauses"
-                                        :key="cause.label"
-                                        class="grid min-h-8 grid-cols-[1.75rem_minmax(0,1fr)] items-center gap-2 py-1 text-[0.8125rem] text-zinc-800 sm:grid-cols-[1.75rem_minmax(0,1fr)_5.75rem] dark:text-zinc-200"
-                                    >
-                                        <span
-                                            class="numeric font-semibold text-accent-700 dark:text-accent-300"
-                                            >{{
-                                                String(cause.count).padStart(
-                                                    2,
-                                                    '0',
-                                                )
-                                            }}</span
-                                        >
-                                        <span>{{ cause.label }}</span>
-                                        <span
-                                            class="relative hidden h-[3px] rounded-full bg-accent-700/15 sm:block dark:bg-accent-300/15"
-                                            aria-hidden="true"
-                                        >
-                                            <span
-                                                class="absolute inset-y-0 left-0 rounded-full bg-accent-400"
-                                                :style="{
-                                                    width: `${(cause.count / largestCause) * 100}%`,
-                                                }"
-                                            />
-                                        </span>
-                                    </li>
-                                </ul>
-
                                 <p
                                     class="mt-5 text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                                 >
@@ -1581,6 +1543,14 @@ const reviewStatement = computed(() => {
                         Nenhum cliente em dívida neste momento.
                     </p>
                 </Deferred>
+
+                <p
+                    class="mt-8 max-w-3xl text-xs/5 text-zinc-500 dark:text-zinc-400"
+                >
+                    Valores limitados à moeda da empresa. Saldos e recebimentos
+                    representam o estado actual das facturas seleccionadas, não
+                    um saldo histórico nem o movimento bancário do período.
+                </p>
             </div>
         </div>
         <ReminderDialog

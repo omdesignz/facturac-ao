@@ -256,7 +256,7 @@ function openChapter(id: string | null): void {
             :title="active ? `${active.title} · Guia` : 'Guia de utilização'"
         />
 
-        <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+        <div class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
             <!-- ======================================================== home -->
             <div v-if="active === null" class="page-shell">
                 <header

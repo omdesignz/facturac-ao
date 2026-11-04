@@ -336,7 +336,7 @@ function historyUrl(publicId: string): string {
     <AppLayout>
         <Head title="Importar dados" />
 
-        <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+        <div class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
             <div class="page-shell space-y-8">
                 <PageHeader
                     eyebrow="Configuração · Importar dados"
@@ -359,7 +359,6 @@ function historyUrl(publicId: string): string {
                             :value="`${guardrails.maximum_rows.toLocaleString('pt-AO')} linhas`"
                             compact
                         />
-                        <PageStat label="Integridade" value="SHA-256" compact />
                         <PageStat
                             label="Empresa"
                             :value="company.legal_name"

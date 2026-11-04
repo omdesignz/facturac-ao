@@ -59,12 +59,12 @@ function pageLabel(label: string): string {
     <AppLayout>
         <Head title="Turnos" />
 
-        <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+        <div class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
             <div class="page-shell space-y-6">
                 <FlashBanner />
 
                 <PageHeader
-                    eyebrow="Vendas · Ponto de venda"
+                    eyebrow="Vender · Ponto de venda"
                     title="Turnos"
                     description="Cada turno é uma caixa aberta por alguém, do fundo de caixa ao fecho. Abra um para ver as vendas, a gaveta e a diferença contada."
                 >

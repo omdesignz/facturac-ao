@@ -188,14 +188,14 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
     <AppLayout>
         <Head title="Guias e transporte" />
 
-        <div class="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+        <div class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
             <div class="page-shell space-y-6">
                 <FlashBanner />
 
                 <PageHeader
-                    eyebrow="Documentos · Guias e transporte"
+                    eyebrow="Vender"
                     title="Guias e transporte"
-                    description="Prepare guias de remessa, transporte, activos próprios e devoluções. Depois de emitidas, ficam imutáveis e seguem no SAF-T (AO). Na API 2.0, estes tipos não pertencem ao endpoint de facturas; são declarados em MovementOfGoods."
+                    description="Prepare guias de remessa, transporte, activos próprios e devoluções. Depois de emitidas, ficam imutáveis e seguem no SAF-T (AO)."
                 >
                     <template #actions>
                         <Link
@@ -294,8 +294,16 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                 <EmptyState
                     v-if="documents.data.length === 0"
                     :icon="Truck"
-                    title="Nenhuma guia neste filtro"
-                    description="Crie uma guia ou ajuste os filtros para ver outros movimentos."
+                    :title="
+                        summary.total === 0
+                            ? 'Ainda não há guias'
+                            : 'Nenhuma guia neste filtro'
+                    "
+                    :description="
+                        summary.total === 0
+                            ? 'A primeira guia começa como rascunho e só circula depois de a emitir.'
+                            : 'Ajuste os filtros para ver outros movimentos.'
+                    "
                 />
 
                 <section

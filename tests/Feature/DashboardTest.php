@@ -11,6 +11,7 @@ use App\Models\FiscalDocument;
 use App\Models\LegalEntity;
 use App\Models\StockLevel;
 use App\Models\User;
+use App\WorkspaceRole;
 use Carbon\CarbonImmutable;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -267,4 +268,19 @@ test('with no stock below its level the dashboard has no stock decision', functi
     $this->actingAs($fixture['owner'])
         ->get(route('dashboard'))
         ->assertInertia(fn (Assert $page) => $page->where('lowStock', null));
+});
+
+test('reminders are offered only to those who may prepare them', function () {
+    $fixture = dashboardFixture();
+
+    $this->actingAs($fixture['owner'])
+        ->get(route('dashboard'))
+        ->assertInertia(fn (Assert $page) => $page->where('canRemindCustomers', true));
+
+    $fixture['owner']->workspaceMemberships()
+        ->where('workspace_id', $fixture['legalEntity']->workspace_id)
+        ->update(['role' => WorkspaceRole::Viewer->value]);
+
+    $this->get(route('dashboard'))
+        ->assertInertia(fn (Assert $page) => $page->where('canRemindCustomers', false));
 });

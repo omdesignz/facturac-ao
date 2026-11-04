@@ -30,20 +30,16 @@ const {
 );
 
 /**
- * Quiet for most of the block, and only earns attention as it runs down, so it
- * never competes with the page for the eye.
+ * Absent for most of the block, and only earns a place in the bar as it runs
+ * down, so a ticking clock never competes with the page for the eye.
  */
-const tone = computed(() => {
-    if (remainingSeconds.value <= 60) {
-        return 'text-rose-600 dark:text-rose-400';
-    }
+const isRunningOut = computed(() => remainingSeconds.value <= 300);
 
-    if (remainingSeconds.value <= 300) {
-        return 'text-amber-600 dark:text-amber-400';
-    }
-
-    return 'text-zinc-500 dark:text-zinc-400';
-});
+const tone = computed(() =>
+    remainingSeconds.value <= 60
+        ? 'text-rose-600 dark:text-rose-400'
+        : 'text-amber-600 dark:text-amber-400',
+);
 
 /** Circumference of the r=7 ring below, so the dash offset can trace it. */
 const RING = 2 * Math.PI * 7;
@@ -75,6 +71,7 @@ const label = computed(
 <template>
     <div v-if="enabled" class="contents">
         <span
+            v-if="isRunningOut"
             :class="[
                 tone,
                 'hidden h-8 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium tabular-nums transition-colors md:inline-flex',

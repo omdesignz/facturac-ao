@@ -1775,6 +1775,27 @@ tbody tr {
 }
 
 /*
+ * Lists are scanned, so on a desktop their rows stay tight and only ask for a
+ * row's actions once the pointer or the keyboard is on it. A row holding fields
+ * keeps its room, and a touch screen keeps its targets.
+ */
+@media (hover: hover) and (pointer: fine) {
+    main tbody tr:not(:has(input, select, textarea)) > td {
+        padding-block: 0.5rem;
+    }
+
+    tbody tr [data-row-actions] {
+        opacity: 0;
+        transition: opacity 0.12s var(--ease-out);
+    }
+
+    tbody tr:hover [data-row-actions],
+    tbody tr:focus-within [data-row-actions] {
+        opacity: 1;
+    }
+}
+
+/*
  * A well that holds a table is a card: the list is the content of the page, so
  * it sits on white with a hairline, and its header row takes a faint tint.
  */

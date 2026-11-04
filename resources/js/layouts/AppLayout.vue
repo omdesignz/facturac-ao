@@ -24,6 +24,7 @@ import AppHeader from '@/components/AppHeader.vue';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import CookieConsent from '@/components/CookieConsent.vue';
 import ImpersonationBanner from '@/components/ImpersonationBanner.vue';
+import KeyboardShortcuts from '@/components/KeyboardShortcuts.vue';
 import MobileTabBar from '@/components/MobileTabBar.vue';
 import SidebarNavigation from '@/components/SidebarNavigation.vue';
 import SubscriptionNotice from '@/components/SubscriptionNotice.vue';
@@ -161,6 +162,7 @@ onBeforeUnmount(() => stopListening?.());
         </TransitionRoot>
 
         <MobileTabBar @more="sidebarOpen = true" />
+        <KeyboardShortcuts />
         <div>
             <AppHeader />
 

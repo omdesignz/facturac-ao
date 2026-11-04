@@ -58,7 +58,7 @@ function acceptTerms(): void {
             <button
                 type="button"
                 :disabled="accepting"
-                class="tap-target ms-auto rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-amber-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 disabled:opacity-60"
+                class="tap-target ms-auto inline-flex h-8 items-center rounded-full bg-brand-950 px-3.5 text-[0.8125rem] font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:opacity-60 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                 @click="acceptTerms"
             >
                 Aceito
