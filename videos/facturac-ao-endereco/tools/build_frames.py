@@ -91,7 +91,7 @@ def ground(fid, dur):
     <div id="{fid}-ground" class="clip" data-start="0" data-duration="{dur}" data-track-index="0">
       <div id="{fid}-bloom" data-layout-allow-overflow></div>
       <div id="{fid}-meta-l">facturac.ao</div>
-      <div id="{fid}-meta-r">Brevemente</div>
+      <div id="{fid}-meta-r">Já disponível</div>
     </div>"""
     js = f'tl.fromTo("#{fid}-bloom", {{ scale: 0.96 }}, {{ scale: 1.04, duration: {dur}, ease: "sine.inOut", transformOrigin: "50% 50%" }}, 0);'
     return css, html, js
@@ -496,7 +496,7 @@ def frame4():
     js = []
     px1 = 156
     k1 = px1 / T.EM
-    h1, w1, ids1 = T.word_html("Brevemente", px1, f"{fid}-bre")
+    h1, w1, ids1 = T.word_html("Disponível", px1, f"{fid}-bre")
     d1 = 2 * DOT_R * k1
     left1 = (W - (w1 + d1)) / 2
     # The final card: an address bar, big, with the wordmark in it.
@@ -523,7 +523,7 @@ def frame4():
         + f'\n      <div id="{fid}-brebox" style="position:absolute;left:{left1:.2f}px;top:600px">{h1}'
         f'<div id="{fid}-bre-dot" style="position:absolute;left:{w1:.2f}px;top:{(T.ASCENT - 2 * DOT_R) * k1:.2f}px;width:{d1:.2f}px;height:{d1:.2f}px;border-radius:50%;background:{GOLD}"></div></div>'
         f'\n      <div id="{fid}-bigbar"><div id="{fid}-biglock">{lock}</div><div id="{fid}-bigwm">{wm}</div></div>'
-        f'\n      <div id="{fid}-sub">Facturação electrónica para Angola</div>'
+        f'\n      <div id="{fid}-sub">Facturação electrónica certificada pela AGT</div>'
         f'\n      <div id="{fid}-sigrow"><span>Emitida</span><b></b><span>Validada</span><b></b><span>Paga</span><b></b></div>'
     )
     css = phone_css(fid) + css

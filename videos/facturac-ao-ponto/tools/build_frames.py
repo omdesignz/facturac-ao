@@ -157,7 +157,7 @@ def frame1():
       font: 600 30px/1 "Hanken Grotesk", sans-serif; letter-spacing: 0.16em; text-transform: uppercase; color: {INK_SOFT}; }}
     .{fid}-lw {{ display: block; }}
     """
-    body = (f'      <div id="{fid}-label">{label_html}</div>\n      {word}', "Brevemente")
+    body = (f'      <div id="{fid}-label">{label_html}</div>\n      {word}', "Já disponível")
     js = []
     for i in range(len(label)):
         js.append(f'tl.fromTo("#{fid}-l{i}", {{ opacity: 0, y: 22 }}, {{ opacity: 1, y: 0, duration: 0.34, ease: "power3.out" }}, {r(0.04 + i * 0.05)});')
@@ -363,10 +363,10 @@ def frame4():
     fid = "frame-" + cid
     L = lambda k: beat(k) - g0  # noqa: E731
     js = []
-    # "Brevemente" with the dot as its full stop.
+    # "Disponível" with the dot as its full stop.
     px1 = 156
     k1 = px1 / T.EM
-    h1, w1, ids1 = T.word_html("Brevemente", px1, f"{fid}-bre")
+    h1, w1, ids1 = T.word_html("Disponível", px1, f"{fid}-bre")
     left1 = (W - (w1 + 2 * DOT_R * k1)) / 2
     top1 = 600
     d1 = 2 * DOT_R * k1
@@ -406,9 +406,9 @@ def frame4():
         f'      <div style="position:absolute;left:{left1:.2f}px;top:{top1}px">{h1}'
         f'<div id="{fid}-bre-dot" class="{fid}-dot" style="position:absolute;left:{w1:.2f}px;top:{(T.ASCENT - 2 * DOT_R) * k1:.2f}px;width:{d1:.2f}px;height:{d1:.2f}px"></div></div>\n'
         f"      {wm}\n"
-        f'      <div id="{fid}-sub">Facturação electrónica para Angola</div>\n'
+        f'      <div id="{fid}-sub">Facturação electrónica certificada pela AGT</div>\n'
         f'      <div id="{fid}-sig"><span>Emitida</span><b></b><span>Validada</span><b></b><span>Paga</span><b></b></div>',
-        "Brevemente",
+        "Já disponível",
     )
     for j, gid in enumerate(ids1):
         js.append(f'tl.fromTo("#{gid}", {{ y: -120, opacity: 0, rotation: {(-1) ** j * 6} , transformOrigin: "50% 50%" }}, '

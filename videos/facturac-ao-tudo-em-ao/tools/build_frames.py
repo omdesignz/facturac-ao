@@ -51,7 +51,7 @@ FONT_FACES = """
 """
 
 
-def frame_doc(cid, dur, css, stage, js, dark=False, meta_r="Brevemente"):
+def frame_doc(cid, dur, css, stage, js, dark=False, meta_r="Já disponível"):
     fid = "frame-" + cid
     ground = INK if dark else PAPER
     grid = "rgba(249,178,51,0.10)" if dark else "rgba(249,178,51,0.13)"
@@ -386,7 +386,7 @@ def frame6():
     js = []
     px1 = 156
     k1 = px1 / T.EM
-    h1, w1, ids1 = T.word_html("Brevemente", px1, f"{fid}-bre")
+    h1, w1, ids1 = T.word_html("Disponível", px1, f"{fid}-bre")
     d1 = 2 * DOT_R * k1
     left1 = (W - (w1 + d1)) / 2
     px2 = 116
@@ -412,7 +412,7 @@ def frame6():
         f'      <div style="position:absolute;left:{left1:.2f}px;top:600px">{h1}'
         f'<div id="{fid}-bre-dot" class="{fid}-dot" style="left:{w1:.2f}px;top:{(T.ASCENT - 2 * DOT_R) * k1:.2f}px;width:{d1:.2f}px;height:{d1:.2f}px"></div></div>\n'
         f"      {wm}\n"
-        f'      <div id="{fid}-sub" class="{fid}-label" style="top:1190px">Facturação electrónica para Angola</div>\n'
+        f'      <div id="{fid}-sub" class="{fid}-label" style="top:1190px">Facturação electrónica certificada pela AGT</div>\n'
         f'      <div id="{fid}-sig"><span>Emitida</span><b></b><span>Validada</span><b></b><span>Paga</span><b></b></div>'
     )
     for j, gid in enumerate(ids1):

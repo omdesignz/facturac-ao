@@ -5,7 +5,8 @@
 #
 # Instagram keeps 1080x1920 at a high bitrate, so it gets the full-size file.
 # WhatsApp status re-encodes everything to roughly 720p at a low bitrate, and does
-# the downscale with a cheap filter. So the WhatsApp file is already 720x1280,
+# the downscale with a cheap filter. So the WhatsApp file is already 720 on its
+# short side (720x1280 for a vertical film, 720x720 for a square one),
 # scaled by us with Lanczos, with a touch of sharpening to survive the second
 # encode, Main profile, 30 fps and under 16 MB: its own encoder then has little
 # left to ruin. Measured with VMAF against an emulated WhatsApp re-encode.
@@ -28,7 +29,7 @@ ffmpeg -v error -y -i "$master" \
 
 # WhatsApp status: pre-scaled to its own target, scaled well, sharpened a little.
 ffmpeg -v error -y -i "$master" \
-  -vf "scale=720:1280:flags=lanczos+accurate_rnd+full_chroma_int,unsharp=5:5:0.35:3:3:0.0" \
+  -vf "scale=w='if(lt(iw,ih),720,-2)':h='if(lt(iw,ih),-2,720)':flags=lanczos+accurate_rnd+full_chroma_int,unsharp=5:5:0.35:3:3:0.0" \
   -c:v libx264 -preset slow -tune animation -profile:v main -level 3.1 \
   -b:v 3500k -maxrate 4200k -bufsize 7000k -g 60 -bf 2 "${common[@]}" \
   -c:a copy \

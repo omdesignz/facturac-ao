@@ -15,7 +15,7 @@ Three passes per take:
          reach the target, then limit what is left.
   fit    pad or cut the tail so the take is exactly as long as its frame. Frame
          5 is deliberately longer than its speech: that trailing silence is the
-         beat the film ends on, so "Em breve" lands rather than gets cut off.
+         beat the film ends on, so the last word lands rather than gets cut off.
 
 Durations here and in STORYBOARD.md must agree; they are the same numbers.
 """
@@ -36,7 +36,17 @@ TAKES = {
     "05": (0.160, 6.205),
 }
 
+# Where a take's speech is cut short, in seconds after the trim. Frame 5 was
+# read as "facturac ponto A O. Em breve."; since launch it stops after the
+# brand, faded out inside the pause before "Em", and the frame's tail holds
+# in silence on the mark and the invitation.
+SPEECH_ENDS = {
+    "05": 3.40,
+}
+FADE = 0.06
+
 CHAIN = (
+    "{cut}"
     "highpass=f=85,"
     "acompressor=threshold=-21dB:ratio=3:attack=6:release=140:makeup=2,"
     "volume={gain:.2f}dB,"
@@ -68,10 +78,12 @@ def main() -> int:
         # what actually came out, then correct. Two passes converge to within a
         # few tenths of a dB, which is inaudible.
         gain = TARGET_LUFS - loudness(raw) - 2.0
+        end = SPEECH_ENDS.get(name)
+        cut = "" if end is None else f"afade=t=out:st={end - FADE:.3f}:d={FADE},"
         for _ in range(2):
             subprocess.run(
                 ["ffmpeg", "-v", "error", "-y", "-ss", str(trim), "-i", str(raw),
-                 "-af", CHAIN.format(gain=gain), "-t", str(length),
+                 "-af", CHAIN.format(gain=gain, cut=cut), "-t", str(length),
                  "-c:a", "pcm_s16le", str(out)],
                 check=True,
             )

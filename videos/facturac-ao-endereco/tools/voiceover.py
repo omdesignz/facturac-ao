@@ -46,7 +46,8 @@ SOCIAL = HERE / "renders/video-voz-social.mp4"
 # (cue, lead, runs, what is said). The cue is the global second of the picture
 # event; lead is how far into the phrase the word cut to that event starts, so
 # the phrase begins at cue - lead. runs is how many speech runs of the read the
-# phrase spans. Order matches the read.
+# phrase spans. Order matches the read. A cue of None leaves the phrase out
+# of the film; its runs are still counted, so the rest stay where they are.
 PHRASES = [
     (0.25, 0.0, 1, "Onde fica a sua facturação?"),
     (3.66, 0.0, 1, "Quase."),
@@ -56,7 +57,7 @@ PHRASES = [
     (9.194, 0.0, 1, "É só isso."),
     (15.197, 1.52, 2, "Aqui, cada factura sai emitida,"),
     (16.288, 0.0, 1, "validada, e paga."),
-    (19.864, 0.0, 1, "Brevemente,"),
+    (None, 0.0, 1, "Brevemente,"),  # out since launch
     (21.4, 0.3, 1, "em facturac ponto á ó."),
 ]
 
@@ -115,7 +116,14 @@ def place(runs: list[tuple[float, float]]) -> list[dict]:
     """Where each phrase is cut from the read and where it starts in the film."""
     placed, index, previous_end = [], 0, 0.0
     for cue, lead, count, text in PHRASES:
+        if cue is None:
+            index += count
+            continue
         source_start, source_end = runs[index][0], runs[index + count - 1][1]
+        # The read's own neighbours bound the fades, so a phrase never picks up
+        # the edge of a word that was left out.
+        before = runs[index - 1][1] if index else 0.0
+        after = runs[index + count][0] if index + count < len(runs) else None
         index += count
         wanted = cue - lead
         start = max(wanted, previous_end + MIN_GAP, 0.0)
@@ -123,6 +131,7 @@ def place(runs: list[tuple[float, float]]) -> list[dict]:
         placed.append({
             "text": text,
             "source": (source_start, source_end),
+            "neighbours": (before, after),
             "start": start,
             "end": previous_end,
             "late": start - wanted,
@@ -136,8 +145,8 @@ def write_stem(placed: list[dict], total: float, length: float, gain_db: float) 
     parts, labels = [], []
     for index, phrase in enumerate(placed):
         source_start, source_end = phrase["source"]
-        before = placed[index - 1]["source"][1] if index else 0.0
-        after = placed[index + 1]["source"][0] if index + 1 < len(placed) else total
+        before, after = phrase["neighbours"]
+        after = total if after is None else after
         head = min(HEAD, (source_start - before) / 2)
         tail = min(TAIL, (after - source_end) / 2)
         begin, stop = source_start - head, source_end + tail
