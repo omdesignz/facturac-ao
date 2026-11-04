@@ -1,0 +1,58 @@
+<template>
+  <style>
+    @font-face { font-family: "Outfit"; font-weight: 700; font-display: block;
+      src: url("assets/fonts/Outfit-700.woff2") format("woff2"); }
+    #root { position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: hidden;
+      font-family: "Outfit", sans-serif; font-weight: 700; color: #171716; }
+    .abs { position: absolute; }
+    .t { position: absolute; white-space: nowrap; line-height: 1; letter-spacing: -0.03em; }
+    .w { display: inline-block; }
+    .pt { display: inline-block; width: .19em; height: .19em; margin-left: .065em; border-radius: 50%; background: #f9b233; }
+    .shot { position: absolute; overflow: hidden; background: #fff; border-radius: 26px;
+      box-shadow: 0 0 0 1px rgb(23 23 22 / .12), 0 44px 80px -30px rgb(70 42 0 / .55); }
+    .shot img { position: absolute; left: 0; top: 0; width: 100%; height: auto; display: block; }
+
+    #root { background: #f9b233; }
+#cam { position: absolute; inset: 0; transform-origin: 0 0; }#burst { position: absolute; left: -340px; top: -760px; width: 2600px; height: 2600px; border-radius: 50%; background: #f9b233; }
+  </style>
+  <div id="root" data-composition-id="s3-balcao" data-width="1920" data-height="1080">
+<div id="cam" data-layout-allow-overflow>
+      <div id="till" class="shot" style="left:300px;top:244px;width:1320px;height:825px" data-layout-allow-overflow>
+      <img id="till0" src="assets/screens/till-0.webp" alt="" style="opacity:1" />
+<img id="till1" src="assets/screens/till-1.webp" alt="" style="opacity:0" />
+<img id="till2" src="assets/screens/till-2.webp" alt="" style="opacity:0" />
+<img id="till3" src="assets/screens/till-3.webp" alt="" style="opacity:0" />
+<img id="till4" src="assets/screens/till-4.webp" alt="" style="opacity:0" />
+<img id="till5" src="assets/screens/till-5.webp" alt="" style="opacity:0" />
+      </div>
+    </div>
+    <div class="t" id="h" style="left:300px;top:86px;font-size:104px;color:#171716;"><span class="w h-w">Ao</span> <span class="w h-w">balcão,</span> <span class="w h-w">é</span> <span class="w h-w">tocar</span> <span class="w h-w">e</span> <span class="w h-w">cobrar</span><span class="w h-w"><span class="pt" style="background:#171716"></span></span></div>
+    <div id="burst" data-layout-allow-overflow></div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      // Every word lands blurred and sharpens, then holds dead still.
+      const land = (sel, at, stagger = 0.07) => tl.fromTo(sel,
+        { opacity: 0, filter: "blur(10px)" },
+        { opacity: 1, filter: "blur(0px)", duration: 0.16, stagger, ease: "power1.out" }, at);
+      const leave = (sel, at) => tl.to(sel,
+        { opacity: 0, filter: "blur(10px)", duration: 0.14, ease: "power2.in" }, at);
+
+      gsap.set("#burst", { scale: 0, opacity: 1 });
+      tl.fromTo("#till", { y: 900 }, { y: 0, duration: 0.75, ease: "expo.out" }, 0.02);
+      land(".h-w", 0.1, 0.05);
+      tl.set("#till1", { opacity: 1 }, 0.48);
+tl.set("#till2", { opacity: 1 }, 0.96);
+tl.set("#till3", { opacity: 1 }, 1.44);
+tl.set("#till4", { opacity: 1 }, 1.91);
+tl.set("#till5", { opacity: 1 }, 2.39);
+      leave(".h-w", 2.6599999999999993);
+      tl.to("#cam", { x: -2790.3, y: -2039.4, scale: 2.7, duration: 0.5, ease: "power2.inOut" }, 2.76);
+      tl.to("#cam", { x: -6818.4, y: -4809.9, scale: 5.6, duration: 0.48, ease: "power3.in" }, 3.33);
+      tl.to("#burst", { scale: 1, duration: 0.36, ease: "power3.in" }, 3.449999999999999);
+    
+      window.__timelines["s3-balcao"] = tl;
+    })();
+  </script>
+</template>

@@ -1,0 +1,47 @@
+<template>
+  <style>
+    @font-face { font-family: "Outfit"; font-weight: 700; font-display: block;
+      src: url("assets/fonts/Outfit-700.woff2") format("woff2"); }
+    #root { position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: hidden;
+      font-family: "Outfit", sans-serif; font-weight: 700; color: #171716; }
+    .abs { position: absolute; }
+    .t { position: absolute; white-space: nowrap; line-height: 1; letter-spacing: -0.03em; }
+    .w { display: inline-block; }
+    .pt { display: inline-block; width: .19em; height: .19em; margin-left: .065em; border-radius: 50%; background: #f9b233; }
+    .shot { position: absolute; overflow: hidden; background: #fff; border-radius: 26px;
+      box-shadow: 0 0 0 1px rgb(23 23 22 / .12), 0 44px 80px -30px rgb(70 42 0 / .55); }
+    .shot img { position: absolute; left: 0; top: 0; width: 100%; height: auto; display: block; }
+
+    #root { background: #ffffff; }
+#sun { position: absolute; left: -60px; top: 200px; width: 2040px; height: 2040px; border-radius: 50%; background: #f9b233; }#cam { position: absolute; inset: 0; transform-origin: 0 0; }
+  </style>
+  <div id="root" data-composition-id="s4-documentos" data-width="1920" data-height="1080">
+<div id="sun" data-layout-allow-overflow></div>
+    <div id="cam" data-layout-allow-overflow>
+      <div id="doc" class="shot" style="left:310px;top:296px;width:1300px;height:812px" data-layout-allow-overflow>
+        <img src="assets/screens/documents.webp" alt="" />
+      </div>
+    </div>
+    <div class="t" id="h" style="left:960px;top:92px;font-size:88px;color:#171716;transform:translateX(-50%);"><span class="w h-w">Cada</span> <span class="w h-w">documento,</span> <span class="w h-w">comunicado</span> <span class="w h-w">à</span> <span class="w h-w">AGT</span><span class="w h-w"><span class="pt" style="background:#f9b233"></span></span></div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      // Every word lands blurred and sharpens, then holds dead still.
+      const land = (sel, at, stagger = 0.07) => tl.fromTo(sel,
+        { opacity: 0, filter: "blur(10px)" },
+        { opacity: 1, filter: "blur(0px)", duration: 0.16, stagger, ease: "power1.out" }, at);
+      const leave = (sel, at) => tl.to(sel,
+        { opacity: 0, filter: "blur(10px)", duration: 0.14, ease: "power2.in" }, at);
+
+      gsap.set("#sun", { scale: 3.2, transformOrigin: "50% 50%" });
+      tl.to("#sun", { scale: 1, duration: 0.72, ease: "power3.inOut" }, 0);
+      tl.fromTo("#doc", { y: 820 }, { y: 0, duration: 0.85, ease: "expo.out" }, 0.22);
+      land(".h-w", 0.5, 0.05);
+      leave(".h-w", 2.700000000000001);
+      tl.to("#cam", { x: -712.1, y: -1100.9, scale: 3.0, duration: 0.56, ease: "power2.inOut" }, 2.8);
+    
+      window.__timelines["s4-documentos"] = tl;
+    })();
+  </script>
+</template>

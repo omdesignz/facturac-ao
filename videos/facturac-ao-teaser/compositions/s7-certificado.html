@@ -1,0 +1,43 @@
+<template>
+  <style>
+    @font-face { font-family: "Outfit"; font-weight: 700; font-display: block;
+      src: url("assets/fonts/Outfit-700.woff2") format("woff2"); }
+    #root { position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: hidden;
+      font-family: "Outfit", sans-serif; font-weight: 700; color: #171716; }
+    .abs { position: absolute; }
+    .t { position: absolute; white-space: nowrap; line-height: 1; letter-spacing: -0.03em; }
+    .w { display: inline-block; }
+    .pt { display: inline-block; width: .19em; height: .19em; margin-left: .065em; border-radius: 50%; background: #f9b233; }
+    .shot { position: absolute; overflow: hidden; background: #fff; border-radius: 26px;
+      box-shadow: 0 0 0 1px rgb(23 23 22 / .12), 0 44px 80px -30px rgb(70 42 0 / .55); }
+    .shot img { position: absolute; left: 0; top: 0; width: 100%; height: auto; display: block; }
+
+    #root { background: #171716; }
+
+  </style>
+  <div id="root" data-composition-id="s7-certificado" data-width="1920" data-height="1080">
+<div class="t" id="a1" style="left:130px;top:268px;font-size:236px;color:#ffffff;"><span class="w a1-w">Certificado</span></div>
+    <div class="t" id="a2" style="left:130px;top:500px;font-size:236px;color:#ffffff;"><span class="w a2-w">pela</span> <span class="w a2-w">AGT</span><span class="w a2-w"><span class="pt" style="background:#f9b233"></span></span></div>
+    <div class="t" id="a3" style="left:138px;top:770px;font-size:56px;color:#a1a1aa;letter-spacing:0;"><span class="w a3-w">N.º</span> <span class="w a3-w">FE/419/AGT/2026</span></div>
+    <div class="t" id="b1" style="left:130px;top:330px;font-size:170px;color:#ffffff;"><span class="w b1-w">Obrigatória</span> <span class="w b1-w">a</span></div>
+    <div class="t" id="b2" style="left:130px;top:510px;font-size:170px;color:#ffffff;"><span class="w b2-w">1</span> <span class="w b2-w">de</span> <span class="w b2-w">janeiro</span> <span class="w b2-w">de</span> <span class="w b2-w">2027</span><span class="w b2-w"><span class="pt" style="background:#f9b233"></span></span></div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      // Every word lands blurred and sharpens, then holds dead still.
+      const land = (sel, at, stagger = 0.07) => tl.fromTo(sel,
+        { opacity: 0, filter: "blur(10px)" },
+        { opacity: 1, filter: "blur(0px)", duration: 0.16, stagger, ease: "power1.out" }, at);
+      const leave = (sel, at) => tl.to(sel,
+        { opacity: 0, filter: "blur(10px)", duration: 0.14, ease: "power2.in" }, at);
+
+      gsap.set(".b1-w, .b2-w", { opacity: 0 });
+      land(".a1-w", 0.0); land(".a2-w", 0.14); land(".a3-w", 0.42, 0.05);
+      leave(".a1-w, .a2-w, .a3-w", 1.7499999999999987);
+      land(".b1-w", 1.8999999999999986, 0.09); land(".b2-w", 2.0999999999999988, 0.08);
+    
+      window.__timelines["s7-certificado"] = tl;
+    })();
+  </script>
+</template>

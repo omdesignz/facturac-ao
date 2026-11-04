@@ -1,0 +1,2167 @@
+{
+  "version": 1,
+  "historyId": "ddb9e4ca-ec5c-444c-8514-44a1aa189e91",
+  "currentRevision": "02cbfcd3-dfce-4312-90a6-409f9b92ae3e",
+  "pendingChanges": false,
+  "files": {
+    "assets/bgm/track-end.mp3": {
+      "hash": "f2e28c418dab8a34dd26ab63bd53e87520a88d5012416bceb0835f9867a83405",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/f2/f2e28c418dab8a34dd26ab63bd53e87520a88d5012416bceb0835f9867a83405"
+    },
+    "assets/facturac-ao.svg": {
+      "hash": "e78be06680483a2717b9ab5559ef00c1c4340a53ee9b104906a3096987712bc5",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/e7/e78be06680483a2717b9ab5559ef00c1c4340a53ee9b104906a3096987712bc5"
+    },
+    "assets/fonts/HankenGrotesk-400.woff2": {
+      "hash": "787b3fdd0b7e6d59ae7ce14ce7a41d1a44616584b4c919b527da951972d5d87d",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/78/787b3fdd0b7e6d59ae7ce14ce7a41d1a44616584b4c919b527da951972d5d87d"
+    },
+    "assets/fonts/HankenGrotesk-500.woff2": {
+      "hash": "31f666af7bff625900c46aa34a05d8620482ba2db37db7b63749b693ab0c72ec",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/31/31f666af7bff625900c46aa34a05d8620482ba2db37db7b63749b693ab0c72ec"
+    },
+    "assets/fonts/HankenGrotesk-600.woff2": {
+      "hash": "58f23b7ae3e13b21a4dca4c05360be87b3531d60fc1cbff89732cac8fb3019ae",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/58/58f23b7ae3e13b21a4dca4c05360be87b3531d60fc1cbff89732cac8fb3019ae"
+    },
+    "assets/fonts/HankenGrotesk-700.woff2": {
+      "hash": "d85de6e272296d06f8205ad11e27140274e0ef97050232777d146eabb71c312d",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/d8/d85de6e272296d06f8205ad11e27140274e0ef97050232777d146eabb71c312d"
+    },
+    "assets/fonts/Outfit-700.woff2": {
+      "hash": "5d5e3734089a74707292ce8a3e186def34cd63e33879f9ac3689a8d8da9d0706",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/5d/5d5e3734089a74707292ce8a3e186def34cd63e33879f9ac3689a8d8da9d0706"
+    },
+    "assets/screens/android-debts.webp": {
+      "hash": "3f423d988fe4acd97a89f0b65be58bc1dfcdf5e0f564e528087fcfcfa59b11e4",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/3f/3f423d988fe4acd97a89f0b65be58bc1dfcdf5e0f564e528087fcfcfa59b11e4"
+    },
+    "assets/screens/documents.webp": {
+      "hash": "72b52138fe700bed6cb956b204d598103011f631be38cd78629d433a3e12cf10",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/72/72b52138fe700bed6cb956b204d598103011f631be38cd78629d433a3e12cf10"
+    },
+    "assets/screens/iphone-today.webp": {
+      "hash": "075b1d6c07b32d2055fb5b8ca2eea6a468bf33f9e4e66de6b9bf334d36097b62",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/07/075b1d6c07b32d2055fb5b8ca2eea6a468bf33f9e4e66de6b9bf334d36097b62"
+    },
+    "assets/screens/till-0.webp": {
+      "hash": "8f32a6d8b35209f580d6b253a2951afcfa8777d8ab8a28439afe9a0097434667",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/8f/8f32a6d8b35209f580d6b253a2951afcfa8777d8ab8a28439afe9a0097434667"
+    },
+    "assets/screens/till-1.webp": {
+      "hash": "d4195a5409d7b8a636d81121edb71ef71405fd401f68433102742e4dec0b2f70",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/d4/d4195a5409d7b8a636d81121edb71ef71405fd401f68433102742e4dec0b2f70"
+    },
+    "assets/screens/till-2.webp": {
+      "hash": "04682bf2606336bb6ef4335d168aa106c40989e55744e0000418e4d42354a734",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/04/04682bf2606336bb6ef4335d168aa106c40989e55744e0000418e4d42354a734"
+    },
+    "assets/screens/till-3.webp": {
+      "hash": "06dd5daf314de58479fa42156025497eb204dc72da35c5edf5c26e1f40a4cf1e",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/06/06dd5daf314de58479fa42156025497eb204dc72da35c5edf5c26e1f40a4cf1e"
+    },
+    "assets/screens/till-4.webp": {
+      "hash": "b894e038d6f7b92759773f31f6f922c3bf6b38ba60fdca499f8b481d8712cd7e",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/b8/b894e038d6f7b92759773f31f6f922c3bf6b38ba60fdca499f8b481d8712cd7e"
+    },
+    "assets/screens/till-5.webp": {
+      "hash": "c36681f45beb6462b4b4d0f8f54fa3e4c815345751a9991faab81bfcf2612bc4",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/c3/c36681f45beb6462b4b4d0f8f54fa3e4c815345751a9991faab81bfcf2612bc4"
+    },
+    "assets/screens/today.webp": {
+      "hash": "01e5156db530267f8903b13ccfde6f9f0ac488cf5dd4dd68d597bf8293b8d5c6",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/01/01e5156db530267f8903b13ccfde6f9f0ac488cf5dd4dd68d597bf8293b8d5c6"
+    },
+    "assets/sfx/drop-thud.mp3": {
+      "hash": "6ad549c1544833636fd078bffc408a9df17667a1e3dcd4e5b1dcfb4ce9d23b53",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/6a/6ad549c1544833636fd078bffc408a9df17667a1e3dcd4e5b1dcfb4ce9d23b53"
+    },
+    "assets/sfx/impact-soft.mp3": {
+      "hash": "697522a15801c09081acf578b23843703c9c10d3fd791c717b173c9c00ea4f3c",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/69/697522a15801c09081acf578b23843703c9c10d3fd791c717b173c9c00ea4f3c"
+    },
+    "assets/sfx/pop-confirm.mp3": {
+      "hash": "ecec29529dc5b3f5ade7a550f163b4a3a8c9d98716bb7dabe07232a51c723ebc",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/ec/ecec29529dc5b3f5ade7a550f163b4a3a8c9d98716bb7dabe07232a51c723ebc"
+    },
+    "assets/sfx/pop-soft.mp3": {
+      "hash": "ecec29529dc5b3f5ade7a550f163b4a3a8c9d98716bb7dabe07232a51c723ebc",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/ec/ecec29529dc5b3f5ade7a550f163b4a3a8c9d98716bb7dabe07232a51c723ebc"
+    },
+    "assets/sfx/riser-short.mp3": {
+      "hash": "7921c0178a742316f461914fc0ede132c0b25cd44b55ee77578bb1d52b778427",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/79/7921c0178a742316f461914fc0ede132c0b25cd44b55ee77578bb1d52b778427"
+    },
+    "assets/sfx/whoosh-soft.mp3": {
+      "hash": "11e5e8ac6d991f8f86757b35082365724bc6f96a1d518121ba349bd10dbe1932",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/11/11e5e8ac6d991f8f86757b35082365724bc6f96a1d518121ba349bd10dbe1932"
+    },
+    "assets/sfx/whoosh-up.mp3": {
+      "hash": "11e5e8ac6d991f8f86757b35082365724bc6f96a1d518121ba349bd10dbe1932",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/11/11e5e8ac6d991f8f86757b35082365724bc6f96a1d518121ba349bd10dbe1932"
+    },
+    "compositions/s1-ponto.html": {
+      "hash": "2696fd94b6565e3875112796be5591b898d9a66ebc8ac3be2af1ea98969aa025",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/26/2696fd94b6565e3875112796be5591b898d9a66ebc8ac3be2af1ea98969aa025"
+    },
+    "compositions/s2-telemovel.html": {
+      "hash": "d0984c454461bd111766f0d66bb6dd07e22fbba073bfdd73289c0e5917a3c514",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/d0/d0984c454461bd111766f0d66bb6dd07e22fbba073bfdd73289c0e5917a3c514"
+    },
+    "compositions/s3-balcao.html": {
+      "hash": "6de9d6ccad5734c035c45c47b8fd18550e12238d83ad071b56cacf2aed695497",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/6d/6de9d6ccad5734c035c45c47b8fd18550e12238d83ad071b56cacf2aed695497"
+    },
+    "compositions/s4-documentos.html": {
+      "hash": "7bd954743c7997db25c5dc86d6fbf9b8f7aafba302acfe801af7ee4810deef17",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/7b/7bd954743c7997db25c5dc86d6fbf9b8f7aafba302acfe801af7ee4810deef17"
+    },
+    "compositions/s5-cobrar.html": {
+      "hash": "4b744e1eca87d951335b56aee119c32f197316431e652d1a284548b4cdbdc422",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/4b/4b744e1eca87d951335b56aee119c32f197316431e652d1a284548b4cdbdc422"
+    },
+    "compositions/s6-tudo.html": {
+      "hash": "b8a02770898d70c130ab5d5ab827fe7b7ee81e750072c671922ce6720d235223",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/b8/b8a02770898d70c130ab5d5ab827fe7b7ee81e750072c671922ce6720d235223"
+    },
+    "compositions/s7-certificado.html": {
+      "hash": "599f5e9a7761ab9e122abf5d29c2096b3d1a87a8b6f2970db64918df6db828fa",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/59/599f5e9a7761ab9e122abf5d29c2096b3d1a87a8b6f2970db64918df6db828fa"
+    },
+    "compositions/s8-fim.html": {
+      "hash": "0ce143ed5a6dcbae89b54822afc428a5706cc34d69df27d7ab314e9c8fa9ed6b",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/0c/0ce143ed5a6dcbae89b54822afc428a5706cc34d69df27d7ab314e9c8fa9ed6b"
+    },
+    "hyperframes.json": {
+      "hash": "35a6d4ea79ebe911f0d81705f7aace5d8ff0316b745b0311d56af50c9c237cb7",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/35/35a6d4ea79ebe911f0d81705f7aace5d8ff0316b745b0311d56af50c9c237cb7"
+    },
+    "index.html": {
+      "hash": "599a8e3428f9bd20a53662f999b16916f08cb0d6bbd594f340ef941359bd7f96",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/59/599a8e3428f9bd20a53662f999b16916f08cb0d6bbd594f340ef941359bd7f96"
+    },
+    "package.json": {
+      "hash": "36985820f4aee6228ef28a0b93b5876191ff9a8da0146595112f1f0238d46016",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/36/36985820f4aee6228ef28a0b93b5876191ff9a8da0146595112f1f0238d46016"
+    },
+    "tools/build.py": {
+      "hash": "ca8fe7db558bb70065e0f9fee21a382726b8a728b8dbc674581db4802cb5491b",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/ca/ca8fe7db558bb70065e0f9fee21a382726b8a728b8dbc674581db4802cb5491b"
+    },
+    "assets/bgm/track.mp3": {
+      "hash": "27e0b9b055b30a5e6f6d7e0b42952f6d67012d8c6671e905131f56bcb9b2bf1e",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/27/27e0b9b055b30a5e6f6d7e0b42952f6d67012d8c6671e905131f56bcb9b2bf1e"
+    },
+    "SPEC.md": {
+      "hash": "ebc995217be21a6b755235c4a124b3a19a0bba7a1d356e7e14605ac4a4a59ac3",
+      "content": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/eb/ebc995217be21a6b755235c4a124b3a19a0bba7a1d356e7e14605ac4a4a59ac3"
+    }
+  },
+  "revisions": {
+    "49b4c615-fdac-4838-8936-19c382986c75": {
+      "actor": {
+        "kind": "outside",
+        "name": "Outside"
+      },
+      "label": "Changed outside the app",
+      "startedAt": 1793815772838,
+      "endedAt": 1793815772849,
+      "files": {
+        "compositions/s1-ponto.html": {
+          "before": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/b3/b37c4a20b6c9eb371ee607bbe1a00ae62080c867b6505efa4b30d5a4d1d8c5e7",
+          "after": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/26/2696fd94b6565e3875112796be5591b898d9a66ebc8ac3be2af1ea98969aa025"
+        },
+        "compositions/s4-documentos.html": {
+          "before": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/19/1911978471ad2cb3919d494f87119100edda84c91490bb9237b8695e0e37b06c",
+          "after": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/7b/7bd954743c7997db25c5dc86d6fbf9b8f7aafba302acfe801af7ee4810deef17"
+        },
+        "compositions/s7-certificado.html": {
+          "before": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/26/26927906cebbd989ef48974511c09b419e5cbb524f41109a1ff9bd90219def75",
+          "after": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/59/599f5e9a7761ab9e122abf5d29c2096b3d1a87a8b6f2970db64918df6db828fa"
+        },
+        "compositions/s8-fim.html": {
+          "before": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/f0/f0c74be848c44f1ed5460977a1951cc4116161782ba4671f9e4ca817f6d9f70e",
+          "after": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/0c/0ce143ed5a6dcbae89b54822afc428a5706cc34d69df27d7ab314e9c8fa9ed6b"
+        },
+        "index.html": {
+          "before": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/7b/7b49eeabacbddb3c187c8242f4253f86d791e4841b8ed8f0b13340fd14352c82",
+          "after": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/59/599a8e3428f9bd20a53662f999b16916f08cb0d6bbd594f340ef941359bd7f96"
+        },
+        "tools/build.py": {
+          "before": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/c6/c67779adf4a2a60535f70fb8602dfc42ed29e6d9702ffb755579ceefdc275031",
+          "after": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/78/78c8b47c3544491e8d6bc10f56d95670656ac93ba2bed577adb3b191e0f35aa2"
+        }
+      }
+    },
+    "6e4e4014-af2e-4673-873c-8ec2d0c914ca": {
+      "actor": {
+        "kind": "outside",
+        "name": "Outside"
+      },
+      "label": "Changed outside the app",
+      "startedAt": 1793815849170,
+      "endedAt": 1793815849171,
+      "files": {
+        "SPEC.md": {
+          "before": null,
+          "after": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/eb/ebc995217be21a6b755235c4a124b3a19a0bba7a1d356e7e14605ac4a4a59ac3"
+        }
+      }
+    },
+    "02cbfcd3-dfce-4312-90a6-409f9b92ae3e": {
+      "actor": {
+        "kind": "outside",
+        "name": "Outside"
+      },
+      "label": "Changed outside the app",
+      "startedAt": 1793815944880,
+      "endedAt": 1793815944892,
+      "files": {
+        "compositions/s2-telemovel.html": {
+          "before": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/1d/1dc982751cf15bbcf73243e6a9e1b4e78251bf515b585cbbbb15dd9355afd7d0",
+          "after": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/d0/d0984c454461bd111766f0d66bb6dd07e22fbba073bfdd73289c0e5917a3c514"
+        },
+        "compositions/s3-balcao.html": {
+          "before": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/b6/b6632a6387a8bb845eab79f15dee0e284fb14f9cf33c275d037f62f1d2f5c107",
+          "after": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/6d/6de9d6ccad5734c035c45c47b8fd18550e12238d83ad071b56cacf2aed695497"
+        },
+        "tools/build.py": {
+          "before": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/78/78c8b47c3544491e8d6bc10f56d95670656ac93ba2bed577adb3b191e0f35aa2",
+          "after": "/Users/Oz/.cache/hyperframes/history/ddb9e4ca-ec5c-444c-8514-44a1aa189e91/blobs/ca/ca8fe7db558bb70065e0f9fee21a382726b8a728b8dbc674581db4802cb5491b"
+        }
+      }
+    }
+  },
+  "checks": {
+    "latest": {
+      "revision": "02cbfcd3-dfce-4312-90a6-409f9b92ae3e",
+      "id": "7545d45d-63aa-489c-bd6c-65ee1fb8c8bb"
+    },
+    "revisions": {
+      "49b4c615-fdac-4838-8936-19c382986c75": [
+        {
+          "id": "4d7f171f-c05e-49ad-a678-d0bf791f7146",
+          "scope": "project",
+          "metadata": {
+            "ok": true,
+            "browserSkipped": false,
+            "options": {
+              "samples": 9,
+              "atTransitions": false,
+              "maxIssues": 80,
+              "collapseStatic": true,
+              "tolerance": 2,
+              "timeout": 10000,
+              "contrast": true,
+              "strict": false,
+              "snapshots": false,
+              "browserGpuMode": "auto"
+            }
+          },
+          "createdAt": 1793815777826,
+          "contentHash": "b69bd507e53ba0710f553ac2d6f8137eee5a72799d1c6ff79c3f66d5ba7afd10",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision",
+          "status": "cleaned",
+          "cleanedAfterRender": "5b312693-b310-408f-ab90-140d3da018e1"
+        }
+      ],
+      "02cbfcd3-dfce-4312-90a6-409f9b92ae3e": [
+        {
+          "id": "7545d45d-63aa-489c-bd6c-65ee1fb8c8bb",
+          "scope": "project",
+          "report": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-teaser/.hyperframes/artifacts/checks/7545d45d-63aa-489c-bd6c-65ee1fb8c8bb.json",
+          "metadata": {
+            "ok": true,
+            "browserSkipped": false,
+            "options": {
+              "samples": 9,
+              "atTransitions": false,
+              "maxIssues": 80,
+              "collapseStatic": true,
+              "tolerance": 2,
+              "timeout": 10000,
+              "contrast": true,
+              "strict": false,
+              "snapshots": false,
+              "browserGpuMode": "auto"
+            }
+          },
+          "createdAt": 1793815950053,
+          "contentHash": "b69bd507e53ba0710f553ac2d6f8137eee5a72799d1c6ff79c3f66d5ba7afd10",
+          "revision": "02cbfcd3-dfce-4312-90a6-409f9b92ae3e",
+          "inputFingerprint": "183458280b5ddcf900a7703f0db6c23c90e3c33bd7a24f66dbd3db720e93ffe9",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        }
+      ]
+    },
+    "unversioned": [
+      {
+        "id": "dbd23f5b-8300-4442-8e42-0ceccd649e4e",
+        "scope": "project",
+        "report": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-teaser/.hyperframes/artifacts/checks/dbd23f5b-8300-4442-8e42-0ceccd649e4e.json",
+        "metadata": {
+          "ok": false,
+          "browserSkipped": false,
+          "options": {
+            "samples": 9,
+            "atTransitions": false,
+            "maxIssues": 80,
+            "collapseStatic": true,
+            "tolerance": 2,
+            "timeout": 10000,
+            "contrast": true,
+            "strict": false,
+            "snapshots": false,
+            "browserGpuMode": "auto"
+          }
+        },
+        "createdAt": 1793815696748,
+        "contentHash": "b19d81d34905126f93bbfb86d2389e113b3ecfe1c5c8267ec228237d0c7c088a",
+        "revision": null,
+        "inputFingerprint": "372aed9437b09a79ef40831bfb41f93195bdc019b31218bf3d21de0bf930d33f",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "id": "02a9eeaf-eb53-4475-bcf9-6e0e1e121257",
+        "scope": "project",
+        "report": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-teaser/.hyperframes/artifacts/checks/02a9eeaf-eb53-4475-bcf9-6e0e1e121257.json",
+        "metadata": {
+          "ok": false,
+          "browserSkipped": false,
+          "options": {
+            "samples": 9,
+            "atTransitions": false,
+            "maxIssues": 80,
+            "collapseStatic": true,
+            "tolerance": 2,
+            "timeout": 10000,
+            "contrast": true,
+            "strict": false,
+            "snapshots": false,
+            "browserGpuMode": "auto"
+          }
+        },
+        "createdAt": 1793815713578,
+        "contentHash": "ef0f873fd690e518789a93c320e0e59cdcf0ca3f401917a5f48fbc520f8757d4",
+        "revision": null,
+        "inputFingerprint": "372aed9437b09a79ef40831bfb41f93195bdc019b31218bf3d21de0bf930d33f",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      }
+    ]
+  },
+  "snapshots": {
+    "latest": {
+      "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+      "id": "240c60b2-d889-430b-8a7d-1adba1361a85-27"
+    },
+    "revisions": {
+      "49b4c615-fdac-4838-8936-19c382986c75": [
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-0",
+          "image": "/tmp/claude-501/teaser-review/beat-01-at-0.3s.png",
+          "time": 0.3,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "beat",
+              "label": "el-s1-ponto"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790970,
+          "contentHash": "96d01188cda606a89143b84782e6617dbc3f3b6a85334e0a4111f7ff114f5bdf",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-1",
+          "image": "/tmp/claude-501/teaser-review/beat-02-at-2.143s.png",
+          "time": 2.143,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "beat",
+              "label": "el-s1-ponto mid"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790970,
+          "contentHash": "e3fc39a6329ff57709c31a68a6d3ca6bb4784606d77deaac07fd6c76f271d990",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-2",
+          "image": "/tmp/claude-501/teaser-review/beat-03-at-4.585s.png",
+          "time": 4.585,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "beat",
+              "label": "el-s2-telemovel"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790971,
+          "contentHash": "21920ffd229fe0616cc8e3c638c3ad51adba8f5f935054364226c5a9fa060498",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-3",
+          "image": "/tmp/claude-501/teaser-review/beat-04-at-6.19s.png",
+          "time": 6.19,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "beat",
+              "label": "el-s2-telemovel mid"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790971,
+          "contentHash": "ece53bab50dd1dd0d2820d000a8237e95495bb7f1415569ead3ea6f215d08107",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-4",
+          "image": "/tmp/claude-501/teaser-review/beat-05-at-8.395s.png",
+          "time": 8.395,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "beat",
+              "label": "el-s3-balcao"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790971,
+          "contentHash": "afe39322cc0fb493d018970beeb52fcf9e10e86db84fd4fda773a60123a82a69",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-5",
+          "image": "/tmp/claude-501/teaser-review/beat-06-at-10s.png",
+          "time": 10,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "beat",
+              "label": "el-s3-balcao mid"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790971,
+          "contentHash": "ef79ed6ac1ea93095fbc23a27dee5246bf2bc6ae343098208e0f7029e3582354",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-6",
+          "image": "/tmp/claude-501/teaser-review/beat-07-at-12.205s.png",
+          "time": 12.205,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "beat",
+              "label": "el-s4-documentos"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790971,
+          "contentHash": "0101ba5cee09afcf9be103e7b3a0d794ce7813b8b26457e0477c9dd9b1288378",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-7",
+          "image": "/tmp/claude-501/teaser-review/beat-08-at-13.815s.png",
+          "time": 13.815,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "beat",
+              "label": "el-s4-documentos mid"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790971,
+          "contentHash": "c8add58d85df89b9af6af9c6058881f646c8720ea0e52e01c85c5ae4730a7d30",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-8",
+          "image": "/tmp/claude-501/teaser-review/beat-09-at-16.025s.png",
+          "time": 16.025,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "beat",
+              "label": "el-s5-cobrar"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790971,
+          "contentHash": "9d46707eb4322e1d0f3409b954c39da30d1c18d2ef6c8dbcd64eea3216b2b63e",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-9",
+          "image": "/tmp/claude-501/teaser-review/beat-10-at-17.625s.png",
+          "time": 17.625,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "beat",
+              "label": "el-s5-cobrar mid"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790971,
+          "contentHash": "21358469fdff6a6b11d3a8dcc14c59b135be236af850722731014ed5a297160c",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-10",
+          "image": "/tmp/claude-501/teaser-review/beat-11-at-19.825s.png",
+          "time": 19.825,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "beat",
+              "label": "el-s6-tudo"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790971,
+          "contentHash": "a9a96fb5624c2348e9f30c5e82719e0afddbc400e20c42103f2b936a6d65eecd",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-11",
+          "image": "/tmp/claude-501/teaser-review/beat-12-at-21.43s.png",
+          "time": 21.43,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "beat",
+              "label": "el-s6-tudo mid"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790971,
+          "contentHash": "338392ad5c76e83837da8c52d97e122b3489125e40b71a844538dfcce87d7687",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-12",
+          "image": "/tmp/claude-501/teaser-review/beat-13-at-23.635s.png",
+          "time": 23.635,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "beat",
+              "label": "el-s7-certificado"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790972,
+          "contentHash": "a9fe6032a6201bb4080ccb40a177dce84d653644c8c157b260aeb14eb381d728",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-13",
+          "image": "/tmp/claude-501/teaser-review/beat-14-at-25.24s.png",
+          "time": 25.24,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "beat",
+              "label": "el-s7-certificado mid"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790973,
+          "contentHash": "aa4a7152e4bae9f3c511b96b06f10d36814aeca2dab0357d00550cea7e82d5c5",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-14",
+          "image": "/tmp/claude-501/teaser-review/beat-15-at-27.445s.png",
+          "time": 27.445,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "beat",
+              "label": "el-s8-fim"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790973,
+          "contentHash": "88a3785a40e7b1b95224c6877a9ec1ba2871c020d38d5b2c5bc8602dcdcd7a25",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-15",
+          "image": "/tmp/claude-501/teaser-review/beat-16-at-28.572s.png",
+          "time": 28.572,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "beat",
+              "label": "el-s8-fim mid"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790973,
+          "contentHash": "704538b951ef7ae1a7716e2fcca687cebad9614b47688c443886462cad6bb953",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-16",
+          "image": "/tmp/claude-501/teaser-review/seam-01-1-at-4.085s.png",
+          "time": 4.085,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "cut -0.2"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790974,
+          "contentHash": "c0eed57cfd5819cbef9f50387f9bcefbc3a90da0388b763b367c9d710b6fdcdb",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-17",
+          "image": "/tmp/claude-501/teaser-review/seam-01-2-at-4.185s.png",
+          "time": 4.185,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "-0.1"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790974,
+          "contentHash": "c565cc5c5e505eb5fe5a129ceab802fff0b9c5ba1c81f1fa873f320d37391ecf",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-18",
+          "image": "/tmp/claude-501/teaser-review/seam-01-3-at-4.285s.png",
+          "time": 4.285,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "cut el-s1-ponto -> el-s2-telemovel"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790974,
+          "contentHash": "2746a1219a455fdcb9e21b5cfc7c8d5d777e739ac41f85ad1a07f83447d52a2e",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-19",
+          "image": "/tmp/claude-501/teaser-review/seam-01-4-at-4.385s.png",
+          "time": 4.385,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "+0.1"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790974,
+          "contentHash": "a898069bcbddc13ff3feab04959b43b92f774ca48e98ddbc4a260afcd50fb134",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-20",
+          "image": "/tmp/claude-501/teaser-review/seam-01-5-at-4.485s.png",
+          "time": 4.485,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "+0.2"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790974,
+          "contentHash": "b9c74cb8722069c4873f3eee3b525e98a7e63328ef058401122c2bb2a958618e",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-21",
+          "image": "/tmp/claude-501/teaser-review/seam-02-1-at-7.895s.png",
+          "time": 7.895,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "cut -0.2"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790974,
+          "contentHash": "f0f31ef34cbd39cc8e4a140e1d06742bf4b510e71e6cffd6c345b63f36e02951",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-22",
+          "image": "/tmp/claude-501/teaser-review/seam-02-2-at-7.995s.png",
+          "time": 7.995,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "-0.1"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790974,
+          "contentHash": "48ab4954633cb882403b5a95942f95e7925332ed81f1c15ba64e57bf86b2d56d",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-23",
+          "image": "/tmp/claude-501/teaser-review/seam-02-3-at-8.095s.png",
+          "time": 8.095,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "cut el-s2-telemovel -> el-s3-balcao"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790974,
+          "contentHash": "2746a1219a455fdcb9e21b5cfc7c8d5d777e739ac41f85ad1a07f83447d52a2e",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-24",
+          "image": "/tmp/claude-501/teaser-review/seam-02-4-at-8.195s.png",
+          "time": 8.195,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "+0.1"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790974,
+          "contentHash": "353f7bcb2b8a878c78b8a2bc8518453086c3df8bac1bb6b9fc9151dc09e3ba16",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-25",
+          "image": "/tmp/claude-501/teaser-review/seam-02-5-at-8.295s.png",
+          "time": 8.295,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "+0.2"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790975,
+          "contentHash": "a7e8f16061ea17a876b9be6efd98fb82e211a66a6cba7c635446e5d254e1a833",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-26",
+          "image": "/tmp/claude-501/teaser-review/seam-03-1-at-11.705s.png",
+          "time": 11.705,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "cut -0.2"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790975,
+          "contentHash": "25a5dc228d568654e5128818056d8e75126c89e11a7417a7ae9360be0dc47c27",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-27",
+          "image": "/tmp/claude-501/teaser-review/seam-03-2-at-11.805s.png",
+          "time": 11.805,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "-0.1"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790975,
+          "contentHash": "3f679546bd10a34f3d2f04a09e36e5b9ff196fc59f7008f6a443027bb98dbfb3",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-28",
+          "image": "/tmp/claude-501/teaser-review/seam-03-3-at-11.905s.png",
+          "time": 11.905,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "cut el-s3-balcao -> el-s4-documentos"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790975,
+          "contentHash": "2746a1219a455fdcb9e21b5cfc7c8d5d777e739ac41f85ad1a07f83447d52a2e",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-29",
+          "image": "/tmp/claude-501/teaser-review/seam-03-4-at-12.005s.png",
+          "time": 12.005,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "+0.1"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790975,
+          "contentHash": "2746a1219a455fdcb9e21b5cfc7c8d5d777e739ac41f85ad1a07f83447d52a2e",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-30",
+          "image": "/tmp/claude-501/teaser-review/seam-03-5-at-12.105s.png",
+          "time": 12.105,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "+0.2"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790975,
+          "contentHash": "2746a1219a455fdcb9e21b5cfc7c8d5d777e739ac41f85ad1a07f83447d52a2e",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-31",
+          "image": "/tmp/claude-501/teaser-review/seam-04-1-at-15.525s.png",
+          "time": 15.525,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "cut -0.2"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790975,
+          "contentHash": "f6dd8ed036348d21a34a6bdf9d2bd4b4bee01413a92b5f1e5d19185457929098",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-32",
+          "image": "/tmp/claude-501/teaser-review/seam-04-2-at-15.625s.png",
+          "time": 15.625,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "-0.1"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790975,
+          "contentHash": "f6dd8ed036348d21a34a6bdf9d2bd4b4bee01413a92b5f1e5d19185457929098",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-33",
+          "image": "/tmp/claude-501/teaser-review/seam-04-3-at-15.725s.png",
+          "time": 15.725,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "cut el-s4-documentos -> el-s5-cobrar"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790975,
+          "contentHash": "ed556ffbbbf52b97a96037729eac32250b1eadbc78539d47019c7dd74237a94c",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-34",
+          "image": "/tmp/claude-501/teaser-review/seam-04-4-at-15.825s.png",
+          "time": 15.825,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "+0.1"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790975,
+          "contentHash": "055e039d222fe70d6bc4f0d0536703056a9e42c85d6f81541fec834ebb3f3620",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-35",
+          "image": "/tmp/claude-501/teaser-review/seam-04-5-at-15.925s.png",
+          "time": 15.925,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "+0.2"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790976,
+          "contentHash": "8170987e35817fc6d9baab92784ca0003a1153de0adec7daf2b7cff0118115d5",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-36",
+          "image": "/tmp/claude-501/teaser-review/seam-05-1-at-19.325s.png",
+          "time": 19.325,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "cut -0.2"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790976,
+          "contentHash": "386c15e989b05785763868de2acf8d34bbd174efaf0b96e1d6c2e972773c86e7",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-37",
+          "image": "/tmp/claude-501/teaser-review/seam-05-2-at-19.425s.png",
+          "time": 19.425,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "-0.1"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790976,
+          "contentHash": "386c15e989b05785763868de2acf8d34bbd174efaf0b96e1d6c2e972773c86e7",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-38",
+          "image": "/tmp/claude-501/teaser-review/seam-05-3-at-19.525s.png",
+          "time": 19.525,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "cut el-s5-cobrar -> el-s6-tudo"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790976,
+          "contentHash": "e474a175f992442a69e502e42d7748076f7b37bd4715cf7c03ed2b7ff55231c3",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-39",
+          "image": "/tmp/claude-501/teaser-review/seam-05-4-at-19.625s.png",
+          "time": 19.625,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "+0.1"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790976,
+          "contentHash": "a93340cbb2295ffeb9dae8de7ea269d22473f0bb6a0753f041f738aebf274e6a",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-40",
+          "image": "/tmp/claude-501/teaser-review/seam-05-5-at-19.725s.png",
+          "time": 19.725,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "+0.2"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790976,
+          "contentHash": "a9a96fb5624c2348e9f30c5e82719e0afddbc400e20c42103f2b936a6d65eecd",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-41",
+          "image": "/tmp/claude-501/teaser-review/seam-06-1-at-23.135s.png",
+          "time": 23.135,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "cut -0.2"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790976,
+          "contentHash": "dea6d918e03e13242a9df4cc57e4ee537f1eb2962258eb539c3f77989bd6c2e1",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-42",
+          "image": "/tmp/claude-501/teaser-review/seam-06-2-at-23.235s.png",
+          "time": 23.235,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "-0.1"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790976,
+          "contentHash": "dea6d918e03e13242a9df4cc57e4ee537f1eb2962258eb539c3f77989bd6c2e1",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-43",
+          "image": "/tmp/claude-501/teaser-review/seam-06-3-at-23.335s.png",
+          "time": 23.335,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "cut el-s6-tudo -> el-s7-certificado"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790976,
+          "contentHash": "ed556ffbbbf52b97a96037729eac32250b1eadbc78539d47019c7dd74237a94c",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-44",
+          "image": "/tmp/claude-501/teaser-review/seam-06-4-at-23.435s.png",
+          "time": 23.435,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "+0.1"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790976,
+          "contentHash": "780d6db4b000c52a9e856f0a99153d33028191615840cd07e0ee716d3bd787de",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-45",
+          "image": "/tmp/claude-501/teaser-review/seam-06-5-at-23.535s.png",
+          "time": 23.535,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "+0.2"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790976,
+          "contentHash": "1d3f3d90f0e4e83e51a84cb2fc12581eaac9939d07d651829db4068e09c6448f",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-46",
+          "image": "/tmp/claude-501/teaser-review/seam-07-1-at-26.945s.png",
+          "time": 26.945,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "cut -0.2"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790977,
+          "contentHash": "05253fbe69a7206a50b5b4647e58723bbb4802ed520cd666a972bd2d312aebb9",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-47",
+          "image": "/tmp/claude-501/teaser-review/seam-07-2-at-27.045s.png",
+          "time": 27.045,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "-0.1"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790977,
+          "contentHash": "05253fbe69a7206a50b5b4647e58723bbb4802ed520cd666a972bd2d312aebb9",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-48",
+          "image": "/tmp/claude-501/teaser-review/seam-07-3-at-27.145s.png",
+          "time": 27.145,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "cut el-s7-certificado -> el-s8-fim"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790977,
+          "contentHash": "e474a175f992442a69e502e42d7748076f7b37bd4715cf7c03ed2b7ff55231c3",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-49",
+          "image": "/tmp/claude-501/teaser-review/seam-07-4-at-27.245s.png",
+          "time": 27.245,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "+0.1"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790977,
+          "contentHash": "e22673ace1635e820bd31d7862b091c0efb194a15377df925bb96b8e47a3a91b",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "71244e44-69e8-4bbe-a2eb-d91b1db03113-50",
+          "image": "/tmp/claude-501/teaser-review/seam-07-5-at-27.345s.png",
+          "time": 27.345,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "review": {
+              "role": "seam",
+              "label": "+0.2"
+            },
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815790977,
+          "contentHash": "9b0038cf2b66ec86eec28f74764151946dd806cc952513e967a125fadca3b5a8",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "240c60b2-d889-430b-8a7d-1adba1361a85-0",
+          "image": "/tmp/claude-501/teaser-at/frame-00-at-0s.png",
+          "time": 0,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815802639,
+          "contentHash": "14914c4a52015e883beb5c4961a9b63f160223c7fe1e5654be7ecf297313c7ab",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "240c60b2-d889-430b-8a7d-1adba1361a85-1",
+          "image": "/tmp/claude-501/teaser-at/frame-01-at-0.3s.png",
+          "time": 0.3,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815802639,
+          "contentHash": "96d01188cda606a89143b84782e6617dbc3f3b6a85334e0a4111f7ff114f5bdf",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "240c60b2-d889-430b-8a7d-1adba1361a85-2",
+          "image": "/tmp/claude-501/teaser-at/frame-02-at-0.5s.png",
+          "time": 0.5,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815802640,
+          "contentHash": "efbfab511efa4c2c1a6a6f20c583a85948f1fd33a2b6a1450e8a54d91ab55006",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "240c60b2-d889-430b-8a7d-1adba1361a85-3",
+          "image": "/tmp/claude-501/teaser-at/frame-03-at-1.2s.png",
+          "time": 1.2,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815802640,
+          "contentHash": "2614fdc51d53ab36df42e56b485bc27d90e894d919eed74e8e87ccdf8e05db30",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "240c60b2-d889-430b-8a7d-1adba1361a85-4",
+          "image": "/tmp/claude-501/teaser-at/frame-04-at-1.45s.png",
+          "time": 1.45,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815802640,
+          "contentHash": "a5daf95b00c05f4e3ad61cf9f2178b73535caeee8c15b53a68c7a70899896343",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "240c60b2-d889-430b-8a7d-1adba1361a85-5",
+          "image": "/tmp/claude-501/teaser-at/frame-05-at-3.9s.png",
+          "time": 3.9,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815802640,
+          "contentHash": "1026374d999c7e1c53e696a43a49f5f0d5791d4ede61c566c4bb9ed365d7957e",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "240c60b2-d889-430b-8a7d-1adba1361a85-6",
+          "image": "/tmp/claude-501/teaser-at/frame-06-at-4.2s.png",
+          "time": 4.2,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815802640,
+          "contentHash": "fcfb11651aceee0d04626cedcd4fba6f2ac26c29c434ef8f358c31d5edae12d4",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "240c60b2-d889-430b-8a7d-1adba1361a85-7",
+          "image": "/tmp/claude-501/teaser-at/frame-07-at-7.6s.png",
+          "time": 7.6,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815802640,
+          "contentHash": "135aac9b2def7108b8a0219e88fe61d749e6bfea3b535dea35e409165c68cdbb",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "240c60b2-d889-430b-8a7d-1adba1361a85-8",
+          "image": "/tmp/claude-501/teaser-at/frame-08-at-7.95s.png",
+          "time": 7.95,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815802640,
+          "contentHash": "d891e1d6c1baafb13c575c7b2ee46adced3da71fa34b66eed981caf0791dc2ed",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "240c60b2-d889-430b-8a7d-1adba1361a85-9",
+          "image": "/tmp/claude-501/teaser-at/frame-09-at-10.96s.png",
+          "time": 10.96,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815802640,
+          "contentHash": "8859ee961cded598465a9a147068f602e9174889cc2dd904a1bf8a5c729c917a",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "240c60b2-d889-430b-8a7d-1adba1361a85-10",
+          "image": "/tmp/claude-501/teaser-at/frame-10-at-11.4s.png",
+          "time": 11.4,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815802640,
+          "contentHash": "a0a674d54b047bcb51079e88edc6ef1a46eb1001991b2119e3a8819850fd6e63",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "240c60b2-d889-430b-8a7d-1adba1361a85-11",
+          "image": "/tmp/claude-501/teaser-at/frame-11-at-11.85s.png",
+          "time": 11.85,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815802641,
+          "contentHash": "122944055ea70421adf1c613724ee346624a05d17b5fc83fbfbc51aea850cc4b",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "240c60b2-d889-430b-8a7d-1adba1361a85-12",
+          "image": "/tmp/claude-501/teaser-at/frame-12-at-12.05s.png",
+          "time": 12.05,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815802641,
+          "contentHash": "2746a1219a455fdcb9e21b5cfc7c8d5d777e739ac41f85ad1a07f83447d52a2e",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "240c60b2-d889-430b-8a7d-1adba1361a85-13",
+          "image": "/tmp/claude-501/teaser-at/frame-13-at-12.4s.png",
+          "time": 12.4,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815802641,
+          "contentHash": "7e61794539ded7a840fb6dab58538d7b5990c739a22576f561d48273d8b389d3",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "240c60b2-d889-430b-8a7d-1adba1361a85-14",
+          "image": "/tmp/claude-501/teaser-at/frame-14-at-14.2s.png",
+          "time": 14.2,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815802641,
+          "contentHash": "c8add58d85df89b9af6af9c6058881f646c8720ea0e52e01c85c5ae4730a7d30",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "240c60b2-d889-430b-8a7d-1adba1361a85-15",
+          "image": "/tmp/claude-501/teaser-at/frame-15-at-15.2s.png",
+          "time": 15.2,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815802641,
+          "contentHash": "b049ae989a1f6ca1ff9d76e1cbacd3199d5e82184c21b1f3d1edaa9d50a9cbeb",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "240c60b2-d889-430b-8a7d-1adba1361a85-16",
+          "image": "/tmp/claude-501/teaser-at/frame-16-at-15.6s.png",
+          "time": 15.6,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815802641,
+          "contentHash": "f6dd8ed036348d21a34a6bdf9d2bd4b4bee01413a92b5f1e5d19185457929098",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "240c60b2-d889-430b-8a7d-1adba1361a85-17",
+          "image": "/tmp/claude-501/teaser-at/frame-17-at-17.45s.png",
+          "time": 17.45,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815802642,
+          "contentHash": "3d832b10fe24e5451c7a6f9ed8755f3f5b8a076e7c7a64d9c6bbe193330d3fbc",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "240c60b2-d889-430b-8a7d-1adba1361a85-18",
+          "image": "/tmp/claude-501/teaser-at/frame-18-at-17.9s.png",
+          "time": 17.9,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815802642,
+          "contentHash": "e6f5090efdeeaa834483469ea4a09a4fe28cf9362dc50ada92dc90af3a129da9",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "240c60b2-d889-430b-8a7d-1adba1361a85-19",
+          "image": "/tmp/claude-501/teaser-at/frame-19-at-19.3s.png",
+          "time": 19.3,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815802642,
+          "contentHash": "386c15e989b05785763868de2acf8d34bbd174efaf0b96e1d6c2e972773c86e7",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "240c60b2-d889-430b-8a7d-1adba1361a85-20",
+          "image": "/tmp/claude-501/teaser-at/frame-20-at-22.9s.png",
+          "time": 22.9,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815802642,
+          "contentHash": "7c5e3e8ce00ab0ee04e6cb3882d83e1115bb896eb8021036f82953562f1b6cd8",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "240c60b2-d889-430b-8a7d-1adba1361a85-21",
+          "image": "/tmp/claude-501/teaser-at/frame-21-at-24s.png",
+          "time": 24,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815802642,
+          "contentHash": "0e3412e01656a42aaedf8955b368286872d8c66a433e80d514c6f745f0abb6e1",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "240c60b2-d889-430b-8a7d-1adba1361a85-22",
+          "image": "/tmp/claude-501/teaser-at/frame-22-at-26.5s.png",
+          "time": 26.5,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815802642,
+          "contentHash": "b41a5c01d4cc653d16172c21f992c53637039139f1e4d9e1d72719d58f6b41c9",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "240c60b2-d889-430b-8a7d-1adba1361a85-23",
+          "image": "/tmp/claude-501/teaser-at/frame-23-at-27.5s.png",
+          "time": 27.5,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815802642,
+          "contentHash": "e6cec19d7828c43d027ee28cfa847bb92d6ec4de8837fa5cc26da9252d999f21",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "240c60b2-d889-430b-8a7d-1adba1361a85-24",
+          "image": "/tmp/claude-501/teaser-at/frame-24-at-28.1s.png",
+          "time": 28.1,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815802643,
+          "contentHash": "39f7b194725e7d1ddb5c4dffd4ad05e93faf9af5a8cbe2ff832312157146b9af",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "240c60b2-d889-430b-8a7d-1adba1361a85-25",
+          "image": "/tmp/claude-501/teaser-at/frame-25-at-28.5s.png",
+          "time": 28.5,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815802643,
+          "contentHash": "6cef0f06f17d5a99468bac5fcf96da1fa470fed6f7b9c60c2db8739f5f513c32",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "240c60b2-d889-430b-8a7d-1adba1361a85-26",
+          "image": "/tmp/claude-501/teaser-at/frame-26-at-29.5s.png",
+          "time": 29.5,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815802643,
+          "contentHash": "96addaecf3e3220fb00ba57a3e4d5f0140f64800b427ad171f7a88bc86240f17",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "240c60b2-d889-430b-8a7d-1adba1361a85-27",
+          "image": "/tmp/claude-501/teaser-at/frame-27-at-29.75s.png",
+          "time": 29.75,
+          "metadata": {
+            "width": 1920,
+            "height": 1080,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793815802643,
+          "contentHash": "96addaecf3e3220fb00ba57a3e4d5f0140f64800b427ad171f7a88bc86240f17",
+          "revision": "49b4c615-fdac-4838-8936-19c382986c75",
+          "inputFingerprint": "43c6dddf56d7646e2d338428326cd69dab9cfb257edc912340ebad18578e5849",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        }
+      ]
+    },
+    "unversioned": []
+  },
+  "renders": {
+    "latest": {
+      "id": "d27ac258-1b7b-4abc-9253-2806dde8d6bd",
+      "completedAt": 1793816000041,
+      "output": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-teaser/renders/o-ponto-1080p60.mp4",
+      "status": "completed",
+      "revision": "02cbfcd3-dfce-4312-90a6-409f9b92ae3e"
+    },
+    "retainedRevisions": [
+      "02cbfcd3-dfce-4312-90a6-409f9b92ae3e",
+      "6e4e4014-af2e-4673-873c-8ec2d0c914ca"
+    ]
+  },
+  "pendingArtifactCleanup": []
+}
