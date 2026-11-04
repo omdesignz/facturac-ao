@@ -74,7 +74,7 @@ class PreparePaymentReminder
         return [
             'customer_name' => $customer->name,
             'to' => $email,
-            'subject' => "Lembrete de pagamento · {$company}",
+            'subject' => "Lembrete de pagamento de {$company}",
             'tone' => $tone,
             'body' => $rows === [] ? '' : $this->body($customer->name, $company, $rows, $total, $currency, $tone),
             'documents' => $rows,

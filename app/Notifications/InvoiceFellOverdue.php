@@ -75,7 +75,7 @@ class InvoiceFellOverdue extends WorkspaceNotification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject("Factura vencida · {$this->documentNo}")
+            ->subject("Factura vencida: {$this->documentNo}")
             ->greeting('Uma factura passou o vencimento')
             ->line($this->title().'.')
             ->line($this->body())

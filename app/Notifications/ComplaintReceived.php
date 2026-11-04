@@ -47,7 +47,7 @@ class ComplaintReceived extends Notification implements ShouldQueue
             ->line("Assunto: {$this->subject} ({$this->categoryLabel})")
             ->line("Comprometemo-nos a responder até {$due}.")
             ->line('Guarde esta referência: precisa dela para acompanhar o caso connosco.')
-            ->line("Se a nossa resposta não o satisfizer, pode recorrer ao {$authority} — {$authorityUrl}")
+            ->line("Se a nossa resposta não o satisfizer, pode recorrer ao {$authority}: {$authorityUrl}")
             ->line('Para acrescentar informação, responda a este email ou escreva para '.PlatformSetting::get('complaints_email').'.');
     }
 }

@@ -129,14 +129,8 @@ onMounted(() => {
             aria-label="O que a aplicação faz a cada documento"
         >
             <div
-                class="relative flex h-full flex-col justify-between gap-10 overflow-y-auto p-10 xl:p-16"
+                class="relative flex h-full flex-col justify-center gap-14 overflow-y-auto p-10 xl:p-16"
             >
-                <p
-                    class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
-                >
-                    Facturação electrónica · Angola
-                </p>
-
                 <div class="max-w-xl">
                     <BrandWordmark
                         animated
@@ -151,9 +145,8 @@ onMounted(() => {
                     <p
                         class="mt-3 max-w-md text-[0.9375rem]/7 text-zinc-600 dark:text-zinc-400"
                     >
-                        Cada documento é numerado, assinado e comunicado à AGT,
-                        por esta ordem. Se a rede falhar a meio, retomamos do
-                        ponto onde parou.
+                        Cada documento é numerado, assinado e comunicado à AGT.
+                        Se a ligação falhar, o envio continua quando voltar.
                         <template v-if="beforeMandate">
                             A partir de 1 de janeiro de 2027, todas as empresas
                             facturam assim.

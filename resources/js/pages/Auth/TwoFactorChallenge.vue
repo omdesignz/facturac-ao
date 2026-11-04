@@ -28,8 +28,7 @@ watch(
 
 <template>
     <AuthLayout
-        eyebrow="Segundo passo"
-        title="Confirme que é você"
+        title="Autenticação de dois factores"
         :description="
             useRecoveryCode
                 ? 'Introduza um dos códigos de recuperação guardados quando activou os dois factores.'

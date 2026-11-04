@@ -73,7 +73,7 @@ class CustomerOverCreditLimit extends WorkspaceNotification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject("Limite de crédito ultrapassado · {$this->customerName}")
+            ->subject("Limite de crédito ultrapassado: {$this->customerName}")
             ->greeting('Um cliente passou o limite acordado')
             ->line($this->body())
             ->action('Ver o cliente', (string) $this->url());

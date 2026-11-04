@@ -87,7 +87,7 @@ class FiscalDocumentIssued extends Notification implements ShouldQueue
         $issued = Carbon::parse($this->issuedOn)->translatedFormat('d \d\e F \d\e Y');
 
         $message = (new MailMessage)
-            ->subject("{$this->documentTypeLabel} {$this->documentNo} — {$this->companyName}")
+            ->subject("{$this->documentTypeLabel} {$this->documentNo} de {$this->companyName}")
             ->greeting("{$this->documentTypeLabel} {$this->documentNo}")
             ->line("{$this->companyName} emitiu-lhe este documento em {$issued}.")
             ->line("**Total: {$this->grossTotal} {$this->currencyCode}**");

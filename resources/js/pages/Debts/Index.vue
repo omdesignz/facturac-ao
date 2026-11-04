@@ -1,11 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import {
-    CircleCheck,
-    LoaderCircle,
-    Sparkles,
-    TriangleAlert,
-} from '@lucide/vue';
+import { CircleCheck, LoaderCircle, Mail, TriangleAlert } from '@lucide/vue';
 import { computed, onMounted, reactive, ref } from 'vue';
 import AppButton from '@/components/AppButton.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
@@ -767,8 +762,8 @@ const dayPill = (days: number): string =>
                         <p
                             class="flex items-center gap-1.5 text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                         >
-                            <Sparkles class="size-3" aria-hidden="true" />
-                            Preparado para si
+                            <Mail class="size-3" aria-hidden="true" />
+                            Por rever
                         </p>
                         <h2
                             id="prepared-title"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Sparkles } from '@lucide/vue';
+import { Mail } from '@lucide/vue';
 import { computed, onMounted, ref, watch } from 'vue';
 import AppButton from '@/components/AppButton.vue';
 
@@ -194,7 +194,7 @@ const kickerClass: Record<Decision['key'], string> = {
                     <p
                         class="flex flex-wrap items-center gap-x-1.5 text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
                     >
-                        <Sparkles class="size-3" aria-hidden="true" />
+                        <Mail class="size-3" aria-hidden="true" />
                         Lembrete preparado · {{ toneLabel(draft.tone) }}
                         <template v-if="draft.to"
                             >· para {{ draft.to }}</template

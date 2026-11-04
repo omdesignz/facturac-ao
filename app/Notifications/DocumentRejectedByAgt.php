@@ -63,7 +63,7 @@ class DocumentRejectedByAgt extends WorkspaceNotification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject("Documento recusado pela AGT · {$this->documentNo}")
+            ->subject("Documento recusado pela AGT: {$this->documentNo}")
             ->greeting('A AGT recusou um documento')
             ->line($this->body())
             ->action('Ver no monitor AGT', (string) $this->url());

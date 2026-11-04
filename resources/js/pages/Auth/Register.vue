@@ -30,7 +30,6 @@ onMounted(() => {
 
 <template>
     <AuthLayout
-        eyebrow="Nova conta"
         title="Crie a sua conta"
         description="Comece pelo nome do negócio. O NIF, o regime de IVA e a morada ficam para o passo seguinte."
     >

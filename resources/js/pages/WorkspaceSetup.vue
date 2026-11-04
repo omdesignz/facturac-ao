@@ -12,9 +12,8 @@ const page = usePage();
 
 <template>
     <AuthLayout
-        eyebrow="Primeiro passo"
         title="Como chama o seu negócio?"
-        :description="`Olá, ${page.props.auth.user?.name ?? ''}. O espaço organiza utilizadores, empresas e estabelecimentos sem misturar os respectivos dados.`"
+        :description="`Olá, ${page.props.auth.user?.name ?? ''}. Este nome identifica a sua conta na aplicação.`"
     >
         <Head title="Criar espaço de trabalho" />
 

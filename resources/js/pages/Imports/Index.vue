@@ -13,7 +13,6 @@ import {
     LockKeyhole,
     Package,
     ShieldCheck,
-    Sparkles,
     Trash2,
     Users,
 } from '@lucide/vue';
@@ -1328,7 +1327,7 @@ function historyUrl(publicId: string): string {
                         <EmptyState
                             v-else
                             bare
-                            :icon="Sparkles"
+                            :icon="FileUp"
                             title="Ainda não há importações"
                             description="A primeira aparecerá aqui com o seu estado e evidência."
                         />

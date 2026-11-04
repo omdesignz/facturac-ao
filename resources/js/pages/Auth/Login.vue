@@ -97,9 +97,8 @@ const flash = computed(
 
 <template>
     <AuthLayout
-        eyebrow="Acesso seguro"
         title="Entre na sua conta"
-        description="Entre para voltar às suas facturas. Pedimos-lhe a palavra-passe outra vez sempre que uma operação mexer em dinheiro ou em segurança."
+        description="Use o email e a palavra-passe da sua conta."
     >
         <Head title="Entrar" />
 

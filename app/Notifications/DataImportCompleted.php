@@ -52,9 +52,9 @@ class DataImportCompleted extends Notification implements ShouldQueue
             ->subject('Importação concluída no '.(string) config('app.name'))
             ->greeting('Importação concluída')
             ->line("Foram processados {$this->importedRows} registos de {$this->typeLabel}.")
-            ->line("Novos: {$this->createdRows} · Actualizados: {$this->updatedRows}.")
+            ->line("Novos: {$this->createdRows}. Actualizados: {$this->updatedRows}.")
             ->action('Ver importação', route('imports.index', ['import' => $this->importPublicId]))
-            ->line('O ficheiro original foi eliminado após o processamento; o hash e o histórico de validação permanecem auditáveis.');
+            ->line('O ficheiro original foi eliminado. O histórico da importação continua disponível.');
     }
 
     /**
