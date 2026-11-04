@@ -20,8 +20,8 @@ export default defineConfig({
                     weights: [400, 500, 600],
                     optimizedFallbacks: false,
                 }),
-                bunny('Didact Gothic', {
-                    weights: [400],
+                bunny('Outfit', {
+                    weights: [400, 700],
                     optimizedFallbacks: false,
                 }),
             ],

@@ -21,13 +21,14 @@
     /*
      * The brand's headline face. Century Gothic is used where the visitor's
      * system already has it (it ships with Microsoft Office); it is not served
-     * from here, because a web licence is a separate purchase. Didact Gothic is
-     * the free, near-identical fallback loaded for everyone else. The logo
-     * never depends on either: BrandWordmark draws it as outlines.
+     * from here, because a web licence is a separate purchase. Outfit is the free
+     * fallback for everyone else, chosen for its true bold: browsers fetch it
+     * only when Century Gothic is missing. The logo never depends on either:
+     * BrandWordmark draws it as outlines.
      */
     --font-display:
-        'Century Gothic', 'CenturyGothic', 'Didact Gothic', ui-sans-serif,
-        system-ui, sans-serif;
+        'Century Gothic', 'CenturyGothic', 'Outfit', ui-sans-serif, system-ui,
+        sans-serif;
 
     /* Wordmark grey — brand-600 is the exact logo lettering colour. */
     --color-brand-50: #f7f7f5;
