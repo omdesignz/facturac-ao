@@ -39,9 +39,9 @@ class CatalogueItemController extends Controller
         $items = $legalEntity->catalogueItems()
             ->when($search !== '', function ($query) use ($search): void {
                 $query->where(function ($nested) use ($search): void {
-                    $nested->whereLike('name', "%{$search}%")
-                        ->orWhereLike('code', "%{$search}%")
-                        ->orWhereLike('description', "%{$search}%");
+                    $nested->whereSearchLike('name', "%{$search}%")
+                        ->orWhereSearchLike('code', "%{$search}%")
+                        ->orWhereSearchLike('description', "%{$search}%");
                 });
             })
             ->when(

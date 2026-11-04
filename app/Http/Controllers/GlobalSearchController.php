@@ -67,9 +67,9 @@ class GlobalSearchController extends Controller
             ->where('legal_entity_id', $legalEntity->id)
             ->where(function ($matching) use ($pattern): void {
                 $matching
-                    ->whereLike('document_no', $pattern)
-                    ->orWhereLike('customer_name', $pattern)
-                    ->orWhereLike('customer_tax_identification_number', $pattern);
+                    ->whereSearchLike('document_no', $pattern)
+                    ->orWhereSearchLike('customer_name', $pattern)
+                    ->orWhereSearchLike('customer_tax_identification_number', $pattern);
             })
             ->with(['submissions' => fn ($query) => $query->latest('id')->select(['id', 'fiscal_document_id', 'status', 'qualified_projection', 'reducer_version'])])
             ->latest('document_date')
@@ -102,9 +102,9 @@ class GlobalSearchController extends Controller
         return array_values($legalEntity->customers()
             ->where(function ($matching) use ($pattern): void {
                 $matching
-                    ->whereLike('name', $pattern)
-                    ->orWhereLike('tax_identification_number', $pattern)
-                    ->orWhereLike('email', $pattern);
+                    ->whereSearchLike('name', $pattern)
+                    ->orWhereSearchLike('tax_identification_number', $pattern)
+                    ->orWhereSearchLike('email', $pattern);
             })
             ->orderByDesc('is_active')
             ->orderBy('name')

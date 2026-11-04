@@ -248,9 +248,9 @@ final class FiscalDocumentRegister
 
             $query->where(function (Builder $matching) use ($search): void {
                 $matching
-                    ->whereLike('document_no', $search)
-                    ->orWhereLike('customer_name', $search)
-                    ->orWhereLike('customer_tax_identification_number', $search);
+                    ->whereSearchLike('document_no', $search)
+                    ->orWhereSearchLike('customer_name', $search)
+                    ->orWhereSearchLike('customer_tax_identification_number', $search);
             });
         }
 

@@ -15,6 +15,8 @@ use App\Notifications\AccountAccessedBySupport;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Query\Builder;
+use Illuminate\Database\Query\Grammars\PostgresGrammar;
 use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Context;
@@ -59,6 +61,33 @@ class AppServiceProvider extends ServiceProvider
         $this->configureSecurityAuditEvents();
         $this->configureWorkSession();
         $this->configureImpersonationNotices();
+        $this->configureSearch();
+    }
+
+    /**
+     * Search that ignores case and accents, so "joao" finds "João".
+     *
+     * SQLite, which only the test suite runs on, has no unaccent function and
+     * falls back to a plain LIKE; the postgresql test group covers the real one.
+     */
+    protected function configureSearch(): void
+    {
+        Builder::macro('whereSearchLike', function (string $column, string $value, string $boolean = 'and'): Builder {
+            /** @var Builder $this */
+            if (! $this->getGrammar() instanceof PostgresGrammar) {
+                return $this->whereLike($column, $value, false, $boolean);
+            }
+
+            $unaccentedMatch = 'unaccent('.$this->getGrammar()->wrap($column).'::text) ilike unaccent(?)';
+
+            // @phpstan-ignore argument.type (the column comes from code, never from input)
+            return $this->whereRaw($unaccentedMatch, [$value], $boolean);
+        });
+
+        Builder::macro('orWhereSearchLike', function (string $column, string $value): Builder {
+            /** @var Builder $this */
+            return $this->whereSearchLike($column, $value, 'or');
+        });
     }
 
     /**

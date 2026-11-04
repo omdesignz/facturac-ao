@@ -145,6 +145,36 @@ test('the transport register ignores case', function () {
     }
 });
 
+test('search ignores accents in both directions', function () {
+    $company = pgSearchCompany();
+    $joao = Customer::factory()->create([
+        'workspace_id' => $company['legalEntity']->workspace_id,
+        'legal_entity_id' => $company['legalEntity']->id,
+        'name' => 'João Conceição',
+    ]);
+    $plain = Customer::factory()->create([
+        'workspace_id' => $company['legalEntity']->workspace_id,
+        'legal_entity_id' => $company['legalEntity']->id,
+        'name' => 'Mario Lopes',
+    ]);
+
+    $this->actingAs($company['owner']);
+
+    foreach (['joao', 'JOAO', 'conceicao', 'Conceição'] as $term) {
+        $this->getJson(route('search', ['q' => $term]))
+            ->assertOk()
+            ->assertJsonPath('customers.0.name', $joao->name);
+    }
+
+    $this->getJson(route('search', ['q' => 'Mário']))
+        ->assertOk()
+        ->assertJsonPath('customers.0.name', $plain->name);
+
+    $this->get(route('customers.index', ['search' => 'joao']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('customers.data.0.name', $joao->name));
+});
+
 test('the support console ignores case', function () {
     $staff = User::factory()->supportStaff()->withWorkspace()->create();
     $customer = User::factory()->create(['name' => 'Ana Manuel', 'email' => 'Ana@Empresa.test']);

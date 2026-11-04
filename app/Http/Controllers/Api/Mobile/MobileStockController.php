@@ -26,8 +26,8 @@ class MobileStockController
             ->whereHas('catalogueItem', fn (Builder $item) => $item
                 ->where('tracks_stock', true)
                 ->when($search !== '', fn (Builder $query) => $query->where(fn (Builder $matching) => $matching
-                    ->whereLike('name', "%{$search}%")
-                    ->orWhereLike('code', "%{$search}%"))))
+                    ->whereSearchLike('name', "%{$search}%")
+                    ->orWhereSearchLike('code', "%{$search}%"))))
             ->orderBy(CatalogueItem::query()->select('name')->whereColumn('catalogue_items.id', 'stock_levels.catalogue_item_id'))
             ->paginate(25);
 

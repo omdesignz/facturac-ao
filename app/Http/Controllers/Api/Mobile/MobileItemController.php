@@ -21,9 +21,9 @@ class MobileItemController
 
         $items = $legalEntity->catalogueItems()
             ->when($search !== '', fn (Builder $query) => $query->where(fn (Builder $matching) => $matching
-                ->whereLike('name', "%{$search}%")
-                ->orWhereLike('code', "%{$search}%")
-                ->orWhereLike('barcode', "%{$search}%")))
+                ->whereSearchLike('name', "%{$search}%")
+                ->orWhereSearchLike('code', "%{$search}%")
+                ->orWhereSearchLike('barcode', "%{$search}%")))
             ->orderBy('name')
             ->paginate(25);
 
