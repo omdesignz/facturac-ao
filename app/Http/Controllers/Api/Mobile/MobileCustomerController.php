@@ -21,10 +21,12 @@ class MobileCustomerController
         $search = $request->search();
 
         $customers = $legalEntity->customers()
-            ->when($search !== '', fn (Builder $query) => $query->where(fn (Builder $matching) => $matching
-                ->whereSearchLike('name', "%{$search}%")
-                ->orWhereSearchLike('tax_identification_number', "%{$search}%")
-                ->orWhereSearchLike('email', "%{$search}%")))
+            ->when($search !== '', fn (Builder $query) => $query->where(function (Builder $matching) use ($search): void {
+                $matching
+                    ->whereSearchLike('name', "%{$search}%")
+                    ->orWhereSearchLike('tax_identification_number', "%{$search}%")
+                    ->orWhereSearchLike('email', "%{$search}%");
+            }))
             ->orderBy('name')
             ->paginate(25);
 
