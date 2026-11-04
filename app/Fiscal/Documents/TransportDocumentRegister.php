@@ -79,10 +79,10 @@ final readonly class TransportDocumentRegister
                 $search = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $filters['q']).'%';
 
                 $query->where(function (Builder $query) use ($search): void {
-                    $query->where('document_no', 'like', $search)
-                        ->orWhere('recipient_name', 'like', $search)
-                        ->orWhere('recipient_tax_identification_number', 'like', $search)
-                        ->orWhere('vehicle_registration', 'like', $search);
+                    $query->whereLike('document_no', $search)
+                        ->orWhereLike('recipient_name', $search)
+                        ->orWhereLike('recipient_tax_identification_number', $search)
+                        ->orWhereLike('vehicle_registration', $search);
                 });
             })
             ->when(

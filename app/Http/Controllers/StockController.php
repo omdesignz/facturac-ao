@@ -50,8 +50,8 @@ class StockController extends Controller
             ->when($search !== '', fn ($query) => $query->whereHas(
                 'catalogueItem',
                 fn ($nested) => $nested
-                    ->where('name', 'like', "%{$search}%")
-                    ->orWhere('code', 'like', "%{$search}%"),
+                    ->whereLike('name', "%{$search}%")
+                    ->orWhereLike('code', "%{$search}%"),
             ))
             ->when($establishmentId !== '', fn ($query) => $query->whereHas(
                 'establishment',

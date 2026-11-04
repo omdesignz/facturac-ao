@@ -38,9 +38,9 @@ class CustomerController extends Controller
             ->with('priceList:id,public_id,name')
             ->when($search !== '', function ($query) use ($search): void {
                 $query->where(function ($nested) use ($search): void {
-                    $nested->where('name', 'like', "%{$search}%")
-                        ->orWhere('tax_identification_number', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%");
+                    $nested->whereLike('name', "%{$search}%")
+                        ->orWhereLike('tax_identification_number', "%{$search}%")
+                        ->orWhereLike('email', "%{$search}%");
                 });
             })
             ->orderBy('name')

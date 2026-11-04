@@ -39,8 +39,8 @@ class SupportController extends Controller
         return array_values(User::query()
             ->where('is_support_staff', false)
             ->where(function ($query) use ($search): void {
-                $query->where('email', 'like', "%{$search}%")
-                    ->orWhere('name', 'like', "%{$search}%");
+                $query->whereLike('email', "%{$search}%")
+                    ->orWhereLike('name', "%{$search}%");
             })
             ->with('currentWorkspace')
             ->orderBy('name')
