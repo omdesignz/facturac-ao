@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
+use Inertia\ScrollMetadata;
 
 class CatalogueItemController extends Controller
 {
@@ -53,16 +54,13 @@ class CatalogueItemController extends Controller
             ->withQueryString();
 
         return Inertia::render('Catalogue/Index', [
-            'items' => [
+            'items' => Inertia::scroll([
                 'data' => $items->getCollection()
                     ->map(fn (CatalogueItem $item): array => $this->present($item))
                     ->values()
                     ->all(),
-                'links' => $items->linkCollection()->all(),
                 'total' => $items->total(),
-                'from' => $items->firstItem(),
-                'to' => $items->lastItem(),
-            ],
+            ], metadata: ScrollMetadata::fromPaginator($items)),
             'filters' => ['search' => $search, 'type' => $type],
             'types' => array_map(
                 fn (CatalogueItemType $case): array => [

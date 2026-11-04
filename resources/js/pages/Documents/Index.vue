@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue';
-import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, usePage, InfiniteScroll } from '@inertiajs/vue3';
 import {
     ArrowUpRight,
     Check,
@@ -26,6 +26,7 @@ import DateInput from '@/components/DateInput.vue';
 import DocumentLifecycle from '@/components/DocumentLifecycle.vue';
 import type { LifecycleStep } from '@/components/DocumentLifecycle.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
+import LoadMore from '@/components/LoadMore.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -49,12 +50,6 @@ import {
     send as sendInvoice,
 } from '@/routes/invoices';
 import type { SelectOption } from '@/types/select';
-
-interface PaginationLink {
-    url: string | null;
-    label: string;
-    active: boolean;
-}
 
 interface RegisterDocument {
     public_id: string;
@@ -133,10 +128,7 @@ interface FilterOptions {
 const props = defineProps<{
     documents: {
         data: RegisterDocument[];
-        links: PaginationLink[];
         total: number;
-        from: number | null;
-        to: number | null;
     };
     summary: {
         total: number;
@@ -161,6 +153,9 @@ const props = defineProps<{
 }>();
 
 /* -------------------------------------------- several documents at once */
+
+/** What one download can render; the server holds the same limit. */
+const MAX_PDF_DOWNLOAD = 25;
 
 const chosen = ref<string[]>([]);
 
@@ -291,69 +286,6 @@ const newDocumentTypes = [
 
 /* ---------------------------------------------------------------- queue */
 
-type QueueGroupKey = 'attention' | 'active' | 'draft' | 'valid';
-
-const ATTENTION_STATUSES = [
-    'invalid',
-    'rejected',
-    'cancelled',
-    'failed',
-    'contingency',
-    'unknown',
-];
-
-function groupFor(document: RegisterDocument): QueueGroupKey {
-    if (document.status === 'draft') {
-        return 'draft';
-    }
-
-    if (ATTENTION_STATUSES.includes(document.workflow_status)) {
-        return 'attention';
-    }
-
-    if (document.workflow_status === 'valid') {
-        return 'valid';
-    }
-
-    return 'active';
-}
-
-/**
- * The page's rows, grouped by what they need from the reader.
- *
- * Grouping is the filter: with "Todos" selected the queue reads top to bottom
- * as a to-do list. With any other state selected there is only one group, so
- * it is not repeated as a heading.
- */
-const queueGroups = computed(() => {
-    const labels: Record<QueueGroupKey, string> = {
-        attention: 'Atenção',
-        active: 'Em curso na AGT',
-        draft: 'Rascunhos',
-        valid: 'Validados',
-    };
-
-    if (status.value !== 'all') {
-        return [
-            {
-                key: status.value,
-                label: null as string | null,
-                documents: props.documents.data,
-            },
-        ];
-    }
-
-    return (['attention', 'active', 'draft', 'valid'] as QueueGroupKey[])
-        .map((key) => ({
-            key,
-            label: labels[key] as string | null,
-            documents: props.documents.data.filter(
-                (document) => groupFor(document) === key,
-            ),
-        }))
-        .filter((group) => group.documents.length > 0);
-});
-
 function query(): Record<string, string> {
     const values: Record<string, string> = {};
     const trimmedSearch = search.value.trim();
@@ -411,6 +343,7 @@ function applyFilters(): void {
         preserveState: true,
         replace: true,
         only: ['documents', 'filters', 'selected'],
+        reset: ['documents'],
         onStart: startLoading,
         onFinish: finishLoading,
     });
@@ -606,14 +539,6 @@ function formatDateTime(value: string | null): string {
     }
 
     return dateTimeFormatter.format(new Date(value));
-}
-
-function decodeEntities(label: string): string {
-    return label
-        .replace(/&laquo;/g, '«')
-        .replace(/&raquo;/g, '»')
-        .replace(/&nbsp;/g, ' ')
-        .trim();
 }
 
 /** "FT 2026/148 · por Ana Manuel": whichever of the two the event carries. */
@@ -1028,29 +953,24 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                             </AppButton>
                         </div>
 
-                        <div v-else class="grid gap-0.5">
-                            <template
-                                v-for="(group, groupIndex) in queueGroups"
-                                :key="group.key"
+                        <div v-else>
+                            <InfiniteScroll
+                                data="documents"
+                                :buffer="400"
+                                :manual-after="4"
+                                class="grid grid-cols-[minmax(0,1fr)] gap-0.5"
                             >
+                                <template #next="scroll"
+                                    ><LoadMore
+                                        :shown="documents.data.length"
+                                        :total="documents.total"
+                                        :loading="scroll.loading"
+                                        :has-more="scroll.hasMore"
+                                        :manual-mode="scroll.manualMode"
+                                        :fetch="scroll.fetch"
+                                /></template>
                                 <div
-                                    v-if="group.label"
-                                    class="flex h-8 items-center justify-between px-1"
-                                    :class="{ 'mt-2': groupIndex > 0 }"
-                                >
-                                    <h2
-                                        class="text-xs font-medium tracking-[0.07em] uppercase"
-                                        :class="
-                                            group.key === 'attention'
-                                                ? 'text-rose-600 dark:text-rose-400'
-                                                : 'text-zinc-500 dark:text-zinc-400'
-                                        "
-                                    >
-                                        {{ group.label }}
-                                    </h2>
-                                </div>
-                                <div
-                                    v-for="document in group.documents"
+                                    v-for="document in documents.data"
                                     :key="document.public_id"
                                     data-nav-item
                                     class="group flex items-center"
@@ -1200,8 +1120,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                         </span>
                                     </Link>
                                 </div>
-                            </template>
-
+                            </InfiniteScroll>
                             <div
                                 v-if="chosen.length > 0"
                                 class="sticky bottom-20 z-10 mt-2 flex flex-wrap items-center gap-2 rounded-2xl bg-white p-2 pl-4 shadow-[0_0_0_1px_rgb(23_23_22/0.08),0_10px_26px_-12px_rgb(23_23_22/0.3)] lg:bottom-3 dark:bg-zinc-900 dark:shadow-[0_0_0_1px_rgb(255_255_255/0.12)]"
@@ -1239,6 +1158,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                     variant="outline"
                                     size="sm"
                                     external
+                                    v-if="chosen.length <= MAX_PDF_DOWNLOAD"
                                     :href="downloadChosenUrl"
                                 >
                                     <Download
@@ -1248,6 +1168,12 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                     <span class="sr-only">Descarregar</span>
                                     PDF
                                 </AppButton>
+                                <p
+                                    v-else
+                                    class="text-xs text-zinc-500 dark:text-zinc-400"
+                                >
+                                    PDF: até {{ MAX_PDF_DOWNLOAD }} de cada vez
+                                </p>
                                 <AppButton
                                     variant="quiet"
                                     size="sm"
@@ -1255,60 +1181,6 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                 >
                                     Limpar
                                 </AppButton>
-                            </div>
-
-                            <div
-                                class="mt-3 flex flex-wrap items-center justify-between gap-3 px-1 text-xs text-zinc-500 dark:text-zinc-400"
-                            >
-                                <p class="numeric">
-                                    {{ documents.from }}–{{ documents.to }} de
-                                    {{ documents.total }}
-                                </p>
-                                <nav
-                                    v-if="documents.links.length > 3"
-                                    class="flex flex-wrap gap-1"
-                                    aria-label="Paginação"
-                                >
-                                    <template
-                                        v-for="link in documents.links"
-                                        :key="link.label"
-                                    >
-                                        <span
-                                            v-if="link.url === null"
-                                            aria-disabled="true"
-                                            class="inline-flex h-8 min-w-8 items-center justify-center rounded-full px-2.5 font-medium text-zinc-600 opacity-40 dark:text-zinc-300 pointer-coarse:h-11 pointer-coarse:min-w-11"
-                                        >
-                                            <span
-                                                v-text="
-                                                    decodeEntities(link.label)
-                                                "
-                                            />
-                                        </span>
-                                        <Link
-                                            v-else
-                                            :href="link.url"
-                                            :aria-current="
-                                                link.active ? 'page' : undefined
-                                            "
-                                            :class="
-                                                link.active
-                                                    ? 'bg-brand-950 text-white dark:bg-zinc-100 dark:text-brand-950'
-                                                    : 'text-zinc-600 hover:bg-zinc-900/[0.05] dark:text-zinc-300 dark:hover:bg-white/5'
-                                            "
-                                            class="inline-flex h-8 min-w-8 items-center justify-center rounded-full px-2.5 font-medium focus-ring transition pointer-coarse:h-11 pointer-coarse:min-w-11"
-                                            preserve-scroll
-                                            preserve-state
-                                            @start="startLoading"
-                                            @finish="finishLoading"
-                                        >
-                                            <span
-                                                v-text="
-                                                    decodeEntities(link.label)
-                                                "
-                                            />
-                                        </Link>
-                                    </template>
-                                </nav>
                             </div>
                         </div>
                     </section>

@@ -4,6 +4,8 @@ defineProps<{
     caption?: string;
     /** A minimum width, for a table that scrolls rather than squeezes. */
     tableClass?: string;
+    /** Lets `InfiniteScroll` find the rows it appends to. */
+    bodyId?: string;
 }>();
 </script>
 
@@ -22,7 +24,10 @@ defineProps<{
                     <slot name="head" />
                 </tr>
             </thead>
-            <tbody class="divide-y divide-zinc-900/[0.06] dark:divide-white/10">
+            <tbody
+                :id="bodyId"
+                class="divide-y divide-zinc-900/[0.06] dark:divide-white/10"
+            >
                 <slot />
             </tbody>
         </table>

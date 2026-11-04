@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, router, useForm } from '@inertiajs/vue3';
+import { Head, router, useForm, InfiniteScroll } from '@inertiajs/vue3';
 import {
     Archive,
     LoaderCircle,
@@ -15,6 +15,7 @@ import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import FormError from '@/components/FormError.vue';
 import FormField from '@/components/FormField.vue';
+import LoadMore from '@/components/LoadMore.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
 import SelectInput from '@/components/SelectInput.vue';
@@ -22,6 +23,7 @@ import StatusBadge from '@/components/StatusBadge.vue';
 import ToggleSwitch from '@/components/ToggleSwitch.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { confirmAction } from '@/lib/confirm';
+import { withRecordInactive } from '@/lib/optimistic';
 import { currencyLabel } from '@/lib/pos-ui';
 import { destroy, store, update } from '@/routes/catalogue';
 import type { SelectOption } from '@/types/select';
@@ -47,19 +49,10 @@ interface CatalogueItem {
     reorder_level: string;
 }
 
-interface PaginationLink {
-    url: string | null;
-    label: string;
-    active: boolean;
-}
-
 const props = defineProps<{
     items: {
         data: CatalogueItem[];
-        links: PaginationLink[];
         total: number;
-        from: number | null;
-        to: number | null;
     };
     filters: { search: string; type: string };
     types: { value: string; label: string }[];
@@ -90,7 +83,12 @@ function reload(): void {
             search: search.value || undefined,
             type: typeFilter.value === 'all' ? undefined : typeFilter.value,
         },
-        { preserveState: true, replace: true, only: ['items', 'filters'] },
+        {
+            preserveState: true,
+            replace: true,
+            only: ['items', 'filters'],
+            reset: ['items'],
+        },
     );
 }
 
@@ -170,14 +168,6 @@ function submit(): void {
 }
 
 /** Laravel's pagination labels arrive as HTML entities (&laquo; Anterior). */
-function pageLabel(label: string): string {
-    return label
-        .replace(/&laquo;/g, '«')
-        .replace(/&raquo;/g, '»')
-        .replace(/&nbsp;/g, ' ')
-        .trim();
-}
-
 async function deactivate(item: CatalogueItem): Promise<void> {
     const confirmed = await confirmAction({
         title: `Desactivar ${item.name}?`,
@@ -190,7 +180,14 @@ async function deactivate(item: CatalogueItem): Promise<void> {
         return;
     }
 
-    router.delete(destroy.url(item.public_id), { preserveScroll: true });
+    router
+        .optimistic<{ items: { data: CatalogueItem[] } }>((pageProps) => ({
+            items: withRecordInactive(pageProps.items, item.public_id),
+        }))
+        .delete(destroy.url(item.public_id), {
+            preserveScroll: true,
+            only: ['flash'],
+        });
 }
 </script>
 
@@ -268,150 +265,140 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                     />
 
                     <div v-else class="overflow-x-auto">
-                        <DataTable
-                            ><template #head>
-                                <th>Artigo</th>
-                                <th class="hidden sm:table-cell">Tipo</th>
-                                <th class="text-right">Preço</th>
-                                <th class="hidden text-right md:table-cell">
-                                    IVA
-                                </th>
-                                <th>Estado</th>
-                                <th>
-                                    <span class="sr-only">Acções</span>
-                                </th>
-                            </template>
-                            <tr
-                                v-for="item in items.data"
-                                :key="item.public_id"
-                            >
-                                <td>
-                                    <p
-                                        class="font-semibold text-zinc-900 dark:text-white"
+                        <InfiniteScroll
+                            data="items"
+                            items-element="#items-rows"
+                            :buffer="400"
+                            :manual-after="4"
+                        >
+                            <template #next="scroll"
+                                ><LoadMore
+                                    :shown="items.data.length"
+                                    :total="items.total"
+                                    :loading="scroll.loading"
+                                    :has-more="scroll.hasMore"
+                                    :manual-mode="scroll.manualMode"
+                                    :fetch="scroll.fetch"
+                            /></template>
+                            <DataTable body-id="items-rows"
+                                ><template #head>
+                                    <th>Artigo</th>
+                                    <th class="hidden sm:table-cell">Tipo</th>
+                                    <th class="text-right">Preço</th>
+                                    <th class="hidden text-right md:table-cell">
+                                        IVA
+                                    </th>
+                                    <th>Estado</th>
+                                    <th>
+                                        <span class="sr-only">Acções</span>
+                                    </th>
+                                </template>
+                                <tr
+                                    v-for="item in items.data"
+                                    :key="item.public_id"
+                                >
+                                    <td>
+                                        <p
+                                            class="font-semibold text-zinc-900 dark:text-white"
+                                        >
+                                            {{ item.name }}
+                                        </p>
+                                        <p
+                                            class="mt-0.5 font-mono numeric text-xs text-zinc-500 dark:text-zinc-400"
+                                        >
+                                            {{ item.code }} ·
+                                            {{ item.unit_of_measure }}
+                                        </p>
+                                        <p
+                                            v-if="item.barcode"
+                                            class="mt-0.5 flex items-center gap-1 font-mono numeric text-xs text-zinc-500 dark:text-zinc-400"
+                                        >
+                                            <ScanBarcode
+                                                class="size-3 shrink-0"
+                                                aria-hidden="true"
+                                            />
+                                            {{ item.barcode }}
+                                        </p>
+                                    </td>
+                                    <td
+                                        class="hidden text-zinc-600 sm:table-cell dark:text-zinc-400"
                                     >
-                                        {{ item.name }}
-                                    </p>
-                                    <p
-                                        class="mt-0.5 font-mono numeric text-xs text-zinc-500 dark:text-zinc-400"
+                                        {{ item.type_label }}
+                                    </td>
+                                    <td
+                                        class="text-right numeric font-semibold text-zinc-900 dark:text-white"
                                     >
-                                        {{ item.code }} ·
-                                        {{ item.unit_of_measure }}
-                                    </p>
-                                    <p
-                                        v-if="item.barcode"
-                                        class="mt-0.5 flex items-center gap-1 font-mono numeric text-xs text-zinc-500 dark:text-zinc-400"
+                                        {{ formatMoney(item.unit_price_minor) }}
+                                        <span
+                                            class="text-xs font-normal text-zinc-400"
+                                            >{{
+                                                item.currency_code === 'AOA'
+                                                    ? 'Kz'
+                                                    : item.currency_code
+                                            }}</span
+                                        >
+                                    </td>
+                                    <td
+                                        class="hidden text-right numeric text-zinc-600 md:table-cell dark:text-zinc-400"
                                     >
-                                        <ScanBarcode
-                                            class="size-3 shrink-0"
-                                            aria-hidden="true"
+                                        {{ Number(item.tax_percentage) }}%
+                                    </td>
+                                    <td>
+                                        <StatusBadge
+                                            :label="
+                                                item.is_active
+                                                    ? 'Activo'
+                                                    : 'Inactivo'
+                                            "
+                                            :tone="
+                                                item.is_active
+                                                    ? 'neutral'
+                                                    : 'draft'
+                                            "
                                         />
-                                        {{ item.barcode }}
-                                    </p>
-                                </td>
-                                <td
-                                    class="hidden text-zinc-600 sm:table-cell dark:text-zinc-400"
-                                >
-                                    {{ item.type_label }}
-                                </td>
-                                <td
-                                    class="text-right numeric font-semibold text-zinc-900 dark:text-white"
-                                >
-                                    {{ formatMoney(item.unit_price_minor) }}
-                                    <span
-                                        class="text-xs font-normal text-zinc-400"
-                                        >{{
-                                            item.currency_code === 'AOA'
-                                                ? 'Kz'
-                                                : item.currency_code
-                                        }}</span
-                                    >
-                                </td>
-                                <td
-                                    class="hidden text-right numeric text-zinc-600 md:table-cell dark:text-zinc-400"
-                                >
-                                    {{ Number(item.tax_percentage) }}%
-                                </td>
-                                <td>
-                                    <StatusBadge
-                                        :label="
-                                            item.is_active
-                                                ? 'Activo'
-                                                : 'Inactivo'
-                                        "
-                                        :tone="
-                                            item.is_active ? 'neutral' : 'draft'
-                                        "
-                                    />
-                                </td>
-                                <td class="text-right">
-                                    <div
-                                        v-if="canManage"
-                                        data-row-actions
-                                        class="flex justify-end gap-1"
-                                    >
-                                        <button
-                                            data-nav-row
-                                            type="button"
-                                            class="icon-button text-zinc-500 focus-ring transition hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-white/5 dark:hover:text-white"
-                                            @click="openEdit(item)"
+                                    </td>
+                                    <td class="text-right">
+                                        <div
+                                            v-if="canManage"
+                                            data-row-actions
+                                            class="flex justify-end gap-1"
                                         >
-                                            <span class="sr-only"
-                                                >Editar {{ item.name }}</span
+                                            <button
+                                                data-nav-row
+                                                type="button"
+                                                class="icon-button text-zinc-500 focus-ring transition hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-white/5 dark:hover:text-white"
+                                                @click="openEdit(item)"
                                             >
-                                            <Pencil
-                                                class="size-4"
-                                                aria-hidden="true"
-                                            />
-                                        </button>
-                                        <button
-                                            v-if="item.is_active"
-                                            type="button"
-                                            class="icon-button text-zinc-500 focus-ring transition hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-400/10 dark:hover:text-rose-400"
-                                            @click="deactivate(item)"
-                                        >
-                                            <span class="sr-only"
-                                                >Desactivar
-                                                {{ item.name }}</span
+                                                <span class="sr-only"
+                                                    >Editar
+                                                    {{ item.name }}</span
+                                                >
+                                                <Pencil
+                                                    class="size-4"
+                                                    aria-hidden="true"
+                                                />
+                                            </button>
+                                            <button
+                                                v-if="item.is_active"
+                                                type="button"
+                                                class="icon-button text-zinc-500 focus-ring transition hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-400/10 dark:hover:text-rose-400"
+                                                @click="deactivate(item)"
                                             >
-                                            <Archive
-                                                class="size-4"
-                                                aria-hidden="true"
-                                            />
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        </DataTable>
+                                                <span class="sr-only"
+                                                    >Desactivar
+                                                    {{ item.name }}</span
+                                                >
+                                                <Archive
+                                                    class="size-4"
+                                                    aria-hidden="true"
+                                                />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </DataTable>
+                        </InfiniteScroll>
                     </div>
-
-                    <nav
-                        v-if="items.links.length > 3"
-                        class="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-900/[0.07] px-4 py-3 dark:border-white/10"
-                    >
-                        <p class="text-xs text-zinc-500 dark:text-zinc-400">
-                            <span class="numeric"
-                                >{{ items.from }}–{{ items.to }}</span
-                            >
-                            de <span class="numeric">{{ items.total }}</span>
-                        </p>
-                        <div class="flex flex-wrap gap-1">
-                            <component
-                                :is="link.url ? 'button' : 'span'"
-                                v-for="link in items.links"
-                                :key="link.label"
-                                :class="[
-                                    link.active
-                                        ? 'bg-brand-950 text-white dark:bg-zinc-100 dark:text-brand-950'
-                                        : link.url
-                                          ? 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-white/5'
-                                          : 'text-zinc-300 dark:text-zinc-600',
-                                    'inline-flex h-8 min-w-8 items-center justify-center rounded-full px-2.5 text-xs font-semibold',
-                                ]"
-                                @click="link.url && router.get(link.url)"
-                                >{{ pageLabel(link.label) }}</component
-                            >
-                        </div>
-                    </nav>
                 </div>
             </div>
         </div>

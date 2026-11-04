@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
+use Inertia\ScrollMetadata;
 
 class CustomerController extends Controller
 {
@@ -48,16 +49,13 @@ class CustomerController extends Controller
             ->withQueryString();
 
         return Inertia::render('Customers/Index', [
-            'customers' => [
+            'customers' => Inertia::scroll([
                 'data' => $customers->getCollection()
                     ->map(fn (Customer $customer): array => $this->present($customer))
                     ->values()
                     ->all(),
-                'links' => $customers->linkCollection()->all(),
                 'total' => $customers->total(),
-                'from' => $customers->firstItem(),
-                'to' => $customers->lastItem(),
-            ],
+            ], metadata: ScrollMetadata::fromPaginator($customers)),
             'filters' => ['search' => $search],
             'priceLists' => array_values(PriceList::query()
                 ->where('legal_entity_id', $legalEntity->id)

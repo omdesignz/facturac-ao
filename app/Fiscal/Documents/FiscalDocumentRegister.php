@@ -11,6 +11,8 @@ use App\Models\LegalEntity;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Inertia\Inertia;
+use Inertia\ScrollMetadata;
 
 final class FiscalDocumentRegister
 {
@@ -113,18 +115,15 @@ final class FiscalDocumentRegister
         $documents = $this->paginate($legalEntity, $filters);
 
         return [
-            'documents' => [
+            'documents' => Inertia::scroll([
                 'data' => array_values($documents->getCollection()
                     ->map(fn (FiscalDocument $document): array => $this->present(
                         $document,
                         $canPrepareDocuments,
                     ))
                     ->all()),
-                'links' => $documents->linkCollection()->all(),
                 'total' => $documents->total(),
-                'from' => $documents->firstItem(),
-                'to' => $documents->lastItem(),
-            ],
+            ], metadata: ScrollMetadata::fromPaginator($documents)),
             'summary' => $this->summary($legalEntity),
             'filters' => $filters,
             'options' => [

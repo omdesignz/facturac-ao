@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm, InfiniteScroll } from '@inertiajs/vue3';
 import {
     LoaderCircle,
     Mail,
@@ -17,6 +17,7 @@ import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import FormError from '@/components/FormError.vue';
 import FormField from '@/components/FormField.vue';
+import LoadMore from '@/components/LoadMore.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
 import SelectInput from '@/components/SelectInput.vue';
@@ -24,6 +25,7 @@ import StatusBadge from '@/components/StatusBadge.vue';
 import ToggleSwitch from '@/components/ToggleSwitch.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { confirmAction } from '@/lib/confirm';
+import { withRecordInactive } from '@/lib/optimistic';
 import { destroy, index, show, store, update } from '@/routes/customers';
 import { index as importsIndex } from '@/routes/imports';
 import { index as priceListsIndex } from '@/routes/price-lists';
@@ -46,19 +48,10 @@ interface Customer {
     withholding_rate: string;
 }
 
-interface PaginationLink {
-    url: string | null;
-    label: string;
-    active: boolean;
-}
-
 const props = defineProps<{
     customers: {
         data: Customer[];
-        links: PaginationLink[];
         total: number;
-        from: number | null;
-        to: number | null;
     };
     filters: { search: string };
     priceLists: { value: string; label: string }[];
@@ -105,6 +98,7 @@ watch(search, (value) => {
                 preserveScroll: true,
                 replace: true,
                 only: ['customers', 'filters'],
+                reset: ['customers'],
                 onStart: () => {
                     searching.value = true;
                 },
@@ -229,14 +223,6 @@ function submit(): void {
 }
 
 /** Laravel's pagination labels arrive as HTML entities (&laquo; Anterior). */
-function pageLabel(label: string): string {
-    return label
-        .replace(/&laquo;/g, '«')
-        .replace(/&raquo;/g, '»')
-        .replace(/&nbsp;/g, ' ')
-        .trim();
-}
-
 async function deactivate(customer: Customer): Promise<void> {
     const confirmed = await confirmAction({
         title: `Desactivar ${customer.name}?`,
@@ -249,7 +235,17 @@ async function deactivate(customer: Customer): Promise<void> {
         return;
     }
 
-    router.delete(destroy.url(customer.public_id), { preserveScroll: true });
+    router
+        .optimistic<{ customers: { data: Customer[] } }>((pageProps) => ({
+            customers: withRecordInactive(
+                pageProps.customers,
+                customer.public_id,
+            ),
+        }))
+        .delete(destroy.url(customer.public_id), {
+            preserveScroll: true,
+            only: ['flash'],
+        });
 }
 </script>
 
@@ -362,190 +358,166 @@ async function deactivate(customer: Customer): Promise<void> {
                         :aria-busy="searching"
                         :class="searching ? 'opacity-60' : ''"
                     >
-                        <DataTable
-                            ><template #head>
-                                <th>Cliente</th>
-                                <th class="hidden sm:table-cell">NIF</th>
-                                <th class="hidden lg:table-cell">Contacto</th>
-                                <th class="hidden md:table-cell">Estado</th>
-                                <th>
-                                    <span class="sr-only">Acções</span>
-                                </th>
-                            </template>
-                            <tr
-                                v-for="customer in customers.data"
-                                :key="customer.public_id"
-                                class="hover:bg-zinc-900/[0.025] dark:hover:bg-white/[0.03]"
-                            >
-                                <td>
-                                    <Link
-                                        data-nav-row
-                                        :href="show.url(customer.public_id)"
-                                        class="rounded font-semibold [overflow-wrap:anywhere] text-zinc-900 underline-offset-4 focus-ring hover:underline dark:text-white"
-                                    >
-                                        {{ customer.name }}
-                                    </Link>
-                                    <p
-                                        class="mt-0.5 font-mono numeric text-xs text-zinc-500 sm:hidden dark:text-zinc-400"
+                        <InfiniteScroll
+                            data="customers"
+                            items-element="#customers-rows"
+                            :buffer="400"
+                            :manual-after="4"
+                        >
+                            <template #next="scroll"
+                                ><LoadMore
+                                    :shown="customers.data.length"
+                                    :total="customers.total"
+                                    :loading="scroll.loading"
+                                    :has-more="scroll.hasMore"
+                                    :manual-mode="scroll.manualMode"
+                                    :fetch="scroll.fetch"
+                            /></template>
+                            <DataTable body-id="customers-rows"
+                                ><template #head>
+                                    <th>Cliente</th>
+                                    <th class="hidden sm:table-cell">NIF</th>
+                                    <th class="hidden lg:table-cell">
+                                        Contacto
+                                    </th>
+                                    <th class="hidden md:table-cell">Estado</th>
+                                    <th>
+                                        <span class="sr-only">Acções</span>
+                                    </th>
+                                </template>
+                                <tr
+                                    v-for="customer in customers.data"
+                                    :key="customer.public_id"
+                                    class="hover:bg-zinc-900/[0.025] dark:hover:bg-white/[0.03]"
+                                >
+                                    <td>
+                                        <Link
+                                            data-nav-row
+                                            :href="show.url(customer.public_id)"
+                                            class="rounded font-semibold [overflow-wrap:anywhere] text-zinc-900 underline-offset-4 focus-ring hover:underline dark:text-white"
+                                        >
+                                            {{ customer.name }}
+                                        </Link>
+                                        <p
+                                            class="mt-0.5 font-mono numeric text-xs text-zinc-500 sm:hidden dark:text-zinc-400"
+                                        >
+                                            {{
+                                                customer.tax_identification_number
+                                            }}
+                                        </p>
+                                        <p
+                                            v-if="customer.address_line"
+                                            class="mt-0.5 max-w-[16rem] text-xs [overflow-wrap:anywhere] text-zinc-500 dark:text-zinc-400"
+                                        >
+                                            {{ customer.address_line }} ·
+                                            {{ customer.country_code }}
+                                        </p>
+                                        <StatusBadge
+                                            class="mt-1.5 md:hidden"
+                                            :label="
+                                                customer.is_active
+                                                    ? 'Activo'
+                                                    : 'Inactivo'
+                                            "
+                                            :tone="
+                                                customer.is_active
+                                                    ? 'neutral'
+                                                    : 'draft'
+                                            "
+                                        />
+                                    </td>
+                                    <td
+                                        class="hidden font-mono numeric text-zinc-700 sm:table-cell dark:text-zinc-300"
                                     >
                                         {{ customer.tax_identification_number }}
-                                    </p>
-                                    <p
-                                        v-if="customer.address_line"
-                                        class="mt-0.5 max-w-[16rem] text-xs [overflow-wrap:anywhere] text-zinc-500 dark:text-zinc-400"
+                                    </td>
+                                    <td
+                                        class="hidden text-zinc-600 lg:table-cell dark:text-zinc-400"
                                     >
-                                        {{ customer.address_line }} ·
-                                        {{ customer.country_code }}
-                                    </p>
-                                    <StatusBadge
-                                        class="mt-1.5 md:hidden"
-                                        :label="
-                                            customer.is_active
-                                                ? 'Activo'
-                                                : 'Inactivo'
-                                        "
-                                        :tone="
-                                            customer.is_active
-                                                ? 'neutral'
-                                                : 'draft'
-                                        "
-                                    />
-                                </td>
-                                <td
-                                    class="hidden font-mono numeric text-zinc-700 sm:table-cell dark:text-zinc-300"
-                                >
-                                    {{ customer.tax_identification_number }}
-                                </td>
-                                <td
-                                    class="hidden text-zinc-600 lg:table-cell dark:text-zinc-400"
-                                >
-                                    <span
-                                        v-if="customer.email"
-                                        class="flex items-center gap-1.5 text-xs"
-                                    >
-                                        <Mail
-                                            class="size-3.5 shrink-0"
-                                            aria-hidden="true"
-                                        />
-                                        {{ customer.email }}
-                                    </span>
-                                    <span
-                                        v-if="customer.phone"
-                                        class="mt-1 flex items-center gap-1.5 text-xs"
-                                    >
-                                        <Phone
-                                            class="size-3.5 shrink-0"
-                                            aria-hidden="true"
-                                        />
-                                        {{ customer.phone }}
-                                    </span>
-                                    <span
-                                        v-if="
-                                            !customer.email && !customer.phone
-                                        "
-                                        class="text-xs text-zinc-500 dark:text-zinc-400"
-                                        >—</span
-                                    >
-                                </td>
-                                <td class="hidden md:table-cell">
-                                    <StatusBadge
-                                        :label="
-                                            customer.is_active
-                                                ? 'Activo'
-                                                : 'Inactivo'
-                                        "
-                                        :tone="
-                                            customer.is_active
-                                                ? 'neutral'
-                                                : 'draft'
-                                        "
-                                    />
-                                </td>
-                                <td class="text-right">
-                                    <div
-                                        v-if="canManage"
-                                        data-row-actions
-                                        class="flex justify-end gap-1"
-                                    >
-                                        <button
-                                            type="button"
-                                            class="icon-button rounded-full text-zinc-500 focus-ring transition hover:bg-zinc-900/[0.06] hover:text-zinc-900 dark:hover:bg-white/10 dark:hover:text-white"
-                                            @click="openEdit(customer)"
+                                        <span
+                                            v-if="customer.email"
+                                            class="flex items-center gap-1.5 text-xs"
                                         >
-                                            <span class="sr-only"
-                                                >Editar
-                                                {{ customer.name }}</span
-                                            >
-                                            <Pencil
-                                                class="size-4"
+                                            <Mail
+                                                class="size-3.5 shrink-0"
                                                 aria-hidden="true"
                                             />
-                                        </button>
-                                        <button
-                                            v-if="customer.is_active"
-                                            type="button"
-                                            class="icon-button rounded-full text-zinc-500 focus-ring transition hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-400/10 dark:hover:text-rose-400"
-                                            @click="deactivate(customer)"
+                                            {{ customer.email }}
+                                        </span>
+                                        <span
+                                            v-if="customer.phone"
+                                            class="mt-1 flex items-center gap-1.5 text-xs"
                                         >
-                                            <span class="sr-only"
-                                                >Desactivar
-                                                {{ customer.name }}</span
-                                            >
-                                            <UserRoundX
-                                                class="size-4"
+                                            <Phone
+                                                class="size-3.5 shrink-0"
                                                 aria-hidden="true"
                                             />
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        </DataTable>
+                                            {{ customer.phone }}
+                                        </span>
+                                        <span
+                                            v-if="
+                                                !customer.email &&
+                                                !customer.phone
+                                            "
+                                            class="text-xs text-zinc-500 dark:text-zinc-400"
+                                            >—</span
+                                        >
+                                    </td>
+                                    <td class="hidden md:table-cell">
+                                        <StatusBadge
+                                            :label="
+                                                customer.is_active
+                                                    ? 'Activo'
+                                                    : 'Inactivo'
+                                            "
+                                            :tone="
+                                                customer.is_active
+                                                    ? 'neutral'
+                                                    : 'draft'
+                                            "
+                                        />
+                                    </td>
+                                    <td class="text-right">
+                                        <div
+                                            v-if="canManage"
+                                            data-row-actions
+                                            class="flex justify-end gap-1"
+                                        >
+                                            <button
+                                                type="button"
+                                                class="icon-button rounded-full text-zinc-500 focus-ring transition hover:bg-zinc-900/[0.06] hover:text-zinc-900 dark:hover:bg-white/10 dark:hover:text-white"
+                                                @click="openEdit(customer)"
+                                            >
+                                                <span class="sr-only"
+                                                    >Editar
+                                                    {{ customer.name }}</span
+                                                >
+                                                <Pencil
+                                                    class="size-4"
+                                                    aria-hidden="true"
+                                                />
+                                            </button>
+                                            <button
+                                                v-if="customer.is_active"
+                                                type="button"
+                                                class="icon-button rounded-full text-zinc-500 focus-ring transition hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-400/10 dark:hover:text-rose-400"
+                                                @click="deactivate(customer)"
+                                            >
+                                                <span class="sr-only"
+                                                    >Desactivar
+                                                    {{ customer.name }}</span
+                                                >
+                                                <UserRoundX
+                                                    class="size-4"
+                                                    aria-hidden="true"
+                                                />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </DataTable>
+                        </InfiniteScroll>
                     </div>
-
-                    <nav
-                        v-if="customers.data.length > 0"
-                        aria-label="Paginação"
-                        class="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-900/[0.07] px-4 py-3 dark:border-white/10"
-                    >
-                        <p class="text-xs text-zinc-500 dark:text-zinc-400">
-                            <span class="numeric"
-                                >{{ customers.from }}–{{ customers.to }}</span
-                            >
-                            de
-                            <span class="numeric">{{ customers.total }}</span>
-                        </p>
-                        <div
-                            v-if="customers.links.length > 3"
-                            class="flex flex-wrap gap-1"
-                        >
-                            <template
-                                v-for="link in customers.links"
-                                :key="link.label"
-                            >
-                                <Link
-                                    v-if="link.url"
-                                    :href="link.url"
-                                    preserve-scroll
-                                    :aria-current="
-                                        link.active ? 'page' : undefined
-                                    "
-                                    class="inline-flex h-9 min-w-9 items-center justify-center rounded-full px-2.5 text-xs font-semibold focus-ring transition"
-                                    :class="
-                                        link.active
-                                            ? 'bg-brand-950 text-white dark:bg-zinc-100 dark:text-brand-950'
-                                            : 'text-zinc-600 hover:bg-zinc-900/[0.05] dark:text-zinc-300 dark:hover:bg-white/5'
-                                    "
-                                    >{{ pageLabel(link.label) }}</Link
-                                >
-                                <span
-                                    v-else
-                                    aria-disabled="true"
-                                    class="inline-flex h-9 min-w-9 items-center justify-center rounded-full px-2.5 text-xs font-semibold text-zinc-300 dark:text-zinc-600"
-                                    >{{ pageLabel(link.label) }}</span
-                                >
-                            </template>
-                        </div>
-                    </nav>
                 </div>
             </div>
         </div>
