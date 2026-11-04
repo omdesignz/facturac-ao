@@ -1,0 +1,75 @@
+<template>
+  <style>
+    @font-face { font-family: "CG"; font-weight: 700; font-display: block;
+      src: local("Century Gothic Bold"), local("CenturyGothic-Bold"); }
+    @font-face { font-family: "Hanken Grotesk"; font-weight: 600; font-display: block;
+      src: url("assets/fonts/HankenGrotesk-600.woff2") format("woff2"); }
+    #root { position: absolute; inset: 0; width: 1080px; height: 1920px; overflow: hidden;
+      font-family: "CG", sans-serif; font-weight: 700; font-variant-ligatures: none; color: #171716; }
+    .abs { position: absolute; }
+    .t { position: absolute; left: 0; width: 1080px; text-align: center; white-space: nowrap; line-height: 1; letter-spacing: -0.018em; }
+    .w { display: inline-block; }
+    .pt { display: inline-block; width: .19em; height: .19em; margin-left: .065em; border-radius: 50%; background: #f9b233; }
+    .cam { position: absolute; inset: 0; transform-origin: 0 0; }
+    .burst { position: absolute; left: -710.0px; top: -290.0px; width: 2500px; height: 2500px; border-radius: 50%; background: #f9b233; }
+
+    #root { background: #171716; }
+
+    .odo { position: absolute; left: 0; width: 1080px; display: flex; justify-content: center; line-height: 1.1; letter-spacing: 0; }
+    .cell { display: block; width: .556em; height: 1.1em; overflow: hidden; text-align: center; }
+    .strip { display: block; }
+    .gap { display: block; width: .24em; }
+#dot { position: absolute; left: 0; top: 0; width: 16px; height: 16px; border-radius: 50%; background: #f9b233; }#flood { position: absolute; left: -668.9px; top: -473.0px; width: 3000px; height: 3000px; border-radius: 50%; background: #f9b233; }
+  </style>
+  <div id="root" data-composition-id="s1-dinheiro" data-width="1080" data-height="1920">
+<div id="n" class="odo" style="top:700px;font-size:210px;color:#ffffff"><span class="cell"><span id="n-d0" class="strip">0<br>1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9</span></span><span class="gap"></span><span class="cell"><span id="n-d1" class="strip">0<br>1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9</span></span><span class="cell"><span id="n-d2" class="strip">0<br>1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9</span></span><span class="cell"><span id="n-d3" class="strip">0<br>1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9</span></span><span class="gap"></span><span class="cell"><span id="n-d4" class="strip">0<br>1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9</span></span><span class="cell"><span id="n-d5" class="strip">0<br>1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9</span></span><span class="cell"><span id="n-d6" class="strip">0<br>1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9</span></span></div>
+    <div class="t" id="sub" style="top:960px;font-size:84px;color:#ffffff;"><span class="w sub-w">Kz</span> <span class="w sub-w">por</span> <span class="w sub-w">receber</span></div>
+    <div id="flood" data-layout-allow-overflow></div>
+    <div id="dot"></div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      // Every word lands blurred and sharpens, then holds dead still.
+      const land = (sel, at, stagger = 0.07) => tl.fromTo(sel,
+        { opacity: 0, filter: "blur(10px)" },
+        { opacity: 1, filter: "blur(0px)", duration: 0.16, stagger, ease: "power1.out" }, at);
+      const leave = (sel, at) => tl.to(sel,
+        { opacity: 0, filter: "blur(10px)", duration: 0.14, ease: "power2.in" }, at);
+      const tap = (at) => {
+        tl.to("#hop", { opacity: 0, duration: 0.1, ease: "power1.in" }, at + 0.1);
+        tl.fromTo("#ring", { scale: 0.4, opacity: 0.9 }, { scale: 2.6, opacity: 0, duration: 0.46, ease: "expo.out", immediateRender: false }, at);
+      };
+
+      gsap.set("#dot", { x: 532.0, y: 620, scaleX: 16, scaleY: 16, transformOrigin: "50% 100%" });
+      gsap.set("#flood", { scale: 0, opacity: 0 });
+      gsap.set("#n, .sub-w", { opacity: 0 });
+      // The dot falls onto the first beat and becomes the full stop. The number rolls up to what is owed.
+      tl.to("#dot", { x: 823.1, y: 1019, scaleX: 1, scaleY: 1, duration: 0.485, ease: "power2.in" }, 0);
+      const landing = (at) => {
+        tl.to("#dot", { scaleX: 1.34, scaleY: 0.62, duration: 0.05, ease: "power2.out" }, at);
+        tl.to("#dot", { scaleX: 1, scaleY: 1, duration: 0.42, ease: "elastic.out(1, 0.5)" }, at + 0.05);
+      };
+      landing(0.485);
+      tl.to("#n", { opacity: 1, duration: 0.1, ease: "power1.out" }, 0.45499999999999996);
+      gsap.set("#n-d0", { yPercent: 0 }); tl.to("#n-d0", { yPercent: -50, duration: 1.07, ease: "power3.out" }, 0.485);
+      gsap.set("#n-d1", { yPercent: 0 }); tl.to("#n-d1", { yPercent: -50, duration: 1.13, ease: "power3.out" }, 0.485);
+      gsap.set("#n-d2", { yPercent: 0 }); tl.to("#n-d2", { yPercent: -20, duration: 1.19, ease: "power3.out" }, 0.485);
+      gsap.set("#n-d3", { yPercent: 0 }); tl.to("#n-d3", { yPercent: -90, duration: 1.25, ease: "power3.out" }, 0.485);
+      gsap.set("#n-d4", { yPercent: 0 }); tl.to("#n-d4", { yPercent: 0, duration: 1.31, ease: "power3.out" }, 0.485);
+      gsap.set("#n-d5", { yPercent: 0 }); tl.to("#n-d5", { yPercent: 0, duration: 1.37, ease: "power3.out" }, 0.485);
+      gsap.set("#n-d6", { yPercent: 0 }); tl.to("#n-d6", { yPercent: 0, duration: 1.43, ease: "power3.out" }, 0.485);
+      land(".sub-w", 0.485, 0.05);
+      const bounce = (from, to, height) => {
+        tl.to("#dot", { y: 1019 - height, duration: (to - from) / 2, ease: "power2.out" }, from);
+        tl.to("#dot", { y: 1019, duration: (to - from) / 2, ease: "power2.in" }, from + (to - from) / 2);
+        landing(to);
+      };
+      bounce(2.525, 2.865, 90); bounce(2.9250000000000003, 3.345, 48);
+      tl.set("#flood", { opacity: 1 }, 3.665);
+      tl.fromTo("#flood", { scale: 0.0053 }, { scale: 1, duration: 0.62, ease: "power3.in" }, 3.665);
+    
+      window.__timelines["s1-dinheiro"] = tl;
+    })();
+  </script>
+</template>
