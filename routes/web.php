@@ -305,7 +305,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::get('/dividas/{customer}/lembrete', [PaymentReminderController::class, 'show'])
             ->name('debts.reminder.show');
         Route::post('/dividas/{customer}/lembrete', [PaymentReminderController::class, 'store'])
-            ->middleware('throttle:6,1')
+            ->middleware('throttle:60,1')
             ->name('debts.reminder.store');
 
         Route::get('/avencas', [RecurringInvoiceController::class, 'index'])

@@ -35,9 +35,19 @@ class DebtController extends Controller
         Gate::authorize('viewAny', Customer::class);
 
         $rows = $this->aging->byCustomer($legalEntity);
+        $requested = array_values(array_unique(array_filter(
+            (array) $request->query('clientes', []),
+            is_string(...),
+        )));
+        $preselected = array_values(array_intersect($requested, array_column(array_filter(
+            $rows,
+            fn (array $row): bool => $row['customer_public_id'] !== null && $row['overdue_minor'] > 0,
+        ), 'customer_public_id')));
 
         return Inertia::render('Debts/Index', [
             'customers' => $rows,
+            'preselected' => $preselected,
+            'preselectedSkipped' => count($requested) - count($preselected),
             'totals' => $this->aging->totals($rows),
             'buckets' => AgingQuery::buckets(),
             'summary' => [

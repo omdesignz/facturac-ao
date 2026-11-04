@@ -47,6 +47,29 @@ export function debtShares(
     }));
 }
 
+/**
+ * The debtors a long list opens with. Customers brought here on purpose come
+ * instead of the first few, so nobody chosen elsewhere is left folded away.
+ */
+export function shownDebtors<T extends { customer_public_id: string | null }>(
+    debtors: T[],
+    expanded: boolean,
+    preselected: string[] = [],
+    limit = 10,
+): T[] {
+    if (expanded) {
+        return debtors;
+    }
+
+    const chosen = debtors.filter(
+        (debtor) =>
+            debtor.customer_public_id !== null &&
+            preselected.includes(debtor.customer_public_id),
+    );
+
+    return chosen.length > 0 ? chosen : debtors.slice(0, limit);
+}
+
 export function concentrationLine(
     shares: DebtShare[],
     customerCount: number,

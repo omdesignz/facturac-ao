@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import {
     concentrationLine,
     debtShares,
+    shownDebtors,
 } from '../resources/js/lib/debt-share.ts';
 
 const debtors = [
@@ -60,4 +61,24 @@ test('one company holding most of the debt is named; an even spread is not', () 
         ),
         /repartido/,
     );
+});
+
+const longList = Array.from({ length: 14 }, (_, index) => ({
+    customer_public_id: `c${index}`,
+}));
+
+test('a long list of debtors opens with the first ten until asked for all', () => {
+    assert.equal(shownDebtors(longList, false).length, 10);
+    assert.equal(shownDebtors(longList, false)[0].customer_public_id, 'c0');
+    assert.equal(shownDebtors(longList, true).length, 14);
+});
+
+test('customers brought here on purpose are never folded away', () => {
+    assert.deepEqual(
+        shownDebtors(longList, false, ['c12', 'c3']).map(
+            (debtor) => debtor.customer_public_id,
+        ),
+        ['c3', 'c12'],
+    );
+    assert.equal(shownDebtors(longList, false, ['unknown']).length, 10);
 });

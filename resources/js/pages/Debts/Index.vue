@@ -11,8 +11,8 @@ import FlashBanner from '@/components/FlashBanner.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { agingBucketColours, agingShare } from '@/lib/aging';
-import { concentrationLine, debtShares } from '@/lib/debt-share';
-import { buttonGold, buttonQuiet } from '@/lib/pos-ui';
+import { concentrationLine, debtShares, shownDebtors } from '@/lib/debt-share';
+import { buttonGold, buttonOutlineSmall, buttonQuiet } from '@/lib/pos-ui';
 import {
     fetchReminderDraft,
     isSendable,
@@ -40,6 +40,9 @@ interface DebtRow {
 
 const props = defineProps<{
     customers: DebtRow[];
+    /** Customers chosen on another page, such as the documents list. */
+    preselected: string[];
+    preselectedSkipped: number;
     totals: { key: string; label: string; total_minor: number }[];
     buckets: { key: string; label: string }[];
     summary: {
@@ -107,13 +110,25 @@ const notYetDue = computed(() =>
     props.customers.filter((row) => !overdue.value.includes(row)),
 );
 
+const everyOverdueShown = ref(false);
+const everyInTermShown = ref(false);
+
+const shownOverdue = computed(() =>
+    shownDebtors(overdue.value, everyOverdueShown.value, props.preselected),
+);
+
+const shownInTerm = computed(() =>
+    shownDebtors(notYetDue.value, everyInTermShown.value),
+);
+
 /* ---------------------------------------------------- prepared reminders */
 
 type DraftState = ReminderDraft | 'failed';
 
 const drafts = reactive<Record<string, DraftState>>({});
+/** Only customers on screen start ticked: a reminder never goes to someone unseen. */
 const selected = ref<string[]>(
-    overdue.value.flatMap((row) =>
+    shownOverdue.value.flatMap((row) =>
         row.customer_public_id === null ? [] : [row.customer_public_id],
     ),
 );
@@ -122,12 +137,12 @@ const editing = ref<string | null>(null);
 const sent = ref<string[]>([]);
 const sending = ref(false);
 
-/** Each reminder is written when the page opens, so choosing is reading, not waiting. */
-onMounted(() => {
-    for (const row of overdue.value.slice(0, 12)) {
+/** Each reminder is written as its customer appears, so choosing is reading, not waiting. */
+function writeDrafts(): void {
+    for (const row of shownOverdue.value) {
         const id = row.customer_public_id;
 
-        if (id === null) {
+        if (id === null || drafts[id] !== undefined) {
             continue;
         }
 
@@ -139,7 +154,14 @@ onMounted(() => {
                 drafts[id] = 'failed';
             });
     }
-});
+}
+
+onMounted(writeDrafts);
+
+function showEveryOverdue(): void {
+    everyOverdueShown.value = true;
+    writeDrafts();
+}
 
 function draftOf(id: string | null): ReminderDraft | null {
     const draft = id === null ? undefined : drafts[id];
@@ -408,6 +430,26 @@ const dayPill = (days: number): string =>
                         </h2>
 
                         <p
+                            v-if="preselectedSkipped > 0"
+                            class="mt-2 text-[0.8125rem] text-zinc-500 dark:text-zinc-400"
+                        >
+                            {{
+                                plural(
+                                    preselectedSkipped,
+                                    'cliente escolhido não tem',
+                                    'clientes escolhidos não têm',
+                                )
+                            }}
+                            nada vencido, por isso não
+                            {{
+                                preselectedSkipped === 1
+                                    ? 'aparece'
+                                    : 'aparecem'
+                            }}
+                            aqui.
+                        </p>
+
+                        <p
                             v-if="overdue.length === 0"
                             class="mt-4 rounded-3xl surface p-6 text-sm/6 text-zinc-500 dark:text-zinc-400"
                         >
@@ -417,7 +459,7 @@ const dayPill = (days: number): string =>
 
                         <ul v-else role="list" class="mt-3 grid gap-2">
                             <li
-                                v-for="row in overdue"
+                                v-for="row in shownOverdue"
                                 :key="row.customer_public_id ?? row.name"
                                 class="rounded-3xl bg-white px-5 py-4 transition dark:bg-[#1c1c1e]"
                                 :class="
@@ -619,6 +661,28 @@ const dayPill = (days: number): string =>
                             </li>
                         </ul>
 
+                        <div
+                            v-if="shownOverdue.length < overdue.length"
+                            class="mt-3 flex flex-wrap items-center justify-between gap-3"
+                        >
+                            <p
+                                class="text-[0.8125rem] text-zinc-500 dark:text-zinc-400"
+                            >
+                                {{
+                                    preselected.length > 0
+                                        ? 'Os clientes que escolheu.'
+                                        : `Os ${shownOverdue.length} com a dívida mais antiga.`
+                                }}
+                            </p>
+                            <button
+                                type="button"
+                                :class="buttonOutlineSmall"
+                                @click="showEveryOverdue"
+                            >
+                                Ver todos ({{ overdue.length }})
+                            </button>
+                        </div>
+
                         <template v-if="notYetDue.length > 0">
                             <h2
                                 class="mt-10 text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
@@ -630,7 +694,7 @@ const dayPill = (days: number): string =>
                                 class="mt-3 divide-y divide-zinc-900/[0.07] dark:divide-white/10"
                             >
                                 <li
-                                    v-for="row in notYetDue"
+                                    v-for="row in shownInTerm"
                                     :key="row.customer_public_id ?? row.name"
                                     class="flex flex-wrap items-center gap-x-4 gap-y-1 py-3.5 text-sm"
                                 >
@@ -682,6 +746,15 @@ const dayPill = (days: number): string =>
                                     >
                                 </li>
                             </ul>
+                            <button
+                                v-if="shownInTerm.length < notYetDue.length"
+                                type="button"
+                                class="mt-3"
+                                :class="buttonOutlineSmall"
+                                @click="everyInTermShown = true"
+                            >
+                                Ver todos ({{ notYetDue.length }})
+                            </button>
                         </template>
                     </section>
 
