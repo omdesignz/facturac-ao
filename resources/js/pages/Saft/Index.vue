@@ -11,7 +11,6 @@ import {
     Package,
     ReceiptText,
     RefreshCw,
-    ShieldCheck,
     Users,
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
@@ -60,35 +59,34 @@ const establishment = ref(props.summary.period.establishment ?? '');
 const countCards = computed(() => [
     {
         label: 'Facturas e notas',
-        detail: 'SalesInvoices',
         value: props.summary.counts.sales_invoices,
         icon: ReceiptText,
     },
     {
         label: 'Orçamentos enviados',
-        detail: 'WorkingDocuments',
         value: props.summary.counts.working_documents,
         icon: FileSignature,
     },
     {
         label: 'Recibos',
-        detail: 'Payments',
         value: props.summary.counts.payments,
         icon: HandCoins,
     },
     {
         label: 'Clientes',
-        detail: 'MasterFiles',
         value: props.summary.counts.customers,
         icon: Users,
     },
     {
         label: 'Artigos',
-        detail: 'MasterFiles',
         value: props.summary.counts.products,
         icon: Package,
     },
 ]);
+
+function displayDate(isoDate: string): string {
+    return isoDate.split('-').reverse().join('/');
+}
 
 const downloadUrl = computed(() =>
     exportSaft.url({
@@ -131,33 +129,22 @@ function inspectPeriod(): void {
             <div class="page-shell space-y-6">
                 <FlashBanner />
 
-                <header
-                    class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between"
-                >
-                    <div>
-                        <p class="eyebrow text-zinc-500 dark:text-zinc-400">
-                            Fiscal
-                        </p>
-                        <h1
-                            class="mt-2.5 text-[2.125rem] leading-[1.08] display text-zinc-950 dark:text-white"
-                        >
-                            SAF-T (AO)
-                        </h1>
-                        <p
-                            class="mt-2 max-w-3xl text-sm/6 text-zinc-600 dark:text-zinc-400"
-                        >
-                            Reveja o conteúdo fiscal do período antes de
-                            descarregar. O ficheiro é validado localmente contra
-                            o esquema AGT {{ schema.version }} antes de sair da
-                            aplicação.
-                        </p>
-                    </div>
-                    <div
-                        class="flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800 ring-1 ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20"
+                <header>
+                    <p class="eyebrow text-zinc-500 dark:text-zinc-400">
+                        Fiscal
+                    </p>
+                    <h1
+                        class="mt-2.5 text-[2.125rem] leading-[1.08] display text-zinc-950 dark:text-white"
                     >
-                        <ShieldCheck class="size-4" aria-hidden="true" />
-                        Validação XSD sem rede
-                    </div>
+                        SAF-T (AO)
+                    </h1>
+                    <p
+                        class="mt-2 max-w-3xl text-sm/6 text-zinc-600 dark:text-zinc-400"
+                    >
+                        Reveja o período antes de descarregar. O ficheiro é
+                        conferido com o modelo oficial da AGT (versão
+                        {{ schema.version }}) antes de chegar até si.
+                    </p>
                 </header>
 
                 <section class="rounded-2xl surface p-5 sm:p-6">
@@ -248,11 +235,6 @@ function inspectPeriod(): void {
                         >
                             {{ card.label }}
                         </p>
-                        <p
-                            class="mt-1 text-xs text-zinc-500 dark:text-zinc-400"
-                        >
-                            {{ card.detail }}
-                        </p>
                     </article>
                 </section>
 
@@ -271,8 +253,8 @@ function inspectPeriod(): void {
                                     class="mt-1 text-sm text-zinc-500 dark:text-zinc-400"
                                 >
                                     {{ summary.period.scope_label }} ·
-                                    {{ summary.period.from }} a
-                                    {{ summary.period.to }}
+                                    {{ displayDate(summary.period.from) }} a
+                                    {{ displayDate(summary.period.to) }}
                                 </p>
                             </div>
                             <span
@@ -350,23 +332,20 @@ function inspectPeriod(): void {
                         </ul>
                     </article>
 
-                    <aside
-                        class="rounded-2xl bg-brand-950 p-6 text-white shadow-sm dark:ring-1 dark:ring-white/10"
-                    >
-                        <p class="eyebrow text-accent-300">
+                    <aside class="h-fit rounded-2xl surface p-5 sm:p-6">
+                        <h2 class="font-semibold text-zinc-950 dark:text-white">
                             Ficheiro de facturação
-                        </p>
-                        <h2 class="mt-3 text-xl display">
-                            Descarregar XML validado
                         </h2>
-                        <p class="mt-3 text-sm/6 text-zinc-300">
+                        <p
+                            class="mt-1 text-sm/6 text-zinc-500 dark:text-zinc-400"
+                        >
                             Inclui os documentos emitidos no período, mesmo os
                             anulados. Rascunhos não fazem parte do ficheiro.
                         </p>
                         <a
                             v-if="canDownload"
                             :href="downloadUrl"
-                            class="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent-400 px-4 py-3 text-sm font-semibold text-brand-950 focus-ring-inverted hover:bg-accent-300"
+                            class="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring hover:bg-accent-300"
                         >
                             <Download class="size-4" aria-hidden="true" />
                             Descarregar SAF-T (AO)
@@ -374,39 +353,53 @@ function inspectPeriod(): void {
                         <span
                             v-else
                             aria-disabled="true"
-                            class="mt-6 inline-flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-zinc-700 px-4 py-3 text-sm font-semibold text-zinc-400"
+                            class="mt-5 inline-flex h-10 w-full cursor-not-allowed items-center justify-center gap-2 rounded-full bg-zinc-900/[0.06] px-[1.125rem] text-sm font-semibold text-zinc-500 dark:bg-white/10 dark:text-zinc-400"
                         >
                             <Download class="size-4" aria-hidden="true" />
                             Exportação indisponível
                         </span>
                         <p
                             v-if="!summary.exportable"
-                            class="mt-3 text-xs/5 text-red-200"
+                            class="mt-3 text-xs/5 text-red-700 dark:text-red-300"
                         >
                             Há documentos incompletos no período. Corrija os
-                            registos indicados antes de gerar o XML.
+                            registos indicados antes de gerar o ficheiro.
                         </p>
                         <p
                             v-else-if="!summary.ready"
-                            class="mt-3 text-xs/5 text-amber-200"
+                            class="mt-3 text-xs/5 text-amber-700 dark:text-amber-300"
                         >
                             Pode descarregar para testes. Corrija os avisos
                             antes da entrega oficial à AGT.
                         </p>
                         <dl
-                            class="mt-6 space-y-2 border-t border-white/10 pt-5 text-xs"
+                            class="mt-5 space-y-2 border-t border-zinc-100 pt-4 text-xs dark:border-white/10"
                         >
                             <div class="flex justify-between gap-3">
-                                <dt class="text-zinc-400">Versão</dt>
-                                <dd class="numeric">{{ schema.version }}</dd>
+                                <dt class="text-zinc-500 dark:text-zinc-400">
+                                    Versão
+                                </dt>
+                                <dd
+                                    class="numeric text-zinc-800 dark:text-zinc-200"
+                                >
+                                    {{ schema.version }}
+                                </dd>
                             </div>
                             <div class="flex justify-between gap-3">
-                                <dt class="text-zinc-400">Âmbito</dt>
-                                <dd>{{ schema.scope }}</dd>
+                                <dt class="text-zinc-500 dark:text-zinc-400">
+                                    Âmbito
+                                </dt>
+                                <dd class="text-zinc-800 dark:text-zinc-200">
+                                    {{ schema.scope }}
+                                </dd>
                             </div>
                             <div class="flex justify-between gap-3">
-                                <dt class="text-zinc-400">Formato</dt>
-                                <dd>XML UTF-8</dd>
+                                <dt class="text-zinc-500 dark:text-zinc-400">
+                                    Formato
+                                </dt>
+                                <dd class="text-zinc-800 dark:text-zinc-200">
+                                    XML
+                                </dd>
                             </div>
                         </dl>
                     </aside>

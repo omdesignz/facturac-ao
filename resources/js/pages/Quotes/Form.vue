@@ -501,6 +501,17 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
 
                             <div class="mt-6 grid gap-5 sm:grid-cols-2">
                                 <div>
+                                    <label class="field-label">Cliente</label>
+                                    <div class="mt-2">
+                                        <SelectInput
+                                            v-model="form.customer_public_id"
+                                            :options="customerOptions"
+                                            @update:model-value="selectCustomer"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
                                     <label class="field-label"
                                         >Estabelecimento</label
                                     >
@@ -517,17 +528,6 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                             form.errors.establishment_public_id
                                         "
                                     />
-                                </div>
-
-                                <div>
-                                    <label class="field-label">Cliente</label>
-                                    <div class="mt-2">
-                                        <SelectInput
-                                            v-model="form.customer_public_id"
-                                            :options="customerOptions"
-                                            @update:model-value="selectCustomer"
-                                        />
-                                    </div>
                                 </div>
 
                                 <div>
