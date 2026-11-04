@@ -4,10 +4,12 @@ import {
     getStoredAppearance,
     watchSystemAppearance,
 } from '@/lib/appearance';
+import { watchConnection } from '@/lib/connection';
 
 const appName = import.meta.env.VITE_APP_NAME || 'facturac.ao';
 
 applyAppearance(getStoredAppearance());
+watchConnection();
 watchSystemAppearance();
 
 /*

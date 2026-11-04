@@ -21,16 +21,20 @@ function acceptTerms(): void {
     }
 
     accepting.value = true;
-    router.post(
-        accept.url(),
-        {},
-        {
-            preserveScroll: true,
-            onFinish: () => {
-                accepting.value = false;
+    router
+        .optimistic<{ legal: typeof page.props.legal }>((props) => ({
+            legal: { ...props.legal, terms_reacceptance_required: false },
+        }))
+        .post(
+            accept.url(),
+            {},
+            {
+                preserveScroll: true,
+                onFinish: () => {
+                    accepting.value = false;
+                },
             },
-        },
-    );
+        );
 }
 </script>
 

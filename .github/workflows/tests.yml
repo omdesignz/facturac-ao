@@ -58,6 +58,9 @@ jobs:
       - name: Keyboard list navigation gate
         run: node --test tests/keyboard.test.mjs
 
+      - name: Connection and optimistic update gate
+        run: node --test tests/connection.test.mjs
+
       - name: Today decisions gate
         run: node --test tests/today-decisions.test.mjs
 

@@ -22,6 +22,7 @@ import {
 } from 'vue';
 import AppHeader from '@/components/AppHeader.vue';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
+import ConnectionNotice from '@/components/ConnectionNotice.vue';
 import CookieConsent from '@/components/CookieConsent.vue';
 import ImpersonationBanner from '@/components/ImpersonationBanner.vue';
 import KeyboardShortcuts from '@/components/KeyboardShortcuts.vue';
@@ -163,6 +164,7 @@ onBeforeUnmount(() => stopListening?.());
 
         <MobileTabBar @more="sidebarOpen = true" />
         <KeyboardShortcuts />
+        <ConnectionNotice />
         <div>
             <AppHeader />
 

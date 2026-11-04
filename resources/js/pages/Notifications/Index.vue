@@ -17,6 +17,10 @@ import SelectInput from '@/components/SelectInput.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { confirmAction } from '@/lib/confirm';
 import {
+    withEveryNotificationRead,
+    withoutReadNotifications,
+} from '@/lib/optimistic';
+import {
     clearRead,
     index as notificationsIndex,
     read as markRead,
@@ -31,7 +35,7 @@ interface PaginationLink {
     active: boolean;
 }
 
-const props = defineProps<{
+interface NotificationsPageProps {
     notifications: {
         data: NotificationEntry[];
         links: PaginationLink[];
@@ -42,7 +46,9 @@ const props = defineProps<{
     filters: { estado: string; tema: string };
     topics: { value: string; label: string }[];
     unread: number;
-}>();
+}
+
+const props = defineProps<NotificationsPageProps>();
 
 const topicFilter = ref(props.filters.tema);
 
@@ -79,7 +85,12 @@ function open(entry: NotificationEntry): void {
 }
 
 function markAll(): void {
-    router.post(readAll.url(), {}, { preserveScroll: true });
+    router
+        .optimistic<NotificationsPageProps>((pageProps) => ({
+            notifications: withEveryNotificationRead(pageProps.notifications),
+            unread: 0,
+        }))
+        .post(readAll.url(), {}, { preserveScroll: true });
 }
 
 async function clear(): Promise<void> {
@@ -93,7 +104,11 @@ async function clear(): Promise<void> {
         return;
     }
 
-    router.delete(clearRead.url(), { preserveScroll: true });
+    router
+        .optimistic<NotificationsPageProps>((pageProps) => ({
+            notifications: withoutReadNotifications(pageProps.notifications),
+        }))
+        .delete(clearRead.url(), { preserveScroll: true });
 }
 
 const toneChip: Record<string, string> = {

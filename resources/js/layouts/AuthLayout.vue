@@ -4,6 +4,7 @@ import { Moon, Sun } from '@lucide/vue';
 import { computed, onMounted, ref } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import BrandWordmark from '@/components/BrandWordmark.vue';
+import ConnectionNotice from '@/components/ConnectionNotice.vue';
 import CookieConsent from '@/components/CookieConsent.vue';
 import {
     applyAppearance,
@@ -49,6 +50,7 @@ onMounted(() => {
     <div
         class="flex min-h-svh bg-white text-zinc-950 dark:bg-zinc-950 dark:text-white"
     >
+        <ConnectionNotice />
         <a
             href="#conteudo"
             class="sr-only focus-ring focus:not-sr-only focus:fixed focus:inset-s-3 focus:inset-bs-3 focus:z-[100] focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold dark:focus:bg-zinc-900"

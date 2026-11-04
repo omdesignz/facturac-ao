@@ -18,6 +18,7 @@ import {
     readAll as markAllNotificationsRead,
 } from '@/routes/notifications';
 import { security } from '@/routes/settings';
+import type { NotificationState } from '@/types/notification';
 
 const page = usePage();
 
@@ -133,7 +134,21 @@ function openNotification(id: string): void {
 }
 
 function markEverythingRead(): void {
-    router.post(markAllNotificationsRead.url(), {}, { preserveScroll: true });
+    router
+        .optimistic<{ notifications: NotificationState | null }>((props) =>
+            props.notifications?.recent
+                ? {
+                      notifications: {
+                          unread: 0,
+                          recent: props.notifications.recent.map((entry) => ({
+                              ...entry,
+                              read: true,
+                          })),
+                      },
+                  }
+                : {},
+        )
+        .post(markAllNotificationsRead.url(), {}, { preserveScroll: true });
 }
 </script>
 
