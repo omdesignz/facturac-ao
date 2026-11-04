@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
 import { LoaderCircle, SlidersHorizontal } from '@lucide/vue';
-import FormError from '@/components/FormError.vue';
+import AppButton from '@/components/AppButton.vue';
+import FormField from '@/components/FormField.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { update } from '@/routes/support/settings';
 
@@ -77,20 +78,19 @@ function submit(): void {
                     </div>
 
                     <div class="space-y-5 p-5">
-                        <div v-for="field in fields" :key="field.key">
-                            <label
-                                :for="`setting-${field.key}`"
-                                class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
-                            >
-                                {{ field.label }}
-                            </label>
-
+                        <FormField
+                            v-for="field in fields"
+                            :key="field.key"
+                            :for="`setting-${field.key}`"
+                            :label="field.label"
+                            :error="form.errors[field.key]"
+                        >
                             <textarea
                                 v-if="field.multiline"
                                 :id="`setting-${field.key}`"
                                 v-model="form[field.key]"
                                 rows="2"
-                                class="mt-2 w-full rounded-xl border-0 bg-white px-3 py-2.5 text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring ring-inset dark:bg-white/5 dark:text-white dark:ring-white/10"
+                                class="w-full rounded-xl border-0 bg-white px-3 py-2.5 text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring ring-inset dark:bg-white/5 dark:text-white dark:ring-white/10"
                             />
                             <input
                                 v-else
@@ -104,18 +104,17 @@ function submit(): void {
                                 class="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400"
                             >
                                 {{ field.help }}
-                            </p>
-                            <FormError :message="form.errors[field.key]" />
-                        </div>
+                            </p></FormField
+                        >
                     </div>
 
                     <div
                         class="flex justify-end border-t border-zinc-100 p-5 dark:border-white/10"
                     >
-                        <button
+                        <AppButton
+                            variant="ink"
                             type="submit"
                             :disabled="form.processing"
-                            class="inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                         >
                             <LoaderCircle
                                 v-if="form.processing"
@@ -123,7 +122,7 @@ function submit(): void {
                                 aria-hidden="true"
                             />
                             Guardar definições
-                        </button>
+                        </AppButton>
                     </div>
                 </form>
             </div>

@@ -76,7 +76,8 @@ test('auth buttons use the shared pill roles', function () {
     }
 
     expect((string) file_get_contents(resource_path('js/pages/Auth/Register.vue')))
-        ->toContain('rounded-full bg-accent-400');
+        ->toContain('<AppButton')
+        ->toContain('variant="gold"');
 });
 
 test('no screen falls back to the old brand-blue buttons or labels', function () {

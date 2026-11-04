@@ -9,6 +9,7 @@ import {
     UserRound,
 } from '@lucide/vue';
 import { computed, nextTick, ref } from 'vue';
+import AppButton from '@/components/AppButton.vue';
 import { confirmAction } from '@/lib/confirm';
 import {
     cartLineAmounts,
@@ -21,7 +22,6 @@ import type { CartLine } from '@/lib/pos-cart';
 import {
     buttonGold,
     buttonOutlineSmall,
-    buttonQuiet,
     currencyLabel,
     keyCap,
 } from '@/lib/pos-ui';
@@ -417,16 +417,16 @@ defineExpose({ revealLine });
                         </button>
                     </div>
 
-                    <button
+                    <AppButton
+                        variant="quiet"
+                        size="lg"
                         v-if="!isDiscountOpen(line)"
-                        type="button"
-                        class="inline-flex h-10 items-center gap-1.5 rounded-full px-3 text-[0.8125rem] font-medium text-zinc-600 focus-ring hover:bg-zinc-900/[0.05] hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-white/5 dark:hover:text-white pointer-coarse:h-11"
                         @click="openDiscount(line)"
                     >
                         <Percent class="size-3.5" aria-hidden="true" />
                         Desconto
                         <span class="sr-only">em {{ line.name }}</span>
-                    </button>
+                    </AppButton>
                     <div v-else class="flex items-center gap-1.5">
                         <label
                             :for="discountId(line.itemId)"
@@ -585,14 +585,13 @@ defineExpose({ revealLine });
             </p>
 
             <div class="mt-2 flex justify-center">
-                <button
-                    type="button"
+                <AppButton
+                    variant="quiet"
                     :disabled="lines.length === 0"
-                    :class="buttonQuiet"
                     @click="clearSale"
                 >
                     Limpar venda
-                </button>
+                </AppButton>
             </div>
         </div>
     </div>

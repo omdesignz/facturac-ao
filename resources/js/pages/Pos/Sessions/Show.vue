@@ -2,6 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3';
 import { ArrowLeft, Printer } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import DataTable from '@/components/DataTable.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageStat from '@/components/PageStat.vue';
@@ -406,122 +407,102 @@ const linkClass =
                         v-else
                         class="mt-3 overflow-x-auto overscroll-x-contain"
                     >
-                        <table class="min-w-full text-sm">
-                            <thead>
-                                <tr
-                                    class="border-b border-zinc-900/[0.07] dark:border-white/10"
+                        <DataTable
+                            ><template #head>
+                                <th scope="col" class="text-start">
+                                    Documento
+                                </th>
+                                <th
+                                    scope="col"
+                                    class="hidden text-start sm:table-cell"
                                 >
-                                    <th
-                                        scope="col"
-                                        class="px-3 py-2.5 text-start eyebrow text-zinc-600 sm:px-4 dark:text-zinc-400"
-                                    >
-                                        Documento
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        class="hidden px-3 py-2.5 text-start eyebrow text-zinc-600 sm:table-cell sm:px-4 dark:text-zinc-400"
-                                    >
-                                        Hora
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        class="hidden px-3 py-2.5 text-start eyebrow text-zinc-600 md:table-cell md:px-4 dark:text-zinc-400"
-                                    >
-                                        Cliente
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        class="hidden px-3 py-2.5 text-start eyebrow text-zinc-600 md:table-cell md:px-4 dark:text-zinc-400"
-                                    >
-                                        Meio
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        class="px-3 py-2.5 text-end eyebrow text-zinc-600 sm:px-4 dark:text-zinc-400"
-                                    >
-                                        Total
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        class="px-3 py-2.5 text-end eyebrow text-zinc-600 sm:px-4 dark:text-zinc-400"
-                                    >
-                                        <span class="sr-only">Talão</span>
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody
-                                class="divide-y divide-zinc-900/[0.06] dark:divide-white/10"
+                                    Hora
+                                </th>
+                                <th
+                                    scope="col"
+                                    class="hidden text-start md:table-cell"
+                                >
+                                    Cliente
+                                </th>
+                                <th
+                                    scope="col"
+                                    class="hidden text-start md:table-cell"
+                                >
+                                    Meio
+                                </th>
+                                <th scope="col" class="text-end">Total</th>
+                                <th scope="col" class="text-end">
+                                    <span class="sr-only">Talão</span>
+                                </th>
+                            </template>
+                            <tr
+                                v-for="sale in sales"
+                                :key="sale.public_id"
+                                class="align-top"
                             >
-                                <tr
-                                    v-for="sale in sales"
-                                    :key="sale.public_id"
-                                    class="align-top"
-                                >
-                                    <td class="px-3 py-2.5 sm:px-4">
-                                        <Link
-                                            v-if="sale.document_no"
-                                            :href="documentHref(sale)"
-                                            class="font-mono numeric"
-                                            :class="linkClass"
-                                            >{{ sale.document_no }}</Link
-                                        >
-                                        <span v-else>—</span>
-                                        <p
-                                            class="mt-0.5 text-xs [overflow-wrap:anywhere] text-zinc-600 sm:hidden dark:text-zinc-400"
-                                        >
-                                            {{ formatClock(sale.issued_at) }} ·
-                                            {{ sale.customer_name }} ·
-                                            {{ sale.payment_method_label }}
-                                        </p>
-                                        <p
-                                            class="mt-0.5 hidden text-xs [overflow-wrap:anywhere] text-zinc-600 sm:block md:hidden dark:text-zinc-400"
-                                        >
-                                            {{ sale.customer_name }} ·
-                                            {{ sale.payment_method_label }}
-                                        </p>
-                                    </td>
-                                    <td
-                                        class="hidden px-3 py-2.5 numeric text-zinc-700 sm:table-cell sm:px-4 dark:text-zinc-300"
+                                <td>
+                                    <Link
+                                        v-if="sale.document_no"
+                                        :href="documentHref(sale)"
+                                        class="font-mono numeric"
+                                        :class="linkClass"
+                                        >{{ sale.document_no }}</Link
                                     >
-                                        {{ formatClock(sale.issued_at) }}
-                                    </td>
-                                    <td
-                                        class="hidden px-3 py-2.5 [overflow-wrap:anywhere] text-zinc-700 md:table-cell md:px-4 dark:text-zinc-300"
+                                    <span v-else>—</span>
+                                    <p
+                                        class="mt-0.5 text-xs [overflow-wrap:anywhere] text-zinc-600 sm:hidden dark:text-zinc-400"
                                     >
-                                        {{ sale.customer_name }}
-                                    </td>
-                                    <td
-                                        class="hidden px-3 py-2.5 text-zinc-700 md:table-cell md:px-4 dark:text-zinc-300"
-                                    >
+                                        {{ formatClock(sale.issued_at) }} ·
+                                        {{ sale.customer_name }} ·
                                         {{ sale.payment_method_label }}
-                                    </td>
-                                    <td
-                                        class="px-3 py-2.5 text-end numeric font-semibold whitespace-nowrap text-zinc-950 sm:px-4 dark:text-white"
+                                    </p>
+                                    <p
+                                        class="mt-0.5 hidden text-xs [overflow-wrap:anywhere] text-zinc-600 sm:block md:hidden dark:text-zinc-400"
                                     >
-                                        {{ formatMinor(sale.total_minor) }}
-                                    </td>
-                                    <td
-                                        class="px-3 py-2.5 text-end whitespace-nowrap sm:px-4 print:hidden"
+                                        {{ sale.customer_name }} ·
+                                        {{ sale.payment_method_label }}
+                                    </p>
+                                </td>
+                                <td
+                                    class="hidden numeric text-zinc-700 sm:table-cell dark:text-zinc-300"
+                                >
+                                    {{ formatClock(sale.issued_at) }}
+                                </td>
+                                <td
+                                    class="hidden [overflow-wrap:anywhere] text-zinc-700 md:table-cell dark:text-zinc-300"
+                                >
+                                    {{ sale.customer_name }}
+                                </td>
+                                <td
+                                    class="hidden text-zinc-700 md:table-cell dark:text-zinc-300"
+                                >
+                                    {{ sale.payment_method_label }}
+                                </td>
+                                <td
+                                    class="text-end numeric font-semibold whitespace-nowrap text-zinc-950 dark:text-white"
+                                >
+                                    {{ formatMinor(sale.total_minor) }}
+                                </td>
+                                <td
+                                    class="text-end whitespace-nowrap print:hidden"
+                                >
+                                    <a
+                                        :href="sale.receipt_url"
+                                        target="_blank"
+                                        rel="noopener"
+                                        class="tap-target text-xs text-zinc-700 dark:text-zinc-300"
+                                        :class="linkClass"
+                                        >Talão<span class="sr-only">
+                                            de
+                                            {{
+                                                sale.document_no ?? 'esta venda'
+                                            }}
+                                            (abre noutro separador)</span
+                                        ></a
                                     >
-                                        <a
-                                            :href="sale.receipt_url"
-                                            target="_blank"
-                                            rel="noopener"
-                                            class="tap-target text-xs text-zinc-700 dark:text-zinc-300"
-                                            :class="linkClass"
-                                            >Talão<span class="sr-only">
-                                                de
-                                                {{
-                                                    sale.document_no ??
-                                                    'esta venda'
-                                                }}
-                                                (abre noutro separador)</span
-                                            ></a
-                                        >
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                                </td>
+                            </tr>
+                        </DataTable>
                     </div>
                 </section>
             </div>

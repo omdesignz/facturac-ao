@@ -10,8 +10,11 @@ import {
     Search,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import AppButton from '@/components/AppButton.vue';
+import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import FormError from '@/components/FormError.vue';
+import FormField from '@/components/FormField.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
 import SelectInput from '@/components/SelectInput.vue';
@@ -203,15 +206,15 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                     description="O que vende, com o preço e o IVA já definidos. Numa factura basta escolher — os valores entram sozinhos."
                 >
                     <template #actions>
-                        <button
+                        <AppButton
+                            variant="gold"
                             v-if="canManage"
-                            type="button"
-                            class="inline-flex h-10 w-fit items-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
                             @click="openCreate"
+                            class="w-fit"
                         >
                             <Plus class="size-4" aria-hidden="true" />
                             Novo artigo
-                        </button>
+                        </AppButton>
                     </template>
                 </PageHeader>
 
@@ -265,145 +268,120 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                     />
 
                     <div v-else class="overflow-x-auto">
-                        <table class="min-w-full text-sm">
-                            <thead>
-                                <tr
-                                    class="border-b border-zinc-900/[0.07] text-left dark:border-white/10"
-                                >
-                                    <th class="px-4 py-3 eyebrow text-zinc-500">
-                                        Artigo
-                                    </th>
-                                    <th
-                                        class="hidden px-4 py-3 eyebrow text-zinc-500 sm:table-cell"
-                                    >
-                                        Tipo
-                                    </th>
-                                    <th
-                                        class="px-4 py-3 text-right eyebrow text-zinc-500"
-                                    >
-                                        Preço
-                                    </th>
-                                    <th
-                                        class="hidden px-4 py-3 text-right eyebrow text-zinc-500 md:table-cell"
-                                    >
-                                        IVA
-                                    </th>
-                                    <th class="px-4 py-3 eyebrow text-zinc-500">
-                                        Estado
-                                    </th>
-                                    <th class="px-4 py-3">
-                                        <span class="sr-only">Acções</span>
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody
-                                class="divide-y divide-zinc-900/[0.06] dark:divide-white/10"
+                        <DataTable
+                            ><template #head>
+                                <th>Artigo</th>
+                                <th class="hidden sm:table-cell">Tipo</th>
+                                <th class="text-right">Preço</th>
+                                <th class="hidden text-right md:table-cell">
+                                    IVA
+                                </th>
+                                <th>Estado</th>
+                                <th>
+                                    <span class="sr-only">Acções</span>
+                                </th>
+                            </template>
+                            <tr
+                                v-for="item in items.data"
+                                :key="item.public_id"
                             >
-                                <tr
-                                    v-for="item in items.data"
-                                    :key="item.public_id"
+                                <td>
+                                    <p
+                                        class="font-semibold text-zinc-900 dark:text-white"
+                                    >
+                                        {{ item.name }}
+                                    </p>
+                                    <p
+                                        class="mt-0.5 font-mono numeric text-xs text-zinc-500 dark:text-zinc-400"
+                                    >
+                                        {{ item.code }} ·
+                                        {{ item.unit_of_measure }}
+                                    </p>
+                                    <p
+                                        v-if="item.barcode"
+                                        class="mt-0.5 flex items-center gap-1 font-mono numeric text-xs text-zinc-500 dark:text-zinc-400"
+                                    >
+                                        <ScanBarcode
+                                            class="size-3 shrink-0"
+                                            aria-hidden="true"
+                                        />
+                                        {{ item.barcode }}
+                                    </p>
+                                </td>
+                                <td
+                                    class="hidden text-zinc-600 sm:table-cell dark:text-zinc-400"
                                 >
-                                    <td class="px-4 py-3">
-                                        <p
-                                            class="font-semibold text-zinc-900 dark:text-white"
+                                    {{ item.type_label }}
+                                </td>
+                                <td
+                                    class="text-right numeric font-semibold text-zinc-900 dark:text-white"
+                                >
+                                    {{ formatMoney(item.unit_price_minor) }}
+                                    <span
+                                        class="text-xs font-normal text-zinc-400"
+                                        >{{
+                                            item.currency_code === 'AOA'
+                                                ? 'Kz'
+                                                : item.currency_code
+                                        }}</span
+                                    >
+                                </td>
+                                <td
+                                    class="hidden text-right numeric text-zinc-600 md:table-cell dark:text-zinc-400"
+                                >
+                                    {{ Number(item.tax_percentage) }}%
+                                </td>
+                                <td>
+                                    <StatusBadge
+                                        :label="
+                                            item.is_active
+                                                ? 'Activo'
+                                                : 'Inactivo'
+                                        "
+                                        :tone="
+                                            item.is_active ? 'neutral' : 'draft'
+                                        "
+                                    />
+                                </td>
+                                <td class="text-right">
+                                    <div
+                                        v-if="canManage"
+                                        data-row-actions
+                                        class="flex justify-end gap-1"
+                                    >
+                                        <button
+                                            data-nav-row
+                                            type="button"
+                                            class="icon-button text-zinc-500 focus-ring transition hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-white/5 dark:hover:text-white"
+                                            @click="openEdit(item)"
                                         >
-                                            {{ item.name }}
-                                        </p>
-                                        <p
-                                            class="mt-0.5 font-mono numeric text-xs text-zinc-500 dark:text-zinc-400"
-                                        >
-                                            {{ item.code }} ·
-                                            {{ item.unit_of_measure }}
-                                        </p>
-                                        <p
-                                            v-if="item.barcode"
-                                            class="mt-0.5 flex items-center gap-1 font-mono numeric text-xs text-zinc-500 dark:text-zinc-400"
-                                        >
-                                            <ScanBarcode
-                                                class="size-3 shrink-0"
+                                            <span class="sr-only"
+                                                >Editar {{ item.name }}</span
+                                            >
+                                            <Pencil
+                                                class="size-4"
                                                 aria-hidden="true"
                                             />
-                                            {{ item.barcode }}
-                                        </p>
-                                    </td>
-                                    <td
-                                        class="hidden px-4 py-3 text-zinc-600 sm:table-cell dark:text-zinc-400"
-                                    >
-                                        {{ item.type_label }}
-                                    </td>
-                                    <td
-                                        class="px-4 py-3 text-right numeric font-semibold text-zinc-900 dark:text-white"
-                                    >
-                                        {{ formatMoney(item.unit_price_minor) }}
-                                        <span
-                                            class="text-xs font-normal text-zinc-400"
-                                            >{{
-                                                item.currency_code === 'AOA'
-                                                    ? 'Kz'
-                                                    : item.currency_code
-                                            }}</span
+                                        </button>
+                                        <button
+                                            v-if="item.is_active"
+                                            type="button"
+                                            class="icon-button text-zinc-500 focus-ring transition hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-400/10 dark:hover:text-rose-400"
+                                            @click="deactivate(item)"
                                         >
-                                    </td>
-                                    <td
-                                        class="hidden px-4 py-3 text-right numeric text-zinc-600 md:table-cell dark:text-zinc-400"
-                                    >
-                                        {{ Number(item.tax_percentage) }}%
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        <StatusBadge
-                                            :label="
-                                                item.is_active
-                                                    ? 'Activo'
-                                                    : 'Inactivo'
-                                            "
-                                            :tone="
-                                                item.is_active
-                                                    ? 'neutral'
-                                                    : 'draft'
-                                            "
-                                        />
-                                    </td>
-                                    <td class="px-4 py-3 text-right">
-                                        <div
-                                            v-if="canManage"
-                                            data-row-actions
-                                            class="flex justify-end gap-1"
-                                        >
-                                            <button
-                                                data-nav-row
-                                                type="button"
-                                                class="icon-button text-zinc-500 focus-ring transition hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-white/5 dark:hover:text-white"
-                                                @click="openEdit(item)"
+                                            <span class="sr-only"
+                                                >Desactivar
+                                                {{ item.name }}</span
                                             >
-                                                <span class="sr-only"
-                                                    >Editar
-                                                    {{ item.name }}</span
-                                                >
-                                                <Pencil
-                                                    class="size-4"
-                                                    aria-hidden="true"
-                                                />
-                                            </button>
-                                            <button
-                                                v-if="item.is_active"
-                                                type="button"
-                                                class="icon-button text-zinc-500 focus-ring transition hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-400/10 dark:hover:text-rose-400"
-                                                @click="deactivate(item)"
-                                            >
-                                                <span class="sr-only"
-                                                    >Desactivar
-                                                    {{ item.name }}</span
-                                                >
-                                                <Archive
-                                                    class="size-4"
-                                                    aria-hidden="true"
-                                                />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                                            <Archive
+                                                class="size-4"
+                                                aria-hidden="true"
+                                            />
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </DataTable>
                     </div>
 
                     <nav
@@ -447,59 +425,56 @@ async function deactivate(item: CatalogueItem): Promise<void> {
         >
             <form class="space-y-5" @submit.prevent="submit">
                 <div class="grid gap-5 sm:grid-cols-6">
-                    <div class="sm:col-span-2">
-                        <label for="item-code" class="field-label"
-                            >Código</label
-                        >
-                        <input
+                    <FormField
+                        class="sm:col-span-2"
+                        for="item-code"
+                        label="Código"
+                        :error="form.errors.code"
+                        ><input
                             id="item-code"
                             v-model="form.code"
                             type="text"
                             required
-                            class="mt-2 block form-input font-mono uppercase"
-                        />
-                        <FormError :message="form.errors.code" />
-                    </div>
+                            class="block form-input font-mono uppercase"
+                    /></FormField>
 
-                    <div class="sm:col-span-2">
-                        <label for="item-type" class="field-label">Tipo</label>
-                        <SelectInput
+                    <FormField
+                        class="sm:col-span-2"
+                        for="item-type"
+                        label="Tipo"
+                        :error="form.errors.type"
+                        ><SelectInput
                             id="item-type"
                             v-model="form.type"
-                            class="mt-2"
                             :options="typeOptions"
-                        />
-                        <FormError :message="form.errors.type" />
-                    </div>
+                    /></FormField>
 
-                    <div class="sm:col-span-2">
-                        <label for="item-unit" class="field-label"
-                            >Unidade</label
-                        >
-                        <input
+                    <FormField
+                        class="sm:col-span-2"
+                        for="item-unit"
+                        label="Unidade"
+                        :error="form.errors.unit_of_measure"
+                        ><input
                             id="item-unit"
                             v-model="form.unit_of_measure"
                             type="text"
                             required
                             placeholder="UN"
-                            class="mt-2 block form-input uppercase"
-                        />
-                        <FormError :message="form.errors.unit_of_measure" />
-                    </div>
+                            class="block form-input uppercase"
+                    /></FormField>
 
-                    <div class="sm:col-span-6">
-                        <label for="item-name" class="field-label"
-                            >Designação</label
-                        >
-                        <input
+                    <FormField
+                        class="sm:col-span-6"
+                        for="item-name"
+                        label="Designação"
+                        :error="form.errors.name"
+                        ><input
                             id="item-name"
                             v-model="form.name"
                             type="text"
                             required
-                            class="mt-2 block form-input"
-                        />
-                        <FormError :message="form.errors.name" />
-                    </div>
+                            class="block form-input"
+                    /></FormField>
 
                     <div class="sm:col-span-3">
                         <label for="item-price" class="field-label"
@@ -518,37 +493,34 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                         <FormError :message="form.errors.unit_price" />
                     </div>
 
-                    <div class="sm:col-span-3">
-                        <label for="item-tax" class="field-label"
-                            >IVA (%)</label
-                        >
-                        <input
+                    <FormField
+                        class="sm:col-span-3"
+                        for="item-tax"
+                        label="IVA (%)"
+                        :error="form.errors.tax_percentage"
+                        ><input
                             id="item-tax"
                             v-model="form.tax_percentage"
                             type="text"
                             inputmode="decimal"
                             required
-                            class="mt-2 block form-input text-right font-mono numeric"
-                        />
-                        <FormError :message="form.errors.tax_percentage" />
-                    </div>
+                            class="block form-input text-right font-mono numeric"
+                    /></FormField>
 
-                    <div class="sm:col-span-6">
-                        <label for="item-description" class="field-label"
-                            >Descrição
-                            <span
-                                class="font-normal text-zinc-500 dark:text-zinc-400"
-                                >(opcional)</span
-                            ></label
-                        >
+                    <FormField
+                        class="sm:col-span-6"
+                        for="item-description"
+                        label="Descrição"
+                        optional
+                        :error="form.errors.description"
+                    >
                         <textarea
                             id="item-description"
                             v-model="form.description"
                             rows="2"
-                            class="mt-2 block form-input [--form-rows:2]"
+                            class="block form-input [--form-rows:2]"
                         />
-                        <FormError :message="form.errors.description" />
-                    </div>
+                    </FormField>
 
                     <div class="sm:col-span-3">
                         <label for="item-exemption" class="field-label"
@@ -566,15 +538,14 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                         <FormError :message="form.errors.tax_exemption_code" />
                     </div>
 
-                    <div class="sm:col-span-3">
-                        <label for="item-barcode" class="field-label"
-                            >Código de barras
-                            <span
-                                class="font-normal text-zinc-500 dark:text-zinc-400"
-                                >(opcional)</span
-                            ></label
-                        >
-                        <input
+                    <FormField
+                        class="sm:col-span-3"
+                        for="item-barcode"
+                        label="Código de barras"
+                        optional
+                        :error="form.errors.barcode"
+                        error-id="item-barcode-error"
+                        ><input
                             id="item-barcode"
                             v-model="form.barcode"
                             type="text"
@@ -582,7 +553,7 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                             spellcheck="false"
                             autocomplete="off"
                             maxlength="64"
-                            class="mt-2 block form-input font-mono"
+                            class="block form-input font-mono"
                             :aria-invalid="
                                 form.errors.barcode ? 'true' : undefined
                             "
@@ -595,12 +566,8 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                         />
                         <p id="item-barcode-hint" class="field-hint">
                             Leia o código com o leitor ou escreva-o.
-                        </p>
-                        <FormError
-                            id="item-barcode-error"
-                            :message="form.errors.barcode"
-                        />
-                    </div>
+                        </p></FormField
+                    >
                 </div>
 
                 <ToggleSwitch v-model="form.is_active">
@@ -623,41 +590,35 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                         >
                     </ToggleSwitch>
 
-                    <div v-if="form.tracks_stock" class="mt-4 max-w-xs">
-                        <label for="item-reorder" class="field-label">
-                            Nível mínimo
-                            <span
-                                class="font-normal text-zinc-500 dark:text-zinc-400"
-                                >(opcional)</span
-                            >
-                        </label>
-                        <input
+                    <FormField
+                        v-if="form.tracks_stock"
+                        class="mt-4 max-w-xs"
+                        for="item-reorder"
+                        label="Nível mínimo"
+                        optional
+                        :error="form.errors.reorder_level"
+                        ><input
                             id="item-reorder"
                             v-model="form.reorder_level"
                             type="text"
                             inputmode="decimal"
                             placeholder="0,000"
-                            class="mt-2 form-input numeric"
+                            class="form-input numeric"
                         />
                         <p class="field-hint">
                             Avisamos quando o saldo chegar a este valor.
-                        </p>
-                        <FormError :message="form.errors.reorder_level" />
-                    </div>
+                        </p></FormField
+                    >
                 </div>
 
                 <div class="flex justify-end gap-3 pt-2">
-                    <button
-                        type="button"
-                        class="inline-flex h-10 items-center justify-center rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
-                        @click="dialogOpen = false"
-                    >
+                    <AppButton variant="outline" @click="dialogOpen = false">
                         Cancelar
-                    </button>
-                    <button
+                    </AppButton>
+                    <AppButton
+                        variant="ink"
                         type="submit"
                         :disabled="form.processing"
-                        class="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                     >
                         <LoaderCircle
                             v-if="form.processing"
@@ -665,7 +626,7 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                             aria-hidden="true"
                         />
                         Guardar
-                    </button>
+                    </AppButton>
                 </div>
             </form>
         </RecordDialog>

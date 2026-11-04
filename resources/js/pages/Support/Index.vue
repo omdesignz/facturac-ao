@@ -13,7 +13,9 @@ import {
     UserRoundSearch,
 } from '@lucide/vue';
 import { ref, watch } from 'vue';
-import FormError from '@/components/FormError.vue';
+import AppButton from '@/components/AppButton.vue';
+import DataTable from '@/components/DataTable.vue';
+import FormField from '@/components/FormField.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { store as startImpersonation } from '@/routes/support/impersonation';
@@ -233,14 +235,10 @@ const endedByLabel: Record<string, string> = {
                                 {{ formatMoment(user.last_impersonated_at) }}
                             </span>
 
-                            <button
-                                type="button"
-                                class="inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
-                                @click="openStart(user)"
-                            >
+                            <AppButton variant="ink" @click="openStart(user)">
                                 <LifeBuoy class="size-4" aria-hidden="true" />
                                 Diagnosticar
-                            </button>
+                            </AppButton>
                         </li>
                     </ul>
                 </div>
@@ -270,155 +268,133 @@ const endedByLabel: Record<string, string> = {
                     </div>
 
                     <div v-else class="overflow-x-auto">
-                        <table class="min-w-full text-left text-sm">
-                            <thead
-                                class="border-b border-zinc-100 dark:border-white/10"
+                        <DataTable
+                            ><template #head>
+                                <th>Cliente</th>
+                                <th>Técnico</th>
+                                <th>Motivo</th>
+                                <th>Início</th>
+                                <th>Aviso</th>
+                                <th>Duração</th>
+                                <th>Alterações</th>
+                            </template>
+                            <tr
+                                v-for="session in sessions"
+                                :key="session.public_id"
                             >
-                                <tr>
-                                    <th class="px-4 py-3 eyebrow text-zinc-500">
-                                        Cliente
-                                    </th>
-                                    <th class="px-4 py-3 eyebrow text-zinc-500">
-                                        Técnico
-                                    </th>
-                                    <th class="px-4 py-3 eyebrow text-zinc-500">
-                                        Motivo
-                                    </th>
-                                    <th class="px-4 py-3 eyebrow text-zinc-500">
-                                        Início
-                                    </th>
-                                    <th class="px-4 py-3 eyebrow text-zinc-500">
-                                        Aviso
-                                    </th>
-                                    <th class="px-4 py-3 eyebrow text-zinc-500">
-                                        Duração
-                                    </th>
-                                    <th class="px-4 py-3 eyebrow text-zinc-500">
-                                        Alterações
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody
-                                class="divide-y divide-zinc-100 dark:divide-white/10"
-                            >
-                                <tr
-                                    v-for="session in sessions"
-                                    :key="session.public_id"
-                                >
-                                    <td class="px-4 py-3 align-top">
-                                        <p
-                                            class="font-medium text-zinc-950 dark:text-white"
-                                        >
-                                            {{ session.subject }}
-                                        </p>
-                                        <p
-                                            class="text-xs text-zinc-500 dark:text-zinc-400"
-                                        >
-                                            {{ session.subject_email }}
-                                        </p>
-                                    </td>
-                                    <td
-                                        class="px-4 py-3 align-top text-zinc-700 dark:text-zinc-300"
+                                <td class="align-top">
+                                    <p
+                                        class="font-medium text-zinc-950 dark:text-white"
                                     >
-                                        {{ session.impersonator }}
+                                        {{ session.subject }}
+                                    </p>
+                                    <p
+                                        class="text-xs text-zinc-500 dark:text-zinc-400"
+                                    >
+                                        {{ session.subject_email }}
+                                    </p>
+                                </td>
+                                <td
+                                    class="align-top text-zinc-700 dark:text-zinc-300"
+                                >
+                                    {{ session.impersonator }}
+                                    <p
+                                        v-if="session.ip_address"
+                                        class="text-xs text-zinc-400 dark:text-zinc-500"
+                                    >
+                                        {{ session.ip_address }}
+                                    </p>
+                                </td>
+                                <td
+                                    class="max-w-xs align-top text-zinc-600 dark:text-zinc-400"
+                                >
+                                    {{ session.reason }}
+                                </td>
+                                <td
+                                    class="align-top whitespace-nowrap text-zinc-600 tabular-nums dark:text-zinc-400"
+                                >
+                                    {{ formatMoment(session.started_at) }}
+                                </td>
+                                <td class="align-top">
+                                    <span
+                                        v-if="session.subject_notified"
+                                        class="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-300"
+                                        title="O cliente recebeu o email de aviso"
+                                    >
+                                        <BellRing
+                                            class="size-3.5"
+                                            aria-hidden="true"
+                                        />
+                                        Avisado
+                                    </span>
+                                    <span
+                                        v-else
+                                        class="inline-flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-300"
+                                        title="O email de aviso ainda não saiu"
+                                    >
+                                        <BellOff
+                                            class="size-3.5"
+                                            aria-hidden="true"
+                                        />
+                                        Por enviar
+                                    </span>
+                                </td>
+                                <td class="align-top">
+                                    <span
+                                        v-if="session.open"
+                                        class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300"
+                                    >
+                                        <CircleDot
+                                            class="size-3"
+                                            aria-hidden="true"
+                                        />
+                                        A decorrer
+                                    </span>
+                                    <template v-else>
+                                        <span
+                                            class="whitespace-nowrap text-zinc-700 tabular-nums dark:text-zinc-300"
+                                        >
+                                            {{
+                                                formatDuration(
+                                                    session.duration_seconds,
+                                                )
+                                            }}
+                                        </span>
                                         <p
-                                            v-if="session.ip_address"
+                                            v-if="session.ended_by"
                                             class="text-xs text-zinc-400 dark:text-zinc-500"
                                         >
-                                            {{ session.ip_address }}
+                                            {{
+                                                endedByLabel[
+                                                    session.ended_by
+                                                ] ?? session.ended_by
+                                            }}
                                         </p>
-                                    </td>
-                                    <td
-                                        class="max-w-xs px-4 py-3 align-top text-zinc-600 dark:text-zinc-400"
+                                    </template>
+                                </td>
+                                <td class="align-top">
+                                    <span
+                                        class="inline-flex items-center gap-1.5 text-zinc-700 tabular-nums dark:text-zinc-300"
                                     >
-                                        {{ session.reason }}
-                                    </td>
-                                    <td
-                                        class="px-4 py-3 align-top whitespace-nowrap text-zinc-600 tabular-nums dark:text-zinc-400"
+                                        <Pencil
+                                            class="size-3.5 text-zinc-400"
+                                            aria-hidden="true"
+                                        />
+                                        {{ session.writes }}
+                                    </span>
+                                    <p
+                                        v-if="session.blocked > 0"
+                                        class="mt-1 inline-flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-300"
                                     >
-                                        {{ formatMoment(session.started_at) }}
-                                    </td>
-                                    <td class="px-4 py-3 align-top">
-                                        <span
-                                            v-if="session.subject_notified"
-                                            class="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-300"
-                                            title="O cliente recebeu o email de aviso"
-                                        >
-                                            <BellRing
-                                                class="size-3.5"
-                                                aria-hidden="true"
-                                            />
-                                            Avisado
-                                        </span>
-                                        <span
-                                            v-else
-                                            class="inline-flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-300"
-                                            title="O email de aviso ainda não saiu"
-                                        >
-                                            <BellOff
-                                                class="size-3.5"
-                                                aria-hidden="true"
-                                            />
-                                            Por enviar
-                                        </span>
-                                    </td>
-                                    <td class="px-4 py-3 align-top">
-                                        <span
-                                            v-if="session.open"
-                                            class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300"
-                                        >
-                                            <CircleDot
-                                                class="size-3"
-                                                aria-hidden="true"
-                                            />
-                                            A decorrer
-                                        </span>
-                                        <template v-else>
-                                            <span
-                                                class="whitespace-nowrap text-zinc-700 tabular-nums dark:text-zinc-300"
-                                            >
-                                                {{
-                                                    formatDuration(
-                                                        session.duration_seconds,
-                                                    )
-                                                }}
-                                            </span>
-                                            <p
-                                                v-if="session.ended_by"
-                                                class="text-xs text-zinc-400 dark:text-zinc-500"
-                                            >
-                                                {{
-                                                    endedByLabel[
-                                                        session.ended_by
-                                                    ] ?? session.ended_by
-                                                }}
-                                            </p>
-                                        </template>
-                                    </td>
-                                    <td class="px-4 py-3 align-top">
-                                        <span
-                                            class="inline-flex items-center gap-1.5 text-zinc-700 tabular-nums dark:text-zinc-300"
-                                        >
-                                            <Pencil
-                                                class="size-3.5 text-zinc-400"
-                                                aria-hidden="true"
-                                            />
-                                            {{ session.writes }}
-                                        </span>
-                                        <p
-                                            v-if="session.blocked > 0"
-                                            class="mt-1 inline-flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-300"
-                                        >
-                                            <Ban
-                                                class="size-3.5"
-                                                aria-hidden="true"
-                                            />
-                                            {{ session.blocked }} bloqueada(s)
-                                        </p>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                                        <Ban
+                                            class="size-3.5"
+                                            aria-hidden="true"
+                                        />
+                                        {{ session.blocked }} bloqueada(s)
+                                    </p>
+                                </td>
+                            </tr>
+                        </DataTable>
                     </div>
                 </section>
             </div>
@@ -432,13 +408,12 @@ const endedByLabel: Record<string, string> = {
             @close="dialogOpen = false"
         >
             <form class="space-y-5" @submit.prevent="submit">
-                <div class="space-y-2">
-                    <label
-                        for="impersonation-reason"
-                        class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
-                    >
-                        Motivo
-                    </label>
+                <FormField
+                    class="space-y-2"
+                    for="impersonation-reason"
+                    label="Motivo"
+                    :error="form.errors.reason"
+                >
                     <textarea
                         id="impersonation-reason"
                         v-model="form.reason"
@@ -447,23 +422,18 @@ const endedByLabel: Record<string, string> = {
                         placeholder="Ex.: cliente não consegue guardar o rascunho da factura FT 2026/14."
                         class="w-full rounded-xl border-0 bg-white px-3 py-2.5 text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring ring-inset placeholder:text-zinc-400 dark:bg-white/5 dark:text-white dark:ring-white/10"
                     />
-                    <FormError :message="form.errors.reason" />
-                </div>
+                </FormField>
 
                 <div
                     class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"
                 >
-                    <button
-                        type="button"
-                        class="inline-flex h-10 items-center justify-center rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
-                        @click="dialogOpen = false"
-                    >
+                    <AppButton variant="outline" @click="dialogOpen = false">
                         Cancelar
-                    </button>
-                    <button
+                    </AppButton>
+                    <AppButton
+                        variant="ink"
                         type="submit"
                         :disabled="form.processing"
-                        class="inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                     >
                         <LoaderCircle
                             v-if="form.processing"
@@ -471,7 +441,7 @@ const endedByLabel: Record<string, string> = {
                             aria-hidden="true"
                         />
                         Começar sessão
-                    </button>
+                    </AppButton>
                 </div>
             </form>
         </RecordDialog>

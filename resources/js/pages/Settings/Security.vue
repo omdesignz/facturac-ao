@@ -16,7 +16,10 @@ import {
     Timer,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import AppButton from '@/components/AppButton.vue';
+import DataTable from '@/components/DataTable.vue';
 import FormError from '@/components/FormError.vue';
+import FormField from '@/components/FormField.vue';
 import GoogleMark from '@/components/GoogleMark.vue';
 import PasskeyManager from '@/components/PasskeyManager.vue';
 import type { Passkey } from '@/components/PasskeyManager.vue';
@@ -298,29 +301,19 @@ watch(
                     <div
                         class="flex flex-col gap-4 p-6 sm:flex-row sm:items-end"
                     >
-                        <div class="w-full sm:max-w-xs">
-                            <label
-                                for="work-session-minutes"
-                                class="field-label"
-                            >
-                                Duração
-                            </label>
-                            <SelectInput
+                        <FormField
+                            class="w-full sm:max-w-xs"
+                            for="work-session-minutes"
+                            label="Duração"
+                            :error="workSessionForm.errors.work_session_minutes"
+                            ><SelectInput
                                 id="work-session-minutes"
                                 v-model="workSessionForm.work_session_minutes"
-                                class="mt-2"
                                 :options="workSessionOptions"
-                            />
-                            <FormError
-                                :message="
-                                    workSessionForm.errors.work_session_minutes
-                                "
-                            />
-                        </div>
-                        <button
-                            type="button"
+                        /></FormField>
+                        <AppButton
+                            variant="ink"
                             :disabled="workSessionForm.processing"
-                            class="inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                             @click="saveWorkSession"
                         >
                             <LoaderCircle
@@ -329,7 +322,7 @@ watch(
                                 aria-hidden="true"
                             />
                             Guardar
-                        </button>
+                        </AppButton>
                     </div>
                     <p
                         class="px-6 pb-6 text-xs text-zinc-500 dark:text-zinc-400"
@@ -367,81 +360,60 @@ watch(
                     </div>
 
                     <div class="overflow-x-auto">
-                        <table class="min-w-full text-left text-sm">
-                            <thead
-                                class="border-b border-zinc-100 dark:border-white/10"
+                        <DataTable
+                            ><template #head>
+                                <th>Tema</th>
+                                <th class="text-center">Na aplicação</th>
+                                <th class="text-center">Por email</th>
+                            </template>
+                            <tr
+                                v-for="topic in notificationTopics"
+                                :key="topic.value"
                             >
-                                <tr>
-                                    <th class="px-6 py-3 eyebrow text-zinc-500">
-                                        Tema
-                                    </th>
-                                    <th
-                                        class="px-3 py-3 text-center eyebrow text-zinc-500"
+                                <td>
+                                    <p
+                                        class="font-medium text-zinc-950 dark:text-white"
                                     >
-                                        Na aplicação
-                                    </th>
-                                    <th
-                                        class="px-6 py-3 text-center eyebrow text-zinc-500"
+                                        {{ topic.label }}
+                                    </p>
+                                    <p
+                                        class="mt-0.5 text-xs/5 text-zinc-500 dark:text-zinc-400"
                                     >
-                                        Por email
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody
-                                class="divide-y divide-zinc-100 dark:divide-white/10"
-                            >
-                                <tr
-                                    v-for="topic in notificationTopics"
-                                    :key="topic.value"
-                                >
-                                    <td class="px-6 py-3">
-                                        <p
-                                            class="font-medium text-zinc-950 dark:text-white"
-                                        >
-                                            {{ topic.label }}
-                                        </p>
-                                        <p
-                                            class="mt-0.5 text-xs/5 text-zinc-500 dark:text-zinc-400"
-                                        >
-                                            {{ topic.description }}
-                                        </p>
-                                    </td>
-                                    <td class="px-3 py-3 text-center">
-                                        <input
-                                            v-model="
-                                                notificationForm.topics[
-                                                    topic.value
-                                                ].database
-                                            "
-                                            type="checkbox"
-                                            :aria-label="`${topic.label} na aplicação`"
-                                            class="form-checkbox"
-                                        />
-                                    </td>
-                                    <td class="px-6 py-3 text-center">
-                                        <input
-                                            v-model="
-                                                notificationForm.topics[
-                                                    topic.value
-                                                ].mail
-                                            "
-                                            type="checkbox"
-                                            :aria-label="`${topic.label} por email`"
-                                            class="form-checkbox"
-                                        />
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                                        {{ topic.description }}
+                                    </p>
+                                </td>
+                                <td class="text-center">
+                                    <input
+                                        v-model="
+                                            notificationForm.topics[topic.value]
+                                                .database
+                                        "
+                                        type="checkbox"
+                                        :aria-label="`${topic.label} na aplicação`"
+                                        class="form-checkbox"
+                                    />
+                                </td>
+                                <td class="text-center">
+                                    <input
+                                        v-model="
+                                            notificationForm.topics[topic.value]
+                                                .mail
+                                        "
+                                        type="checkbox"
+                                        :aria-label="`${topic.label} por email`"
+                                        class="form-checkbox"
+                                    />
+                                </td>
+                            </tr>
+                        </DataTable>
                     </div>
 
                     <div
                         class="flex items-center justify-end border-t border-zinc-100 p-6 dark:border-white/10"
                     >
-                        <button
-                            type="button"
+                        <AppButton
+                            variant="ink"
                             :disabled="notificationForm.processing"
-                            class="inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                             @click="saveNotificationPreferences"
                         >
                             <LoaderCircle
@@ -450,7 +422,7 @@ watch(
                                 aria-hidden="true"
                             />
                             Guardar preferências
-                        </button>
+                        </AppButton>
                     </div>
                 </section>
 
@@ -605,10 +577,10 @@ watch(
                             v-bind="enableTwoFactor.form()"
                             #default="{ processing }"
                         >
-                            <button
+                            <AppButton
+                                variant="ink"
                                 type="submit"
                                 :disabled="processing"
-                                class="inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                             >
                                 <LoaderCircle
                                     v-if="processing"
@@ -616,7 +588,7 @@ watch(
                                     aria-hidden="true"
                                 />
                                 {{ processing ? 'A preparar…' : 'Activar MFA' }}
-                            </button>
+                            </AppButton>
                         </Form>
                     </div>
 
@@ -697,10 +669,10 @@ watch(
                                     />
                                     <FormError :message="errors.code" />
                                 </div>
-                                <button
+                                <AppButton
+                                    variant="ink"
                                     type="submit"
                                     :disabled="processing"
-                                    class="inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                                 >
                                     <LoaderCircle
                                         v-if="processing"
@@ -708,7 +680,7 @@ watch(
                                         aria-hidden="true"
                                     />
                                     Confirmar
-                                </button>
+                                </AppButton>
                             </Form>
 
                             <Form
@@ -746,10 +718,9 @@ watch(
                         </div>
 
                         <div class="mt-6 flex flex-wrap gap-3">
-                            <button
-                                type="button"
+                            <AppButton
+                                variant="outline"
                                 :disabled="recoveryRequest.processing"
-                                class="flex h-10 items-center justify-center gap-2 rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 transition ring-inset hover:bg-zinc-50 disabled:opacity-60 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
                                 @click="loadRecoveryCodes"
                             >
                                 <LoaderCircle
@@ -763,7 +734,7 @@ watch(
                                     aria-hidden="true"
                                 />
                                 Mostrar códigos de recuperação
-                            </button>
+                            </AppButton>
 
                             <Form
                                 v-bind="disableTwoFactor.form()"

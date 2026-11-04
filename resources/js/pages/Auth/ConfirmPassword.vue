@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
 import { LoaderCircle, ShieldAlert } from '@lucide/vue';
-import FormError from '@/components/FormError.vue';
+import AppButton from '@/components/AppButton.vue';
+import FormField from '@/components/FormField.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import { focusFirstInvalid } from '@/lib/focus';
 import { store as passwordConfirmStore } from '@/routes/password/confirm';
@@ -31,13 +32,12 @@ import { store as passwordConfirmStore } from '@/routes/password/confirm';
             @error="focusFirstInvalid()"
             #default="{ errors, processing }"
         >
-            <div>
-                <label
-                    for="password"
-                    class="block text-sm/6 font-medium text-zinc-900 dark:text-zinc-100"
-                    >Palavra-passe</label
-                >
-                <input
+            <FormField
+                for="password"
+                label="Palavra-passe"
+                :error="errors.password"
+                error-id="password-error"
+                ><input
                     id="password"
                     name="password"
                     type="password"
@@ -48,15 +48,15 @@ import { store as passwordConfirmStore } from '@/routes/password/confirm';
                     :aria-describedby="
                         errors.password ? 'password-error' : undefined
                     "
-                    class="mt-2 block form-input"
-                />
-                <FormError id="password-error" :message="errors.password" />
-            </div>
+                    class="block form-input"
+            /></FormField>
 
-            <button
+            <AppButton
+                variant="ink"
+                size="lg"
                 type="submit"
                 :disabled="processing"
-                class="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-brand-950 px-4 text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
+                class="w-full"
             >
                 <LoaderCircle
                     v-if="processing"
@@ -64,7 +64,7 @@ import { store as passwordConfirmStore } from '@/routes/password/confirm';
                     aria-hidden="true"
                 />
                 {{ processing ? 'A confirmar…' : 'Confirmar e continuar' }}
-            </button>
+            </AppButton>
         </Form>
     </AuthLayout>
 </template>

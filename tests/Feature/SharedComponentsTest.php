@@ -7,6 +7,46 @@ function component(string $path): string
     return (string) file_get_contents(resource_path("js/{$path}"));
 }
 
+test('a pill is an AppButton, so its look is decided in one place', function () {
+    $handmade = collect(File::allFiles(resource_path('js')))
+        ->filter(fn ($file): bool => $file->getExtension() === 'vue')
+        ->reject(fn ($file): bool => in_array($file->getFilename(), ['Landing.vue', 'AppButton.vue'], true))
+        ->filter(fn ($file): bool => preg_match(
+            '/class="[^"]*\b(?:h-10|h-11)\b[^"]*\brounded-full\b[^"]*(?<!:)\bbg-(?:accent-400|brand-950)\b[^"]*"/',
+            $file->getContents(),
+        ) === 1)
+        ->map(fn ($file): string => $file->getRelativePathname())
+        ->values()
+        ->all();
+
+    expect($handmade)->toBe([]);
+});
+
+test('the button is the only place that knows the four roles', function () {
+    expect(component('lib/button.ts'))
+        ->toContain("export type ButtonVariant = 'gold' | 'ink' | 'outline' | 'quiet'")
+        ->and(component('components/AppButton.vue'))
+        ->toContain("props.external ? 'a' : Link")
+        ->toContain('buttonClass(variant, size)')
+        ->and(component('lib/pos-ui.ts'))
+        ->toContain("from '@/lib/button'");
+});
+
+test('a field names its control and carries its own error', function () {
+    expect(component('components/FormField.vue'))
+        ->toContain(':for="props.for"')
+        ->toContain('(opcional)')
+        ->toContain('<FormError :id="errorId" :message="error" />');
+});
+
+test('tables share one heading and one cell padding', function () {
+    expect(component('components/DataTable.vue'))
+        ->toContain('data-table')
+        ->toContain('<slot name="head" />')
+        ->and((string) file_get_contents(resource_path('css/app.css')))
+        ->toContain('.data-table :is(th, td)');
+});
+
 test('the lifecycle track lays itself out by its own width and never overflows its box', function () {
     $lifecycle = component('components/DocumentLifecycle.vue');
 

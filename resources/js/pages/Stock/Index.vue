@@ -11,9 +11,11 @@ import {
     TriangleAlert,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import AppButton from '@/components/AppButton.vue';
+import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
-import FormError from '@/components/FormError.vue';
+import FormField from '@/components/FormField.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageStat from '@/components/PageStat.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
@@ -195,15 +197,15 @@ function isInbound(quantity: string): boolean {
                     description="O que tem em cada estabelecimento. Emitir uma factura dá baixa automaticamente; uma nota de crédito devolve."
                 >
                     <template #actions>
-                        <button
+                        <AppButton
+                            variant="gold"
                             v-if="canManage && trackedItems.length > 0"
-                            type="button"
-                            class="inline-flex h-10 w-fit items-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
                             @click="openDialog"
+                            class="w-fit"
                         >
                             <PackagePlus class="size-4" aria-hidden="true" />
                             Registar movimento
-                        </button>
+                        </AppButton>
                     </template>
                     <template #stats>
                         <PageStat
@@ -318,92 +320,68 @@ function isInbound(quantity: string): boolean {
                     />
 
                     <div v-else class="overflow-x-auto">
-                        <table class="min-w-full text-left text-sm">
-                            <thead
-                                class="border-b border-zinc-900/[0.07] dark:border-white/10"
-                            >
-                                <tr>
-                                    <th class="px-4 py-3 eyebrow text-zinc-500">
-                                        Artigo
-                                    </th>
-                                    <th class="px-4 py-3 eyebrow text-zinc-500">
-                                        Estabelecimento
-                                    </th>
-                                    <th
-                                        class="px-4 py-3 text-right eyebrow text-zinc-500"
+                        <DataTable
+                            ><template #head>
+                                <th>Artigo</th>
+                                <th>Estabelecimento</th>
+                                <th class="text-right">Quantidade</th>
+                                <th class="hidden text-right lg:table-cell">
+                                    Custo médio
+                                </th>
+                                <th class="text-right">Valor</th>
+                            </template>
+                            <tr v-for="level in levels" :key="level.id">
+                                <td>
+                                    <p
+                                        class="font-medium text-zinc-950 dark:text-white"
                                     >
-                                        Quantidade
-                                    </th>
-                                    <th
-                                        class="hidden px-4 py-3 text-right eyebrow text-zinc-500 lg:table-cell"
+                                        {{ level.name }}
+                                    </p>
+                                    <p
+                                        class="numeric text-xs text-zinc-500 dark:text-zinc-400"
                                     >
-                                        Custo médio
-                                    </th>
-                                    <th
-                                        class="px-4 py-3 text-right eyebrow text-zinc-500"
+                                        {{ level.code }}
+                                    </p>
+                                </td>
+                                <td class="text-zinc-600 dark:text-zinc-400">
+                                    {{ level.establishment }}
+                                </td>
+                                <td class="text-right">
+                                    <span
+                                        :class="[
+                                            level.negative
+                                                ? 'text-rose-700 dark:text-rose-300'
+                                                : level.below_reorder
+                                                  ? 'text-amber-700 dark:text-amber-300'
+                                                  : 'text-zinc-950 dark:text-white',
+                                            'numeric font-medium',
+                                        ]"
                                     >
-                                        Valor
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody
-                                class="divide-y divide-zinc-900/[0.06] dark:divide-white/10"
-                            >
-                                <tr v-for="level in levels" :key="level.id">
-                                    <td class="px-4 py-3">
-                                        <p
-                                            class="font-medium text-zinc-950 dark:text-white"
-                                        >
-                                            {{ level.name }}
-                                        </p>
-                                        <p
-                                            class="numeric text-xs text-zinc-500 dark:text-zinc-400"
-                                        >
-                                            {{ level.code }}
-                                        </p>
-                                    </td>
-                                    <td
-                                        class="px-4 py-3 text-zinc-600 dark:text-zinc-400"
+                                        {{ level.quantity }}
+                                    </span>
+                                    <span
+                                        class="ms-1 text-xs text-zinc-500 dark:text-zinc-400"
+                                        >{{ level.unit_of_measure }}</span
                                     >
-                                        {{ level.establishment }}
-                                    </td>
-                                    <td class="px-4 py-3 text-right">
-                                        <span
-                                            :class="[
-                                                level.negative
-                                                    ? 'text-rose-700 dark:text-rose-300'
-                                                    : level.below_reorder
-                                                      ? 'text-amber-700 dark:text-amber-300'
-                                                      : 'text-zinc-950 dark:text-white',
-                                                'numeric font-medium',
-                                            ]"
-                                        >
-                                            {{ level.quantity }}
-                                        </span>
-                                        <span
-                                            class="ms-1 text-xs text-zinc-500 dark:text-zinc-400"
-                                            >{{ level.unit_of_measure }}</span
-                                        >
-                                        <p
-                                            v-if="level.reorder_level"
-                                            class="text-xs text-zinc-400 dark:text-zinc-500"
-                                        >
-                                            mín. {{ level.reorder_level }}
-                                        </p>
-                                    </td>
-                                    <td
-                                        class="hidden px-4 py-3 text-right numeric text-zinc-600 lg:table-cell dark:text-zinc-400"
+                                    <p
+                                        v-if="level.reorder_level"
+                                        class="text-xs text-zinc-400 dark:text-zinc-500"
                                     >
-                                        {{ money(level.average_cost_minor) }}
-                                    </td>
-                                    <td
-                                        class="px-4 py-3 text-right numeric font-medium text-zinc-950 dark:text-white"
-                                    >
-                                        {{ money(level.value_minor) }}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                                        mín. {{ level.reorder_level }}
+                                    </p>
+                                </td>
+                                <td
+                                    class="hidden text-right numeric text-zinc-600 lg:table-cell dark:text-zinc-400"
+                                >
+                                    {{ money(level.average_cost_minor) }}
+                                </td>
+                                <td
+                                    class="text-right numeric font-medium text-zinc-950 dark:text-white"
+                                >
+                                    {{ money(level.value_minor) }}
+                                </td>
+                            </tr>
+                        </DataTable>
                     </div>
                 </div>
 
@@ -508,119 +486,106 @@ function isInbound(quantity: string): boolean {
         >
             <form class="space-y-5" @submit.prevent="submit">
                 <div class="grid gap-5 sm:grid-cols-2">
-                    <div class="sm:col-span-2">
-                        <label class="field-label"> Artigo </label>
-                        <div class="mt-2">
+                    <FormField
+                        class="sm:col-span-2"
+                        label="Artigo"
+                        :error="form.errors.catalogue_item"
+                        ><div>
                             <SelectInput
                                 v-model="form.catalogue_item"
                                 :options="itemOptions"
-                            />
-                        </div>
-                        <FormError :message="form.errors.catalogue_item" />
-                    </div>
+                            /></div
+                    ></FormField>
 
-                    <div>
-                        <label class="field-label"> Tipo de movimento </label>
-                        <div class="mt-2">
+                    <FormField
+                        label="Tipo de movimento"
+                        :error="form.errors.type"
+                        ><div>
                             <SelectInput
                                 v-model="form.type"
                                 :options="typeOptions"
-                            />
-                        </div>
-                        <FormError :message="form.errors.type" />
-                    </div>
+                            /></div
+                    ></FormField>
 
-                    <div>
-                        <label class="field-label"> Estabelecimento </label>
-                        <div class="mt-2">
+                    <FormField
+                        label="Estabelecimento"
+                        :error="form.errors.establishment"
+                        ><div>
                             <SelectInput
                                 v-model="form.establishment"
                                 :options="establishmentOptions"
-                            />
-                        </div>
-                        <FormError :message="form.errors.establishment" />
-                    </div>
+                            /></div
+                    ></FormField>
 
-                    <div v-if="selectedType?.is_transfer" class="sm:col-span-2">
-                        <label class="field-label"> Destino </label>
-                        <div class="mt-2">
+                    <FormField
+                        v-if="selectedType?.is_transfer"
+                        class="sm:col-span-2"
+                        label="Destino"
+                        :error="form.errors.destination_establishment"
+                        ><div>
                             <SelectInput
                                 v-model="form.destination_establishment"
                                 :options="establishmentOptions"
-                            />
-                        </div>
-                        <FormError
-                            :message="form.errors.destination_establishment"
-                        />
-                    </div>
+                            /></div
+                    ></FormField>
 
-                    <div>
-                        <label for="movement-quantity" class="field-label">
-                            Quantidade
-                        </label>
-                        <input
+                    <FormField
+                        for="movement-quantity"
+                        label="Quantidade"
+                        :error="form.errors.quantity"
+                        ><input
                             id="movement-quantity"
                             v-model="form.quantity"
                             type="text"
                             inputmode="decimal"
                             placeholder="0,000"
-                            class="mt-2 form-input numeric"
-                        />
-                        <FormError :message="form.errors.quantity" />
-                    </div>
+                            class="form-input numeric"
+                    /></FormField>
 
-                    <div v-if="selectedType?.carries_cost">
-                        <label for="movement-cost" class="field-label">
-                            Custo unitário
-                        </label>
-                        <input
+                    <FormField
+                        v-if="selectedType?.carries_cost"
+                        for="movement-cost"
+                        label="Custo unitário"
+                        :error="form.errors.unit_cost"
+                        ><input
                             id="movement-cost"
                             v-model="form.unit_cost"
                             type="text"
                             inputmode="decimal"
                             placeholder="0,00"
-                            class="mt-2 form-input numeric"
+                            class="form-input numeric"
                         />
                         <p class="field-hint">
                             Entra na média ponderada que valoriza o armazém.
-                        </p>
-                        <FormError :message="form.errors.unit_cost" />
-                    </div>
+                        </p></FormField
+                    >
 
-                    <div class="sm:col-span-2">
-                        <label for="movement-note" class="field-label">
-                            Nota
-                            <span
-                                class="font-normal text-zinc-500 dark:text-zinc-400"
-                                >(opcional)</span
-                            >
-                        </label>
-                        <input
+                    <FormField
+                        class="sm:col-span-2"
+                        for="movement-note"
+                        label="Nota"
+                        optional
+                        :error="form.errors.note"
+                        ><input
                             id="movement-note"
                             v-model="form.note"
                             type="text"
                             maxlength="500"
                             placeholder="Ex.: guia do fornecedor n.º 88"
-                            class="mt-2 form-input"
-                        />
-                        <FormError :message="form.errors.note" />
-                    </div>
+                            class="form-input"
+                    /></FormField>
                 </div>
 
                 <div
                     class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"
                 >
-                    <button
-                        type="button"
-                        class="inline-flex h-10 items-center justify-center rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
-                        @click="dialogOpen = false"
-                    >
+                    <AppButton variant="outline" @click="dialogOpen = false">
                         Cancelar
-                    </button>
-                    <button
+                    </AppButton>
+                    <AppButton
+                        variant="ink"
                         type="submit"
                         :disabled="form.processing"
-                        class="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                     >
                         <LoaderCircle
                             v-if="form.processing"
@@ -628,7 +593,7 @@ function isInbound(quantity: string): boolean {
                             aria-hidden="true"
                         />
                         Registar
-                    </button>
+                    </AppButton>
                 </div>
             </form>
         </RecordDialog>

@@ -2,6 +2,7 @@
 import { Link, router, usePage } from '@inertiajs/vue3';
 import { ScrollText } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import AppButton from '@/components/AppButton.vue';
 import { accept } from '@/routes/legal/terms';
 
 const page = usePage();
@@ -55,14 +56,15 @@ function acceptTerms(): void {
                 </Link>
             </p>
 
-            <button
-                type="button"
+            <AppButton
+                variant="ink"
+                size="sm"
                 :disabled="accepting"
-                class="tap-target ms-auto inline-flex h-8 items-center rounded-full bg-brand-950 px-3.5 text-[0.8125rem] font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:opacity-60 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                 @click="acceptTerms"
+                class="ms-auto"
             >
                 Aceito
-            </button>
+            </AppButton>
         </div>
     </div>
 </template>

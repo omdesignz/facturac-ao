@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { Form, Head, Link, usePage } from '@inertiajs/vue3';
 import { Building2, LoaderCircle } from '@lucide/vue';
-import FormError from '@/components/FormError.vue';
+import AppButton from '@/components/AppButton.vue';
+import FormField from '@/components/FormField.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import { logout } from '@/routes';
 import { store as workspaceStore } from '@/routes/workspace';
@@ -32,29 +33,26 @@ const page = usePage();
             class="space-y-5"
             #default="{ errors, processing }"
         >
-            <div>
-                <label
-                    for="workspace-name"
-                    class="block text-sm/6 font-medium text-zinc-900 dark:text-zinc-100"
-                    >Nome do espaço</label
-                >
-                <input
+            <FormField
+                for="workspace-name"
+                label="Nome do espaço"
+                :error="errors.workspace_name"
+                ><input
                     id="workspace-name"
                     name="workspace_name"
                     type="text"
                     autocomplete="organization"
                     required
                     autofocus
-                    class="mt-2 block form-input"
+                    class="block form-input"
                     placeholder="Ex.: Kwanza Mercantil"
-                />
-                <FormError :message="errors.workspace_name" />
-            </div>
+            /></FormField>
 
-            <button
+            <AppButton
+                variant="gold"
                 type="submit"
                 :disabled="processing"
-                class="flex h-10 w-full items-center justify-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
+                class="w-full"
             >
                 <LoaderCircle
                     v-if="processing"
@@ -62,7 +60,7 @@ const page = usePage();
                     aria-hidden="true"
                 />
                 {{ processing ? 'A criar…' : 'Criar espaço' }}
-            </button>
+            </AppButton>
         </Form>
 
         <template #footer>

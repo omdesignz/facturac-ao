@@ -18,6 +18,8 @@ import {
     Users,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import AppButton from '@/components/AppButton.vue';
+import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import FileInput from '@/components/FileInput.vue';
 import PageHeader from '@/components/PageHeader.vue';
@@ -754,9 +756,9 @@ function historyUrl(publicId: string): string {
                                         Validar não cria nem altera clientes ou
                                         artigos.
                                     </p>
-                                    <button
+                                    <AppButton
+                                        variant="ink"
                                         type="submit"
-                                        class="inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                                         :disabled="
                                             !canValidate ||
                                             mappingForm.processing
@@ -773,7 +775,7 @@ function historyUrl(publicId: string): string {
                                             aria-hidden="true"
                                         />
                                         Validar {{ selected.total_rows }} linhas
-                                    </button>
+                                    </AppButton>
                                 </div>
                             </form>
                         </section>
@@ -816,125 +818,112 @@ function historyUrl(publicId: string): string {
                                     <div
                                         class="inline-block min-w-full align-middle"
                                     >
-                                        <table
-                                            class="relative min-w-full divide-y divide-zinc-300 dark:divide-white/15"
-                                        >
-                                            <thead
-                                                class="bg-zinc-50 dark:bg-zinc-800/75"
+                                        <DataTable
+                                            ><template #head>
+                                                <th
+                                                    scope="col"
+                                                    class="whitespace-nowrap"
+                                                >
+                                                    Linha
+                                                </th>
+                                                <th
+                                                    v-for="header in selected.headers"
+                                                    :key="header"
+                                                    scope="col"
+                                                    class="whitespace-nowrap"
+                                                >
+                                                    {{ header }}
+                                                </th>
+                                                <th
+                                                    scope="col"
+                                                    class="text-right whitespace-nowrap"
+                                                >
+                                                    Estado
+                                                </th>
+                                            </template>
+                                            <template
+                                                v-for="row in selected.rows"
+                                                :key="row.row_number"
                                             >
                                                 <tr>
-                                                    <th
-                                                        scope="col"
-                                                        class="py-3.5 pr-3 pl-5 text-left text-sm font-semibold whitespace-nowrap text-zinc-900 sm:pl-7 dark:text-zinc-200"
+                                                    <td
+                                                        class="text-sm font-semibold whitespace-nowrap text-zinc-900 dark:text-white"
                                                     >
-                                                        Linha
-                                                    </th>
-                                                    <th
+                                                        {{ row.row_number }}
+                                                    </td>
+                                                    <td
                                                         v-for="header in selected.headers"
                                                         :key="header"
-                                                        scope="col"
-                                                        class="px-3 py-3.5 text-left text-sm font-semibold whitespace-nowrap text-zinc-900 dark:text-zinc-200"
-                                                    >
-                                                        {{ header }}
-                                                    </th>
-                                                    <th
-                                                        scope="col"
-                                                        class="py-3.5 pr-5 pl-3 text-right text-sm font-semibold whitespace-nowrap text-zinc-900 sm:pr-7 dark:text-zinc-200"
-                                                    >
-                                                        Estado
-                                                    </th>
-                                                </tr>
-                                            </thead>
-                                            <tbody
-                                                class="divide-y divide-zinc-200 bg-white dark:divide-white/10 dark:bg-zinc-900"
-                                            >
-                                                <template
-                                                    v-for="row in selected.rows"
-                                                    :key="row.row_number"
-                                                >
-                                                    <tr>
-                                                        <td
-                                                            class="py-3 pr-3 pl-5 text-sm font-semibold whitespace-nowrap text-zinc-900 sm:pl-7 dark:text-white"
-                                                        >
-                                                            {{ row.row_number }}
-                                                        </td>
-                                                        <td
-                                                            v-for="header in selected.headers"
-                                                            :key="header"
-                                                            class="max-w-72 truncate px-3 py-3 text-sm whitespace-nowrap text-zinc-600 dark:text-zinc-300"
-                                                            :title="
-                                                                row
-                                                                    .source_values[
-                                                                    header
-                                                                ]
-                                                            "
-                                                        >
-                                                            {{
-                                                                row
-                                                                    .source_values[
-                                                                    header
-                                                                ] || '—'
-                                                            }}
-                                                        </td>
-                                                        <td
-                                                            class="py-3 pr-5 pl-3 text-right whitespace-nowrap sm:pr-7"
-                                                        >
-                                                            <StatusBadge
-                                                                :label="
-                                                                    row.status_label
-                                                                "
-                                                                :tone="
-                                                                    row.status ===
-                                                                    'invalid'
-                                                                        ? 'danger'
-                                                                        : row.status ===
-                                                                            'imported'
-                                                                          ? 'success'
-                                                                          : row.status ===
-                                                                              'valid'
-                                                                            ? 'info'
-                                                                            : 'neutral'
-                                                                "
-                                                            />
-                                                        </td>
-                                                    </tr>
-                                                    <tr
-                                                        v-if="
-                                                            row.status ===
-                                                            'invalid'
+                                                        class="max-w-72 truncate text-sm whitespace-nowrap text-zinc-600 dark:text-zinc-300"
+                                                        :title="
+                                                            row.source_values[
+                                                                header
+                                                            ]
                                                         "
-                                                        class="bg-rose-50/70 dark:bg-rose-400/5"
                                                     >
-                                                        <td
-                                                            :colspan="
-                                                                selected.headers
-                                                                    .length + 2
+                                                        {{
+                                                            row.source_values[
+                                                                header
+                                                            ] || '—'
+                                                        }}
+                                                    </td>
+                                                    <td
+                                                        class="text-right whitespace-nowrap"
+                                                    >
+                                                        <StatusBadge
+                                                            :label="
+                                                                row.status_label
                                                             "
-                                                            class="px-5 py-3 text-sm text-rose-700 sm:px-7 dark:text-rose-300"
+                                                            :tone="
+                                                                row.status ===
+                                                                'invalid'
+                                                                    ? 'danger'
+                                                                    : row.status ===
+                                                                        'imported'
+                                                                      ? 'success'
+                                                                      : row.status ===
+                                                                          'valid'
+                                                                        ? 'info'
+                                                                        : 'neutral'
+                                                            "
+                                                        />
+                                                    </td>
+                                                </tr>
+                                                <tr
+                                                    v-if="
+                                                        row.status === 'invalid'
+                                                    "
+                                                    class="bg-rose-50/70 dark:bg-rose-400/5"
+                                                >
+                                                    <td
+                                                        :colspan="
+                                                            selected.headers
+                                                                .length + 2
+                                                        "
+                                                        class="text-sm text-rose-700 dark:text-rose-300"
+                                                    >
+                                                        <ul
+                                                            role="list"
+                                                            class="flex flex-wrap gap-x-6 gap-y-1"
                                                         >
-                                                            <ul
-                                                                role="list"
-                                                                class="flex flex-wrap gap-x-6 gap-y-1"
+                                                            <li
+                                                                v-for="error in fieldErrors(
+                                                                    row,
+                                                                )"
+                                                                :key="error"
+                                                                class="flex items-start gap-1.5"
                                                             >
-                                                                <li
-                                                                    v-for="error in fieldErrors(
-                                                                        row,
-                                                                    )"
-                                                                    :key="error"
-                                                                    class="flex items-start gap-1.5"
-                                                                >
-                                                                    <CircleAlert
-                                                                        class="mt-0.5 size-3.5 shrink-0"
-                                                                        aria-hidden="true"
-                                                                    />
-                                                                    {{ error }}
-                                                                </li>
-                                                            </ul>
-                                                        </td>
-                                                    </tr>
-                                                </template>
-                                            </tbody>
-                                        </table>
+                                                                <CircleAlert
+                                                                    class="mt-0.5 size-3.5 shrink-0"
+                                                                    aria-hidden="true"
+                                                                />
+                                                                {{ error }}
+                                                            </li>
+                                                        </ul>
+                                                    </td>
+                                                </tr>
+                                            </template>
+                                        </DataTable>
                                     </div>
                                 </div>
                             </div>
@@ -990,15 +979,15 @@ function historyUrl(publicId: string): string {
                                 >
                                     Activar MFA primeiro
                                 </Link>
-                                <button
-                                    type="button"
-                                    class="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent-400 px-4 py-3 text-sm font-semibold text-brand-950 shadow-sm focus-ring-inverted transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
+                                <AppButton
+                                    variant="gold"
                                     :disabled="
                                         !selected.permissions.commit ||
                                         !guardrails.mfa_enabled ||
                                         commitForm.processing
                                     "
                                     @click="submitCommit"
+                                    class="mt-5 w-full focus-ring-inverted"
                                 >
                                     <LoaderCircle
                                         v-if="commitForm.processing"
@@ -1011,7 +1000,7 @@ function historyUrl(publicId: string): string {
                                         aria-hidden="true"
                                     />
                                     Confirmar importação
-                                </button>
+                                </AppButton>
                             </div>
                         </section>
 
@@ -1225,9 +1214,9 @@ function historyUrl(publicId: string): string {
                                     />
                                     O ficheiro nunca recebe um endereço público.
                                 </p>
-                                <button
+                                <AppButton
+                                    variant="ink"
                                     type="submit"
-                                    class="inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                                     :disabled="
                                         !permissions.create ||
                                         uploadForm.file === null ||
@@ -1245,7 +1234,7 @@ function historyUrl(publicId: string): string {
                                         aria-hidden="true"
                                     />
                                     Analisar ficheiro
-                                </button>
+                                </AppButton>
                             </div>
                         </form>
                     </section>

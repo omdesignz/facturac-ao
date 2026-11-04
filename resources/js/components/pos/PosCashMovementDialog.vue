@@ -2,7 +2,9 @@
 import { useForm } from '@inertiajs/vue3';
 import { LoaderCircle } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import AppButton from '@/components/AppButton.vue';
 import FormError from '@/components/FormError.vue';
+import FormField from '@/components/FormField.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
 import { focusFirstInvalid } from '@/lib/focus';
 import {
@@ -10,7 +12,7 @@ import {
     minorToDecimalString,
     parseMoneyToMinor,
 } from '@/lib/pos';
-import { buttonGold, buttonOutline, currencyLabel } from '@/lib/pos-ui';
+import { buttonGold, currencyLabel } from '@/lib/pos-ui';
 import { store as storeMovement } from '@/routes/pos/cash-movements';
 
 const props = defineProps<{
@@ -148,13 +150,12 @@ const pill =
                 <FormError :message="form.errors.type" />
             </fieldset>
 
-            <div>
-                <label
-                    for="pos-movement-amount"
-                    class="block text-sm font-medium text-zinc-900 dark:text-white"
-                    >Valor</label
-                >
-                <div class="relative mt-2">
+            <FormField
+                for="pos-movement-amount"
+                label="Valor"
+                :error="amountError"
+                error-id="pos-movement-amount-error"
+                ><div class="relative">
                     <input
                         id="pos-movement-amount"
                         v-model="form.amount"
@@ -184,48 +185,34 @@ const pill =
                     class="mt-2 numeric text-sm text-zinc-600 dark:text-zinc-400"
                 >
                     Na gaveta: {{ formatMinor(expectedCashMinor) }} {{ suffix }}
-                </p>
-                <FormError
-                    id="pos-movement-amount-error"
-                    :message="amountError"
-                />
-            </div>
+                </p></FormField
+            >
 
-            <div>
-                <label
-                    for="pos-movement-reason"
-                    class="block text-sm font-medium text-zinc-900 dark:text-white"
-                    >Motivo</label
-                >
-                <input
+            <FormField
+                for="pos-movement-reason"
+                label="Motivo"
+                :error="reasonError"
+                error-id="pos-movement-reason-error"
+                ><input
                     id="pos-movement-reason"
                     v-model="form.reason"
                     type="text"
                     maxlength="160"
                     autocomplete="off"
                     placeholder="Depósito no banco"
-                    class="mt-2 block form-input"
+                    class="block form-input"
                     :aria-invalid="reasonError ? 'true' : undefined"
                     :aria-describedby="
                         reasonError ? 'pos-movement-reason-error' : undefined
                     "
-                />
-                <FormError
-                    id="pos-movement-reason-error"
-                    :message="reasonError"
-                />
-            </div>
+            /></FormField>
 
             <div
                 class="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end"
             >
-                <button
-                    type="button"
-                    :class="buttonOutline"
-                    @click="emit('close')"
-                >
+                <AppButton variant="outline" @click="emit('close')">
                     Cancelar
-                </button>
+                </AppButton>
                 <button
                     type="submit"
                     :disabled="form.processing"

@@ -2,9 +2,11 @@
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { LoaderCircle, Pencil, Plus, Store, Trash2 } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import AppButton from '@/components/AppButton.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
 import FormError from '@/components/FormError.vue';
+import FormField from '@/components/FormField.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
 import SelectInput from '@/components/SelectInput.vue';
@@ -13,8 +15,6 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { confirmAction } from '@/lib/confirm';
 import { focusFirstInvalid } from '@/lib/focus';
 import {
-    buttonGold,
-    buttonInk,
     buttonOutline,
     formatClock,
     wellItem,
@@ -139,24 +139,23 @@ function canDelete(register: RegisterRow): boolean {
                     description="Cada caixa é um balcão onde se vende, num estabelecimento. Só uma pessoa de cada vez tem um turno aberto numa caixa."
                 >
                     <template #actions>
-                        <Link
+                        <AppButton
+                            variant="outline"
                             :href="sessionsIndex.url()"
-                            :class="buttonOutline"
                         >
                             Turnos
-                        </Link>
-                        <Link :href="posShow.url()" :class="buttonOutline">
+                        </AppButton>
+                        <AppButton variant="outline" :href="posShow.url()">
                             Ponto de venda
-                        </Link>
-                        <button
+                        </AppButton>
+                        <AppButton
+                            variant="gold"
                             v-if="canManage && establishments.length > 0"
-                            type="button"
-                            :class="buttonGold"
                             @click="openCreate"
                         >
                             <Plus class="size-4" aria-hidden="true" />
                             Nova caixa
-                        </button>
+                        </AppButton>
                     </template>
                 </PageHeader>
 
@@ -186,15 +185,14 @@ function canDelete(register: RegisterRow): boolean {
                     title="Ainda não há caixas"
                     description="Crie a primeira para poder abrir um turno."
                 >
-                    <button
+                    <AppButton
+                        variant="gold"
                         v-if="canManage"
-                        type="button"
-                        :class="buttonGold"
                         @click="openCreate"
                     >
                         <Plus class="size-4" aria-hidden="true" />
                         Nova caixa
-                    </button>
+                    </AppButton>
                 </EmptyState>
 
                 <ul v-if="registers.length > 0" class="grid gap-2.5">
@@ -305,13 +303,12 @@ function canDelete(register: RegisterRow): boolean {
                 novalidate
                 @submit.prevent="submit"
             >
-                <div>
-                    <label
-                        for="register-name"
-                        class="block text-sm font-medium text-zinc-900 dark:text-white"
-                        >Nome</label
-                    >
-                    <input
+                <FormField
+                    for="register-name"
+                    label="Nome"
+                    :error="form.errors.name"
+                    error-id="register-name-error"
+                    ><input
                         id="register-name"
                         v-model="form.name"
                         type="text"
@@ -319,28 +316,21 @@ function canDelete(register: RegisterRow): boolean {
                         maxlength="60"
                         autocomplete="off"
                         placeholder="Caixa 1"
-                        class="mt-2 block form-input"
+                        class="block form-input"
                         :aria-invalid="form.errors.name ? 'true' : undefined"
                         :aria-describedby="
                             form.errors.name ? 'register-name-error' : undefined
                         "
-                    />
-                    <FormError
-                        id="register-name-error"
-                        :message="form.errors.name"
-                    />
-                </div>
+                /></FormField>
 
-                <div>
-                    <label
-                        for="register-establishment"
-                        class="block text-sm font-medium text-zinc-900 dark:text-white"
-                        >Estabelecimento</label
-                    >
-                    <SelectInput
+                <FormField
+                    for="register-establishment"
+                    label="Estabelecimento"
+                    :error="form.errors.establishment_public_id"
+                    error-id="register-establishment-error"
+                    ><SelectInput
                         id="register-establishment"
                         v-model="form.establishment_public_id"
-                        class="mt-2"
                         :options="establishmentOptions"
                         placeholder="Escolha o estabelecimento"
                         :invalid="!!form.errors.establishment_public_id"
@@ -349,12 +339,7 @@ function canDelete(register: RegisterRow): boolean {
                                 ? 'register-establishment-error'
                                 : undefined
                         "
-                    />
-                    <FormError
-                        id="register-establishment-error"
-                        :message="form.errors.establishment_public_id"
-                    />
-                </div>
+                /></FormField>
 
                 <label
                     class="flex w-fit items-center gap-3 text-sm text-zinc-700 dark:text-zinc-300"
@@ -372,17 +357,13 @@ function canDelete(register: RegisterRow): boolean {
                 <div
                     class="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end"
                 >
-                    <button
-                        type="button"
-                        :class="buttonOutline"
-                        @click="dialogOpen = false"
-                    >
+                    <AppButton variant="outline" @click="dialogOpen = false">
                         Cancelar
-                    </button>
-                    <button
+                    </AppButton>
+                    <AppButton
+                        variant="ink"
                         type="submit"
                         :disabled="form.processing"
-                        :class="buttonInk"
                     >
                         <LoaderCircle
                             v-if="form.processing"
@@ -394,7 +375,7 @@ function canDelete(register: RegisterRow): boolean {
                                 ? 'Criar caixa'
                                 : 'Guardar alterações'
                         }}
-                    </button>
+                    </AppButton>
                 </div>
             </form>
         </RecordDialog>

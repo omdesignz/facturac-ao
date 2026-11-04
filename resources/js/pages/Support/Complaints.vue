@@ -8,7 +8,8 @@ import {
     TriangleAlert,
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
-import FormError from '@/components/FormError.vue';
+import AppButton from '@/components/AppButton.vue';
+import FormField from '@/components/FormField.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
@@ -283,13 +284,12 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral'> = {
                         </p>
 
                         <div class="mt-4 flex justify-end">
-                            <button
-                                type="button"
-                                class="inline-flex h-10 items-center justify-center rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
+                            <AppButton
+                                variant="outline"
                                 @click="openComplaint(complaint)"
                             >
                                 Responder
-                            </button>
+                            </AppButton>
                         </div>
                     </li>
                 </ul>
@@ -329,51 +329,37 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral'> = {
             @close="dialogOpen = false"
         >
             <form class="space-y-5" @submit.prevent="submit">
-                <div>
-                    <label
-                        class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
-                    >
-                        Estado
-                    </label>
-                    <div class="mt-2">
+                <FormField label="Estado" :error="form.errors.status"
+                    ><div>
                         <SelectInput
                             v-model="form.status"
                             :options="statusOptions"
-                        />
-                    </div>
-                    <FormError :message="form.errors.status" />
-                </div>
+                        /></div
+                ></FormField>
 
-                <div>
-                    <label
-                        for="complaint-resolution"
-                        class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
-                    >
-                        Resposta ao cliente
-                    </label>
+                <FormField
+                    for="complaint-resolution"
+                    label="Resposta ao cliente"
+                    :error="form.errors.resolution"
+                >
                     <textarea
                         id="complaint-resolution"
                         v-model="form.resolution"
                         rows="5"
-                        class="mt-2 w-full rounded-xl border-0 bg-white px-3 py-2.5 text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring ring-inset dark:bg-white/5 dark:text-white dark:ring-white/10"
+                        class="w-full rounded-xl border-0 bg-white px-3 py-2.5 text-sm text-zinc-950 ring-1 ring-zinc-200 focus-ring ring-inset dark:bg-white/5 dark:text-white dark:ring-white/10"
                     />
-                    <FormError :message="form.errors.resolution" />
-                </div>
+                </FormField>
 
                 <div
                     class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"
                 >
-                    <button
-                        type="button"
-                        class="inline-flex h-10 items-center justify-center rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
-                        @click="dialogOpen = false"
-                    >
+                    <AppButton variant="outline" @click="dialogOpen = false">
                         Cancelar
-                    </button>
-                    <button
+                    </AppButton>
+                    <AppButton
+                        variant="ink"
                         type="submit"
                         :disabled="form.processing"
-                        class="inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                     >
                         <LoaderCircle
                             v-if="form.processing"
@@ -381,7 +367,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral'> = {
                             aria-hidden="true"
                         />
                         Guardar
-                    </button>
+                    </AppButton>
                 </div>
             </form>
         </RecordDialog>

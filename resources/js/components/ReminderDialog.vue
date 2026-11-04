@@ -2,9 +2,10 @@
 import { useForm } from '@inertiajs/vue3';
 import { LoaderCircle } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
-import FormError from '@/components/FormError.vue';
+import AppButton from '@/components/AppButton.vue';
+import FormField from '@/components/FormField.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
-import { buttonGold, buttonOutline } from '@/lib/pos-ui';
+
 import type { ReminderDraft } from '@/lib/reminder-draft';
 import {
     show as showReminder,
@@ -182,54 +183,44 @@ function send(): void {
             </dl>
 
             <template v-if="draft.documents.length > 0">
-                <div>
-                    <label
-                        for="reminder-subject"
-                        class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
-                    >
-                        Assunto
-                    </label>
-                    <input
+                <FormField
+                    for="reminder-subject"
+                    label="Assunto"
+                    :error="form.errors.subject"
+                    ><input
                         id="reminder-subject"
                         v-model="form.subject"
                         type="text"
                         maxlength="150"
-                        class="mt-2 form-input"
-                        :aria-invalid="form.errors.subject ? 'true' : undefined"
-                    />
-                    <FormError :message="form.errors.subject" />
-                </div>
+                        class="form-input"
+                        :aria-invalid="
+                            form.errors.subject ? 'true' : undefined
+                        "
+                /></FormField>
 
-                <div>
-                    <label
-                        for="reminder-body"
-                        class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
-                    >
-                        Mensagem
-                    </label>
+                <FormField
+                    for="reminder-body"
+                    label="Mensagem"
+                    :error="form.errors.body"
+                >
                     <textarea
                         id="reminder-body"
                         v-model="form.body"
                         rows="10"
                         maxlength="4000"
-                        class="mt-2 form-input"
+                        class="form-input"
                         :aria-invalid="form.errors.body ? 'true' : undefined"
                     />
-                    <FormError :message="form.errors.body" />
-                </div>
+                </FormField>
             </template>
 
             <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                <button
-                    type="button"
-                    :class="buttonOutline"
-                    @click="emit('close')"
-                >
+                <AppButton variant="outline" @click="emit('close')">
                     Cancelar
-                </button>
-                <button
+                </AppButton>
+                <AppButton
+                    variant="gold"
                     type="submit"
-                    :class="buttonGold"
                     :disabled="!sendable || form.processing"
                 >
                     <LoaderCircle
@@ -238,7 +229,7 @@ function send(): void {
                         aria-hidden="true"
                     />
                     Enviar lembrete
-                </button>
+                </AppButton>
             </div>
         </form>
     </RecordDialog>

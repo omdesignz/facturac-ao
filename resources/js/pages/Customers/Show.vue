@@ -17,11 +17,13 @@ import {
     TriangleAlert,
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import AppButton from '@/components/AppButton.vue';
 import ChartBars from '@/components/charts/ChartBars.vue';
 import ChartFrame from '@/components/charts/ChartFrame.vue';
 import ChartTrend from '@/components/charts/ChartTrend.vue';
+import DataTable from '@/components/DataTable.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
-import FormError from '@/components/FormError.vue';
+import FormField from '@/components/FormField.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageStat from '@/components/PageStat.vue';
 import SelectInput from '@/components/SelectInput.vue';
@@ -578,91 +580,66 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                     </header>
 
                     <div class="relative overflow-x-auto overscroll-x-contain">
-                        <table class="min-w-full text-left text-sm">
-                            <thead
-                                class="border-b border-zinc-100 dark:border-white/10"
+                        <DataTable
+                            ><template #head>
+                                <th>Documento</th>
+                                <th>Data</th>
+                                <th class="text-right whitespace-nowrap">
+                                    Movimento ({{
+                                        currencyLabel(currencyCode)
+                                    }})
+                                </th>
+                                <th class="text-right whitespace-nowrap">
+                                    Saldo ({{ currencyLabel(currencyCode) }})
+                                </th>
+                            </template>
+                            <tr
+                                v-for="entry in statement"
+                                :key="entry.public_id"
                             >
-                                <tr>
-                                    <th
-                                        class="px-3 py-3 eyebrow text-zinc-500 sm:px-5"
+                                <td>
+                                    <p
+                                        class="numeric font-medium text-zinc-950 dark:text-white"
                                     >
-                                        Documento
-                                    </th>
-                                    <th
-                                        class="px-3 py-3 eyebrow text-zinc-500 sm:px-5"
+                                        {{ entry.document_no ?? '—' }}
+                                    </p>
+                                    <p
+                                        class="text-xs text-zinc-500 dark:text-zinc-400"
                                     >
-                                        Data
-                                    </th>
-                                    <th
-                                        class="px-3 py-3 text-right eyebrow whitespace-nowrap text-zinc-500 sm:px-5"
-                                    >
-                                        Movimento ({{
-                                            currencyLabel(currencyCode)
-                                        }})
-                                    </th>
-                                    <th
-                                        class="px-3 py-3 text-right eyebrow whitespace-nowrap text-zinc-500 sm:px-5"
-                                    >
-                                        Saldo ({{
-                                            currencyLabel(currencyCode)
-                                        }})
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody
-                                class="divide-y divide-zinc-100 dark:divide-white/10"
-                            >
-                                <tr
-                                    v-for="entry in statement"
-                                    :key="entry.public_id"
+                                        {{ entry.document_type_label }}
+                                    </p>
+                                </td>
+                                <td
+                                    class="whitespace-nowrap text-zinc-600 dark:text-zinc-400"
                                 >
-                                    <td class="px-3 py-3 sm:px-5">
-                                        <p
-                                            class="numeric font-medium text-zinc-950 dark:text-white"
-                                        >
-                                            {{ entry.document_no ?? '—' }}
-                                        </p>
-                                        <p
-                                            class="text-xs text-zinc-500 dark:text-zinc-400"
-                                        >
-                                            {{ entry.document_type_label }}
-                                        </p>
-                                    </td>
-                                    <td
-                                        class="px-3 py-3 whitespace-nowrap text-zinc-600 sm:px-5 dark:text-zinc-400"
+                                    {{ formatDate(entry.document_date) }}
+                                    <p
+                                        v-if="entry.days_past_due > 0"
+                                        class="text-xs text-rose-700 dark:text-rose-400"
                                     >
-                                        {{ formatDate(entry.document_date) }}
-                                        <p
-                                            v-if="entry.days_past_due > 0"
-                                            class="text-xs text-rose-700 dark:text-rose-400"
-                                        >
-                                            {{ entry.days_past_due }} dias em
-                                            atraso
-                                        </p>
-                                    </td>
-                                    <td
-                                        class="px-3 py-3 text-right numeric whitespace-nowrap sm:px-5"
-                                        :class="
-                                            entry.movement_minor < 0
-                                                ? 'text-emerald-700 dark:text-emerald-400'
-                                                : 'text-zinc-950 dark:text-white'
-                                        "
-                                    >
-                                        {{ entry.movement_minor < 0 ? '−' : '+'
-                                        }}{{
-                                            amount(
-                                                Math.abs(entry.movement_minor),
-                                            )
-                                        }}
-                                    </td>
-                                    <td
-                                        class="px-3 py-3 text-right numeric font-medium whitespace-nowrap text-zinc-950 sm:px-5 dark:text-white"
-                                    >
-                                        {{ amount(entry.balance_minor) }}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                                        {{ entry.days_past_due }} dias em atraso
+                                    </p>
+                                </td>
+                                <td
+                                    class="text-right numeric whitespace-nowrap"
+                                    :class="
+                                        entry.movement_minor < 0
+                                            ? 'text-emerald-700 dark:text-emerald-400'
+                                            : 'text-zinc-950 dark:text-white'
+                                    "
+                                >
+                                    {{ entry.movement_minor < 0 ? '−' : '+'
+                                    }}{{
+                                        amount(Math.abs(entry.movement_minor))
+                                    }}
+                                </td>
+                                <td
+                                    class="text-right numeric font-medium whitespace-nowrap text-zinc-950 dark:text-white"
+                                >
+                                    {{ amount(entry.balance_minor) }}
+                                </td>
+                            </tr>
+                        </DataTable>
                     </div>
                 </section>
 
@@ -774,11 +751,13 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                         class="flex flex-col gap-3 border-t border-zinc-100 p-4 sm:flex-row sm:items-start dark:border-white/10"
                         @submit.prevent="addPrice"
                     >
-                        <div class="min-w-0 flex-1">
-                            <label for="agreed-catalogue" class="field-label"
-                                >Artigo</label
-                            >
-                            <div class="mt-2">
+                        <FormField
+                            class="min-w-0 flex-1"
+                            for="agreed-catalogue"
+                            label="Artigo"
+                            :error="priceForm.errors.catalogue_item"
+                            error-id="agreed-catalogue-error"
+                            ><div>
                                 <SelectInput
                                     id="agreed-catalogue"
                                     v-model="priceForm.catalogue_item"
@@ -789,19 +768,16 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                             ? 'agreed-catalogue-error'
                                             : undefined
                                     "
-                                />
-                            </div>
-                            <FormError
-                                id="agreed-catalogue-error"
-                                :message="priceForm.errors.catalogue_item"
-                            />
-                        </div>
+                                /></div
+                        ></FormField>
 
-                        <div class="sm:w-40">
-                            <label for="agreed-price" class="field-label"
-                                >Preço</label
-                            >
-                            <input
+                        <FormField
+                            class="sm:w-40"
+                            for="agreed-price"
+                            label="Preço"
+                            :error="priceForm.errors.unit_price"
+                            error-id="agreed-price-error"
+                            ><input
                                 id="agreed-price"
                                 v-model="priceForm.unit_price"
                                 type="text"
@@ -817,18 +793,14 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                         ? 'agreed-price-error'
                                         : undefined
                                 "
-                                class="mt-2 form-input numeric"
-                            />
-                            <FormError
-                                id="agreed-price-error"
-                                :message="priceForm.errors.unit_price"
-                            />
-                        </div>
+                                class="form-input numeric"
+                        /></FormField>
 
-                        <button
+                        <AppButton
+                            variant="ink"
                             type="submit"
                             :disabled="priceForm.processing"
-                            class="inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 sm:mt-7 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
+                            class="sm:mt-7"
                         >
                             <LoaderCircle
                                 v-if="priceForm.processing"
@@ -837,7 +809,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                             />
                             <Plus v-else class="size-4" aria-hidden="true" />
                             Acordar
-                        </button>
+                        </AppButton>
                     </form>
                 </section>
 
@@ -899,214 +871,182 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                         v-else
                         class="relative overflow-x-auto overscroll-x-contain"
                     >
-                        <table class="min-w-full text-left text-sm">
-                            <thead
-                                class="border-b border-zinc-100 dark:border-white/10"
-                            >
-                                <tr>
-                                    <th
-                                        class="px-3 py-3 eyebrow text-zinc-500 sm:px-5"
-                                    >
-                                        Documento
-                                    </th>
-                                    <th
-                                        class="px-3 py-3 eyebrow text-zinc-500 sm:px-5"
-                                    >
-                                        Data
-                                    </th>
-                                    <th
-                                        class="px-3 py-3 eyebrow text-zinc-500 sm:px-5"
-                                    >
-                                        Estado fiscal
-                                    </th>
-                                    <th
-                                        class="px-3 py-3 text-right eyebrow whitespace-nowrap text-zinc-500 sm:px-5"
-                                    >
-                                        Total ({{
-                                            currencyLabel(currencyCode)
-                                        }})
-                                    </th>
-                                    <th
-                                        class="hidden px-3 py-3 text-right eyebrow whitespace-nowrap text-zinc-500 sm:table-cell sm:px-5"
-                                    >
-                                        Pago ({{ currencyLabel(currencyCode) }})
-                                    </th>
-                                    <th
-                                        class="px-3 py-3 text-right eyebrow whitespace-nowrap text-zinc-500 sm:px-5"
-                                    >
-                                        Em dívida ({{
-                                            currencyLabel(currencyCode)
-                                        }})
-                                    </th>
-                                    <th class="px-3 py-3 sm:px-5">
-                                        <span class="sr-only">Enviar</span>
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody
-                                class="divide-y divide-zinc-100 dark:divide-white/10"
-                            >
-                                <tr
-                                    v-for="document in documents.data"
-                                    :key="document.public_id"
+                        <DataTable
+                            ><template #head>
+                                <th>Documento</th>
+                                <th>Data</th>
+                                <th>Estado fiscal</th>
+                                <th class="text-right whitespace-nowrap">
+                                    Total ({{ currencyLabel(currencyCode) }})
+                                </th>
+                                <th
+                                    class="hidden text-right whitespace-nowrap sm:table-cell"
                                 >
-                                    <td class="px-3 py-3 sm:px-5">
-                                        <a
-                                            v-if="document.can_send"
-                                            :href="
-                                                printDocument.url({
-                                                    fiscalDocument:
-                                                        document.public_id,
-                                                })
-                                            "
-                                            target="_blank"
-                                            rel="noopener"
-                                            class="inline-flex items-center gap-1.5 numeric font-medium text-brand-700 underline-offset-2 focus-ring hover:underline dark:text-brand-300"
-                                        >
-                                            {{ document.document_no }}
-                                            <FileText
-                                                class="size-3.5"
-                                                aria-hidden="true"
-                                            />
-                                        </a>
-                                        <p
-                                            v-else
-                                            class="numeric font-medium text-zinc-950 dark:text-white"
-                                        >
-                                            {{ document.document_no ?? '—' }}
-                                        </p>
-                                        <p
-                                            class="text-xs text-zinc-500 dark:text-zinc-400"
-                                        >
-                                            {{ document.document_type_label }}
-                                        </p>
-                                    </td>
-                                    <td
-                                        class="px-3 py-3 whitespace-nowrap text-zinc-600 sm:px-5 dark:text-zinc-400"
+                                    Pago ({{ currencyLabel(currencyCode) }})
+                                </th>
+                                <th class="text-right whitespace-nowrap">
+                                    Em dívida ({{
+                                        currencyLabel(currencyCode)
+                                    }})
+                                </th>
+                                <th>
+                                    <span class="sr-only">Enviar</span>
+                                </th>
+                            </template>
+                            <tr
+                                v-for="document in documents.data"
+                                :key="document.public_id"
+                            >
+                                <td>
+                                    <a
+                                        v-if="document.can_send"
+                                        :href="
+                                            printDocument.url({
+                                                fiscalDocument:
+                                                    document.public_id,
+                                            })
+                                        "
+                                        target="_blank"
+                                        rel="noopener"
+                                        class="inline-flex items-center gap-1.5 numeric font-medium text-brand-700 underline-offset-2 focus-ring hover:underline dark:text-brand-300"
                                     >
-                                        {{ formatDate(document.document_date) }}
-                                        <p
-                                            v-if="document.due_date"
-                                            :class="[
-                                                document.overdue
-                                                    ? 'text-rose-700 dark:text-rose-400'
-                                                    : 'text-zinc-500 dark:text-zinc-400',
-                                                'text-xs',
-                                            ]"
-                                        >
-                                            vence
-                                            {{ formatDate(document.due_date) }}
-                                        </p>
-                                    </td>
-                                    <td class="px-3 py-3 sm:px-5">
-                                        <StatusBadge
-                                            :tone="
-                                                statusTone[document.status] ??
-                                                'neutral'
-                                            "
-                                            :label="document.status_label"
+                                        {{ document.document_no }}
+                                        <FileText
+                                            class="size-3.5"
+                                            aria-hidden="true"
                                         />
-                                    </td>
-                                    <td
-                                        class="px-3 py-3 text-right numeric whitespace-nowrap sm:px-5"
-                                        :class="
-                                            document.is_credit
-                                                ? 'text-zinc-500 dark:text-zinc-400'
-                                                : 'text-zinc-950 dark:text-white'
-                                        "
+                                    </a>
+                                    <p
+                                        v-else
+                                        class="numeric font-medium text-zinc-950 dark:text-white"
                                     >
-                                        {{ document.is_credit ? '−' : ''
-                                        }}{{
-                                            amount(document.gross_total_minor)
-                                        }}
-                                    </td>
-                                    <td
-                                        class="hidden px-3 py-3 text-right numeric whitespace-nowrap text-zinc-600 sm:table-cell sm:px-5 dark:text-zinc-400"
+                                        {{ document.document_no ?? '—' }}
+                                    </p>
+                                    <p
+                                        class="text-xs text-zinc-500 dark:text-zinc-400"
                                     >
-                                        {{
-                                            document.is_billable
-                                                ? amount(document.paid_minor)
-                                                : '—'
-                                        }}
-                                    </td>
-                                    <td
-                                        class="px-3 py-3 text-right numeric whitespace-nowrap sm:px-5"
-                                        :class="
+                                        {{ document.document_type_label }}
+                                    </p>
+                                </td>
+                                <td
+                                    class="whitespace-nowrap text-zinc-600 dark:text-zinc-400"
+                                >
+                                    {{ formatDate(document.document_date) }}
+                                    <p
+                                        v-if="document.due_date"
+                                        :class="[
                                             document.overdue
-                                                ? 'font-medium text-rose-700 dark:text-rose-400'
-                                                : document.outstanding_minor > 0
-                                                  ? 'text-amber-700 dark:text-amber-400'
-                                                  : 'text-zinc-500 dark:text-zinc-400'
+                                                ? 'text-rose-700 dark:text-rose-400'
+                                                : 'text-zinc-500 dark:text-zinc-400',
+                                            'text-xs',
+                                        ]"
+                                    >
+                                        vence
+                                        {{ formatDate(document.due_date) }}
+                                    </p>
+                                </td>
+                                <td>
+                                    <StatusBadge
+                                        :tone="
+                                            statusTone[document.status] ??
+                                            'neutral'
+                                        "
+                                        :label="document.status_label"
+                                    />
+                                </td>
+                                <td
+                                    class="text-right numeric whitespace-nowrap"
+                                    :class="
+                                        document.is_credit
+                                            ? 'text-zinc-500 dark:text-zinc-400'
+                                            : 'text-zinc-950 dark:text-white'
+                                    "
+                                >
+                                    {{ document.is_credit ? '−' : ''
+                                    }}{{ amount(document.gross_total_minor) }}
+                                </td>
+                                <td
+                                    class="hidden text-right numeric whitespace-nowrap text-zinc-600 sm:table-cell dark:text-zinc-400"
+                                >
+                                    {{
+                                        document.is_billable
+                                            ? amount(document.paid_minor)
+                                            : '—'
+                                    }}
+                                </td>
+                                <td
+                                    class="text-right numeric whitespace-nowrap"
+                                    :class="
+                                        document.overdue
+                                            ? 'font-medium text-rose-700 dark:text-rose-400'
+                                            : document.outstanding_minor > 0
+                                              ? 'text-amber-700 dark:text-amber-400'
+                                              : 'text-zinc-500 dark:text-zinc-400'
+                                    "
+                                >
+                                    {{
+                                        document.is_billable
+                                            ? amount(document.outstanding_minor)
+                                            : '—'
+                                    }}
+                                </td>
+                                <td class="text-right">
+                                    <AppButton
+                                        variant="outline"
+                                        size="sm"
+                                        v-if="document.can_send"
+                                        :disabled="
+                                            sendingDocument ===
+                                            document.public_id
+                                        "
+                                        @click="
+                                            sendDocument(
+                                                document.public_id,
+                                                document.document_no,
+                                            )
                                         "
                                     >
-                                        {{
-                                            document.is_billable
-                                                ? amount(
-                                                      document.outstanding_minor,
-                                                  )
-                                                : '—'
-                                        }}
-                                    </td>
-                                    <td class="px-3 py-3 text-right sm:px-5">
-                                        <button
-                                            v-if="document.can_send"
-                                            type="button"
-                                            :disabled="
+                                        <LoaderCircle
+                                            v-if="
                                                 sendingDocument ===
                                                 document.public_id
                                             "
-                                            class="inline-flex h-9 items-center justify-center gap-1.5 rounded-full px-3 text-xs font-semibold text-zinc-600 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 disabled:opacity-50 dark:text-zinc-300 dark:ring-white/15 dark:hover:bg-white/5"
-                                            @click="
-                                                sendDocument(
-                                                    document.public_id,
-                                                    document.document_no,
+                                            class="size-3.5 animate-spin-delayed"
+                                            aria-hidden="true"
+                                        />
+                                        <Send
+                                            v-else
+                                            class="size-3.5"
+                                            aria-hidden="true"
+                                        />
+                                        {{
+                                            document.sent_at
+                                                ? 'Reenviar'
+                                                : 'Enviar'
+                                        }}
+                                    </AppButton>
+                                    <p
+                                        v-if="
+                                            document.can_send &&
+                                            document.sent_at
+                                        "
+                                        class="mt-1 ml-auto max-w-40 text-xs text-zinc-500 dark:text-zinc-400"
+                                    >
+                                        Último envio a
+                                        {{ formatInstant(document.sent_at) }}
+                                        · {{ document.send_count }}×
+                                        <template v-if="document.opened_at"
+                                            >· aberto a
+                                            {{
+                                                formatInstant(
+                                                    document.opened_at,
                                                 )
-                                            "
+                                            }}</template
                                         >
-                                            <LoaderCircle
-                                                v-if="
-                                                    sendingDocument ===
-                                                    document.public_id
-                                                "
-                                                class="size-3.5 animate-spin-delayed"
-                                                aria-hidden="true"
-                                            />
-                                            <Send
-                                                v-else
-                                                class="size-3.5"
-                                                aria-hidden="true"
-                                            />
-                                            {{
-                                                document.sent_at
-                                                    ? 'Reenviar'
-                                                    : 'Enviar'
-                                            }}
-                                        </button>
-                                        <p
-                                            v-if="
-                                                document.can_send &&
-                                                document.sent_at
-                                            "
-                                            class="mt-1 ml-auto max-w-40 text-xs text-zinc-500 dark:text-zinc-400"
-                                        >
-                                            Último envio a
-                                            {{
-                                                formatInstant(document.sent_at)
-                                            }}
-                                            · {{ document.send_count }}×
-                                            <template v-if="document.opened_at"
-                                                >· aberto a
-                                                {{
-                                                    formatInstant(
-                                                        document.opened_at,
-                                                    )
-                                                }}</template
-                                            >
-                                        </p>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                                    </p>
+                                </td>
+                            </tr>
+                        </DataTable>
                     </div>
 
                     <div

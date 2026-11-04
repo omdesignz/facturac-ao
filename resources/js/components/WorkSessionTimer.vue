@@ -9,6 +9,8 @@ import {
 import { usePage } from '@inertiajs/vue3';
 import { LoaderCircle, LogOut, Timer } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import AppButton from '@/components/AppButton.vue';
+import { buttonInk } from '@/lib/button';
 import { formatCountdown, useWorkSession } from '@/lib/work-session';
 import { logout } from '@/routes';
 import { renew as renewRoute } from '@/routes/session';
@@ -182,9 +184,8 @@ const label = computed(
                                 <div
                                     class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-center"
                                 >
-                                    <button
-                                        type="button"
-                                        class="tap-target inline-flex h-10 items-center justify-center gap-2 rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
+                                    <AppButton
+                                        variant="outline"
                                         @click="signOut"
                                     >
                                         <LogOut
@@ -192,13 +193,14 @@ const label = computed(
                                             aria-hidden="true"
                                         />
                                         Terminar agora
-                                    </button>
+                                    </AppButton>
                                     <button
                                         ref="renewButton"
                                         type="button"
                                         :disabled="renewing"
                                         :aria-busy="renewing"
-                                        class="tap-target relative inline-flex h-10 items-center justify-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
+                                        class="relative"
+                                        :class="buttonInk"
                                         @click="renew"
                                     >
                                         <!-- The spinner takes the label's place instead of

@@ -21,6 +21,7 @@ import {
     X,
 } from '@lucide/vue';
 import { computed, nextTick, ref, watch } from 'vue';
+import AppButton from '@/components/AppButton.vue';
 import DateInput from '@/components/DateInput.vue';
 import DocumentLifecycle from '@/components/DocumentLifecycle.vue';
 import type { LifecycleStep } from '@/components/DocumentLifecycle.vue';
@@ -28,10 +29,11 @@ import FlashBanner from '@/components/FlashBanner.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { buttonGold } from '@/lib/button';
 import { confirmAction } from '@/lib/confirm';
 import { statusTone } from '@/lib/document-status';
 import { usePaletteActions } from '@/lib/palette-actions';
-import { buttonOutlineSmall, buttonQuiet } from '@/lib/pos-ui';
+
 import { index as agtSubmissions } from '@/routes/agt/submissions';
 import { show as customerShow } from '@/routes/customers';
 import { index as debtsIndex } from '@/routes/debts';
@@ -780,9 +782,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                             as="div"
                             class="relative z-20"
                         >
-                            <MenuButton
-                                class="inline-flex h-10 items-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300 pointer-coarse:h-11"
-                            >
+                            <MenuButton :class="buttonGold">
                                 <Plus class="size-4" aria-hidden="true" />
                                 Novo documento
                                 <ChevronDown
@@ -910,11 +910,11 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                 {{ option.label }}
                             </button>
                         </div>
-                        <button
-                            type="button"
+                        <AppButton
+                            variant="quiet"
+                            size="lg"
                             :aria-expanded="showFilters"
                             aria-controls="register-filters"
-                            class="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[0.8125rem] font-medium text-zinc-600 focus-ring transition hover:bg-zinc-900/[0.05] hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-white/5 dark:hover:text-white pointer-coarse:h-11"
                             @click="showFilters = !showFilters"
                         >
                             <SlidersHorizontal
@@ -927,16 +927,16 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                 class="rounded-full bg-brand-950 px-1.5 text-xs font-semibold text-white dark:bg-zinc-100 dark:text-brand-950"
                                 >{{ advancedFilterCount }}</span
                             >
-                        </button>
-                        <button
+                        </AppButton>
+                        <AppButton
+                            variant="quiet"
+                            size="lg"
                             v-if="activeFilterCount > 0"
-                            type="button"
-                            class="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[0.8125rem] font-medium text-zinc-500 focus-ring transition hover:bg-zinc-900/[0.05] hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white pointer-coarse:h-11"
                             @click="clearFilters"
                         >
                             <FilterX class="size-4" aria-hidden="true" />
                             Limpar
-                        </button>
+                        </AppButton>
                     </div>
                 </div>
 
@@ -966,12 +966,9 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                         aria-label="Data final"
                         :min-date="from ?? undefined"
                     />
-                    <button
-                        type="submit"
-                        class="inline-flex h-10 items-center justify-center rounded-full bg-brand-950 px-5 text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white pointer-coarse:h-11"
-                    >
+                    <AppButton variant="ink" size="lg" type="submit">
                         Aplicar
-                    </button>
+                    </AppButton>
                 </form>
 
                 <!-- ------------------------------------------ queue + detail -->
@@ -1010,22 +1007,25 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                         : 'O primeiro documento começa como rascunho. Só segue para a AGT depois de o emitir.'
                                 }}
                             </p>
-                            <button
+                            <AppButton
+                                variant="outline"
+                                size="lg"
                                 v-if="hasDocuments"
-                                type="button"
-                                class="mt-5 inline-flex h-9 items-center rounded-full bg-white px-4 text-[0.8125rem] font-semibold text-zinc-900 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:bg-zinc-900 dark:text-white dark:ring-white/10 pointer-coarse:h-11"
                                 @click="clearFilters"
+                                class="mt-5"
                             >
                                 Limpar filtros
-                            </button>
-                            <Link
+                            </AppButton>
+                            <AppButton
+                                variant="gold"
+                                size="lg"
                                 v-else-if="permissions.create"
                                 :href="createInvoice.url()"
-                                class="mt-5 inline-flex h-9 items-center gap-2 rounded-full bg-accent-400 px-4 text-[0.8125rem] font-semibold text-brand-950 focus-ring transition hover:bg-accent-300 pointer-coarse:h-11"
+                                class="mt-5"
                             >
                                 <Plus class="size-4" aria-hidden="true" />
                                 Criar factura
-                            </Link>
+                            </AppButton>
                         </div>
 
                         <div v-else class="grid gap-0.5">
@@ -1219,13 +1219,14 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                             : 'escolhidos'
                                     }}
                                 </p>
-                                <Link
+                                <AppButton
+                                    variant="outline"
+                                    size="sm"
                                     v-if="
                                         canRemindCustomers &&
                                         chosenCustomers.length > 0
                                     "
                                     :href="remindChosenUrl"
-                                    :class="buttonOutlineSmall"
                                 >
                                     <BellRing
                                         class="size-3.5"
@@ -1233,10 +1234,12 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                     />
                                     <span class="sr-only">Preparar</span>
                                     Lembretes
-                                </Link>
-                                <a
+                                </AppButton>
+                                <AppButton
+                                    variant="outline"
+                                    size="sm"
+                                    external
                                     :href="downloadChosenUrl"
-                                    :class="buttonOutlineSmall"
                                 >
                                     <Download
                                         class="size-3.5"
@@ -1244,15 +1247,14 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                     />
                                     <span class="sr-only">Descarregar</span>
                                     PDF
-                                </a>
-                                <button
-                                    type="button"
-                                    :class="buttonQuiet"
-                                    class="h-9 pointer-coarse:h-11"
+                                </AppButton>
+                                <AppButton
+                                    variant="quiet"
+                                    size="sm"
                                     @click="chosen = []"
                                 >
                                     Limpar
-                                </button>
+                                </AppButton>
                             </div>
 
                             <div
@@ -1363,37 +1365,41 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                 </p>
                             </div>
                             <div class="flex shrink-0 flex-wrap gap-2">
-                                <a
+                                <AppButton
+                                    variant="outline"
+                                    size="lg"
+                                    external
                                     v-if="selected.can_print"
                                     :href="documentPdf.url(selected.public_id)"
-                                    class="inline-flex h-[2.125rem] items-center gap-1.5 rounded-full bg-white px-3.5 text-[0.8125rem] font-semibold text-zinc-900 shadow-[0_1px_2px_rgb(23_23_22/0.04)] ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:bg-zinc-900 dark:text-white dark:ring-white/10 pointer-coarse:h-11"
                                 >
                                     <Download
                                         class="size-4"
                                         aria-hidden="true"
                                     />
                                     PDF
-                                </a>
-                                <a
+                                </AppButton>
+                                <AppButton
+                                    variant="outline"
+                                    size="lg"
+                                    external
                                     v-if="selected.can_print"
                                     :href="
                                         printDocument.url(selected.public_id)
                                     "
-                                    class="inline-flex h-[2.125rem] items-center gap-1.5 rounded-full bg-white px-3.5 text-[0.8125rem] font-semibold text-zinc-900 shadow-[0_1px_2px_rgb(23_23_22/0.04)] ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:bg-zinc-900 dark:text-white dark:ring-white/10 pointer-coarse:h-11"
                                 >
                                     <Printer
                                         class="size-4"
                                         aria-hidden="true"
                                     />
                                     Abrir
-                                </a>
-                                <button
+                                </AppButton>
+                                <AppButton
+                                    variant="outline"
+                                    size="lg"
                                     v-if="selected.can_send"
-                                    type="button"
                                     :disabled="
                                         sendingDocument === selected.public_id
                                     "
-                                    class="inline-flex h-[2.125rem] items-center gap-1.5 rounded-full bg-white px-3.5 text-[0.8125rem] font-semibold text-zinc-900 shadow-[0_1px_2px_rgb(23_23_22/0.04)] ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 disabled:opacity-50 dark:bg-zinc-900 dark:text-white dark:ring-white/10 pointer-coarse:h-11"
                                     @click="sendDocument(selected)"
                                 >
                                     <LoaderCircle
@@ -1412,18 +1418,19 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                     {{
                                         selected.sent_at ? 'Reenviar' : 'Enviar'
                                     }}
-                                </button>
-                                <Link
+                                </AppButton>
+                                <AppButton
+                                    variant="ink"
+                                    size="lg"
                                     v-if="selected.can_edit"
                                     :href="editInvoice.url(selected.public_id)"
-                                    class="inline-flex h-[2.125rem] items-center gap-1.5 rounded-full bg-brand-950 px-3.5 text-[0.8125rem] font-semibold text-white focus-ring transition hover:bg-brand-800 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white pointer-coarse:h-11"
                                 >
                                     <PencilLine
                                         class="size-4"
                                         aria-hidden="true"
                                     />
                                     Continuar rascunho
-                                </Link>
+                                </AppButton>
                                 <button
                                     type="button"
                                     class="grid size-[2.125rem] place-items-center rounded-full text-zinc-500 focus-ring transition hover:bg-zinc-900/[0.06] hover:text-zinc-950 max-lg:absolute max-lg:inset-e-4 max-lg:inset-bs-4 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white pointer-coarse:size-11"

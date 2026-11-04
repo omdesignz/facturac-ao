@@ -4,7 +4,9 @@ import { Passkeys } from '@laravel/passkeys';
 import { usePasskeyVerify } from '@laravel/passkeys/vue';
 import { Fingerprint, LoaderCircle, LockKeyhole } from '@lucide/vue';
 import { computed, onMounted, ref } from 'vue';
+import AppButton from '@/components/AppButton.vue';
 import FormError from '@/components/FormError.vue';
+import FormField from '@/components/FormField.vue';
 import GoogleMark from '@/components/GoogleMark.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import { focusFirstInvalid } from '@/lib/focus';
@@ -123,13 +125,12 @@ const flash = computed(
             @error="focusFirstInvalid()"
             #default="{ errors, processing }"
         >
-            <div>
-                <label
-                    for="email"
-                    class="block text-sm/6 font-medium text-zinc-900 dark:text-zinc-100"
-                    >Email</label
-                >
-                <input
+            <FormField
+                for="email"
+                label="Email"
+                :error="errors.email"
+                error-id="email-error"
+                ><input
                     id="email"
                     ref="emailInput"
                     name="email"
@@ -141,27 +142,23 @@ const flash = computed(
                     required
                     :aria-invalid="errors.email ? 'true' : undefined"
                     :aria-describedby="errors.email ? 'email-error' : undefined"
-                    class="mt-2 block form-input"
+                    class="block form-input"
                     placeholder="nome@empresa.ao"
-                />
-                <FormError id="email-error" :message="errors.email" />
-            </div>
+            /></FormField>
 
             <div>
-                <div class="flex items-center justify-between">
-                    <label
-                        for="password"
-                        class="block text-sm/6 font-medium text-zinc-900 dark:text-zinc-100"
-                        >Palavra-passe</label
-                    >
-                    <Link
+                <FormField
+                    class="flex items-center justify-between"
+                    for="password"
+                    label="Palavra-passe"
+                    ><Link
                         v-if="canResetPassword"
                         :href="passwordRequest.url()"
                         class="rounded text-sm/6 font-semibold text-brand-700 focus-ring hover:text-brand-600 dark:text-brand-300 dark:hover:text-brand-200"
                     >
                         Esqueceu-se?
-                    </Link>
-                </div>
+                    </Link></FormField
+                >
                 <input
                     id="password"
                     name="password"
@@ -189,10 +186,12 @@ const flash = computed(
                 Manter sessão neste dispositivo
             </label>
 
-            <button
+            <AppButton
+                variant="ink"
+                size="lg"
                 type="submit"
                 :disabled="processing"
-                class="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-brand-950 px-4 text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
+                class="w-full"
             >
                 <LoaderCircle
                     v-if="processing"
@@ -200,15 +199,16 @@ const flash = computed(
                     aria-hidden="true"
                 />
                 {{ processing ? 'A entrar…' : 'Entrar' }}
-            </button>
+            </AppButton>
         </Form>
 
         <div v-if="passkeySupported" class="mt-5">
-            <button
-                type="button"
+            <AppButton
+                variant="outline"
+                size="lg"
                 :disabled="passkeyPending"
-                class="flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-white px-4 py-2.5 text-center text-sm font-semibold text-zinc-900 ring-1 ring-zinc-900/10 focus-ring transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
                 @click="signInWithPasskey"
+                class="w-full text-center"
             >
                 <LoaderCircle
                     v-if="passkeyPending"
@@ -221,7 +221,7 @@ const flash = computed(
                         ? 'A confirmar…'
                         : 'Entrar com impressão digital ou rosto'
                 }}
-            </button>
+            </AppButton>
             <p
                 v-if="passkeyMessage"
                 class="mt-2 text-center text-sm text-rose-600 dark:text-rose-400"
@@ -247,13 +247,16 @@ const flash = computed(
                     >
                 </div>
             </div>
-            <a
+            <AppButton
+                variant="outline"
+                size="lg"
+                external
                 :href="googleRedirect.url()"
-                class="flex h-11 w-full items-center justify-center gap-3 rounded-full bg-white px-4 text-sm font-semibold text-zinc-900 ring-1 ring-zinc-900/10 focus-ring transition hover:bg-zinc-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
+                class="w-full"
             >
                 <GoogleMark />
                 Continuar com Google
-            </a>
+            </AppButton>
         </template>
 
         <template #footer>

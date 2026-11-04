@@ -10,6 +10,7 @@ import {
     TriangleAlert,
 } from '@lucide/vue';
 import { ref } from 'vue';
+import AppButton from '@/components/AppButton.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { confirmAction } from '@/lib/confirm';
@@ -194,10 +195,9 @@ async function deleteAccount(): Promise<void> {
                             </div>
                         </div>
 
-                        <button
-                            type="button"
+                        <AppButton
+                            variant="ink"
                             :disabled="exporting"
-                            class="inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                             @click="requestExport"
                         >
                             <LoaderCircle
@@ -211,7 +211,7 @@ async function deleteAccount(): Promise<void> {
                                 aria-hidden="true"
                             />
                             Exportar agora
-                        </button>
+                        </AppButton>
                     </div>
 
                     <div v-if="exports.length > 0" class="p-6">

@@ -2,6 +2,7 @@
 import { Link, router, usePage } from '@inertiajs/vue3';
 import { Cookie } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import AppButton from '@/components/AppButton.vue';
 import { store as storeConsent } from '@/routes/cookie-consent';
 
 const page = usePage();
@@ -158,22 +159,20 @@ function saveSelection(): void {
                         </div>
 
                         <div class="mt-4 flex flex-wrap gap-2">
-                            <button
-                                type="button"
+                            <AppButton
+                                variant="ink"
                                 :disabled="saving"
-                                class="tap-target inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                                 @click="acceptAll"
                             >
                                 Aceitar todos
-                            </button>
-                            <button
-                                type="button"
+                            </AppButton>
+                            <AppButton
+                                variant="outline"
                                 :disabled="saving"
-                                class="tap-target inline-flex h-10 items-center justify-center rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 disabled:opacity-60 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
                                 @click="rejectAll"
                             >
                                 Apenas essenciais
-                            </button>
+                            </AppButton>
                             <button
                                 v-if="!showChoices"
                                 type="button"

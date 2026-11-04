@@ -12,6 +12,8 @@ import {
     Send,
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import AppButton from '@/components/AppButton.vue';
+import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageStat from '@/components/PageStat.vue';
@@ -228,10 +230,10 @@ function abbreviate(value: string | null): string {
                             :options="{ preserveScroll: true }"
                             #default="{ processing }"
                         >
-                            <button
+                            <AppButton
+                                variant="outline"
                                 type="submit"
                                 :disabled="processing || activeTotal === 0"
-                                class="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-white px-[1.125rem] text-sm font-semibold whitespace-nowrap text-zinc-900 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
                             >
                                 <LoaderCircle
                                     v-if="processing"
@@ -244,7 +246,7 @@ function abbreviate(value: string | null): string {
                                     aria-hidden="true"
                                 />
                                 Actualizar estados
-                            </button>
+                            </AppButton>
                         </Form>
                     </template>
                     <template #stats>
@@ -340,144 +342,113 @@ function abbreviate(value: string | null): string {
                                 <div
                                     class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8"
                                 >
-                                    <table
-                                        class="min-w-full divide-y divide-zinc-200 dark:divide-white/10"
-                                    >
-                                        <thead
-                                            class="bg-zinc-50 dark:bg-white/[0.03]"
-                                        >
-                                            <tr>
-                                                <th
-                                                    scope="col"
-                                                    class="py-3.5 pr-3 pl-5 text-left text-xs font-semibold text-zinc-600 sm:pl-8 dark:text-zinc-300"
-                                                >
-                                                    Documento
-                                                </th>
-                                                <th
-                                                    scope="col"
-                                                    class="hidden px-3 py-3.5 text-left text-xs font-semibold text-zinc-600 md:table-cell dark:text-zinc-300"
-                                                >
-                                                    Cliente
-                                                </th>
-                                                <th
-                                                    scope="col"
-                                                    class="px-3 py-3.5 text-left text-xs font-semibold text-zinc-600 dark:text-zinc-300"
-                                                >
-                                                    Estado
-                                                </th>
-                                                <th
-                                                    scope="col"
-                                                    class="hidden px-3 py-3.5 text-right text-xs font-semibold text-zinc-600 sm:table-cell dark:text-zinc-300"
-                                                >
-                                                    Total
-                                                </th>
-                                                <th
-                                                    scope="col"
-                                                    class="relative py-3.5 pr-5 pl-3 sm:pr-8"
-                                                >
-                                                    <span class="sr-only"
-                                                        >Abrir</span
-                                                    >
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody
-                                            class="divide-y divide-zinc-100 dark:divide-white/10"
-                                        >
-                                            <tr
-                                                v-for="submission in filteredSubmissions"
-                                                :key="submission.public_id"
-                                                :class="
-                                                    selected?.public_id ===
-                                                    submission.public_id
-                                                        ? 'bg-brand-50/70 dark:bg-brand-400/[0.06]'
-                                                        : ''
-                                                "
+                                    <DataTable
+                                        ><template #head>
+                                            <th scope="col">Documento</th>
+                                            <th
+                                                scope="col"
+                                                class="hidden md:table-cell"
                                             >
-                                                <td
-                                                    class="py-4 pr-3 pl-5 sm:pl-8"
+                                                Cliente
+                                            </th>
+                                            <th scope="col">Estado</th>
+                                            <th
+                                                scope="col"
+                                                class="hidden text-right sm:table-cell"
+                                            >
+                                                Total
+                                            </th>
+                                            <th scope="col" class="relative">
+                                                <span class="sr-only"
+                                                    >Abrir</span
                                                 >
-                                                    <p
-                                                        class="text-sm font-semibold whitespace-nowrap text-zinc-950 dark:text-white"
-                                                    >
-                                                        {{
-                                                            submission.document_no
-                                                        }}
-                                                    </p>
-                                                    <p
-                                                        class="mt-1 text-xs whitespace-nowrap text-zinc-500 dark:text-zinc-400"
-                                                    >
-                                                        {{
-                                                            formatDate(
-                                                                submission.created_at,
-                                                            )
-                                                        }}
-                                                    </p>
-                                                </td>
-                                                <td
-                                                    class="hidden max-w-56 px-3 py-4 text-sm text-zinc-600 md:table-cell dark:text-zinc-300"
+                                            </th>
+                                        </template>
+                                        <tr
+                                            v-for="submission in filteredSubmissions"
+                                            :key="submission.public_id"
+                                            :class="
+                                                selected?.public_id ===
+                                                submission.public_id
+                                                    ? 'bg-brand-50/70 dark:bg-brand-400/[0.06]'
+                                                    : ''
+                                            "
+                                        >
+                                            <td>
+                                                <p
+                                                    class="text-sm font-semibold whitespace-nowrap text-zinc-950 dark:text-white"
                                                 >
-                                                    <span
-                                                        class="block truncate"
-                                                    >
-                                                        {{
-                                                            submission.customer_name
-                                                        }}
-                                                    </span>
-                                                </td>
-                                                <td class="px-3 py-4">
-                                                    <StatusBadge
-                                                        :label="
-                                                            submission.status_label
-                                                        "
-                                                        :tone="
-                                                            statusTone(
-                                                                submission.status,
-                                                            )
-                                                        "
-                                                        :pulse="
-                                                            activeStatuses.includes(
-                                                                submission.status,
-                                                            )
-                                                        "
-                                                    />
-                                                </td>
-                                                <td
-                                                    class="hidden px-3 py-4 text-right font-mono text-sm font-semibold whitespace-nowrap text-zinc-900 sm:table-cell dark:text-white"
+                                                    {{ submission.document_no }}
+                                                </p>
+                                                <p
+                                                    class="mt-1 text-xs whitespace-nowrap text-zinc-500 dark:text-zinc-400"
                                                 >
                                                     {{
-                                                        formatMoney(
-                                                            submission.gross_total,
-                                                            submission.currency_code,
+                                                        formatDate(
+                                                            submission.created_at,
                                                         )
                                                     }}
-                                                </td>
-                                                <td
-                                                    class="py-4 pr-5 pl-3 text-right sm:pr-8"
+                                                </p>
+                                            </td>
+                                            <td
+                                                class="hidden max-w-56 text-sm text-zinc-600 md:table-cell dark:text-zinc-300"
+                                            >
+                                                <span class="block truncate">
+                                                    {{
+                                                        submission.customer_name
+                                                    }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <StatusBadge
+                                                    :label="
+                                                        submission.status_label
+                                                    "
+                                                    :tone="
+                                                        statusTone(
+                                                            submission.status,
+                                                        )
+                                                    "
+                                                    :pulse="
+                                                        activeStatuses.includes(
+                                                            submission.status,
+                                                        )
+                                                    "
+                                                />
+                                            </td>
+                                            <td
+                                                class="hidden text-right font-mono text-sm font-semibold whitespace-nowrap text-zinc-900 sm:table-cell dark:text-white"
+                                            >
+                                                {{
+                                                    formatMoney(
+                                                        submission.gross_total,
+                                                        submission.currency_code,
+                                                    )
+                                                }}
+                                            </td>
+                                            <td class="text-right">
+                                                <Link
+                                                    data-nav-row
+                                                    :href="
+                                                        index({
+                                                            query: {
+                                                                submission:
+                                                                    submission.public_id,
+                                                            },
+                                                        })
+                                                    "
+                                                    preserve-scroll
+                                                    class="inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-600 dark:text-brand-300"
                                                 >
-                                                    <Link
-                                                        data-nav-row
-                                                        :href="
-                                                            index({
-                                                                query: {
-                                                                    submission:
-                                                                        submission.public_id,
-                                                                },
-                                                            })
-                                                        "
-                                                        preserve-scroll
-                                                        class="inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-600 dark:text-brand-300"
-                                                    >
-                                                        Abrir
-                                                        <ChevronRight
-                                                            class="size-4"
-                                                            aria-hidden="true"
-                                                        />
-                                                    </Link>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                                                    Abrir
+                                                    <ChevronRight
+                                                        class="size-4"
+                                                        aria-hidden="true"
+                                                    />
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    </DataTable>
                                 </div>
                             </div>
                         </div>

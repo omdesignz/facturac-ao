@@ -17,9 +17,11 @@ import {
     UserRound,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import AppButton from '@/components/AppButton.vue';
 import DateInput from '@/components/DateInput.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
 import FormError from '@/components/FormError.vue';
+import FormField from '@/components/FormField.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
 import SectionHeading from '@/components/SectionHeading.vue';
 import SelectInput from '@/components/SelectInput.vue';
@@ -456,30 +458,32 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                         v-if="transportDocument?.document_no"
                         class="flex flex-wrap items-center gap-2"
                     >
-                        <a
+                        <AppButton
+                            variant="outline"
+                            external
                             :href="
                                 printTransportDocument.url(
                                     transportDocument.public_id,
                                 )
                             "
                             target="_blank"
-                            class="inline-flex h-10 items-center justify-center gap-2 rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring ring-inset hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
                         >
                             <Printer class="size-4" aria-hidden="true" />
                             Imprimir
-                        </a>
-                        <a
+                        </AppButton>
+                        <AppButton
+                            variant="outline"
+                            external
                             :href="
                                 transportDocumentPdf.url(
                                     transportDocument.public_id,
                                 )
                             "
                             target="_blank"
-                            class="inline-flex h-10 items-center justify-center gap-2 rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring ring-inset hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
                         >
                             <FileDown class="size-4" aria-hidden="true" />
                             PDF
-                        </a>
+                        </AppButton>
                     </div>
                 </header>
 
@@ -510,42 +514,30 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                             <div
                                 class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-5"
                             >
-                                <div>
-                                    <label class="mb-2 field-label"
-                                        >Tipo de guia</label
-                                    >
-                                    <SelectInput
+                                <FormField
+                                    label="Tipo de guia"
+                                    :error="fieldError('document_type')"
+                                    ><SelectInput
                                         v-model="form.document_type"
                                         :options="types"
                                         :disabled="readOnly"
-                                    />
-                                    <FormError
-                                        :message="fieldError('document_type')"
-                                    />
-                                </div>
-                                <div class="xl:col-span-2">
-                                    <label class="mb-2 field-label"
-                                        >Estabelecimento emissor</label
-                                    >
-                                    <SelectInput
+                                /></FormField>
+                                <FormField
+                                    class="xl:col-span-2"
+                                    label="Estabelecimento emissor"
+                                    :error="
+                                        fieldError('establishment_public_id')
+                                    "
+                                    ><SelectInput
                                         v-model="form.establishment_public_id"
                                         :options="establishments"
                                         :disabled="readOnly"
                                         @change="selectEstablishment"
-                                    />
-                                    <FormError
-                                        :message="
-                                            fieldError(
-                                                'establishment_public_id',
-                                            )
-                                        "
-                                    />
-                                </div>
-                                <div>
-                                    <label class="mb-2 field-label"
-                                        >Sentido do movimento</label
-                                    >
-                                    <SelectInput
+                                /></FormField>
+                                <FormField
+                                    label="Sentido do movimento"
+                                    :error="fieldError('movement_direction')"
+                                    ><SelectInput
                                         :disabled="readOnly"
                                         v-model="form.movement_direction"
                                         :options="[
@@ -558,70 +550,40 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                                                 label: 'Entrada de mercadorias',
                                             },
                                         ]"
-                                    />
-                                    <FormError
-                                        :message="
-                                            fieldError('movement_direction')
-                                        "
-                                    />
-                                </div>
-                                <div>
-                                    <label
-                                        for="guide-date"
-                                        class="mb-2 field-label"
-                                        >Data de emissão</label
-                                    >
-                                    <DateInput
+                                /></FormField>
+                                <FormField
+                                    for="guide-date"
+                                    label="Data de emissão"
+                                    :error="fieldError('movement_date')"
+                                    ><DateInput
                                         id="guide-date"
                                         v-model="form.movement_date"
                                         :disabled="readOnly"
                                         :clearable="false"
-                                    />
-                                    <FormError
-                                        :message="fieldError('movement_date')"
-                                    />
-                                </div>
-                                <div>
-                                    <label
-                                        for="guide-start"
-                                        class="mb-2 field-label"
-                                        >Início</label
-                                    >
-                                    <DateInput
+                                /></FormField>
+                                <FormField
+                                    for="guide-start"
+                                    label="Início"
+                                    :error="fieldError('movement_start_at')"
+                                    ><DateInput
                                         id="guide-start"
                                         v-model="form.movement_start_at"
                                         with-time
                                         :disabled="readOnly"
                                         :clearable="false"
-                                    />
-                                    <FormError
-                                        :message="
-                                            fieldError('movement_start_at')
-                                        "
-                                    />
-                                </div>
-                                <div
+                                /></FormField>
+                                <FormField
                                     class="sm:col-span-2 xl:col-span-2 xl:col-start-4"
-                                >
-                                    <label
-                                        for="guide-end"
-                                        class="mb-2 field-label"
-                                        >Fim previsto
-                                        <span
-                                            class="font-normal text-zinc-500 dark:text-zinc-400"
-                                            >(opcional)</span
-                                        ></label
-                                    >
-                                    <DateInput
+                                    for="guide-end"
+                                    label="Fim previsto"
+                                    optional
+                                    :error="fieldError('movement_end_at')"
+                                    ><DateInput
                                         id="guide-end"
                                         v-model="form.movement_end_at"
                                         with-time
                                         :disabled="readOnly"
-                                    />
-                                    <FormError
-                                        :message="fieldError('movement_end_at')"
-                                    />
-                                </div>
+                                /></FormField>
                             </div>
                         </section>
 
@@ -646,22 +608,18 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                                     </template></SectionHeading
                                 >
                                 <div class="mt-5 space-y-4">
-                                    <div v-if="!isReturnNote">
-                                        <label class="mb-2 field-label"
-                                            >Cliente guardado</label
-                                        >
-                                        <SelectInput
+                                    <FormField
+                                        v-if="!isReturnNote"
+                                        label="Cliente guardado"
+                                        :error="
+                                            fieldError('customer_public_id')
+                                        "
+                                        ><SelectInput
                                             v-model="form.customer_public_id"
                                             :options="customerOptions"
                                             :disabled="readOnly"
                                             @change="selectCustomer"
-                                        />
-                                        <FormError
-                                            :message="
-                                                fieldError('customer_public_id')
-                                            "
-                                        />
-                                    </div>
+                                    /></FormField>
                                     <div class="grid gap-4 sm:grid-cols-2">
                                         <label class="block sm:col-span-2">
                                             <span
@@ -918,14 +876,10 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                                         valor unitário alimenta o SAF-T.
                                     </template></SectionHeading
                                 >
-                                <button
-                                    type="button"
-                                    class="inline-flex h-10 items-center justify-center gap-2 rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring ring-inset hover:bg-zinc-50 disabled:hidden dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
-                                    @click="addLine"
-                                >
+                                <AppButton variant="outline" @click="addLine">
                                     <Plus class="size-4" aria-hidden="true" />
                                     Nova linha
-                                </button>
+                                </AppButton>
                             </div>
 
                             <div class="mt-5 space-y-3">
@@ -1291,11 +1245,11 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                                         aria-hidden="true"
                                     />Anular
                                 </button>
-                                <button
+                                <AppButton
+                                    variant="outline"
                                     v-if="!readOnly"
                                     type="submit"
                                     :disabled="form.processing"
-                                    class="inline-flex h-10 items-center justify-center gap-2 rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring ring-inset hover:bg-zinc-50 disabled:opacity-60 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
                                 >
                                     <LoaderCircle
                                         v-if="form.processing"
@@ -1310,19 +1264,18 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                                             ? 'Guardar alterações'
                                             : 'Guardar rascunho'
                                     }}
-                                </button>
-                                <button
+                                </AppButton>
+                                <AppButton
+                                    variant="ink"
                                     v-if="transportDocument?.can_issue"
-                                    type="button"
                                     :disabled="form.isDirty"
-                                    class="inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                                     @click="issueDocument"
                                 >
                                     <CircleCheck
                                         class="size-4"
                                         aria-hidden="true"
                                     />Emitir guia
-                                </button>
+                                </AppButton>
                             </div>
                         </div>
                     </section>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Form, Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { Form, Head, router, useForm, usePage } from '@inertiajs/vue3';
 import {
     Building2,
     Check,
@@ -11,11 +11,13 @@ import {
     MapPin,
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import AppButton from '@/components/AppButton.vue';
 import CompanySetupProgress from '@/components/CompanySetupProgress.vue';
 import type { SetupProgress } from '@/components/CompanySetupProgress.vue';
 import DateInput from '@/components/DateInput.vue';
 import FileInput from '@/components/FileInput.vue';
 import FormError from '@/components/FormError.vue';
+import FormField from '@/components/FormField.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
@@ -201,22 +203,19 @@ const taxRegimeOptions = computed(() =>
                         />
                     </template>
                     <template #actions>
-                        <Link
+                        <AppButton
+                            variant="outline"
                             :href="
                                 userGuideIndex.url({
                                     query: { chapter: 'empresa' },
                                 })
                             "
-                            class="inline-flex min-h-10 items-center rounded-full px-4 text-sm font-semibold ring-1 ring-zinc-900/10 focus-ring active:opacity-75 dark:ring-white/15"
                         >
                             Guia passo a passo
-                        </Link>
-                        <Link
-                            :href="dashboard.url()"
-                            class="inline-flex h-10 items-center rounded-full bg-white px-[1.125rem] text-sm font-semibold text-zinc-900 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
-                        >
+                        </AppButton>
+                        <AppButton variant="outline" :href="dashboard.url()">
                             Voltar ao painel
-                        </Link>
+                        </AppButton>
                     </template>
                 </PageHeader>
 
@@ -277,26 +276,26 @@ const taxRegimeOptions = computed(() =>
                                 :disabled="!canUpdate || processing"
                                 class="grid grid-cols-1 gap-x-6 gap-y-6 p-5 disabled:opacity-70 sm:grid-cols-6 sm:p-7"
                             >
-                                <div class="sm:col-span-4">
-                                    <label for="legal-name" class="field-label"
-                                        >Denominação social</label
-                                    >
-                                    <input
+                                <FormField
+                                    class="sm:col-span-4"
+                                    for="legal-name"
+                                    label="Denominação social"
+                                    :error="errors.legal_name"
+                                    ><input
                                         id="legal-name"
                                         name="legal_name"
                                         type="text"
                                         autocomplete="organization"
                                         required
                                         :value="company.legal_name"
-                                        class="mt-2 block form-input"
-                                    />
-                                    <FormError :message="errors.legal_name" />
-                                </div>
-                                <div class="sm:col-span-2">
-                                    <label for="tax-id" class="field-label"
-                                        >NIF</label
-                                    >
-                                    <input
+                                        class="block form-input"
+                                /></FormField>
+                                <FormField
+                                    class="sm:col-span-2"
+                                    for="tax-id"
+                                    label="NIF"
+                                    :error="errors.tax_identification_number"
+                                    ><input
                                         id="tax-id"
                                         name="tax_identification_number"
                                         type="text"
@@ -305,31 +304,21 @@ const taxRegimeOptions = computed(() =>
                                         :value="
                                             company.tax_identification_number
                                         "
-                                        class="mt-2 block form-input font-mono uppercase"
-                                    />
-                                    <FormError
-                                        :message="
-                                            errors.tax_identification_number
-                                        "
-                                    />
-                                </div>
-                                <div class="sm:col-span-3">
-                                    <label for="trade-name" class="field-label"
-                                        >Nome comercial
-                                        <span
-                                            class="font-normal text-zinc-500 dark:text-zinc-400"
-                                            >(opcional)</span
-                                        ></label
-                                    >
-                                    <input
+                                        class="block form-input font-mono uppercase"
+                                /></FormField>
+                                <FormField
+                                    class="sm:col-span-3"
+                                    for="trade-name"
+                                    label="Nome comercial"
+                                    optional
+                                    :error="errors.trade_name"
+                                    ><input
                                         id="trade-name"
                                         name="trade_name"
                                         type="text"
                                         :value="company.trade_name"
-                                        class="mt-2 block form-input"
-                                    />
-                                    <FormError :message="errors.trade_name" />
-                                </div>
+                                        class="block form-input"
+                                /></FormField>
                                 <div class="sm:col-span-3">
                                     <label for="tax-regime" class="field-label"
                                         >Regime de IVA</label
@@ -380,23 +369,20 @@ const taxRegimeOptions = computed(() =>
                                         :message="errors.tax_regime_confirmed"
                                     />
                                 </div>
-                                <div class="sm:col-span-3">
-                                    <label for="cae" class="field-label"
-                                        >CAE principal</label
-                                    >
-                                    <input
+                                <FormField
+                                    class="sm:col-span-3"
+                                    for="cae"
+                                    label="CAE principal"
+                                    :error="errors.main_cae_code"
+                                    ><input
                                         id="cae"
                                         name="main_cae_code"
                                         type="text"
                                         required
                                         :value="company.main_cae_code"
-                                        class="mt-2 block form-input font-mono uppercase"
+                                        class="block form-input font-mono uppercase"
                                         placeholder="Ex.: 62010"
-                                    />
-                                    <FormError
-                                        :message="errors.main_cae_code"
-                                    />
-                                </div>
+                                /></FormField>
                             </fieldset>
                         </section>
 
@@ -429,93 +415,71 @@ const taxRegimeOptions = computed(() =>
                                 :disabled="!canUpdate || processing"
                                 class="grid grid-cols-1 gap-x-6 gap-y-6 p-5 disabled:opacity-70 sm:grid-cols-6 sm:p-7"
                             >
-                                <div class="sm:col-span-2">
-                                    <label
-                                        for="establishment-code"
-                                        class="field-label"
-                                        >Código interno</label
-                                    >
-                                    <input
+                                <FormField
+                                    class="sm:col-span-2"
+                                    for="establishment-code"
+                                    label="Código interno"
+                                    :error="errors.establishment_code"
+                                    ><input
                                         id="establishment-code"
                                         name="establishment_code"
                                         type="text"
                                         required
                                         :value="company.establishment_code"
-                                        class="mt-2 block form-input font-mono uppercase"
-                                    />
-                                    <FormError
-                                        :message="errors.establishment_code"
-                                    />
-                                </div>
-                                <div class="sm:col-span-4">
-                                    <label
-                                        for="establishment-name"
-                                        class="field-label"
-                                        >Nome do estabelecimento</label
-                                    >
-                                    <input
+                                        class="block form-input font-mono uppercase"
+                                /></FormField>
+                                <FormField
+                                    class="sm:col-span-4"
+                                    for="establishment-name"
+                                    label="Nome do estabelecimento"
+                                    :error="errors.establishment_name"
+                                    ><input
                                         id="establishment-name"
                                         name="establishment_name"
                                         type="text"
                                         required
                                         :value="company.establishment_name"
-                                        class="mt-2 block form-input"
-                                    />
-                                    <FormError
-                                        :message="errors.establishment_name"
-                                    />
-                                </div>
-                                <div class="sm:col-span-6">
-                                    <label
-                                        for="address-line"
-                                        class="field-label"
-                                        >Morada</label
-                                    >
-                                    <input
+                                        class="block form-input"
+                                /></FormField>
+                                <FormField
+                                    class="sm:col-span-6"
+                                    for="address-line"
+                                    label="Morada"
+                                    :error="errors.address_line"
+                                    ><input
                                         id="address-line"
                                         name="address_line"
                                         type="text"
                                         autocomplete="street-address"
                                         required
                                         :value="company.address_line"
-                                        class="mt-2 block form-input"
-                                    />
-                                    <FormError :message="errors.address_line" />
-                                </div>
-                                <div class="sm:col-span-4">
-                                    <label
-                                        for="municipality"
-                                        class="field-label"
-                                        >Município</label
-                                    >
-                                    <input
+                                        class="block form-input"
+                                /></FormField>
+                                <FormField
+                                    class="sm:col-span-4"
+                                    for="municipality"
+                                    label="Município"
+                                    :error="errors.municipality"
+                                    ><input
                                         id="municipality"
                                         name="municipality"
                                         type="text"
                                         required
                                         :value="company.municipality"
-                                        class="mt-2 block form-input"
-                                    />
-                                    <FormError :message="errors.municipality" />
-                                </div>
-                                <div class="sm:col-span-2">
-                                    <label
-                                        for="province-code"
-                                        class="field-label"
-                                        >Província</label
-                                    >
-                                    <SelectInput
+                                        class="block form-input"
+                                /></FormField>
+                                <FormField
+                                    class="sm:col-span-2"
+                                    for="province-code"
+                                    label="Província"
+                                    :error="errors.province_code"
+                                    ><SelectInput
                                         id="province-code"
                                         v-model="provinceCode"
                                         name="province_code"
-                                        class="mt-2"
                                         :options="provinceOptions"
                                         placeholder="Escolha a província"
-                                    />
-                                    <FormError
-                                        :message="errors.province_code"
-                                    />
-                                </div>
+                                /></FormField>
                             </fieldset>
 
                             <div
@@ -543,11 +507,11 @@ const taxRegimeOptions = computed(() =>
                                             : 'Confirme os dados e guarde para continuar.'
                                     }}
                                 </p>
-                                <button
+                                <AppButton
+                                    variant="ink"
                                     v-if="canUpdate"
                                     type="submit"
                                     :disabled="processing"
-                                    class="inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                                 >
                                     <LoaderCircle
                                         v-if="processing"
@@ -559,7 +523,7 @@ const taxRegimeOptions = computed(() =>
                                             ? 'A guardar…'
                                             : 'Guardar perfil da empresa'
                                     }}
-                                </button>
+                                </AppButton>
                             </div>
                         </section>
                     </Form>
@@ -688,16 +652,17 @@ const taxRegimeOptions = computed(() =>
                                                         aria-label="Fim do período SAF-T"
                                                     />
                                                 </div>
-                                                <a
+                                                <AppButton
+                                                    variant="gold"
+                                                    external
                                                     :href="saftUrl"
-                                                    class="inline-flex h-10 items-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
                                                 >
                                                     <Download
                                                         class="size-4"
                                                         aria-hidden="true"
                                                     />
                                                     Gerar SAF-T
-                                                </a>
+                                                </AppButton>
                                             </div>
                                         </div>
                                     </div>
@@ -760,18 +725,18 @@ const taxRegimeOptions = computed(() =>
                                                 "
                                             />
                                         </div>
-                                        <button
+                                        <AppButton
+                                            variant="gold"
                                             v-if="canUpdateBankDetails"
                                             type="submit"
                                             :disabled="banking.processing"
-                                            class="inline-flex min-h-10 items-center rounded-full bg-accent-400 px-5 text-sm font-semibold text-brand-950 focus-ring hover:bg-accent-300 active:bg-accent-500 disabled:opacity-50"
                                         >
                                             {{
                                                 banking.processing
                                                     ? 'A guardar…'
                                                     : 'Guardar dados bancários'
                                             }}
-                                        </button>
+                                        </AppButton>
                                         <p v-else class="text-sm text-zinc-500">
                                             Um administrador pode configurar os
                                             dados bancários depois de guardar o

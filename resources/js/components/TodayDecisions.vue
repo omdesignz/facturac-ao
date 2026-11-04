@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
 import { Sparkles } from '@lucide/vue';
 import { computed, onMounted, ref, watch } from 'vue';
-import { buttonGold, buttonInk, buttonQuiet } from '@/lib/pos-ui';
+import AppButton from '@/components/AppButton.vue';
+
 import { fetchReminderDraft, toneLabel } from '@/lib/reminder-draft';
 import type { ReminderDraft } from '@/lib/reminder-draft';
 import type { Decision } from '@/lib/today-decisions';
@@ -149,39 +149,37 @@ const kickerClass: Record<Decision['key'], string> = {
                     <div
                         class="flex shrink-0 items-center gap-1.5 md:self-start"
                     >
-                        <button
+                        <AppButton
+                            variant="gold"
                             v-if="
                                 decision.kind === 'remind' && decision.customer
                             "
-                            type="button"
-                            :class="buttonGold"
                             @click="emit('remind', decision.customer)"
                         >
                             {{ decision.action }}
-                        </button>
-                        <Link
+                        </AppButton>
+                        <AppButton
+                            variant="ink"
                             v-else-if="decision.href"
                             :href="decision.href"
-                            :class="buttonInk"
                         >
                             {{ decision.action }}
-                        </Link>
+                        </AppButton>
 
-                        <Link
+                        <AppButton
+                            variant="quiet"
                             v-if="decision.secondary.href"
                             :href="decision.secondary.href"
-                            :class="buttonQuiet"
                         >
                             {{ decision.secondary.label }}
-                        </Link>
-                        <button
+                        </AppButton>
+                        <AppButton
+                            variant="quiet"
                             v-else
-                            type="button"
-                            :class="buttonQuiet"
                             @click="putAway(decision)"
                         >
                             {{ decision.secondary.label }}
-                        </button>
+                        </AppButton>
                     </div>
                 </div>
 

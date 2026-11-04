@@ -10,10 +10,12 @@ import {
     Zap,
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import AppButton from '@/components/AppButton.vue';
 import DateInput from '@/components/DateInput.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
 import FormError from '@/components/FormError.vue';
+import FormField from '@/components/FormField.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
 import SelectInput from '@/components/SelectInput.vue';
@@ -256,25 +258,24 @@ const dueCount = computed(
                 >
                     <template #actions>
                         <div class="flex flex-wrap items-center gap-3">
-                            <button
+                            <AppButton
+                                variant="outline"
                                 v-if="dueCount > 0"
-                                type="button"
-                                class="inline-flex h-10 items-center gap-2 rounded-full px-[1.125rem] text-sm font-semibold text-zinc-700 ring-1 ring-zinc-900/10 focus-ring transition hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
                                 @click="runNow"
                             >
                                 <Zap class="size-4" aria-hidden="true" />
                                 Gerar agora ({{ dueCount }})
-                            </button>
+                            </AppButton>
 
-                            <button
+                            <AppButton
+                                variant="gold"
                                 v-if="customers.length > 0"
-                                type="button"
-                                class="inline-flex h-10 w-fit items-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
                                 @click="openCreate"
+                                class="w-fit"
                             >
                                 <Plus class="size-4" aria-hidden="true" />
                                 Nova avença
-                            </button>
+                            </AppButton>
                         </div>
                     </template>
                 </PageHeader>
@@ -309,9 +310,7 @@ const dueCount = computed(
                             </div>
 
                             <StatusBadge
-                                :tone="
-                                    profile.is_active ? 'neutral' : 'draft'
-                                "
+                                :tone="profile.is_active ? 'neutral' : 'draft'"
                                 :label="profile.is_active ? 'Activa' : 'Parada'"
                             />
                             <StatusBadge
@@ -388,13 +387,12 @@ const dueCount = computed(
                         </dl>
 
                         <div class="mt-4 flex flex-wrap justify-end gap-2">
-                            <button
-                                type="button"
-                                class="inline-flex h-10 items-center justify-center rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
+                            <AppButton
+                                variant="outline"
                                 @click="openEdit(profile)"
                             >
                                 Editar
-                            </button>
+                            </AppButton>
                             <button
                                 v-if="profile.is_active"
                                 type="button"
@@ -426,93 +424,76 @@ const dueCount = computed(
         >
             <form class="space-y-5" @submit.prevent="submit">
                 <div class="grid gap-4 sm:grid-cols-2">
-                    <div class="sm:col-span-2">
-                        <label for="profile-name" class="field-label"
-                            >Nome da avença</label
-                        >
-                        <input
+                    <FormField
+                        class="sm:col-span-2"
+                        for="profile-name"
+                        label="Nome da avença"
+                        :error="form.errors.name"
+                        ><input
                             id="profile-name"
                             v-model="form.name"
                             type="text"
                             placeholder="Ex.: manutenção mensal"
-                            class="mt-2 form-input"
-                        />
-                        <FormError :message="form.errors.name" />
-                    </div>
+                            class="form-input"
+                    /></FormField>
 
-                    <div>
-                        <label class="field-label">Cliente</label>
-                        <div class="mt-2">
+                    <FormField
+                        label="Cliente"
+                        :error="form.errors.customer_public_id"
+                        ><div>
                             <SelectInput
                                 v-model="form.customer_public_id"
                                 :options="customers"
-                            />
-                        </div>
-                        <FormError :message="form.errors.customer_public_id" />
-                    </div>
+                            /></div
+                    ></FormField>
 
-                    <div>
-                        <label class="field-label">Estabelecimento</label>
-                        <div class="mt-2">
+                    <FormField label="Estabelecimento"
+                        ><div>
                             <SelectInput
                                 v-model="form.establishment_public_id"
                                 :options="establishments"
-                            />
-                        </div>
-                    </div>
+                            /></div
+                    ></FormField>
 
-                    <div>
-                        <label class="field-label">Frequência</label>
-                        <div class="mt-2">
+                    <FormField label="Frequência"
+                        ><div>
                             <SelectInput
                                 v-model="form.frequency"
                                 :options="frequencies"
-                            />
-                        </div>
-                    </div>
+                            /></div
+                    ></FormField>
 
-                    <div>
-                        <label class="field-label">Documento a emitir</label>
-                        <div class="mt-2">
+                    <FormField label="Documento a emitir"
+                        ><div>
                             <SelectInput
                                 v-model="form.document_type"
                                 :options="documentTypes"
-                            />
-                        </div>
-                    </div>
+                            /></div
+                    ></FormField>
 
-                    <div>
-                        <label for="profile-start" class="field-label"
-                            >Começa em</label
-                        >
-                        <DateInput
+                    <FormField
+                        for="profile-start"
+                        label="Começa em"
+                        :error="form.errors.starts_on"
+                        ><DateInput
                             id="profile-start"
                             v-model="form.starts_on"
-                            class="mt-2"
                             :clearable="false"
                             aria-label="Data em que a avença começa"
-                        />
-                        <FormError :message="form.errors.starts_on" />
-                    </div>
+                    /></FormField>
 
-                    <div>
-                        <label for="profile-end" class="field-label"
-                            >Termina em
-                            <span
-                                class="font-normal text-zinc-500 dark:text-zinc-400"
-                                >(opcional)</span
-                            ></label
-                        >
-                        <DateInput
+                    <FormField
+                        for="profile-end"
+                        label="Termina em"
+                        optional
+                        :error="form.errors.ends_on"
+                        ><DateInput
                             id="profile-end"
                             v-model="form.ends_on"
-                            class="mt-2"
                             :min-date="form.starts_on"
                             placeholder="Sem fim"
                             aria-label="Data em que a avença termina"
-                        />
-                        <FormError :message="form.errors.ends_on" />
-                    </div>
+                    /></FormField>
                 </div>
 
                 <div
@@ -613,17 +594,13 @@ const dueCount = computed(
                 <div
                     class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"
                 >
-                    <button
-                        type="button"
-                        class="inline-flex h-10 items-center justify-center rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
-                        @click="dialogOpen = false"
-                    >
+                    <AppButton variant="outline" @click="dialogOpen = false">
                         Cancelar
-                    </button>
-                    <button
+                    </AppButton>
+                    <AppButton
+                        variant="ink"
                         type="submit"
                         :disabled="form.processing"
-                        class="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                     >
                         <LoaderCircle
                             v-if="form.processing"
@@ -631,7 +608,7 @@ const dueCount = computed(
                             aria-hidden="true"
                         />
                         Guardar
-                    </button>
+                    </AppButton>
                 </div>
             </form>
         </RecordDialog>

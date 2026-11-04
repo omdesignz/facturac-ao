@@ -13,6 +13,7 @@ import {
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import type { Component } from 'vue';
+import AppButton from '@/components/AppButton.vue';
 import DocumentLifecycle from '@/components/DocumentLifecycle.vue';
 import type { LifecycleStep } from '@/components/DocumentLifecycle.vue';
 import ReminderDialog from '@/components/ReminderDialog.vue';
@@ -550,13 +551,10 @@ const reviewStatement = computed(() => {
                         </p>
                     </div>
                     <div class="flex flex-wrap items-center gap-2.5">
-                        <Link
-                            :href="invoiceCreate.url()"
-                            class="inline-flex h-10 items-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300"
-                        >
+                        <AppButton variant="gold" :href="invoiceCreate.url()">
                             <Plus class="size-4" aria-hidden="true" />
                             Nova factura
-                        </Link>
+                        </AppButton>
                     </div>
                 </header>
 
@@ -879,19 +877,19 @@ const reviewStatement = computed(() => {
                             <div
                                 class="mt-6 flex flex-wrap justify-center gap-2.5"
                             >
-                                <Link
+                                <AppButton
+                                    variant="gold"
                                     :href="invoiceCreate.url()"
-                                    class="inline-flex h-10 items-center gap-2 rounded-full bg-accent-400 px-4 text-sm font-semibold text-brand-950 focus-ring transition hover:bg-accent-300"
                                 >
                                     <Plus class="size-4" aria-hidden="true" />
                                     Criar factura
-                                </Link>
-                                <Link
+                                </AppButton>
+                                <AppButton
+                                    variant="outline"
                                     :href="importIndex.url()"
-                                    class="inline-flex h-10 items-center rounded-full bg-white px-4 text-sm font-semibold text-zinc-900 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:bg-zinc-900 dark:text-white dark:ring-white/10"
                                 >
                                     Importar dados
-                                </Link>
+                                </AppButton>
                             </div>
                         </div>
                     </section>
@@ -1137,29 +1135,33 @@ const reviewStatement = computed(() => {
                             :steps="focus.steps"
                         />
                         <div class="mt-4 flex flex-wrap gap-2.5">
-                            <a
+                            <AppButton
+                                variant="ink"
+                                size="sm"
+                                external
                                 :href="documentPrint.url(focus.public_id)"
-                                class="inline-flex h-9 items-center rounded-full bg-brand-950 px-4 text-[0.8125rem] font-semibold text-white focus-ring transition hover:bg-brand-800 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                             >
                                 Ver documento
-                            </a>
-                            <Link
+                            </AppButton>
+                            <AppButton
+                                variant="outline"
+                                size="sm"
                                 v-if="
                                     focus.reason === 'invalid' ||
                                     focus.reason === 'contingency'
                                 "
                                 :href="agtSubmissions.url()"
-                                class="inline-flex h-9 items-center rounded-full bg-white px-4 text-[0.8125rem] font-semibold text-zinc-900 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:bg-zinc-900 dark:text-white dark:ring-white/10"
                             >
                                 Abrir Monitor AGT
-                            </Link>
-                            <Link
+                            </AppButton>
+                            <AppButton
+                                variant="outline"
+                                size="sm"
                                 v-if="focus.reason === 'overdue'"
                                 :href="debtsIndex.url()"
-                                class="inline-flex h-9 items-center rounded-full bg-white px-4 text-[0.8125rem] font-semibold text-zinc-900 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:bg-zinc-900 dark:text-white dark:ring-white/10"
                             >
                                 Ver dívidas
-                            </Link>
+                            </AppButton>
                         </div>
                     </section>
 
@@ -1245,16 +1247,16 @@ const reviewStatement = computed(() => {
                             </template>
 
                             <div class="mt-auto pt-6">
-                                <Link
+                                <AppButton
+                                    variant="ink"
                                     :href="documentsIndex.url()"
-                                    class="inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-4 text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                                 >
                                     Ver documentos
                                     <ArrowRight
                                         class="size-4"
                                         aria-hidden="true"
                                     />
-                                </Link>
+                                </AppButton>
                             </div>
                         </template>
 

@@ -7,12 +7,13 @@ import {
     TriangleAlert,
 } from '@lucide/vue';
 import { computed, onMounted, reactive, ref } from 'vue';
+import AppButton from '@/components/AppButton.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { agingBucketColours, agingShare } from '@/lib/aging';
 import { concentrationLine, debtShares, shownDebtors } from '@/lib/debt-share';
-import { buttonGold, buttonOutlineSmall, buttonQuiet } from '@/lib/pos-ui';
+import { buttonGold, buttonQuiet } from '@/lib/pos-ui';
 import {
     fetchReminderDraft,
     isSendable,
@@ -674,13 +675,13 @@ const dayPill = (days: number): string =>
                                         : `Os ${shownOverdue.length} com a dívida mais antiga.`
                                 }}
                             </p>
-                            <button
-                                type="button"
-                                :class="buttonOutlineSmall"
+                            <AppButton
+                                variant="outline"
+                                size="sm"
                                 @click="showEveryOverdue"
                             >
                                 Ver todos ({{ overdue.length }})
-                            </button>
+                            </AppButton>
                         </div>
 
                         <template v-if="notYetDue.length > 0">
@@ -746,15 +747,15 @@ const dayPill = (days: number): string =>
                                     >
                                 </li>
                             </ul>
-                            <button
+                            <AppButton
+                                variant="outline"
+                                size="sm"
                                 v-if="shownInTerm.length < notYetDue.length"
-                                type="button"
-                                class="mt-3"
-                                :class="buttonOutlineSmall"
                                 @click="everyInTermShown = true"
+                                class="mt-3"
                             >
                                 Ver todos ({{ notYetDue.length }})
-                            </button>
+                            </AppButton>
                         </template>
                     </section>
 

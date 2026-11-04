@@ -10,7 +10,9 @@ import {
     Trash2,
 } from '@lucide/vue';
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
+import DataTable from '@/components/DataTable.vue';
 import DateInput from '@/components/DateInput.vue';
+import FormField from '@/components/FormField.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -549,47 +551,45 @@ function cell(value: string | number | null, key: string): string {
                                     maxlength="100"
                                     placeholder="Todos os clientes"
                             /></label>
-                            <div class="report-field">
-                                <label for="report-from" class="field-label"
-                                    >Data inicial</label
+                            <FormField
+                                class="report-field"
+                                for="report-from"
+                                label="Data inicial"
                                 ><DateInput
                                     id="report-from"
                                     v-model="form.from"
                                     :clearable="false"
                                     required
-                                />
-                            </div>
-                            <div class="report-field">
-                                <label for="report-to" class="field-label"
-                                    >Data final</label
+                            /></FormField>
+                            <FormField
+                                class="report-field"
+                                for="report-to"
+                                label="Data final"
                                 ><DateInput
                                     id="report-to"
                                     v-model="form.to"
                                     :min-date="form.from ?? undefined"
                                     :clearable="false"
                                     required
-                                />
-                            </div>
-                            <div class="report-field">
-                                <label
-                                    for="report-establishment"
-                                    class="field-label"
-                                    >Estabelecimento</label
+                            /></FormField>
+                            <FormField
+                                class="report-field"
+                                for="report-establishment"
+                                label="Estabelecimento"
                                 ><SelectInput
                                     id="report-establishment"
                                     v-model="form.establishment"
                                     :options="allEstablishments"
-                                />
-                            </div>
-                            <div class="report-field">
-                                <label for="report-method" class="field-label"
-                                    >Meio de pagamento</label
+                            /></FormField>
+                            <FormField
+                                class="report-field"
+                                for="report-method"
+                                label="Meio de pagamento"
                                 ><SelectInput
                                     id="report-method"
                                     v-model="form.payment_method"
                                     :options="allMethods"
-                                />
-                            </div>
+                            /></FormField>
                             <label class="report-field"
                                 ><span class="field-label">Moeda</span
                                 ><input
@@ -915,36 +915,32 @@ function cell(value: string | number | null, key: string): string {
                                 tabindex="0"
                                 aria-label="Pré-visualização das transacções"
                             >
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th
-                                                v-for="key in form.columns"
-                                                :key="key"
-                                            >
-                                                {{ columns[key].label }}
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr
-                                            v-for="(row, index) in result.rows"
-                                            :key="index"
+                                <DataTable
+                                    ><template #head>
+                                        <th
+                                            v-for="key in form.columns"
+                                            :key="key"
                                         >
-                                            <td
-                                                v-for="key in form.columns"
-                                                :key="key"
-                                                :class="{
-                                                    numeric:
-                                                        columns[key].format ===
-                                                        'money',
-                                                }"
-                                            >
-                                                {{ cell(row[key], key) }}
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                                            {{ columns[key].label }}
+                                        </th>
+                                    </template>
+                                    <tr
+                                        v-for="(row, index) in result.rows"
+                                        :key="index"
+                                    >
+                                        <td
+                                            v-for="key in form.columns"
+                                            :key="key"
+                                            :class="{
+                                                numeric:
+                                                    columns[key].format ===
+                                                    'money',
+                                            }"
+                                        >
+                                            {{ cell(row[key], key) }}
+                                        </td>
+                                    </tr>
+                                </DataTable>
                             </div>
                             <p v-else class="hint">
                                 Sem movimentos para os filtros seleccionados.

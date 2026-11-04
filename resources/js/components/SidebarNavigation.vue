@@ -3,6 +3,7 @@ import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import { Check, ChevronsUpDown, Plus, X } from '@lucide/vue';
 import { computed } from 'vue';
+import AppButton from '@/components/AppButton.vue';
 import AppLogo from '@/components/AppLogo.vue';
 import { useNavigation } from '@/lib/navigation';
 import { create as createInvoice } from '@/routes/invoices';
@@ -223,14 +224,16 @@ function initials(name: string): string {
             v-if="canPrepareDocuments"
             class="shrink-0 border-t border-zinc-900/[0.06] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] dark:border-white/10"
         >
-            <Link
+            <AppButton
+                variant="gold"
+                size="lg"
                 :href="createInvoice.url()"
-                class="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-accent-400 text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300"
                 @click="$emit('navigate')"
+                class="w-full"
             >
                 <Plus class="size-4" aria-hidden="true" />
                 Nova factura
-            </Link>
+            </AppButton>
         </div>
     </div>
 </template>

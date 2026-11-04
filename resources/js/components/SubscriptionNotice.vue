@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { Link, usePage } from '@inertiajs/vue3';
+import { usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import AppButton from '@/components/AppButton.vue';
 import { show as billing } from '@/routes/billing';
 
 const page = usePage();
@@ -58,10 +59,8 @@ const trialDate = computed(() =>
             SAF-T; escolha um plano para retomar a emissão e as funcionalidades
             pagas.
         </p>
-        <Link
-            :href="billing.url()"
-            class="inline-flex h-8 items-center rounded-full bg-brand-950 px-3.5 text-[0.8125rem] font-semibold text-white focus-ring transition hover:bg-brand-800 active:scale-[0.97] dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
-            >Ver planos</Link
+        <AppButton variant="ink" size="sm" :href="billing.url()"
+            >Ver planos</AppButton
         >
     </aside>
 </template>

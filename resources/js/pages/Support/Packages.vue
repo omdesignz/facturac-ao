@@ -13,8 +13,10 @@ import {
     X,
 } from '@lucide/vue';
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import AppButton from '@/components/AppButton.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
 import FormError from '@/components/FormError.vue';
+import FormField from '@/components/FormField.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
 import SelectInput from '@/components/SelectInput.vue';
@@ -34,14 +36,7 @@ import {
     slugFromName,
     splitPastedFeatures,
 } from '@/lib/packages';
-import {
-    buttonGold,
-    buttonOutline,
-    buttonOutlineSmall,
-    currencyLabel,
-    wellItem,
-    wellSection,
-} from '@/lib/pos-ui';
+import { buttonGold, currencyLabel, wellItem, wellSection } from '@/lib/pos-ui';
 import {
     destroy as destroyPackage,
     store as storePackage,
@@ -1134,9 +1129,9 @@ const iconButton =
                             </div>
 
                             <div class="flex shrink-0 items-center gap-1">
-                                <button
-                                    type="button"
-                                    :class="buttonOutlineSmall"
+                                <AppButton
+                                    variant="outline"
+                                    size="sm"
                                     @click="openEdit(row)"
                                 >
                                     <Pencil
@@ -1146,7 +1141,7 @@ const iconButton =
                                     Editar<span class="sr-only">
                                         {{ row.name }}</span
                                     >
-                                </button>
+                                </AppButton>
                                 <button
                                     v-if="row.can_delete"
                                     type="button"
@@ -1249,31 +1244,32 @@ const iconButton =
                 </p>
 
                 <!-- Nome -->
-                <div>
-                    <label for="package-name" class="field-label">Nome</label>
-                    <input
+                <FormField
+                    for="package-name"
+                    label="Nome"
+                    :error="form.errors.name"
+                    error-id="package-name-error"
+                    ><input
                         id="package-name"
                         v-model="form.name"
                         type="text"
                         required
                         maxlength="80"
                         autocomplete="off"
-                        class="mt-2 block form-input"
+                        class="block form-input"
                         :aria-invalid="form.errors.name ? 'true' : undefined"
                         :aria-describedby="
                             form.errors.name ? 'package-name-error' : undefined
                         "
-                    />
-                    <FormError
-                        id="package-name-error"
-                        :message="form.errors.name"
-                    />
-                </div>
+                /></FormField>
 
                 <!-- Código -->
-                <div>
-                    <label for="package-code" class="field-label">Código</label>
-                    <input
+                <FormField
+                    for="package-code"
+                    label="Código"
+                    :error="form.errors.code"
+                    error-id="package-code-error"
+                    ><input
                         id="package-code"
                         :value="form.code"
                         type="text"
@@ -1283,7 +1279,7 @@ const iconButton =
                         autocomplete="off"
                         autocapitalize="off"
                         spellcheck="false"
-                        class="mt-2 block form-input font-mono"
+                        class="block form-input font-mono"
                         :aria-invalid="form.errors.code ? 'true' : undefined"
                         :aria-describedby="
                             describedBy(
@@ -1301,28 +1297,23 @@ const iconButton =
                         <template v-else
                             >O código não muda depois de criado.</template
                         >
-                    </p>
-                    <FormError
-                        id="package-code-error"
-                        :message="form.errors.code"
-                    />
-                </div>
+                    </p></FormField
+                >
 
                 <!-- Resumo -->
-                <div>
-                    <label for="package-summary" class="field-label"
-                        >Resumo
-                        <span
-                            class="font-normal text-zinc-500 dark:text-zinc-400"
-                            >(opcional)</span
-                        ></label
-                    >
+                <FormField
+                    for="package-summary"
+                    label="Resumo"
+                    optional
+                    :error="form.errors.summary"
+                    error-id="package-summary-error"
+                >
                     <textarea
                         id="package-summary"
                         v-model="form.summary"
                         rows="3"
                         maxlength="500"
-                        class="mt-2 block form-input resize-y"
+                        class="block form-input resize-y"
                         :aria-invalid="form.errors.summary ? 'true' : undefined"
                         :aria-describedby="
                             describedBy(
@@ -1338,12 +1329,8 @@ const iconButton =
                         class="field-hint numeric"
                     >
                         {{ form.summary.length }} de 500 caracteres
-                    </p>
-                    <FormError
-                        id="package-summary-error"
-                        :message="form.errors.summary"
-                    />
-                </div>
+                    </p></FormField
+                >
 
                 <!-- Períodos e preços -->
                 <div
@@ -1574,16 +1561,16 @@ const iconButton =
                     <div
                         class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2"
                     >
-                        <button
+                        <AppButton
+                            variant="outline"
+                            size="sm"
                             id="package-feature-add"
-                            type="button"
-                            :class="buttonOutlineSmall"
                             :aria-disabled="!canAddFeature"
                             @click="addFeature()"
                         >
                             <Plus class="size-3.5" aria-hidden="true" />
                             Adicionar linha
-                        </button>
+                        </AppButton>
                         <p
                             v-if="featureCounterVisible"
                             class="numeric text-xs text-zinc-600 dark:text-zinc-400"
@@ -1626,11 +1613,12 @@ const iconButton =
 
                 <!-- Experiência, moeda, ordem -->
                 <div class="grid gap-5 sm:grid-cols-2">
-                    <div>
-                        <label for="package-trial" class="field-label"
-                            >Dias de experiência</label
-                        >
-                        <input
+                    <FormField
+                        for="package-trial"
+                        label="Dias de experiência"
+                        :error="form.errors.trial_days"
+                        error-id="package-trial-error"
+                        ><input
                             id="package-trial"
                             v-model="form.trial_days"
                             readonly
@@ -1638,7 +1626,7 @@ const iconButton =
                             inputmode="numeric"
                             maxlength="2"
                             autocomplete="off"
-                            class="mt-2 block form-input numeric"
+                            class="block form-input numeric"
                             :aria-invalid="
                                 form.errors.trial_days ? 'true' : undefined
                             "
@@ -1654,21 +1642,18 @@ const iconButton =
                             {{ trialDays }} dias desde a criação do espaço de
                             trabalho. Uma mudança de plano não reinicia a
                             experiência.
-                        </p>
-                        <FormError
-                            id="package-trial-error"
-                            :message="form.errors.trial_days"
-                        />
-                    </div>
+                        </p></FormField
+                    >
 
-                    <div v-if="currencies.length > 1">
-                        <label for="package-currency" class="field-label"
-                            >Moeda</label
-                        >
-                        <SelectInput
+                    <FormField
+                        v-if="currencies.length > 1"
+                        for="package-currency"
+                        label="Moeda"
+                        :error="form.errors.currency_code"
+                        error-id="package-currency-error"
+                        ><SelectInput
                             id="package-currency"
                             v-model="form.currency_code"
-                            class="mt-2"
                             :options="currencyOptions"
                             :invalid="!!form.errors.currency_code"
                             :describedby="
@@ -1676,25 +1661,21 @@ const iconButton =
                                     ? 'package-currency-error'
                                     : undefined
                             "
-                        />
-                        <FormError
-                            id="package-currency-error"
-                            :message="form.errors.currency_code"
-                        />
-                    </div>
+                    /></FormField>
 
-                    <div>
-                        <label for="package-order" class="field-label"
-                            >Ordem</label
-                        >
-                        <input
+                    <FormField
+                        for="package-order"
+                        label="Ordem"
+                        :error="form.errors.sort_order"
+                        error-id="package-order-error"
+                        ><input
                             id="package-order"
                             v-model="form.sort_order"
                             type="text"
                             inputmode="numeric"
                             maxlength="3"
                             autocomplete="off"
-                            class="mt-2 block form-input numeric"
+                            class="block form-input numeric"
                             :aria-invalid="
                                 form.errors.sort_order ? 'true' : undefined
                             "
@@ -1709,12 +1690,8 @@ const iconButton =
                         <p id="package-order-hint" class="field-hint">
                             Os pacotes aparecem por esta ordem, do menor para o
                             maior.
-                        </p>
-                        <FormError
-                            id="package-order-error"
-                            :message="form.errors.sort_order"
-                        />
-                    </div>
+                        </p></FormField
+                    >
                 </div>
 
                 <!-- Activo, em destaque -->
@@ -1755,13 +1732,9 @@ const iconButton =
                 <div
                     class="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end"
                 >
-                    <button
-                        type="button"
-                        :class="buttonOutline"
-                        @click="requestClose"
-                    >
+                    <AppButton variant="outline" @click="requestClose">
                         Cancelar
-                    </button>
+                    </AppButton>
                     <button
                         ref="submitButton"
                         type="submit"

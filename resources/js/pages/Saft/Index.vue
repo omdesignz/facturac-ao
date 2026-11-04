@@ -14,8 +14,10 @@ import {
     Users,
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import AppButton from '@/components/AppButton.vue';
 import DateInput from '@/components/DateInput.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
+import FormField from '@/components/FormField.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { exportMethod as exportSaft, index as saftIndex } from '@/routes/saft';
@@ -171,43 +173,32 @@ function inspectPeriod(): void {
                     <div
                         class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-[1fr_1fr_1.5fr_auto] xl:items-end"
                     >
-                        <div>
-                            <label for="saft-from" class="mb-2 field-label"
-                                >Data inicial</label
-                            >
-                            <DateInput
+                        <FormField for="saft-from" label="Data inicial"
+                            ><DateInput
                                 id="saft-from"
                                 v-model="from"
                                 :clearable="false"
-                            />
-                        </div>
-                        <div>
-                            <label for="saft-to" class="mb-2 field-label"
-                                >Data final</label
-                            >
-                            <DateInput
+                        /></FormField>
+                        <FormField for="saft-to" label="Data final"
+                            ><DateInput
                                 id="saft-to"
                                 v-model="to"
                                 :clearable="false"
                                 :min-date="from ?? undefined"
-                            />
-                        </div>
-                        <div>
-                            <label class="mb-2 field-label">Âmbito</label>
-                            <SelectInput
+                        /></FormField>
+                        <FormField label="Âmbito"
+                            ><SelectInput
                                 v-model="establishment"
                                 :options="establishments"
-                            />
-                        </div>
-                        <button
-                            type="button"
+                        /></FormField>
+                        <AppButton
+                            variant="outline"
                             :disabled="!datesReady"
-                            class="inline-flex h-10 items-center justify-center gap-2 rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring ring-inset hover:bg-zinc-50 disabled:opacity-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
                             @click="inspectPeriod"
                         >
                             <RefreshCw class="size-4" aria-hidden="true" />
                             Rever período
-                        </button>
+                        </AppButton>
                     </div>
                 </section>
 
@@ -342,14 +333,16 @@ function inspectPeriod(): void {
                             Inclui os documentos emitidos no período, mesmo os
                             anulados. Rascunhos não fazem parte do ficheiro.
                         </p>
-                        <a
+                        <AppButton
+                            variant="gold"
+                            external
                             v-if="canDownload"
                             :href="downloadUrl"
-                            class="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring hover:bg-accent-300"
+                            class="mt-5 w-full"
                         >
                             <Download class="size-4" aria-hidden="true" />
                             Descarregar SAF-T (AO)
-                        </a>
+                        </AppButton>
                         <span
                             v-else
                             aria-disabled="true"

@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { Check, UserRound } from '@lucide/vue';
 import { computed, nextTick, ref, watch } from 'vue';
-import FormError from '@/components/FormError.vue';
+import AppButton from '@/components/AppButton.vue';
+import FormField from '@/components/FormField.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
 import { foldSearch, isValidNif, normaliseNif } from '@/lib/pos';
-import { buttonOutline } from '@/lib/pos-ui';
+
 import type {
     PosCustomer,
     PosCustomerChoice,
@@ -208,13 +209,10 @@ defineExpose({ searchField });
         @after-leave="emit('afterLeave')"
     >
         <div class="space-y-6">
-            <div>
-                <label
-                    for="pos-customer-search"
-                    class="block text-sm font-medium text-zinc-900 dark:text-white"
-                    >Procurar cliente guardado</label
-                >
-                <input
+            <FormField
+                for="pos-customer-search"
+                label="Procurar cliente guardado"
+                ><input
                     id="pos-customer-search"
                     ref="searchField"
                     v-model="query"
@@ -226,7 +224,7 @@ defineExpose({ searchField });
                     autocomplete="off"
                     spellcheck="false"
                     placeholder="Nome ou NIF…"
-                    class="mt-2 block form-input"
+                    class="block form-input"
                     @keydown="onSearchKeydown"
                 />
 
@@ -322,8 +320,8 @@ defineExpose({ searchField });
                 >
                     A mostrar {{ MAX_ROWS }} de {{ filtered.length }}. Refine a
                     procura.
-                </p>
-            </div>
+                </p></FormField
+            >
 
             <form
                 id="pos-customer-typed"
@@ -341,19 +339,18 @@ defineExpose({ searchField });
                 <div
                     class="mt-4 grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,11rem)]"
                 >
-                    <div>
-                        <label
-                            for="pos-typed-name"
-                            class="block text-sm font-medium text-zinc-900 dark:text-white"
-                            >Nome</label
-                        >
-                        <input
+                    <FormField
+                        for="pos-typed-name"
+                        label="Nome"
+                        :error="typedTried ? nameProblem : undefined"
+                        error-id="pos-typed-name-error"
+                        ><input
                             id="pos-typed-name"
                             v-model="typedName"
                             type="text"
                             autocomplete="off"
                             maxlength="200"
-                            class="mt-2 block form-input"
+                            class="block form-input"
                             :aria-invalid="
                                 typedTried && nameProblem ? 'true' : undefined
                             "
@@ -362,19 +359,13 @@ defineExpose({ searchField });
                                     ? 'pos-typed-name-error'
                                     : undefined
                             "
-                        />
-                        <FormError
-                            id="pos-typed-name-error"
-                            :message="typedTried ? nameProblem : undefined"
-                        />
-                    </div>
-                    <div>
-                        <label
-                            for="pos-typed-nif"
-                            class="block text-sm font-medium text-zinc-900 dark:text-white"
-                            >NIF</label
-                        >
-                        <input
+                    /></FormField>
+                    <FormField
+                        for="pos-typed-nif"
+                        label="NIF"
+                        :error="typedTried ? nifProblem : undefined"
+                        error-id="pos-typed-nif-error"
+                        ><input
                             id="pos-typed-nif"
                             v-model="typedNif"
                             type="text"
@@ -382,7 +373,7 @@ defineExpose({ searchField });
                             autocapitalize="characters"
                             spellcheck="false"
                             maxlength="40"
-                            class="mt-2 block form-input font-mono uppercase"
+                            class="block form-input font-mono uppercase"
                             :aria-invalid="
                                 typedTried && nifProblem ? 'true' : undefined
                             "
@@ -392,18 +383,13 @@ defineExpose({ searchField });
                                     : undefined
                             "
                             @blur="uppercaseNif"
-                        />
-                        <FormError
-                            id="pos-typed-nif-error"
-                            :message="typedTried ? nifProblem : undefined"
-                        />
-                    </div>
+                    /></FormField>
                 </div>
 
                 <div class="mt-4 flex justify-end">
-                    <button type="submit" :class="buttonOutline">
+                    <AppButton variant="outline" type="submit">
                         Usar estes dados
-                    </button>
+                    </AppButton>
                 </div>
             </form>
         </div>

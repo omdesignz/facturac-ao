@@ -10,6 +10,7 @@ import { Link } from '@inertiajs/vue3';
 import { FileClock, X } from '@lucide/vue';
 import { useMediaQuery } from '@vueuse/core';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import AppButton from '@/components/AppButton.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
 import PosCart from '@/components/pos/PosCart.vue';
 import PosCashMovementDialog from '@/components/pos/PosCashMovementDialog.vue';
@@ -20,12 +21,7 @@ import PosPaymentDialog from '@/components/pos/PosPaymentDialog.vue';
 import PosShiftSummary from '@/components/pos/PosShiftSummary.vue';
 import { formatMinor, formatQuantity } from '@/lib/pos';
 import { forgetCart, forgetOtherCarts, usePosCart } from '@/lib/pos-cart';
-import {
-    buttonGold,
-    buttonOutlineSmall,
-    currencyLabel,
-    formatClock,
-} from '@/lib/pos-ui';
+import { buttonGold, currencyLabel, formatClock } from '@/lib/pos-ui';
 import { show as agtConnection } from '@/routes/agt/connection';
 import type {
     PosCatalogueItem,
@@ -293,27 +289,27 @@ const paymentLines = computed(() => cart.salePayloadLines());
                     }}</span>
                 </p>
                 <div class="flex flex-wrap items-center gap-2 sm:ms-auto">
-                    <button
-                        type="button"
-                        :class="buttonOutlineSmall"
+                    <AppButton
+                        variant="outline"
+                        size="sm"
                         @click="movementOpen = true"
                     >
                         Movimento de caixa
-                    </button>
-                    <button
-                        type="button"
-                        :class="buttonOutlineSmall"
+                    </AppButton>
+                    <AppButton
+                        variant="outline"
+                        size="sm"
                         @click="summaryOpen = true"
                     >
                         Resumo do turno
-                    </button>
-                    <button
-                        type="button"
-                        :class="buttonOutlineSmall"
+                    </AppButton>
+                    <AppButton
+                        variant="outline"
+                        size="sm"
                         @click="closeOpen = true"
                     >
                         Fechar caixa
-                    </button>
+                    </AppButton>
                 </div>
             </div>
 

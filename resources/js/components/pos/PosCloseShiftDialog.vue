@@ -7,7 +7,9 @@ import {
     LoaderCircle,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import AppButton from '@/components/AppButton.vue';
 import FormError from '@/components/FormError.vue';
+import FormField from '@/components/FormField.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
 import { focusFirstInvalid } from '@/lib/focus';
 import {
@@ -16,7 +18,7 @@ import {
     parseMoneyToMinor,
 } from '@/lib/pos';
 import { forgetCart } from '@/lib/pos-cart';
-import { buttonInk, buttonOutline, currencyLabel } from '@/lib/pos-ui';
+import { buttonInk, currencyLabel } from '@/lib/pos-ui';
 import { close as closeSession } from '@/routes/pos/sessions';
 
 const props = defineProps<{
@@ -199,21 +201,19 @@ function submit(): void {
                 </p>
             </div>
 
-            <div>
-                <label
-                    for="pos-closing-notes"
-                    class="block text-sm font-medium text-zinc-900 dark:text-white"
-                    >Notas
-                    <span class="font-normal text-zinc-500 dark:text-zinc-400"
-                        >(opcional)</span
-                    ></label
-                >
+            <FormField
+                for="pos-closing-notes"
+                label="Notas"
+                optional
+                :error="form.errors.closing_notes"
+                error-id="pos-closing-notes-error"
+            >
                 <textarea
                     id="pos-closing-notes"
                     v-model="form.closing_notes"
                     rows="2"
                     maxlength="500"
-                    class="mt-2 block form-input"
+                    class="block form-input"
                     :aria-invalid="
                         form.errors.closing_notes ? 'true' : undefined
                     "
@@ -223,11 +223,7 @@ function submit(): void {
                             : undefined
                     "
                 />
-                <FormError
-                    id="pos-closing-notes-error"
-                    :message="form.errors.closing_notes"
-                />
-            </div>
+            </FormField>
 
             <p
                 v-if="hasUnfinishedSale"
@@ -240,13 +236,9 @@ function submit(): void {
             <div
                 class="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end"
             >
-                <button
-                    type="button"
-                    :class="buttonOutline"
-                    @click="emit('close')"
-                >
+                <AppButton variant="outline" @click="emit('close')">
                     Cancelar
-                </button>
+                </AppButton>
                 <button
                     type="submit"
                     :disabled="form.processing"

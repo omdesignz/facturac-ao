@@ -2,7 +2,8 @@
 import { Form, Head, Link, usePage } from '@inertiajs/vue3';
 import { ArrowLeft, LoaderCircle, MailCheck } from '@lucide/vue';
 import { computed } from 'vue';
-import FormError from '@/components/FormError.vue';
+import AppButton from '@/components/AppButton.vue';
+import FormField from '@/components/FormField.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import { focusFirstInvalid } from '@/lib/focus';
 import { login } from '@/routes';
@@ -37,13 +38,12 @@ const status = computed(() => (page.props.flash as { status?: string }).status);
             @error="focusFirstInvalid()"
             #default="{ errors, processing }"
         >
-            <div>
-                <label
-                    for="email"
-                    class="block text-sm/6 font-medium text-zinc-900 dark:text-zinc-100"
-                    >Email</label
-                >
-                <input
+            <FormField
+                for="email"
+                label="Email"
+                :error="errors.email"
+                error-id="email-error"
+                ><input
                     id="email"
                     name="email"
                     type="email"
@@ -55,16 +55,16 @@ const status = computed(() => (page.props.flash as { status?: string }).status);
                     autofocus
                     :aria-invalid="errors.email ? 'true' : undefined"
                     :aria-describedby="errors.email ? 'email-error' : undefined"
-                    class="mt-2 block form-input"
+                    class="block form-input"
                     placeholder="nome@empresa.ao"
-                />
-                <FormError id="email-error" :message="errors.email" />
-            </div>
+            /></FormField>
 
-            <button
+            <AppButton
+                variant="ink"
+                size="lg"
                 type="submit"
                 :disabled="processing"
-                class="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-brand-950 px-4 text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
+                class="w-full"
             >
                 <LoaderCircle
                     v-if="processing"
@@ -72,7 +72,7 @@ const status = computed(() => (page.props.flash as { status?: string }).status);
                     aria-hidden="true"
                 />
                 {{ processing ? 'A enviar…' : 'Enviar ligação segura' }}
-            </button>
+            </AppButton>
         </Form>
 
         <template #footer>

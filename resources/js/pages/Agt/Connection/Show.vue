@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Form, Head, Link, usePage } from '@inertiajs/vue3';
+import { Form, Head, usePage } from '@inertiajs/vue3';
 import {
     Activity,
     ArrowUpRight,
@@ -23,9 +23,12 @@ import {
     TriangleAlert,
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import AppButton from '@/components/AppButton.vue';
 import CompanySetupProgress from '@/components/CompanySetupProgress.vue';
 import type { SetupProgress } from '@/components/CompanySetupProgress.vue';
+import DataTable from '@/components/DataTable.vue';
 import FormError from '@/components/FormError.vue';
+import FormField from '@/components/FormField.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageStat from '@/components/PageStat.vue';
 import SelectInput from '@/components/SelectInput.vue';
@@ -293,11 +296,13 @@ function formatDate(value: string | null): string {
                         Peça ao proprietário ou administrador da empresa que
                         confirme a associação.
                     </p>
-                    <Link
+                    <AppButton
+                        variant="gold"
+                        size="lg"
                         v-else-if="!guardrails.mfa_enabled"
                         :href="security.url()"
-                        class="mt-5 inline-flex min-h-11 items-center rounded-full bg-accent-400 px-5 text-sm font-semibold text-brand-950 focus-ring"
-                        >Activar protecção de dois factores</Link
+                        class="mt-5"
+                        >Activar protecção de dois factores</AppButton
                     >
                     <Form
                         v-else-if="associationAvailable"
@@ -336,17 +341,18 @@ function formatDate(value: string | null): string {
                         <FormError
                             :message="errors.tax_identification_number"
                         />
-                        <button
+                        <AppButton
+                            variant="ink"
+                            size="lg"
                             type="submit"
                             :disabled="processing"
-                            class="inline-flex min-h-11 items-center rounded-full bg-brand-950 px-5 text-sm font-semibold text-white focus-ring disabled:opacity-50 dark:bg-white dark:text-brand-950"
                         >
                             {{
                                 processing
                                     ? 'A associar…'
                                     : 'Associar o meu acesso'
                             }}
-                        </button>
+                        </AppButton>
                         <p class="text-xs/5 text-zinc-500 dark:text-zinc-400">
                             Poderá ser pedida a palavra-passe da sua conta
                             Facturac para confirmar esta operação. Não é emitida
@@ -363,16 +369,18 @@ function formatDate(value: string | null): string {
                         cole chaves nem palavras-passe em pedidos de apoio.
                     </p>
                     <div class="mt-4 flex flex-wrap gap-3">
-                        <Link
+                        <AppButton
+                            variant="outline"
+                            size="lg"
                             :href="helpIndex.url()"
-                            class="inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold ring-1 ring-zinc-900/10 focus-ring dark:ring-white/15"
-                            >Contactos de apoio</Link
+                            >Contactos de apoio</AppButton
                         >
-                        <Link
+                        <AppButton
+                            variant="outline"
+                            size="lg"
                             v-if="!connection.public_id"
                             :href="show.url()"
-                            class="inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold ring-1 ring-zinc-900/10 focus-ring dark:ring-white/15"
-                            >Actualizar preparação</Link
+                            >Actualizar preparação</AppButton
                         >
                     </div>
                 </section>
@@ -574,13 +582,12 @@ function formatDate(value: string | null): string {
                                     "
                                     class="grid grid-cols-1 gap-x-6 gap-y-6 p-5 disabled:opacity-65 sm:grid-cols-6 sm:p-7"
                                 >
-                                    <div class="sm:col-span-3">
-                                        <label
-                                            for="agt-username"
-                                            class="field-label"
-                                            >Utilizador AGT</label
-                                        >
-                                        <input
+                                    <FormField
+                                        class="sm:col-span-3"
+                                        for="agt-username"
+                                        label="Utilizador AGT"
+                                        :error="errors.basic_auth_username"
+                                        ><input
                                             id="agt-username"
                                             name="basic_auth_username"
                                             type="text"
@@ -592,21 +599,14 @@ function formatDate(value: string | null): string {
                                                 connection.credential_identity ??
                                                 'Utilizador API do produtor'
                                             "
-                                            class="mt-2 block form-input"
-                                        />
-                                        <FormError
-                                            :message="
-                                                errors.basic_auth_username
-                                            "
-                                        />
-                                    </div>
-                                    <div class="sm:col-span-3">
-                                        <label
-                                            for="agt-password"
-                                            class="field-label"
-                                            >Palavra-passe / token</label
-                                        >
-                                        <input
+                                            class="block form-input"
+                                    /></FormField>
+                                    <FormField
+                                        class="sm:col-span-3"
+                                        for="agt-password"
+                                        label="Palavra-passe / token"
+                                        :error="errors.basic_auth_password"
+                                        ><input
                                             id="agt-password"
                                             name="basic_auth_password"
                                             type="password"
@@ -619,14 +619,8 @@ function formatDate(value: string | null): string {
                                                     ? '••••••••••••••••'
                                                     : 'Credencial fornecida pela AGT'
                                             "
-                                            class="mt-2 block form-input"
-                                        />
-                                        <FormError
-                                            :message="
-                                                errors.basic_auth_password
-                                            "
-                                        />
-                                    </div>
+                                            class="block form-input"
+                                    /></FormField>
                                 </fieldset>
                             </section>
 
@@ -663,51 +657,42 @@ function formatDate(value: string | null): string {
                                     "
                                     class="grid grid-cols-1 gap-x-6 gap-y-6 p-5 disabled:opacity-65 sm:grid-cols-6 sm:p-7"
                                 >
-                                    <div class="sm:col-span-3">
-                                        <label
-                                            for="product-id"
-                                            class="field-label"
-                                            >Nome do produto</label
-                                        >
-                                        <input
+                                    <FormField
+                                        class="sm:col-span-3"
+                                        for="product-id"
+                                        label="Nome do produto"
+                                        :error="errors.product_id"
+                                        ><input
                                             id="product-id"
                                             name="product_id"
                                             type="text"
                                             required
                                             :value="connection.product_id"
                                             placeholder="facturac.ao"
-                                            class="mt-2 block form-input"
-                                        />
-                                        <FormError
-                                            :message="errors.product_id"
-                                        />
-                                    </div>
-                                    <div class="sm:col-span-3">
-                                        <label
-                                            for="product-version"
-                                            class="field-label"
-                                            >Versão</label
-                                        >
-                                        <input
+                                            class="block form-input"
+                                    /></FormField>
+                                    <FormField
+                                        class="sm:col-span-3"
+                                        for="product-version"
+                                        label="Versão"
+                                        :error="errors.product_version"
+                                        ><input
                                             id="product-version"
                                             name="product_version"
                                             type="text"
                                             required
                                             :value="connection.product_version"
                                             placeholder="1.0.0"
-                                            class="mt-2 block form-input font-mono"
-                                        />
-                                        <FormError
-                                            :message="errors.product_version"
-                                        />
-                                    </div>
-                                    <div class="sm:col-span-3">
-                                        <label
-                                            for="validation-number"
-                                            class="field-label"
-                                            >Número de validação</label
-                                        >
-                                        <input
+                                            class="block form-input font-mono"
+                                    /></FormField>
+                                    <FormField
+                                        class="sm:col-span-3"
+                                        for="validation-number"
+                                        label="Número de validação"
+                                        :error="
+                                            errors.software_validation_number
+                                        "
+                                        ><input
                                             id="validation-number"
                                             name="software_validation_number"
                                             type="text"
@@ -716,22 +701,14 @@ function formatDate(value: string | null): string {
                                                 connection.software_validation_number
                                             "
                                             placeholder="Número atribuído ao software"
-                                            class="mt-2 block form-input font-mono"
-                                        />
-                                        <FormError
-                                            :message="
-                                                errors.software_validation_number
-                                            "
-                                        />
-                                    </div>
-                                    <div class="sm:col-span-3">
-                                        <label
-                                            for="establishment-number"
-                                            class="field-label"
-                                            >Número do estabelecimento
-                                            AGT</label
-                                        >
-                                        <input
+                                            class="block form-input font-mono"
+                                    /></FormField>
+                                    <FormField
+                                        class="sm:col-span-3"
+                                        for="establishment-number"
+                                        label="Número do estabelecimento AGT"
+                                        :error="errors.establishment_number"
+                                        ><input
                                             id="establishment-number"
                                             name="establishment_number"
                                             type="text"
@@ -740,14 +717,8 @@ function formatDate(value: string | null): string {
                                                 connection.establishment_number
                                             "
                                             placeholder="Identificador da sede na AGT"
-                                            class="mt-2 block form-input font-mono"
-                                        />
-                                        <FormError
-                                            :message="
-                                                errors.establishment_number
-                                            "
-                                        />
-                                    </div>
+                                            class="block form-input font-mono"
+                                    /></FormField>
                                 </fieldset>
                             </section>
 
@@ -869,12 +840,13 @@ function formatDate(value: string | null): string {
                                     />
                                     Guardado
                                 </span>
-                                <button
+                                <AppButton
+                                    variant="ink"
+                                    size="lg"
                                     type="submit"
                                     :disabled="
                                         !permissions.manage || processing
                                     "
-                                    class="inline-flex h-11 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                                 >
                                     <LoaderCircle
                                         v-if="processing"
@@ -887,7 +859,7 @@ function formatDate(value: string | null): string {
                                         aria-hidden="true"
                                     />
                                     Guardar configuração
-                                </button>
+                                </AppButton>
                             </div>
                         </Form>
                     </details>
@@ -966,12 +938,13 @@ function formatDate(value: string | null): string {
                                 class="mt-5"
                                 #default="{ processing }"
                             >
-                                <button
+                                <AppButton
+                                    variant="gold"
                                     type="submit"
                                     :disabled="
                                         !readiness.complete || processing
                                     "
-                                    class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent-400 px-4 py-3 text-sm font-semibold text-brand-950 shadow-sm focus-ring-inverted transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
+                                    class="w-full focus-ring-inverted"
                                 >
                                     <LoaderCircle
                                         v-if="processing"
@@ -984,19 +957,20 @@ function formatDate(value: string | null): string {
                                         aria-hidden="true"
                                     />
                                     Verificar ligação AGT
-                                </button>
+                                </AppButton>
                             </Form>
-                            <Link
+                            <AppButton
+                                variant="gold"
                                 v-else-if="permissions.test"
                                 :href="security.url()"
-                                class="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent-400 px-4 py-3 text-sm font-semibold text-brand-950 transition hover:bg-accent-300"
+                                class="mt-5 w-full"
                             >
                                 <LockKeyhole
                                     class="size-4"
                                     aria-hidden="true"
                                 />
                                 Activar MFA para continuar
-                            </Link>
+                            </AppButton>
                             <p
                                 v-else
                                 class="mt-5 rounded-xl bg-zinc-50 p-3 text-xs/5 text-zinc-500 dark:bg-white/5 dark:text-zinc-400"
@@ -1101,10 +1075,10 @@ function formatDate(value: string | null): string {
                             :options="{ preserveScroll: true }"
                             #default="{ processing }"
                         >
-                            <button
+                            <AppButton
+                                variant="ink"
                                 type="submit"
                                 :disabled="processing"
-                                class="inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                             >
                                 <LoaderCircle
                                     v-if="processing"
@@ -1117,16 +1091,16 @@ function formatDate(value: string | null): string {
                                     aria-hidden="true"
                                 />
                                 Importar séries autorizadas
-                            </button>
+                            </AppButton>
                         </Form>
-                        <Link
+                        <AppButton
+                            variant="gold"
                             v-else-if="permissions.sync_series"
                             :href="security.url()"
-                            class="inline-flex items-center justify-center gap-2 rounded-xl bg-accent-400 px-3.5 py-2.5 text-sm font-semibold text-brand-950 transition hover:bg-accent-300"
                         >
                             <LockKeyhole class="size-4" aria-hidden="true" />
                             Activar MFA
-                        </Link>
+                        </AppButton>
                     </div>
 
                     <Form
@@ -1202,10 +1176,10 @@ function formatDate(value: string | null): string {
                                 />
                                 <FormError :message="errors.series_year" />
                             </div>
-                            <button
+                            <AppButton
+                                variant="gold"
                                 type="submit"
                                 :disabled="processing"
-                                class="inline-flex items-center justify-center gap-2 rounded-xl bg-accent-400 px-4 py-2.5 text-sm font-semibold text-brand-950 shadow-sm focus-ring transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-accent-300 dark:hover:bg-accent-200"
                             >
                                 <LoaderCircle
                                     v-if="processing"
@@ -1218,7 +1192,7 @@ function formatDate(value: string | null): string {
                                     aria-hidden="true"
                                 />
                                 Solicitar série
-                            </button>
+                            </AppButton>
                         </div>
                     </Form>
 
@@ -1229,130 +1203,95 @@ function formatDate(value: string | null): string {
                             <div
                                 class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8"
                             >
-                                <table
-                                    class="min-w-full divide-y divide-zinc-200 dark:divide-white/10"
-                                >
-                                    <thead
-                                        class="bg-zinc-50 dark:bg-white/[0.03]"
-                                    >
-                                        <tr>
-                                            <th
-                                                scope="col"
-                                                class="py-3.5 pr-3 pl-5 text-left text-xs font-semibold text-zinc-600 sm:pl-8 dark:text-zinc-300"
-                                            >
-                                                Série
-                                            </th>
-                                            <th
-                                                scope="col"
-                                                class="px-3 py-3.5 text-left text-xs font-semibold text-zinc-600 dark:text-zinc-300"
-                                            >
-                                                Estado
-                                            </th>
-                                            <th
-                                                scope="col"
-                                                class="hidden px-3 py-3.5 text-left text-xs font-semibold text-zinc-600 sm:table-cell dark:text-zinc-300"
-                                            >
-                                                Método
-                                            </th>
-                                            <th
-                                                scope="col"
-                                                class="px-3 py-3.5 text-right text-xs font-semibold text-zinc-600 dark:text-zinc-300"
-                                            >
-                                                Próximo
-                                            </th>
-                                            <th
-                                                scope="col"
-                                                class="py-3.5 pr-5 pl-3 text-right text-xs font-semibold text-zinc-600 sm:pr-8 dark:text-zinc-300"
-                                            >
-                                                Disponíveis
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody
-                                        class="divide-y divide-zinc-100 dark:divide-white/10"
-                                    >
-                                        <tr
-                                            v-for="fiscalSeries in series"
-                                            :key="fiscalSeries.public_id"
+                                <DataTable
+                                    ><template #head>
+                                        <th scope="col">Série</th>
+                                        <th scope="col">Estado</th>
+                                        <th
+                                            scope="col"
+                                            class="hidden sm:table-cell"
                                         >
-                                            <td class="py-4 pr-3 pl-5 sm:pl-8">
-                                                <p
-                                                    class="text-sm font-semibold whitespace-nowrap text-zinc-950 dark:text-white"
-                                                >
-                                                    {{
-                                                        fiscalSeries.series_code
-                                                    }}
-                                                </p>
-                                                <p
-                                                    class="mt-1 text-xs text-zinc-500 dark:text-zinc-400"
-                                                >
-                                                    {{
-                                                        fiscalSeries.document_type_label
-                                                    }}
-                                                    ·
-                                                    {{
-                                                        fiscalSeries.series_year
-                                                    }}
-                                                </p>
-                                            </td>
-                                            <td class="px-3 py-4">
-                                                <StatusBadge
-                                                    :label="
-                                                        fiscalSeries.status_label
-                                                    "
-                                                    :tone="
-                                                        seriesTone(
-                                                            fiscalSeries.status,
-                                                        )
-                                                    "
-                                                />
-                                            </td>
-                                            <td
-                                                class="hidden px-3 py-4 text-sm text-zinc-600 sm:table-cell dark:text-zinc-300"
+                                            Método
+                                        </th>
+                                        <th scope="col" class="text-right">
+                                            Próximo
+                                        </th>
+                                        <th scope="col" class="text-right">
+                                            Disponíveis
+                                        </th>
+                                    </template>
+                                    <tr
+                                        v-for="fiscalSeries in series"
+                                        :key="fiscalSeries.public_id"
+                                    >
+                                        <td>
+                                            <p
+                                                class="text-sm font-semibold whitespace-nowrap text-zinc-950 dark:text-white"
                                             >
-                                                <span
-                                                    class="font-mono text-xs"
-                                                    >{{
-                                                        fiscalSeries.invoicing_method
-                                                    }}</span
-                                                >
-                                                <p
-                                                    class="mt-1 text-xs text-zinc-500 dark:text-zinc-400"
-                                                >
-                                                    {{
-                                                        fiscalSeries.contingency_label
-                                                    }}
-                                                </p>
-                                            </td>
-                                            <td
-                                                class="px-3 py-4 text-right font-mono text-sm font-semibold text-zinc-900 dark:text-white"
+                                                {{ fiscalSeries.series_code }}
+                                            </p>
+                                            <p
+                                                class="mt-1 text-xs text-zinc-500 dark:text-zinc-400"
                                             >
-                                                {{ fiscalSeries.next_number }}
-                                            </td>
-                                            <td
-                                                class="py-4 pr-5 pl-3 text-right sm:pr-8"
+                                                {{
+                                                    fiscalSeries.document_type_label
+                                                }}
+                                                ·
+                                                {{ fiscalSeries.series_year }}
+                                            </p>
+                                        </td>
+                                        <td>
+                                            <StatusBadge
+                                                :label="
+                                                    fiscalSeries.status_label
+                                                "
+                                                :tone="
+                                                    seriesTone(
+                                                        fiscalSeries.status,
+                                                    )
+                                                "
+                                            />
+                                        </td>
+                                        <td
+                                            class="hidden text-sm text-zinc-600 sm:table-cell dark:text-zinc-300"
+                                        >
+                                            <span class="font-mono text-xs">{{
+                                                fiscalSeries.invoicing_method
+                                            }}</span>
+                                            <p
+                                                class="mt-1 text-xs text-zinc-500 dark:text-zinc-400"
                                             >
-                                                <p
-                                                    class="font-mono text-sm font-semibold text-zinc-900 dark:text-white"
-                                                >
-                                                    {{
-                                                        fiscalSeries.remaining_numbers
-                                                    }}
-                                                </p>
-                                                <p
-                                                    class="mt-1 text-xs text-zinc-500 dark:text-zinc-400"
-                                                >
-                                                    sincronizada
-                                                    {{
-                                                        formatDate(
-                                                            fiscalSeries.synchronized_at,
-                                                        )
-                                                    }}
-                                                </p>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                                                {{
+                                                    fiscalSeries.contingency_label
+                                                }}
+                                            </p>
+                                        </td>
+                                        <td
+                                            class="text-right font-mono text-sm font-semibold text-zinc-900 dark:text-white"
+                                        >
+                                            {{ fiscalSeries.next_number }}
+                                        </td>
+                                        <td class="text-right">
+                                            <p
+                                                class="font-mono text-sm font-semibold text-zinc-900 dark:text-white"
+                                            >
+                                                {{
+                                                    fiscalSeries.remaining_numbers
+                                                }}
+                                            </p>
+                                            <p
+                                                class="mt-1 text-xs text-zinc-500 dark:text-zinc-400"
+                                            >
+                                                sincronizada
+                                                {{
+                                                    formatDate(
+                                                        fiscalSeries.synchronized_at,
+                                                    )
+                                                }}
+                                            </p>
+                                        </td>
+                                    </tr>
+                                </DataTable>
                             </div>
                         </div>
                     </div>
@@ -1409,127 +1348,92 @@ function formatDate(value: string | null): string {
                         />
                     </div>
                     <div v-if="checks.length > 0" class="overflow-x-auto">
-                        <table
-                            class="min-w-full divide-y divide-zinc-200 dark:divide-white/10"
-                        >
-                            <thead class="bg-zinc-50 dark:bg-white/[0.03]">
-                                <tr>
-                                    <th
-                                        class="py-3.5 pr-3 pl-5 text-left text-xs font-semibold text-zinc-600 sm:pl-7 dark:text-zinc-300"
+                        <DataTable
+                            ><template #head>
+                                <th>Verificação</th>
+                                <th>Resultado</th>
+                                <th>Prova técnica</th>
+                                <th class="text-right">Duração</th>
+                            </template>
+                            <tr v-for="check in checks" :key="check.public_id">
+                                <td class="align-top">
+                                    <p
+                                        class="text-sm font-semibold whitespace-nowrap text-zinc-900 dark:text-white"
                                     >
-                                        Verificação
-                                    </th>
-                                    <th
-                                        class="px-3 py-3.5 text-left text-xs font-semibold text-zinc-600 dark:text-zinc-300"
+                                        {{ check.operation_label }}
+                                    </p>
+                                    <p
+                                        class="mt-1 flex items-center gap-1.5 text-xs whitespace-nowrap text-zinc-500 dark:text-zinc-400"
                                     >
-                                        Resultado
-                                    </th>
-                                    <th
-                                        class="px-3 py-3.5 text-left text-xs font-semibold text-zinc-600 dark:text-zinc-300"
-                                    >
-                                        Prova técnica
-                                    </th>
-                                    <th
-                                        class="py-3.5 pr-5 pl-3 text-right text-xs font-semibold text-zinc-600 sm:pr-7 dark:text-zinc-300"
-                                    >
-                                        Duração
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody
-                                class="divide-y divide-zinc-100 dark:divide-white/10"
-                            >
-                                <tr
-                                    v-for="check in checks"
-                                    :key="check.public_id"
-                                >
-                                    <td
-                                        class="py-4 pr-3 pl-5 align-top sm:pl-7"
-                                    >
-                                        <p
-                                            class="text-sm font-semibold whitespace-nowrap text-zinc-900 dark:text-white"
-                                        >
-                                            {{ check.operation_label }}
-                                        </p>
-                                        <p
-                                            class="mt-1 flex items-center gap-1.5 text-xs whitespace-nowrap text-zinc-500 dark:text-zinc-400"
-                                        >
-                                            <Clock3
-                                                class="size-3.5"
-                                                aria-hidden="true"
-                                            />
-                                            {{ formatDate(check.started_at) }}
-                                        </p>
-                                    </td>
-                                    <td class="px-3 py-4 align-top">
-                                        <StatusBadge
-                                            :label="check.status_label"
-                                            :tone="statusTone(check.status)"
-                                            :pulse="check.status === 'running'"
+                                        <Clock3
+                                            class="size-3.5"
+                                            aria-hidden="true"
                                         />
-                                        <p
-                                            class="mt-2 max-w-sm text-xs/5 text-zinc-500 dark:text-zinc-400"
-                                        >
-                                            {{ check.safe_message }}
-                                        </p>
-                                        <p
-                                            v-if="check.error_codes.length > 0"
-                                            class="mt-1 font-mono text-[0.65rem] text-rose-600 dark:text-rose-400"
-                                        >
-                                            {{ check.error_codes.join(', ') }}
-                                        </p>
-                                    </td>
-                                    <td class="px-3 py-4 align-top">
-                                        <dl
-                                            class="space-y-1 font-mono text-[0.65rem] text-zinc-500 dark:text-zinc-400"
-                                        >
-                                            <div class="flex gap-2">
-                                                <dt>HTTP</dt>
-                                                <dd
-                                                    class="text-zinc-900 dark:text-white"
-                                                >
-                                                    {{
-                                                        check.http_status ??
-                                                        'local'
-                                                    }}
-                                                </dd>
-                                            </div>
-                                            <div class="flex gap-2">
-                                                <dt>AGT</dt>
-                                                <dd
-                                                    class="text-zinc-900 dark:text-white"
-                                                >
-                                                    {{
-                                                        check.result_code ?? '—'
-                                                    }}
-                                                </dd>
-                                            </div>
-                                            <div
-                                                v-if="check.request_fingerprint"
-                                                class="flex gap-2"
-                                            >
-                                                <dt>REQ</dt>
-                                                <dd>
-                                                    {{
-                                                        check.request_fingerprint
-                                                    }}
-                                                </dd>
-                                            </div>
-                                        </dl>
-                                    </td>
-                                    <td
-                                        class="py-4 pr-5 pl-3 text-right align-top text-sm whitespace-nowrap text-zinc-600 sm:pr-7 dark:text-zinc-300"
+                                        {{ formatDate(check.started_at) }}
+                                    </p>
+                                </td>
+                                <td class="align-top">
+                                    <StatusBadge
+                                        :label="check.status_label"
+                                        :tone="statusTone(check.status)"
+                                        :pulse="check.status === 'running'"
+                                    />
+                                    <p
+                                        class="mt-2 max-w-sm text-xs/5 text-zinc-500 dark:text-zinc-400"
                                     >
-                                        {{
-                                            check.duration_ms === null
-                                                ? '—'
-                                                : String(check.duration_ms) +
-                                                  ' ms'
-                                        }}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                                        {{ check.safe_message }}
+                                    </p>
+                                    <p
+                                        v-if="check.error_codes.length > 0"
+                                        class="mt-1 font-mono text-[0.65rem] text-rose-600 dark:text-rose-400"
+                                    >
+                                        {{ check.error_codes.join(', ') }}
+                                    </p>
+                                </td>
+                                <td class="align-top">
+                                    <dl
+                                        class="space-y-1 font-mono text-[0.65rem] text-zinc-500 dark:text-zinc-400"
+                                    >
+                                        <div class="flex gap-2">
+                                            <dt>HTTP</dt>
+                                            <dd
+                                                class="text-zinc-900 dark:text-white"
+                                            >
+                                                {{
+                                                    check.http_status ?? 'local'
+                                                }}
+                                            </dd>
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <dt>AGT</dt>
+                                            <dd
+                                                class="text-zinc-900 dark:text-white"
+                                            >
+                                                {{ check.result_code ?? '—' }}
+                                            </dd>
+                                        </div>
+                                        <div
+                                            v-if="check.request_fingerprint"
+                                            class="flex gap-2"
+                                        >
+                                            <dt>REQ</dt>
+                                            <dd>
+                                                {{ check.request_fingerprint }}
+                                            </dd>
+                                        </div>
+                                    </dl>
+                                </td>
+                                <td
+                                    class="text-right align-top text-sm whitespace-nowrap text-zinc-600 dark:text-zinc-300"
+                                >
+                                    {{
+                                        check.duration_ms === null
+                                            ? '—'
+                                            : String(check.duration_ms) + ' ms'
+                                    }}
+                                </td>
+                            </tr>
+                        </DataTable>
                     </div>
                     <div v-else class="px-6 py-14 text-center">
                         <Landmark

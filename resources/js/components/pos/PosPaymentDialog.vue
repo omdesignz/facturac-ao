@@ -15,6 +15,8 @@ import {
     Printer,
 } from '@lucide/vue';
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
+import AppButton from '@/components/AppButton.vue';
+import FormField from '@/components/FormField.vue';
 import {
     attemptFor,
     describeSaleFailure,
@@ -640,9 +642,8 @@ const methodPill =
                                 <div
                                     class="mt-8 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"
                                 >
-                                    <button
-                                        type="button"
-                                        :class="buttonOutline"
+                                    <AppButton
+                                        variant="outline"
                                         @click="printReceipt"
                                     >
                                         <Printer
@@ -650,7 +651,7 @@ const methodPill =
                                             aria-hidden="true"
                                         />
                                         Imprimir talão
-                                    </button>
+                                    </AppButton>
                                     <button
                                         ref="newSaleButton"
                                         type="button"
@@ -847,13 +848,12 @@ const methodPill =
                                         </div>
                                     </fieldset>
 
-                                    <div v-if="isCash" class="mt-6">
-                                        <label
-                                            for="pos-tendered"
-                                            class="block text-sm font-medium text-zinc-900 dark:text-white"
-                                            >Recebido</label
-                                        >
-                                        <div class="relative mt-2">
+                                    <FormField
+                                        v-if="isCash"
+                                        class="mt-6"
+                                        for="pos-tendered"
+                                        label="Recebido"
+                                        ><div class="relative">
                                             <input
                                                 id="pos-tendered"
                                                 ref="tenderField"
@@ -974,8 +974,8 @@ const methodPill =
                                                     ></span
                                                 >
                                             </template>
-                                        </div>
-                                    </div>
+                                        </div></FormField
+                                    >
                                     <p
                                         v-else
                                         class="mt-6 text-sm/6 text-zinc-600 dark:text-zinc-400"
@@ -1014,24 +1014,22 @@ const methodPill =
                                             "
                                             class="mt-3 flex flex-wrap gap-2"
                                         >
-                                            <button
+                                            <AppButton
+                                                variant="outline"
                                                 v-if="mismatch"
-                                                type="button"
-                                                :class="buttonOutline"
                                                 @click="review"
                                             >
                                                 Rever venda
-                                            </button>
-                                            <button
+                                            </AppButton>
+                                            <AppButton
+                                                variant="outline"
                                                 v-if="
                                                     failure.kind === 'expired'
                                                 "
-                                                type="button"
-                                                :class="buttonOutline"
                                                 @click="reload"
                                             >
                                                 Recarregar a página
-                                            </button>
+                                            </AppButton>
                                         </div>
                                     </div>
                                 </div>
@@ -1039,14 +1037,13 @@ const methodPill =
                                 <div
                                     class="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"
                                 >
-                                    <button
-                                        type="button"
-                                        :class="buttonOutline"
+                                    <AppButton
+                                        variant="outline"
                                         :disabled="isSending"
                                         @click="requestClose"
                                     >
                                         Voltar
-                                    </button>
+                                    </AppButton>
                                     <button
                                         type="submit"
                                         :aria-disabled="

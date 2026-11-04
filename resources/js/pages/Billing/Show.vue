@@ -25,8 +25,11 @@ import {
     X,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import AppButton from '@/components/AppButton.vue';
 import PeriodSwitch from '@/components/billing/PeriodSwitch.vue';
+import DataTable from '@/components/DataTable.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
+import FormField from '@/components/FormField.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageStat from '@/components/PageStat.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
@@ -547,10 +550,9 @@ function submitCheckout(): void {
                                 formatDate(activePayment.retry_after_at, true)
                             }}.
                         </p>
-                        <button
+                        <AppButton
+                            variant="gold"
                             v-if="activePayment.can_resume && canManage"
-                            type="button"
-                            class="inline-flex h-10 items-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
                             :disabled="resumeForm.processing || !mfaEnabled"
                             @click="resumePayment"
                         >
@@ -569,7 +571,7 @@ function submitCheckout(): void {
                                     ? 'Tentar novamente'
                                     : 'Continuar na WiPay'
                             }}
-                        </button>
+                        </AppButton>
                     </section>
 
                     <section
@@ -1191,136 +1193,92 @@ function submitCheckout(): void {
                     <div v-if="charges.length > 0" class="flow-root">
                         <div class="overflow-x-auto">
                             <div class="inline-block min-w-full align-middle">
-                                <table
-                                    class="relative min-w-full divide-y divide-zinc-300 dark:divide-white/15"
-                                >
-                                    <thead
-                                        class="bg-zinc-50 dark:bg-white/[0.025]"
+                                <DataTable
+                                    ><template #head>
+                                        <th scope="col">Plano</th>
+                                        <th scope="col">Pagamento</th>
+                                        <th scope="col">Data</th>
+                                        <th scope="col">Estado</th>
+                                        <th scope="col" class="text-right">
+                                            Valor
+                                        </th>
+                                    </template>
+                                    <tr
+                                        v-for="charge in charges"
+                                        :key="charge.public_id"
+                                        class="transition hover:bg-zinc-50/70 dark:hover:bg-white/[0.025]"
                                     >
-                                        <tr>
-                                            <th
-                                                scope="col"
-                                                class="py-3.5 pr-3 pl-5 text-left text-xs font-semibold tracking-wider text-zinc-600 uppercase sm:pl-7 dark:text-zinc-300"
+                                        <td class="text-sm whitespace-nowrap">
+                                            <p
+                                                class="font-semibold text-zinc-950 dark:text-white"
                                             >
-                                                Plano
-                                            </th>
-                                            <th
-                                                scope="col"
-                                                class="px-3 py-3.5 text-left text-xs font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-300"
+                                                {{ charge.plan_name }}
+                                            </p>
+                                            <p
+                                                class="mt-0.5 font-mono text-[0.7rem] text-zinc-400"
                                             >
-                                                Pagamento
-                                            </th>
-                                            <th
-                                                scope="col"
-                                                class="px-3 py-3.5 text-left text-xs font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-300"
-                                            >
-                                                Data
-                                            </th>
-                                            <th
-                                                scope="col"
-                                                class="px-3 py-3.5 text-left text-xs font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-300"
-                                            >
-                                                Estado
-                                            </th>
-                                            <th
-                                                scope="col"
-                                                class="py-3.5 pr-5 pl-3 text-right text-xs font-semibold tracking-wider text-zinc-600 uppercase sm:pr-7 dark:text-zinc-300"
-                                            >
-                                                Valor
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody
-                                        class="divide-y divide-zinc-200 bg-white dark:divide-white/10 dark:bg-zinc-900"
-                                    >
-                                        <tr
-                                            v-for="charge in charges"
-                                            :key="charge.public_id"
-                                            class="transition hover:bg-zinc-50/70 dark:hover:bg-white/[0.025]"
+                                                {{ charge.public_id }}
+                                            </p>
+                                        </td>
+                                        <td
+                                            class="text-sm whitespace-nowrap text-zinc-600 dark:text-zinc-300"
                                         >
-                                            <td
-                                                class="py-4 pr-3 pl-5 text-sm whitespace-nowrap sm:pl-7"
+                                            <span
+                                                v-if="charge.reference"
+                                                class="font-mono font-medium tracking-wide"
                                             >
-                                                <p
-                                                    class="font-semibold text-zinc-950 dark:text-white"
-                                                >
-                                                    {{ charge.plan_name }}
-                                                </p>
-                                                <p
-                                                    class="mt-0.5 font-mono text-[0.7rem] text-zinc-400"
-                                                >
-                                                    {{ charge.public_id }}
-                                                </p>
-                                            </td>
-                                            <td
-                                                class="px-3 py-4 text-sm whitespace-nowrap text-zinc-600 dark:text-zinc-300"
+                                                Registo antigo:
+                                                {{ charge.reference.entity }}
+                                                ·
+                                                {{ charge.reference.reference }}
+                                            </span>
+                                            <span
+                                                v-else-if="charge.payment"
+                                                class="font-mono text-xs"
                                             >
-                                                <span
-                                                    v-if="charge.reference"
-                                                    class="font-mono font-medium tracking-wide"
-                                                >
-                                                    Registo antigo:
-                                                    {{
-                                                        charge.reference.entity
-                                                    }}
-                                                    ·
-                                                    {{
-                                                        charge.reference
-                                                            .reference
-                                                    }}
-                                                </span>
-                                                <span
-                                                    v-else-if="charge.payment"
-                                                    class="font-mono text-xs"
-                                                >
-                                                    WiPay ·
-                                                    {{
-                                                        charge.payment.public_id
-                                                    }}
-                                                </span>
-                                                <span v-else>—</span>
-                                            </td>
-                                            <td
-                                                class="px-3 py-4 text-sm whitespace-nowrap text-zinc-500 dark:text-zinc-400"
-                                            >
-                                                {{
-                                                    formatDate(
-                                                        charge.created_at,
-                                                        true,
-                                                    )
-                                                }}
-                                            </td>
-                                            <td
-                                                class="px-3 py-4 text-sm whitespace-nowrap"
-                                            >
-                                                <StatusBadge
-                                                    :label="
+                                                WiPay ·
+                                                {{ charge.payment.public_id }}
+                                            </span>
+                                            <span v-else>—</span>
+                                        </td>
+                                        <td
+                                            class="text-sm whitespace-nowrap text-zinc-500 dark:text-zinc-400"
+                                        >
+                                            {{
+                                                formatDate(
+                                                    charge.created_at,
+                                                    true,
+                                                )
+                                            }}
+                                        </td>
+                                        <td class="text-sm whitespace-nowrap">
+                                            <StatusBadge
+                                                :label="
+                                                    charge.payment
+                                                        ?.status_label ??
+                                                    charge.status_label
+                                                "
+                                                :tone="
+                                                    statusTone(
                                                         charge.payment
-                                                            ?.status_label ??
-                                                        charge.status_label
-                                                    "
-                                                    :tone="
-                                                        statusTone(
-                                                            charge.payment
-                                                                ?.status ??
-                                                                charge.status,
-                                                        )
-                                                    "
-                                                />
-                                            </td>
-                                            <td
-                                                class="py-4 pr-5 pl-3 text-right text-sm font-semibold whitespace-nowrap text-zinc-950 sm:pr-7 dark:text-white"
-                                            >
-                                                {{
-                                                    formatMoney(
-                                                        charge.amount_minor,
-                                                        charge.currency_code,
+                                                            ?.status ??
+                                                            charge.status,
                                                     )
-                                                }}
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                                                "
+                                            />
+                                        </td>
+                                        <td
+                                            class="text-right text-sm font-semibold whitespace-nowrap text-zinc-950 dark:text-white"
+                                        >
+                                            {{
+                                                formatMoney(
+                                                    charge.amount_minor,
+                                                    charge.currency_code,
+                                                )
+                                            }}
+                                        </td>
+                                    </tr>
+                                </DataTable>
                             </div>
                         </div>
                     </div>
@@ -1527,14 +1485,11 @@ function submitCheckout(): void {
                                     </div>
                                 </dl>
 
-                                <div class="mt-5">
-                                    <label
-                                        for="payment-customer-phone"
-                                        class="block text-sm font-medium text-zinc-900 dark:text-white"
-                                    >
-                                        Telemóvel do pagador
-                                    </label>
-                                    <input
+                                <FormField
+                                    class="mt-5"
+                                    for="payment-customer-phone"
+                                    label="Telemóvel do pagador"
+                                    ><input
                                         id="payment-customer-phone"
                                         v-model="checkoutForm.customer_phone"
                                         type="tel"
@@ -1543,7 +1498,7 @@ function submitCheckout(): void {
                                         maxlength="9"
                                         pattern="9[0-9]{8}"
                                         required
-                                        class="mt-2 form-input numeric"
+                                        class="form-input numeric"
                                         placeholder="9xxxxxxxx"
                                         :disabled="checkoutForm.processing"
                                         :aria-invalid="
@@ -1580,8 +1535,8 @@ function submitCheckout(): void {
                                         role="alert"
                                     >
                                         {{ checkoutForm.errors.customer_phone }}
-                                    </p>
-                                </div>
+                                    </p></FormField
+                                >
 
                                 <div
                                     class="mt-5 flex gap-3 rounded-xl bg-amber-50 p-3 text-xs/5 text-amber-800 ring-1 ring-amber-600/15 dark:bg-amber-400/10 dark:text-amber-100 dark:ring-amber-400/20"
@@ -1609,19 +1564,19 @@ function submitCheckout(): void {
                                 <div
                                     class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"
                                 >
-                                    <button
-                                        type="button"
-                                        class="inline-flex h-10 w-full items-center justify-center rounded-full bg-white px-[1.125rem] text-sm font-semibold text-zinc-900 ring-1 ring-zinc-900/10 transition ring-inset hover:bg-zinc-50 disabled:opacity-50 sm:w-auto dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
+                                    <AppButton
+                                        variant="outline"
                                         :disabled="checkoutForm.processing"
                                         @click="closeCheckout"
+                                        class="w-full sm:w-auto"
                                     >
                                         Cancelar
-                                    </button>
-                                    <button
-                                        type="button"
-                                        class="flex h-10 w-full items-center justify-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
+                                    </AppButton>
+                                    <AppButton
+                                        variant="gold"
                                         :disabled="checkoutForm.processing"
                                         @click="submitCheckout"
+                                        class="w-full"
                                     >
                                         <LoaderCircle
                                             v-if="checkoutForm.processing"
@@ -1634,7 +1589,7 @@ function submitCheckout(): void {
                                             aria-hidden="true"
                                         />
                                         Continuar para a WiPay
-                                    </button>
+                                    </AppButton>
                                 </div>
                             </DialogPanel>
                         </TransitionChild>

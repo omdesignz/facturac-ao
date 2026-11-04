@@ -32,8 +32,10 @@ import {
     ref,
     watch,
 } from 'vue';
+import AppButton from '@/components/AppButton.vue';
 import DateInput from '@/components/DateInput.vue';
 import FormError from '@/components/FormError.vue';
+import FormField from '@/components/FormField.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import SectionHeading from '@/components/SectionHeading.vue';
 import SelectInput from '@/components/SelectInput.vue';
@@ -41,7 +43,7 @@ import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { addDaysToIsoDate } from '@/lib/dates';
 import { roundFiscalLineAmount } from '@/lib/fiscal-rounding';
-import { buttonOutline } from '@/lib/pos-ui';
+
 import { parseTypedLines } from '@/lib/typed-lines';
 import { show as agtConnection } from '@/routes/agt/connection';
 import { issue, store, update } from '@/routes/invoices';
@@ -1484,13 +1486,13 @@ function confirmIssue(): void {
                         </span>
                     </template>
                     <template #actions>
-                        <button
+                        <AppButton
+                            variant="outline"
                             type="submit"
                             :aria-busy="form.processing"
                             :disabled="
                                 form.processing || establishments.length === 0
                             "
-                            class="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-white px-[1.125rem] text-sm font-semibold text-zinc-900 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
                         >
                             <LoaderCircle
                                 v-if="form.processing"
@@ -1499,7 +1501,7 @@ function confirmIssue(): void {
                             />
                             <Save v-else class="size-4" aria-hidden="true" />
                             Guardar rascunho
-                        </button>
+                        </AppButton>
                     </template>
                 </PageHeader>
 
@@ -1561,20 +1563,21 @@ function confirmIssue(): void {
                                     {{ documentDetailsSummary }}
                                 </template></SectionHeading
                             >
-                            <button
+                            <AppButton
+                                variant="outline"
+                                size="lg"
                                 v-if="!documentDetailsRequired"
-                                type="button"
-                                class="inline-flex h-8 shrink-0 items-center rounded-full px-3 text-[0.8125rem] font-semibold text-zinc-700 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5 pointer-coarse:h-11"
                                 :aria-expanded="showDocumentDetails"
                                 aria-controls="document-details"
                                 @click="
                                     documentDetailsOpen = !documentDetailsOpen
                                 "
+                                class="shrink-0"
                             >
                                 {{
                                     documentDetailsOpen ? 'Esconder' : 'Alterar'
                                 }}
-                            </button>
+                            </AppButton>
                         </div>
 
                         <div
@@ -1582,36 +1585,36 @@ function confirmIssue(): void {
                             id="document-details"
                             class="grid grid-cols-1 gap-6 p-5 sm:grid-cols-6 sm:p-6"
                         >
-                            <div class="sm:col-span-3">
-                                <label for="document-type" class="field-label">
-                                    Tipo de documento
-                                </label>
-                                <SelectInput
+                            <FormField
+                                class="sm:col-span-3"
+                                for="document-type"
+                                label="Tipo de documento"
+                                :error="form.errors.document_type"
+                                :error-id="errorId('document_type')"
+                                ><SelectInput
                                     id="document-type"
                                     :invalid="invalid('document_type')"
                                     :describedby="
                                         describedBy('', 'document_type')
                                     "
                                     v-model="form.document_type"
-                                    class="mt-2"
                                     :options="documentTypeOptions"
-                                />
-                                <FormError
-                                    :id="errorId('document_type')"
-                                    :message="form.errors.document_type"
-                                />
-                            </div>
+                            /></FormField>
 
-                            <div v-if="isAdjustment" class="sm:col-span-3">
-                                <label
-                                    for="references-document"
-                                    class="field-label"
-                                >
-                                    Documento corrigido
-                                </label>
-                                <p
+                            <FormField
+                                v-if="isAdjustment"
+                                class="sm:col-span-3"
+                                for="references-document"
+                                label="Documento corrigido"
+                                :error="
+                                    form.errors.references_document_public_id
+                                "
+                                :error-id="
+                                    errorId('references_document_public_id')
+                                "
+                                ><p
                                     v-if="adjustableDocuments.length === 0"
-                                    class="mt-2 rounded-xl bg-amber-50 p-3 text-xs/5 text-amber-900 ring-1 ring-amber-200 dark:bg-amber-400/10 dark:text-amber-200 dark:ring-amber-400/20"
+                                    class="rounded-xl bg-amber-50 p-3 text-xs/5 text-amber-900 ring-1 ring-amber-200 dark:bg-amber-400/10 dark:text-amber-200 dark:ring-amber-400/20"
                                 >
                                     Ainda não há facturas emitidas para
                                     corrigir. Só é possível emitir uma nota
@@ -1635,17 +1638,7 @@ function confirmIssue(): void {
                                     placeholder="Escolher a factura…"
                                     :options="adjustableOptions"
                                     @change="applyReferencedDocument($event)"
-                                />
-                                <FormError
-                                    :id="
-                                        errorId('references_document_public_id')
-                                    "
-                                    :message="
-                                        form.errors
-                                            .references_document_public_id
-                                    "
-                                />
-                            </div>
+                            /></FormField>
 
                             <div v-if="isAdjustment" class="sm:col-span-6">
                                 <label
@@ -1681,53 +1674,49 @@ function confirmIssue(): void {
                                 />
                             </div>
 
-                            <div v-if="isReceipt" class="sm:col-span-3">
-                                <label for="payment-method" class="field-label">
-                                    Meio de pagamento
-                                </label>
-                                <SelectInput
+                            <FormField
+                                v-if="isReceipt"
+                                class="sm:col-span-3"
+                                for="payment-method"
+                                label="Meio de pagamento"
+                                :error="form.errors.payment_method"
+                                :error-id="errorId('payment_method')"
+                                ><SelectInput
                                     id="payment-method"
                                     :invalid="invalid('payment_method')"
                                     :describedby="
                                         describedBy('', 'payment_method')
                                     "
                                     v-model="form.payment_method"
-                                    class="mt-2"
                                     :options="paymentMethodOptions"
-                                />
-                                <FormError
-                                    :id="errorId('payment_method')"
-                                    :message="form.errors.payment_method"
-                                />
-                            </div>
+                            /></FormField>
 
-                            <div v-if="isReceipt" class="sm:col-span-3">
-                                <label for="payment-date" class="field-label">
-                                    Data do pagamento
-                                </label>
-                                <DateInput
+                            <FormField
+                                v-if="isReceipt"
+                                class="sm:col-span-3"
+                                for="payment-date"
+                                label="Data do pagamento"
+                                :error="form.errors.payment_date"
+                                :error-id="errorId('payment_date')"
+                                ><DateInput
                                     id="payment-date"
                                     :invalid="invalid('payment_date')"
                                     :describedby="
                                         describedBy('', 'payment_date')
                                     "
                                     v-model="form.payment_date"
-                                    class="mt-2"
                                     :clearable="false"
                                     :max-date="today"
                                     aria-label="Data do pagamento"
-                                />
-                                <FormError
-                                    :id="errorId('payment_date')"
-                                    :message="form.errors.payment_date"
-                                />
-                            </div>
+                            /></FormField>
 
-                            <div class="sm:col-span-3">
-                                <label for="establishment" class="field-label">
-                                    Local de emissão
-                                </label>
-                                <SelectInput
+                            <FormField
+                                class="sm:col-span-3"
+                                for="establishment"
+                                label="Local de emissão"
+                                :error="form.errors.establishment_public_id"
+                                :error-id="errorId('establishment_public_id')"
+                                ><SelectInput
                                     id="establishment"
                                     :invalid="
                                         invalid('establishment_public_id')
@@ -1739,43 +1728,34 @@ function confirmIssue(): void {
                                         )
                                     "
                                     v-model="form.establishment_public_id"
-                                    class="mt-2"
                                     placeholder="Seleccione um local"
                                     :options="establishmentOptions"
-                                />
-                                <FormError
-                                    :id="errorId('establishment_public_id')"
-                                    :message="
-                                        form.errors.establishment_public_id
-                                    "
-                                />
-                            </div>
+                            /></FormField>
 
-                            <div class="sm:col-span-3">
-                                <label for="currency" class="field-label">
-                                    Moeda
-                                </label>
-                                <SelectInput
+                            <FormField
+                                class="sm:col-span-3"
+                                for="currency"
+                                label="Moeda"
+                                :error="form.errors.currency_code"
+                                :error-id="errorId('currency_code')"
+                                ><SelectInput
                                     id="currency"
                                     :invalid="invalid('currency_code')"
                                     :describedby="
                                         describedBy('', 'currency_code')
                                     "
                                     v-model="form.currency_code"
-                                    class="mt-2"
                                     :options="currencyOptions"
-                                />
-                                <FormError
-                                    :id="errorId('currency_code')"
-                                    :message="form.errors.currency_code"
-                                />
-                            </div>
+                            /></FormField>
 
-                            <div v-if="isForeignCurrency" class="sm:col-span-3">
-                                <label for="exchange-rate" class="field-label">
-                                    Câmbio
-                                </label>
-                                <input
+                            <FormField
+                                v-if="isForeignCurrency"
+                                class="sm:col-span-3"
+                                for="exchange-rate"
+                                label="Câmbio"
+                                :error="form.errors.exchange_rate"
+                                :error-id="errorId('exchange_rate')"
+                                ><input
                                     id="exchange-rate"
                                     :aria-invalid="invalid('exchange_rate')"
                                     :aria-describedby="
@@ -1783,78 +1763,59 @@ function confirmIssue(): void {
                                     "
                                     v-model="form.exchange_rate"
                                     inputmode="decimal"
-                                    class="mt-2 block form-input numeric"
+                                    class="block form-input numeric"
                                 />
                                 <p class="field-hint">
                                     Kwanzas por 1 {{ form.currency_code }}. É
                                     este o valor que a AGT recebe convertido.
-                                </p>
-                                <FormError
-                                    :id="errorId('exchange_rate')"
-                                    :message="form.errors.exchange_rate"
-                                />
-                            </div>
+                                </p></FormField
+                            >
 
-                            <div class="sm:col-span-3">
-                                <label for="document-date" class="field-label">
-                                    Data do documento
-                                </label>
-                                <DateInput
+                            <FormField
+                                class="sm:col-span-3"
+                                for="document-date"
+                                label="Data do documento"
+                                :error="form.errors.document_date"
+                                :error-id="errorId('document_date')"
+                                ><DateInput
                                     id="document-date"
                                     :invalid="invalid('document_date')"
                                     :describedby="
                                         describedBy('', 'document_date')
                                     "
                                     v-model="form.document_date"
-                                    class="mt-2"
                                     :clearable="false"
                                     :max-date="today"
                                     aria-label="Data do documento"
-                                />
-                                <FormError
-                                    :id="errorId('document_date')"
-                                    :message="form.errors.document_date"
-                                />
-                            </div>
+                            /></FormField>
 
-                            <div class="sm:col-span-3">
-                                <label for="due-date" class="field-label">
-                                    Data de vencimento
-                                    <span
-                                        class="font-normal text-zinc-500 dark:text-zinc-400"
-                                        >(opcional)</span
-                                    >
-                                </label>
-                                <DateInput
+                            <FormField
+                                class="sm:col-span-3"
+                                for="due-date"
+                                label="Data de vencimento"
+                                optional
+                                :error="form.errors.due_date"
+                                :error-id="errorId('due_date')"
+                                ><DateInput
                                     id="due-date"
                                     :invalid="invalid('due_date')"
                                     :describedby="describedBy('', 'due_date')"
                                     v-model="form.due_date"
-                                    class="mt-2"
                                     :min-date="form.document_date"
                                     aria-label="Data de vencimento"
-                                />
-                                <FormError
-                                    :id="errorId('due_date')"
-                                    :message="form.errors.due_date"
-                                />
-                            </div>
-                            <div
+                            /></FormField>
+                            <FormField
                                 v-if="
                                     !['RG', 'NC'].includes(form.document_type)
                                 "
                                 class="sm:col-span-3"
-                            >
-                                <label
-                                    for="goods-available-at"
-                                    class="field-label"
-                                    >Disponibilização dos bens / serviços</label
-                                >
-                                <DateInput
+                                for="goods-available-at"
+                                label="Disponibilização dos bens / serviços"
+                                :error="form.errors.goods_available_at"
+                                ><DateInput
                                     id="goods-available-at"
                                     v-model="form.goods_available_at"
                                     mode="datetime"
-                                    class="mt-2"
                                     describedby="availability-help"
                                 />
                                 <p
@@ -1863,35 +1824,23 @@ function confirmIssue(): void {
                                 >
                                     Data e hora da operação, em Angola. Pode
                                     diferir da emissão.
-                                </p>
-                                <FormError
-                                    :message="form.errors.goods_available_at"
-                                />
-                            </div>
-                            <div
+                                </p></FormField
+                            >
+                            <FormField
                                 v-if="
                                     !['RG', 'NC'].includes(form.document_type)
                                 "
                                 class="sm:col-span-3"
-                            >
-                                <label
-                                    for="goods-available-location"
-                                    class="field-label"
-                                    >Local de disponibilização</label
-                                >
-                                <input
+                                for="goods-available-location"
+                                label="Local de disponibilização"
+                                :error="form.errors.goods_available_location"
+                                ><input
                                     id="goods-available-location"
                                     v-model="form.goods_available_location"
                                     type="text"
                                     maxlength="255"
-                                    class="mt-2 block form-input"
-                                />
-                                <FormError
-                                    :message="
-                                        form.errors.goods_available_location
-                                    "
-                                />
-                            </div>
+                                    class="block form-input"
+                            /></FormField>
                         </div>
                     </section>
 
@@ -1937,32 +1886,30 @@ function confirmIssue(): void {
                         <div
                             class="grid grid-cols-1 gap-6 p-5 sm:grid-cols-6 sm:p-6 @4xl:grid-cols-12 @4xl:gap-4"
                         >
-                            <div class="sm:col-span-6 @4xl:col-span-4">
-                                <label for="saved-customer" class="field-label">
-                                    Procurar nos clientes guardados
-                                </label>
-                                <SelectInput
+                            <FormField
+                                class="sm:col-span-6 @4xl:col-span-4"
+                                for="saved-customer"
+                                label="Procurar nos clientes guardados"
+                                :error="form.errors.customer_public_id"
+                                :error-id="errorId('customer_public_id')"
+                                ><SelectInput
                                     id="saved-customer"
                                     :invalid="invalid('customer_public_id')"
                                     :describedby="
                                         describedBy('', 'customer_public_id')
                                     "
                                     v-model="form.customer_public_id"
-                                    class="mt-2"
                                     :options="customerOptions"
                                     @change="selectCustomer"
-                                />
-                                <FormError
-                                    :id="errorId('customer_public_id')"
-                                    :message="form.errors.customer_public_id"
-                                />
-                            </div>
+                            /></FormField>
 
-                            <div class="sm:col-span-4 @4xl:col-span-5">
-                                <label for="customer-name" class="field-label">
-                                    Nome ou denominação
-                                </label>
-                                <input
+                            <FormField
+                                class="sm:col-span-4 @4xl:col-span-5"
+                                for="customer-name"
+                                label="Nome ou denominação"
+                                :error="errorFor('customer.name')"
+                                :error-id="errorId('customer.name')"
+                                ><input
                                     id="customer-name"
                                     :aria-invalid="invalid('customer.name')"
                                     :aria-describedby="
@@ -1971,19 +1918,24 @@ function confirmIssue(): void {
                                     v-model="form.customer.name"
                                     :readonly="Boolean(selectedCustomer)"
                                     autocomplete="off"
-                                    class="mt-2 block form-input"
-                                />
-                                <FormError
-                                    :id="errorId('customer.name')"
-                                    :message="errorFor('customer.name')"
-                                />
-                            </div>
+                                    class="block form-input"
+                            /></FormField>
 
-                            <div class="sm:col-span-2 @4xl:col-span-3">
-                                <label for="customer-nif" class="field-label">
-                                    NIF
-                                </label>
-                                <input
+                            <FormField
+                                class="sm:col-span-2 @4xl:col-span-3"
+                                for="customer-nif"
+                                label="NIF"
+                                :error="
+                                    errorFor(
+                                        'customer.tax_identification_number',
+                                    )
+                                "
+                                :error-id="
+                                    errorId(
+                                        'customer.tax_identification_number',
+                                    )
+                                "
+                                ><input
                                     id="customer-nif"
                                     autocomplete="off"
                                     autocapitalize="characters"
@@ -2003,30 +1955,16 @@ function confirmIssue(): void {
                                         form.customer.tax_identification_number
                                     "
                                     :readonly="Boolean(selectedCustomer)"
-                                    class="mt-2 block form-input font-mono uppercase"
-                                />
-                                <FormError
-                                    :id="
-                                        errorId(
-                                            'customer.tax_identification_number',
-                                        )
-                                    "
-                                    :message="
-                                        errorFor(
-                                            'customer.tax_identification_number',
-                                        )
-                                    "
-                                />
-                            </div>
+                                    class="block form-input font-mono uppercase"
+                            /></FormField>
 
-                            <div class="sm:col-span-2 @4xl:col-span-2">
-                                <label
-                                    for="customer-country"
-                                    class="field-label"
-                                >
-                                    País
-                                </label>
-                                <input
+                            <FormField
+                                class="sm:col-span-2 @4xl:col-span-2"
+                                for="customer-country"
+                                label="País"
+                                :error="errorFor('customer.country_code')"
+                                :error-id="errorId('customer.country_code')"
+                                ><input
                                     id="customer-country"
                                     autocomplete="off"
                                     autocapitalize="characters"
@@ -2039,22 +1977,16 @@ function confirmIssue(): void {
                                     v-model="form.customer.country_code"
                                     :readonly="Boolean(selectedCustomer)"
                                     maxlength="2"
-                                    class="mt-2 block form-input font-mono uppercase"
-                                />
-                                <FormError
-                                    :id="errorId('customer.country_code')"
-                                    :message="errorFor('customer.country_code')"
-                                />
-                            </div>
+                                    class="block form-input font-mono uppercase"
+                            /></FormField>
 
-                            <div class="sm:col-span-4 @4xl:col-span-10">
-                                <label
-                                    for="customer-address"
-                                    class="field-label"
-                                >
-                                    Morada
-                                </label>
-                                <input
+                            <FormField
+                                class="sm:col-span-4 @4xl:col-span-10"
+                                for="customer-address"
+                                label="Morada"
+                                :error="errorFor('customer.address_line')"
+                                :error-id="errorId('customer.address_line')"
+                                ><input
                                     id="customer-address"
                                     :aria-invalid="
                                         invalid('customer.address_line')
@@ -2065,13 +1997,8 @@ function confirmIssue(): void {
                                     v-model="form.customer.address_line"
                                     :readonly="Boolean(selectedCustomer)"
                                     autocomplete="off"
-                                    class="mt-2 block form-input"
-                                />
-                                <FormError
-                                    :id="errorId('customer.address_line')"
-                                    :message="errorFor('customer.address_line')"
-                                />
-                            </div>
+                                    class="block form-input"
+                            /></FormField>
                         </div>
                     </section>
                 </div>
@@ -2098,27 +2025,25 @@ function confirmIssue(): void {
                             </p>
                         </div>
                         <div class="flex shrink-0 flex-wrap items-center gap-2">
-                            <button
+                            <AppButton
+                                variant="outline"
                                 v-if="outstandingForCustomer.length > 1"
-                                type="button"
-                                class="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-white px-[1.125rem] text-sm font-semibold text-zinc-900 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
                                 @click="settleEverythingOutstanding"
                             >
                                 <ListChecks class="size-4" aria-hidden="true" />
                                 Liquidar tudo ({{
                                     outstandingForCustomer.length
                                 }})
-                            </button>
-                            <button
+                            </AppButton>
+                            <AppButton
+                                variant="outline"
                                 id="add-settlement"
-                                type="button"
                                 :disabled="settleableOptions.length === 0"
-                                class="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-white px-[1.125rem] text-sm font-semibold text-zinc-900 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
                                 @click="addSettlement"
                             >
                                 <Plus class="size-4" aria-hidden="true" />
                                 Adicionar factura
-                            </button>
+                            </AppButton>
                         </div>
                     </div>
 
@@ -2143,14 +2068,20 @@ function confirmIssue(): void {
                             :key="index"
                             class="grid gap-4 p-5 sm:grid-cols-[minmax(0,1fr)_12rem_auto] sm:items-end sm:px-6"
                         >
-                            <div>
-                                <label
-                                    :for="`settlement-doc-${index}`"
-                                    class="field-label"
-                                >
-                                    Factura
-                                </label>
-                                <SelectInput
+                            <FormField
+                                :for="`settlement-doc-${index}`"
+                                label="Factura"
+                                :error="
+                                    errorFor(
+                                        `settlements.${index}.document_public_id`,
+                                    )
+                                "
+                                :error-id="
+                                    errorId(
+                                        `settlements.${index}.document_public_id`,
+                                    )
+                                "
+                                ><SelectInput
                                     :id="`settlement-doc-${index}`"
                                     :invalid="
                                         invalid(
@@ -2164,35 +2095,21 @@ function confirmIssue(): void {
                                         )
                                     "
                                     v-model="row.document_public_id"
-                                    class="mt-2"
                                     placeholder="Escolher a factura…"
                                     :options="settleableOptions"
                                     @change="
                                         applySettlementDocument(index, $event)
                                     "
-                                />
-                                <FormError
-                                    :id="
-                                        errorId(
-                                            `settlements.${index}.document_public_id`,
-                                        )
-                                    "
-                                    :message="
-                                        errorFor(
-                                            `settlements.${index}.document_public_id`,
-                                        )
-                                    "
-                                />
-                            </div>
+                            /></FormField>
 
-                            <div>
-                                <label
-                                    :for="`settlement-amount-${index}`"
-                                    class="field-label"
-                                >
-                                    Valor liquidado
-                                </label>
-                                <input
+                            <FormField
+                                :for="`settlement-amount-${index}`"
+                                label="Valor liquidado"
+                                :error="errorFor(`settlements.${index}.amount`)"
+                                :error-id="
+                                    errorId(`settlements.${index}.amount`)
+                                "
+                                ><input
                                     :id="`settlement-amount-${index}`"
                                     :aria-invalid="
                                         invalid(`settlements.${index}.amount`)
@@ -2206,15 +2123,8 @@ function confirmIssue(): void {
                                     v-model="row.amount"
                                     type="text"
                                     inputmode="decimal"
-                                    class="mt-2 block form-input text-right font-mono numeric"
-                                />
-                                <FormError
-                                    :id="errorId(`settlements.${index}.amount`)"
-                                    :message="
-                                        errorFor(`settlements.${index}.amount`)
-                                    "
-                                />
-                            </div>
+                                    class="block form-input text-right font-mono numeric"
+                            /></FormField>
 
                             <button
                                 :id="`remove-settlement-${index}`"
@@ -2278,31 +2188,26 @@ function confirmIssue(): void {
                                 uma factura genérica.
                             </p>
                         </div>
-                        <button
+                        <AppButton
+                            variant="outline"
                             id="add-line"
-                            type="button"
-                            class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-white px-[1.125rem] text-sm font-semibold text-zinc-900 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
                             @click="addLine"
+                            class="shrink-0"
                         >
                             <Plus class="size-4" aria-hidden="true" />
                             <span class="hidden sm:inline"
                                 >Adicionar linha</span
                             >
                             <span class="sm:hidden">Adicionar</span>
-                        </button>
+                        </AppButton>
                     </div>
 
-                    <div
+                    <FormField
                         v-if="catalogueItems.length > 0"
                         class="border-b border-zinc-100 px-5 py-4 sm:px-6 dark:border-white/10"
-                    >
-                        <label
-                            for="typed-sale"
-                            class="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
-                        >
-                            Escreva o que vendeu
-                        </label>
-                        <div class="mt-2 flex gap-2">
+                        for="typed-sale"
+                        label="Escreva o que vendeu"
+                        ><div class="flex gap-2">
                             <input
                                 id="typed-sale"
                                 v-model="typedSale"
@@ -2313,14 +2218,13 @@ function confirmIssue(): void {
                                 class="form-input"
                                 @keydown.enter.prevent="addTypedSale"
                             />
-                            <button
-                                type="button"
-                                :class="buttonOutline"
+                            <AppButton
+                                variant="outline"
                                 :disabled="!typedSaleReady"
                                 @click="addTypedSale"
                             >
                                 Adicionar
-                            </button>
+                            </AppButton>
                         </div>
                         <ul
                             v-if="typedLines.length > 0"
@@ -2349,8 +2253,8 @@ function confirmIssue(): void {
                                     mais de um artigo assim
                                 </template>
                             </li>
-                        </ul>
-                    </div>
+                        </ul></FormField
+                    >
 
                     <div
                         class="divide-y divide-zinc-100 xl:hidden dark:divide-white/10"
@@ -2387,32 +2291,33 @@ function confirmIssue(): void {
                                 :message="errorFor(`lines.${index}`)"
                             />
 
-                            <div v-if="catalogueItems.length > 0">
-                                <label
-                                    :for="`mobile-catalogue-${line.key}`"
-                                    class="field-label"
-                                >
-                                    Do catálogo
-                                </label>
-                                <SelectInput
+                            <FormField
+                                v-if="catalogueItems.length > 0"
+                                :for="`mobile-catalogue-${line.key}`"
+                                label="Do catálogo"
+                                ><SelectInput
                                     :id="`mobile-catalogue-${line.key}`"
                                     v-model="line.catalogue_public_id"
-                                    class="mt-2"
                                     placeholder="Escolher do catálogo…"
                                     :options="catalogueOptions"
                                     @change="applyCatalogueItem(line, $event)"
-                                />
-                            </div>
+                            /></FormField>
 
                             <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                                <div class="sm:col-span-1">
-                                    <label
-                                        :for="`mobile-code-${line.key}`"
-                                        class="field-label"
-                                    >
-                                        Código
-                                    </label>
-                                    <input
+                                <FormField
+                                    class="sm:col-span-1"
+                                    :for="`mobile-code-${line.key}`"
+                                    label="Código"
+                                    :error="
+                                        errorFor(`lines.${index}.product_code`)
+                                    "
+                                    :error-id="
+                                        errorId(
+                                            `lines.${index}.product_code`,
+                                            'm-',
+                                        )
+                                    "
+                                    ><input
                                         :id="`mobile-code-${line.key}`"
                                         :aria-invalid="
                                             invalid(
@@ -2426,30 +2331,24 @@ function confirmIssue(): void {
                                             )
                                         "
                                         v-model="line.product_code"
-                                        class="mt-2 block form-input font-mono"
-                                    />
-                                    <FormError
-                                        :id="
-                                            errorId(
-                                                `lines.${index}.product_code`,
-                                                'm-',
-                                            )
-                                        "
-                                        :message="
-                                            errorFor(
-                                                `lines.${index}.product_code`,
-                                            )
-                                        "
-                                    />
-                                </div>
-                                <div class="sm:col-span-2">
-                                    <label
-                                        :for="`mobile-description-${line.key}`"
-                                        class="field-label"
-                                    >
-                                        Descrição
-                                    </label>
-                                    <input
+                                        class="block form-input font-mono"
+                                /></FormField>
+                                <FormField
+                                    class="sm:col-span-2"
+                                    :for="`mobile-description-${line.key}`"
+                                    label="Descrição"
+                                    :error="
+                                        errorFor(
+                                            `lines.${index}.product_description`,
+                                        )
+                                    "
+                                    :error-id="
+                                        errorId(
+                                            `lines.${index}.product_description`,
+                                            'm-',
+                                        )
+                                    "
+                                    ><input
                                         :id="`mobile-description-${line.key}`"
                                         :aria-invalid="
                                             invalid(
@@ -2463,32 +2362,23 @@ function confirmIssue(): void {
                                             )
                                         "
                                         v-model="line.product_description"
-                                        class="mt-2 block form-input"
-                                    />
-                                    <FormError
-                                        :id="
-                                            errorId(
-                                                `lines.${index}.product_description`,
-                                                'm-',
-                                            )
-                                        "
-                                        :message="
-                                            errorFor(
-                                                `lines.${index}.product_description`,
-                                            )
-                                        "
-                                    />
-                                </div>
+                                        class="block form-input"
+                                /></FormField>
                             </div>
 
-                            <div>
-                                <label
-                                    :for="`mobile-operation-${line.key}`"
-                                    class="field-label"
-                                >
-                                    Tipo de operação
-                                </label>
-                                <SelectInput
+                            <FormField
+                                :for="`mobile-operation-${line.key}`"
+                                label="Tipo de operação"
+                                :error="
+                                    errorFor(`lines.${index}.operation_type`)
+                                "
+                                :error-id="
+                                    errorId(
+                                        `lines.${index}.operation_type`,
+                                        'm-',
+                                    )
+                                "
+                                ><SelectInput
                                     :id="`mobile-operation-${line.key}`"
                                     :invalid="
                                         invalid(`lines.${index}.operation_type`)
@@ -2500,32 +2390,23 @@ function confirmIssue(): void {
                                         )
                                     "
                                     v-model="line.operation_type"
-                                    class="mt-2"
                                     :options="operationTypeOptions"
-                                />
-                                <FormError
-                                    :id="
-                                        errorId(
-                                            `lines.${index}.operation_type`,
-                                            'm-',
-                                        )
-                                    "
-                                    :message="
-                                        errorFor(
-                                            `lines.${index}.operation_type`,
-                                        )
-                                    "
-                                />
-                            </div>
+                            /></FormField>
 
-                            <div v-if="requiresLineOperationDate">
-                                <label
-                                    :for="`mobile-operation-date-${line.key}`"
-                                    class="field-label"
-                                >
-                                    Data da operação
-                                </label>
-                                <DateInput
+                            <FormField
+                                v-if="requiresLineOperationDate"
+                                :for="`mobile-operation-date-${line.key}`"
+                                label="Data da operação"
+                                :error="
+                                    errorFor(`lines.${index}.operation_date`)
+                                "
+                                :error-id="
+                                    errorId(
+                                        `lines.${index}.operation_date`,
+                                        'm-',
+                                    )
+                                "
+                                ><DateInput
                                     :id="`mobile-operation-date-${line.key}`"
                                     :invalid="
                                         invalid(`lines.${index}.operation_date`)
@@ -2537,35 +2418,20 @@ function confirmIssue(): void {
                                         )
                                     "
                                     v-model="line.operation_date"
-                                    class="mt-2"
                                     :clearable="false"
                                     :max-date="form.document_date"
                                     :aria-label="`Data da operação da linha ${index + 1}`"
-                                />
-                                <FormError
-                                    :id="
-                                        errorId(
-                                            `lines.${index}.operation_date`,
-                                            'm-',
-                                        )
-                                    "
-                                    :message="
-                                        errorFor(
-                                            `lines.${index}.operation_date`,
-                                        )
-                                    "
-                                />
-                            </div>
+                            /></FormField>
 
                             <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label
-                                        :for="`mobile-quantity-${line.key}`"
-                                        class="field-label"
-                                    >
-                                        Quantidade
-                                    </label>
-                                    <input
+                                <FormField
+                                    :for="`mobile-quantity-${line.key}`"
+                                    label="Quantidade"
+                                    :error="errorFor(`lines.${index}.quantity`)"
+                                    :error-id="
+                                        errorId(`lines.${index}.quantity`, 'm-')
+                                    "
+                                    ><input
                                         :id="`mobile-quantity-${line.key}`"
                                         :aria-invalid="
                                             invalid(`lines.${index}.quantity`)
@@ -2579,28 +2445,23 @@ function confirmIssue(): void {
                                         v-model="line.quantity"
                                         type="text"
                                         inputmode="decimal"
-                                        class="mt-2 block form-input text-right font-mono"
-                                    />
-                                    <FormError
-                                        :id="
-                                            errorId(
-                                                `lines.${index}.quantity`,
-                                                'm-',
-                                            )
-                                        "
-                                        :message="
-                                            errorFor(`lines.${index}.quantity`)
-                                        "
-                                    />
-                                </div>
-                                <div>
-                                    <label
-                                        :for="`mobile-unit-${line.key}`"
-                                        class="field-label"
-                                    >
-                                        Unidade
-                                    </label>
-                                    <input
+                                        class="block form-input text-right font-mono"
+                                /></FormField>
+                                <FormField
+                                    :for="`mobile-unit-${line.key}`"
+                                    label="Unidade"
+                                    :error="
+                                        errorFor(
+                                            `lines.${index}.unit_of_measure`,
+                                        )
+                                    "
+                                    :error-id="
+                                        errorId(
+                                            `lines.${index}.unit_of_measure`,
+                                            'm-',
+                                        )
+                                    "
+                                    ><input
                                         :id="`mobile-unit-${line.key}`"
                                         :aria-invalid="
                                             invalid(
@@ -2614,31 +2475,22 @@ function confirmIssue(): void {
                                             )
                                         "
                                         v-model="line.unit_of_measure"
-                                        class="mt-2 block form-input"
-                                    />
-                                    <FormError
-                                        :id="
-                                            errorId(
-                                                `lines.${index}.unit_of_measure`,
-                                                'm-',
-                                            )
-                                        "
-                                        :message="
-                                            errorFor(
-                                                `lines.${index}.unit_of_measure`,
-                                            )
-                                        "
-                                    />
-                                </div>
-                                <div>
-                                    <label
-                                        :for="`mobile-price-${line.key}`"
-                                        class="field-label"
-                                    >
-                                        Preço unitário
-                                    </label>
-                                    <div
-                                        class="field-adorned mt-2 [--field-adorn-end:2.25rem]"
+                                        class="block form-input"
+                                /></FormField>
+                                <FormField
+                                    :for="`mobile-price-${line.key}`"
+                                    label="Preço unitário"
+                                    :error="
+                                        errorFor(`lines.${index}.unit_price`)
+                                    "
+                                    :error-id="
+                                        errorId(
+                                            `lines.${index}.unit_price`,
+                                            'm-',
+                                        )
+                                    "
+                                    ><div
+                                        class="field-adorned [--field-adorn-end:2.25rem]"
                                     >
                                         <input
                                             :id="`mobile-price-${line.key}`"
@@ -2661,30 +2513,24 @@ function confirmIssue(): void {
                                         <span class="field-adornment-end"
                                             >Kz</span
                                         >
-                                    </div>
-                                    <FormError
-                                        :id="
-                                            errorId(
-                                                `lines.${index}.unit_price`,
-                                                'm-',
-                                            )
-                                        "
-                                        :message="
-                                            errorFor(
-                                                `lines.${index}.unit_price`,
-                                            )
-                                        "
-                                    />
-                                </div>
-                                <div>
-                                    <label
-                                        :for="`mobile-discount-${line.key}`"
-                                        class="field-label"
-                                    >
-                                        Desconto
-                                    </label>
-                                    <div
-                                        class="field-adorned mt-2 [--field-adorn-end:2rem]"
+                                    </div></FormField
+                                >
+                                <FormField
+                                    :for="`mobile-discount-${line.key}`"
+                                    label="Desconto"
+                                    :error="
+                                        errorFor(
+                                            `lines.${index}.discount_percentage`,
+                                        )
+                                    "
+                                    :error-id="
+                                        errorId(
+                                            `lines.${index}.discount_percentage`,
+                                            'm-',
+                                        )
+                                    "
+                                    ><div
+                                        class="field-adorned [--field-adorn-end:2rem]"
                                     >
                                         <input
                                             :id="`mobile-discount-${line.key}`"
@@ -2707,21 +2553,8 @@ function confirmIssue(): void {
                                         <span class="field-adornment-end"
                                             >%</span
                                         >
-                                    </div>
-                                    <FormError
-                                        :id="
-                                            errorId(
-                                                `lines.${index}.discount_percentage`,
-                                                'm-',
-                                            )
-                                        "
-                                        :message="
-                                            errorFor(
-                                                `lines.${index}.discount_percentage`,
-                                            )
-                                        "
-                                    />
-                                </div>
+                                    </div></FormField
+                                >
                             </div>
 
                             <div>
@@ -3369,15 +3202,14 @@ function confirmIssue(): void {
                     <div
                         class="border-t border-zinc-100 px-5 py-4 sm:px-6 dark:border-white/10"
                     >
-                        <button
+                        <AppButton
+                            variant="outline"
                             id="add-line-end"
-                            type="button"
-                            class="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-white px-[1.125rem] text-sm font-semibold text-zinc-900 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
                             @click="addLine"
                         >
                             <Plus class="size-4" aria-hidden="true" />
                             Adicionar linha
-                        </button>
+                        </AppButton>
                     </div>
                     <details
                         v-if="
@@ -3455,19 +3287,19 @@ function confirmIssue(): void {
                                 total do documento.
                             </p>
                         </div>
-                        <button
+                        <AppButton
+                            variant="outline"
                             id="add-withholding"
-                            type="button"
                             :disabled="
                                 form.withholdings.length >=
                                 withholdingTypes.length
                             "
-                            class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-white px-[1.125rem] text-sm font-semibold text-zinc-900 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
                             @click="addWithholding"
+                            class="shrink-0"
                         >
                             <Plus class="size-4" aria-hidden="true" />
                             Adicionar retenção
-                        </button>
+                        </AppButton>
                     </div>
 
                     <p
@@ -3488,14 +3320,14 @@ function confirmIssue(): void {
                             :key="index"
                             class="grid gap-4 px-5 py-4 sm:grid-cols-[minmax(0,1fr)_9rem_minmax(0,10rem)_auto] sm:items-end sm:px-6"
                         >
-                            <div>
-                                <label
-                                    :for="`withholding-type-${index}`"
-                                    class="field-label"
-                                >
-                                    Imposto retido
-                                </label>
-                                <SelectInput
+                            <FormField
+                                :for="`withholding-type-${index}`"
+                                label="Imposto retido"
+                                :error="errorFor(`withholdings.${index}.type`)"
+                                :error-id="
+                                    errorId(`withholdings.${index}.type`)
+                                "
+                                ><SelectInput
                                     :id="`withholding-type-${index}`"
                                     :invalid="
                                         invalid(`withholdings.${index}.type`)
@@ -3507,29 +3339,27 @@ function confirmIssue(): void {
                                         )
                                     "
                                     :model-value="row.type"
-                                    class="mt-2"
                                     :options="withholdingTypeOptions"
                                     @update:model-value="
                                         (value: string) =>
                                             changeWithholdingType(index, value)
                                     "
-                                />
-                                <FormError
-                                    :id="errorId(`withholdings.${index}.type`)"
-                                    :message="
-                                        errorFor(`withholdings.${index}.type`)
-                                    "
-                                />
-                            </div>
+                            /></FormField>
 
-                            <div>
-                                <label
-                                    :for="`withholding-rate-${index}`"
-                                    class="field-label"
-                                >
-                                    Taxa (%)
-                                </label>
-                                <input
+                            <FormField
+                                :for="`withholding-rate-${index}`"
+                                label="Taxa (%)"
+                                :error="
+                                    errorFor(
+                                        `withholdings.${index}.rate_percentage`,
+                                    )
+                                "
+                                :error-id="
+                                    errorId(
+                                        `withholdings.${index}.rate_percentage`,
+                                    )
+                                "
+                                ><input
                                     :id="`withholding-rate-${index}`"
                                     :aria-invalid="
                                         invalid(
@@ -3545,21 +3375,8 @@ function confirmIssue(): void {
                                     v-model="row.rate_percentage"
                                     type="text"
                                     inputmode="decimal"
-                                    class="mt-2 block form-input text-right font-mono numeric"
-                                />
-                                <FormError
-                                    :id="
-                                        errorId(
-                                            `withholdings.${index}.rate_percentage`,
-                                        )
-                                    "
-                                    :message="
-                                        errorFor(
-                                            `withholdings.${index}.rate_percentage`,
-                                        )
-                                    "
-                                />
-                            </div>
+                                    class="block form-input text-right font-mono numeric"
+                            /></FormField>
 
                             <div class="sm:text-right">
                                 <span
@@ -3840,24 +3657,27 @@ function confirmIssue(): void {
                                 Sincronizar séries AGT
                             </Link>
 
-                            <button
-                                type="button"
+                            <AppButton
+                                variant="gold"
+                                size="lg"
                                 :disabled="!canOpenIssue"
-                                class="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-sm focus-ring transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
                                 @click="openIssueDialog"
+                                class="mt-4 w-full"
                             >
                                 <Send class="size-4" aria-hidden="true" />
                                 Emitir e enviar à AGT
-                            </button>
+                            </AppButton>
                         </section>
 
-                        <button
+                        <AppButton
+                            variant="ink"
+                            size="lg"
                             type="submit"
                             :aria-busy="form.processing"
                             :disabled="
                                 form.processing || establishments.length === 0
                             "
-                            class="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
+                            class="w-full"
                         >
                             <LoaderCircle
                                 v-if="form.processing"
@@ -3870,7 +3690,7 @@ function confirmIssue(): void {
                                 aria-hidden="true"
                             />
                             Guardar rascunho
-                        </button>
+                        </AppButton>
 
                         <div
                             class="flex items-center justify-center gap-2 text-center text-xs text-zinc-500 dark:text-zinc-400"
@@ -4060,24 +3880,23 @@ function confirmIssue(): void {
                                         <div
                                             class="mt-5 flex flex-col-reverse gap-2.5 sm:flex-row sm:items-center"
                                         >
-                                            <button
-                                                type="button"
+                                            <AppButton
+                                                variant="outline"
                                                 :disabled="issueForm.processing"
-                                                class="inline-flex h-10 items-center justify-center rounded-full bg-white px-[1.125rem] text-[0.85rem] font-semibold text-zinc-900 shadow-[0_1px_2px_rgb(23_23_22/0.04)] ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 disabled:opacity-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
                                                 @click="closeIssueDialog"
                                             >
                                                 Voltar e rever
-                                            </button>
+                                            </AppButton>
                                             <span
                                                 class="hidden flex-1 sm:block"
                                             />
-                                            <button
+                                            <AppButton
+                                                variant="ink"
                                                 type="submit"
                                                 :aria-busy="
                                                     issueForm.processing
                                                 "
                                                 :disabled="issueForm.processing"
-                                                class="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-[0.85rem] font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                                             >
                                                 <LoaderCircle
                                                     v-if="issueForm.processing"
@@ -4090,7 +3909,7 @@ function confirmIssue(): void {
                                                     aria-hidden="true"
                                                 />
                                                 Confirmar emissão
-                                            </button>
+                                            </AppButton>
                                         </div>
                                     </form>
                                 </DialogPanel>

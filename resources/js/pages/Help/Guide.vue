@@ -19,6 +19,7 @@ import {
 } from '@lucide/vue';
 import type { Component } from 'vue';
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import AppButton from '@/components/AppButton.vue';
 import BrandWordmark from '@/components/BrandWordmark.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { matchesGuideSearch, readGuideProgress } from '@/lib/user-guide';
@@ -465,17 +466,11 @@ function openChapter(id: string | null): void {
                             equipa de apoio.
                         </p>
                         <div class="mt-5 flex flex-wrap gap-2.5">
-                            <button
-                                type="button"
-                                class="rounded-full px-4 py-2.5 text-sm font-semibold ring-1 ring-zinc-900/15 focus-ring transition hover:ring-zinc-900/40 dark:ring-white/20 dark:hover:ring-white/50"
-                                @click="query = ''"
-                            >
+                            <AppButton variant="outline" @click="query = ''">
                                 Limpar a pesquisa
-                            </button>
-                            <Link
-                                :href="helpIndex.url()"
-                                class="rounded-full bg-brand-950 px-4 py-2.5 text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 dark:bg-white dark:text-brand-950 dark:hover:bg-zinc-200"
-                                >Falar com o apoio</Link
+                            </AppButton>
+                            <AppButton variant="ink" :href="helpIndex.url()"
+                                >Falar com o apoio</AppButton
                             >
                         </div>
                     </div>
@@ -983,15 +978,16 @@ function openChapter(id: string | null): void {
                             {{ active.summary }}
                         </p>
                         <div class="mt-6 flex flex-wrap gap-2.5">
-                            <Link
+                            <AppButton
+                                variant="ink"
+                                size="lg"
                                 :href="active.url"
-                                class="inline-flex h-11 items-center gap-2 rounded-full bg-brand-950 px-5 text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 dark:bg-white dark:text-brand-950 dark:hover:bg-zinc-200"
                                 >Abrir na aplicação
                                 <ArrowRight class="size-4" aria-hidden="true"
-                            /></Link>
-                            <button
-                                type="button"
-                                class="inline-flex h-11 items-center gap-2 rounded-full px-5 text-sm font-semibold ring-1 ring-zinc-900/15 focus-ring transition hover:ring-zinc-900/40 dark:ring-white/20 dark:hover:ring-white/50"
+                            /></AppButton>
+                            <AppButton
+                                variant="outline"
+                                size="lg"
                                 :aria-pressed="saved"
                                 @click="toggle('saved', active.id)"
                             >
@@ -1002,7 +998,7 @@ function openChapter(id: string | null): void {
                                 />{{
                                     saved ? 'Guardado' : 'Guardar para depois'
                                 }}
-                            </button>
+                            </AppButton>
                         </div>
                     </header>
 

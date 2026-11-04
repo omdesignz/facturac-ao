@@ -10,9 +10,11 @@ import {
     Users,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import AppButton from '@/components/AppButton.vue';
+import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
-import FormError from '@/components/FormError.vue';
+import FormField from '@/components/FormField.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
 import ToggleSwitch from '@/components/ToggleSwitch.vue';
@@ -269,15 +271,15 @@ function toggleDefault(): void {
                     description="Um preço combinado com um cliente vale sempre mais que a tabela dele; a tabela vale mais que o preço do artigo."
                 >
                     <template #actions>
-                        <button
+                        <AppButton
+                            variant="gold"
                             v-if="canManage"
-                            type="button"
-                            class="inline-flex h-10 w-fit items-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
                             @click="openDialog"
+                            class="w-fit"
                         >
                             <Plus class="size-4" aria-hidden="true" />
                             Nova tabela
-                        </button>
+                        </AppButton>
                     </template>
                 </PageHeader>
 
@@ -287,15 +289,14 @@ function toggleDefault(): void {
                     title="Ainda não há tabelas"
                     description="Crie uma para o preço que pratica com um grupo de clientes — revenda, grossista, contrato. Depois basta pôr cada cliente na sua."
                 >
-                    <button
+                    <AppButton
+                        variant="gold"
                         v-if="canManage"
-                        type="button"
-                        class="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300"
                         @click="openDialog"
                     >
                         <Plus class="size-4" aria-hidden="true" />
                         Criar a primeira tabela
-                    </button>
+                    </AppButton>
                 </EmptyState>
 
                 <div v-else class="grid gap-6 lg:grid-cols-[18rem_1fr]">
@@ -470,13 +471,12 @@ function toggleDefault(): void {
                                             >%</span
                                         >
                                     </span>
-                                    <button
-                                        type="button"
-                                        class="inline-flex h-10 items-center justify-center rounded-full px-[1.125rem] font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
+                                    <AppButton
+                                        variant="outline"
                                         @click="applyBulkDiscount"
                                     >
                                         Aplicar a tudo
-                                    </button>
+                                    </AppButton>
                                 </label>
                             </header>
 
@@ -489,105 +489,78 @@ function toggleDefault(): void {
                             </p>
 
                             <div v-else class="overflow-x-auto">
-                                <table class="min-w-full text-left text-sm">
-                                    <thead
-                                        class="border-b border-zinc-900/[0.07] dark:border-white/10"
-                                    >
-                                        <tr>
-                                            <th
-                                                class="px-5 py-3 eyebrow text-zinc-500"
-                                            >
-                                                Artigo
-                                            </th>
-                                            <th
-                                                class="hidden px-3 py-3 text-right eyebrow text-zinc-500 sm:table-cell"
-                                            >
-                                                Catálogo
-                                            </th>
-                                            <th
-                                                class="px-3 py-3 text-right eyebrow text-zinc-500"
-                                            >
-                                                Nesta tabela
-                                            </th>
-                                            <th
-                                                class="px-5 py-3 text-right eyebrow text-zinc-500"
-                                            >
-                                                Diferença
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody
-                                        class="divide-y divide-zinc-900/[0.06] dark:divide-white/10"
-                                    >
-                                        <tr
-                                            v-for="row in selected.rows"
-                                            :key="row.catalogue_item"
+                                <DataTable
+                                    ><template #head>
+                                        <th>Artigo</th>
+                                        <th
+                                            class="hidden text-right sm:table-cell"
                                         >
-                                            <td class="px-5 py-3">
-                                                <p
-                                                    class="font-medium text-zinc-950 dark:text-white"
-                                                >
-                                                    {{ row.name }}
-                                                </p>
-                                                <p
-                                                    class="numeric text-xs text-zinc-500 dark:text-zinc-400"
-                                                >
-                                                    {{ row.code }} ·
-                                                    {{ row.unit_of_measure }}
-                                                </p>
-                                            </td>
-                                            <td
-                                                class="hidden px-3 py-3 text-right numeric whitespace-nowrap text-zinc-500 sm:table-cell dark:text-zinc-400"
+                                            Catálogo
+                                        </th>
+                                        <th class="text-right">Nesta tabela</th>
+                                        <th class="text-right">Diferença</th>
+                                    </template>
+                                    <tr
+                                        v-for="row in selected.rows"
+                                        :key="row.catalogue_item"
+                                    >
+                                        <td>
+                                            <p
+                                                class="font-medium text-zinc-950 dark:text-white"
                                             >
-                                                {{
-                                                    money(row.list_price_minor)
-                                                }}
-                                            </td>
-                                            <td class="px-3 py-3 text-right">
-                                                <input
-                                                    v-model="
-                                                        draft[
-                                                            row.catalogue_item
-                                                        ]
-                                                    "
-                                                    inputmode="decimal"
-                                                    placeholder="—"
-                                                    :disabled="!canManage"
-                                                    :aria-label="`Preço de ${row.name} nesta tabela`"
-                                                    class="form-input w-28 form-input-sm text-right numeric text-sm"
-                                                />
-                                            </td>
-                                            <td
-                                                class="px-5 py-3 text-right numeric text-xs whitespace-nowrap"
+                                                {{ row.name }}
+                                            </p>
+                                            <p
+                                                class="numeric text-xs text-zinc-500 dark:text-zinc-400"
                                             >
-                                                <span
-                                                    v-if="difference(row)"
-                                                    :class="
-                                                        difference(row)!.tone
-                                                    "
-                                                    >{{
-                                                        difference(row)!.label
-                                                    }}</span
-                                                >
-                                                <span
-                                                    v-else
-                                                    class="text-zinc-300 dark:text-zinc-600"
-                                                    >—</span
-                                                >
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                                                {{ row.code }} ·
+                                                {{ row.unit_of_measure }}
+                                            </p>
+                                        </td>
+                                        <td
+                                            class="hidden text-right numeric whitespace-nowrap text-zinc-500 sm:table-cell dark:text-zinc-400"
+                                        >
+                                            {{ money(row.list_price_minor) }}
+                                        </td>
+                                        <td class="text-right">
+                                            <input
+                                                v-model="
+                                                    draft[row.catalogue_item]
+                                                "
+                                                inputmode="decimal"
+                                                placeholder="—"
+                                                :disabled="!canManage"
+                                                :aria-label="`Preço de ${row.name} nesta tabela`"
+                                                class="form-input w-28 form-input-sm text-right numeric text-sm"
+                                            />
+                                        </td>
+                                        <td
+                                            class="text-right numeric text-xs whitespace-nowrap"
+                                        >
+                                            <span
+                                                v-if="difference(row)"
+                                                :class="difference(row)!.tone"
+                                                >{{
+                                                    difference(row)!.label
+                                                }}</span
+                                            >
+                                            <span
+                                                v-else
+                                                class="text-zinc-300 dark:text-zinc-600"
+                                                >—</span
+                                            >
+                                        </td>
+                                    </tr>
+                                </DataTable>
                             </div>
 
                             <div
                                 v-if="canManage && selected.rows.length > 0"
                                 class="flex items-center justify-end gap-3 border-t border-zinc-900/[0.07] p-4 dark:border-white/10"
                             >
-                                <button
-                                    type="button"
+                                <AppButton
+                                    variant="ink"
                                     :disabled="pricesForm.processing"
-                                    class="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                                     @click="savePrices"
                                 >
                                     <LoaderCircle
@@ -601,7 +574,7 @@ function toggleDefault(): void {
                                         aria-hidden="true"
                                     />
                                     Guardar preços
-                                </button>
+                                </AppButton>
                             </div>
                         </div>
 
@@ -645,38 +618,31 @@ function toggleDefault(): void {
             @close="dialogOpen = false"
         >
             <form class="space-y-5" @submit.prevent="createList">
-                <div>
-                    <label for="price-list-name" class="field-label">
-                        Nome
-                    </label>
-                    <input
+                <FormField
+                    for="price-list-name"
+                    label="Nome"
+                    :error="listForm.errors.name"
+                    ><input
                         id="price-list-name"
                         v-model="listForm.name"
                         type="text"
                         required
                         placeholder="Revenda"
-                        class="mt-2 form-input"
-                    />
-                    <FormError :message="listForm.errors.name" />
-                </div>
+                        class="form-input"
+                /></FormField>
 
-                <div>
-                    <label for="price-list-description" class="field-label">
-                        Descrição
-                        <span
-                            class="font-normal text-zinc-500 dark:text-zinc-400"
-                            >(opcional)</span
-                        >
-                    </label>
-                    <input
+                <FormField
+                    for="price-list-description"
+                    label="Descrição"
+                    optional
+                    :error="listForm.errors.description"
+                    ><input
                         id="price-list-description"
                         v-model="listForm.description"
                         type="text"
                         placeholder="Quem compra em quantidade"
-                        class="mt-2 form-input"
-                    />
-                    <FormError :message="listForm.errors.description" />
-                </div>
+                        class="form-input"
+                /></FormField>
 
                 <ToggleSwitch v-model="listForm.is_default">
                     <template #label
@@ -685,17 +651,13 @@ function toggleDefault(): void {
                 </ToggleSwitch>
 
                 <div class="flex justify-end gap-3 pt-2">
-                    <button
-                        type="button"
-                        class="inline-flex h-10 items-center justify-center rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
-                        @click="dialogOpen = false"
-                    >
+                    <AppButton variant="outline" @click="dialogOpen = false">
                         Cancelar
-                    </button>
-                    <button
+                    </AppButton>
+                    <AppButton
+                        variant="ink"
                         type="submit"
                         :disabled="listForm.processing"
-                        class="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                     >
                         <LoaderCircle
                             v-if="listForm.processing"
@@ -703,7 +665,7 @@ function toggleDefault(): void {
                             aria-hidden="true"
                         />
                         Criar tabela
-                    </button>
+                    </AppButton>
                 </div>
             </form>
         </RecordDialog>

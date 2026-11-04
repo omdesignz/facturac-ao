@@ -2,7 +2,8 @@
 import { Form, Head, Link } from '@inertiajs/vue3';
 import { LoaderCircle } from '@lucide/vue';
 import { onMounted, ref } from 'vue';
-import FormError from '@/components/FormError.vue';
+import AppButton from '@/components/AppButton.vue';
+import FormField from '@/components/FormField.vue';
 import GoogleMark from '@/components/GoogleMark.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import { focusFirstInvalid } from '@/lib/focus';
@@ -42,13 +43,12 @@ onMounted(() => {
             @error="focusFirstInvalid()"
             #default="{ errors, processing }"
         >
-            <div>
-                <label
-                    for="name"
-                    class="block text-sm/6 font-medium text-zinc-900 dark:text-zinc-100"
-                    >O seu nome</label
-                >
-                <input
+            <FormField
+                for="name"
+                label="O seu nome"
+                :error="errors.name"
+                error-id="name-error"
+                ><input
                     id="name"
                     ref="nameInput"
                     name="name"
@@ -57,18 +57,15 @@ onMounted(() => {
                     required
                     :aria-invalid="errors.name ? 'true' : undefined"
                     :aria-describedby="errors.name ? 'name-error' : undefined"
-                    class="mt-2 block form-input"
-                />
-                <FormError id="name-error" :message="errors.name" />
-            </div>
+                    class="block form-input"
+            /></FormField>
 
-            <div>
-                <label
-                    for="workspace-name"
-                    class="block text-sm/6 font-medium text-zinc-900 dark:text-zinc-100"
-                    >Nome do negócio</label
-                >
-                <input
+            <FormField
+                for="workspace-name"
+                label="Nome do negócio"
+                :error="errors.workspace_name"
+                error-id="workspace-name-error"
+                ><input
                     id="workspace-name"
                     name="workspace_name"
                     type="text"
@@ -80,22 +77,16 @@ onMounted(() => {
                             ? 'workspace-name-error'
                             : undefined
                     "
-                    class="mt-2 block form-input"
+                    class="block form-input"
                     placeholder="Ex.: Kwanza Mercantil"
-                />
-                <FormError
-                    id="workspace-name-error"
-                    :message="errors.workspace_name"
-                />
-            </div>
+            /></FormField>
 
-            <div>
-                <label
-                    for="email"
-                    class="block text-sm/6 font-medium text-zinc-900 dark:text-zinc-100"
-                    >Email profissional</label
-                >
-                <input
+            <FormField
+                for="email"
+                label="Email profissional"
+                :error="errors.email"
+                error-id="email-error"
+                ><input
                     id="email"
                     name="email"
                     type="email"
@@ -106,20 +97,17 @@ onMounted(() => {
                     required
                     :aria-invalid="errors.email ? 'true' : undefined"
                     :aria-describedby="errors.email ? 'email-error' : undefined"
-                    class="mt-2 block form-input"
+                    class="block form-input"
                     placeholder="nome@empresa.ao"
-                />
-                <FormError id="email-error" :message="errors.email" />
-            </div>
+            /></FormField>
 
             <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                <div>
-                    <label
-                        for="password"
-                        class="block text-sm/6 font-medium text-zinc-900 dark:text-zinc-100"
-                        >Palavra-passe</label
-                    >
-                    <input
+                <FormField
+                    for="password"
+                    label="Palavra-passe"
+                    :error="errors.password"
+                    error-id="password-error"
+                    ><input
                         id="password"
                         name="password"
                         type="password"
@@ -129,31 +117,25 @@ onMounted(() => {
                         :aria-describedby="
                             errors.password ? 'password-error' : undefined
                         "
-                        class="mt-2 block form-input"
-                    />
-                    <FormError id="password-error" :message="errors.password" />
-                </div>
-                <div>
-                    <label
-                        for="password-confirmation"
-                        class="block text-sm/6 font-medium text-zinc-900 dark:text-zinc-100"
-                        >Confirmar</label
-                    >
-                    <input
+                        class="block form-input"
+                /></FormField>
+                <FormField for="password-confirmation" label="Confirmar"
+                    ><input
                         id="password-confirmation"
                         name="password_confirmation"
                         type="password"
                         autocomplete="new-password"
                         required
-                        class="mt-2 block form-input"
-                    />
-                </div>
+                        class="block form-input"
+                /></FormField>
             </div>
 
-            <button
+            <AppButton
+                variant="gold"
+                size="lg"
                 type="submit"
                 :disabled="processing"
-                class="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-accent-400 px-4 text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-60"
+                class="w-full"
             >
                 <LoaderCircle
                     v-if="processing"
@@ -161,7 +143,7 @@ onMounted(() => {
                     aria-hidden="true"
                 />
                 {{ processing ? 'A criar…' : 'Criar conta segura' }}
-            </button>
+            </AppButton>
         </Form>
 
         <template v-if="googleEnabled">
@@ -181,13 +163,16 @@ onMounted(() => {
                     >
                 </div>
             </div>
-            <a
+            <AppButton
+                variant="outline"
+                size="lg"
+                external
                 :href="googleRedirect.url()"
-                class="flex h-11 w-full items-center justify-center gap-3 rounded-full bg-white px-4 text-sm font-semibold text-zinc-900 ring-1 ring-zinc-900/10 focus-ring transition hover:bg-zinc-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
+                class="w-full"
             >
                 <GoogleMark />
                 Continuar com Google
-            </a>
+            </AppButton>
         </template>
 
         <template #footer>

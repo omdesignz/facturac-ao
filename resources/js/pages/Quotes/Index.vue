@@ -2,6 +2,8 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import { FileText, Plus } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import AppButton from '@/components/AppButton.vue';
+import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
 import PageHeader from '@/components/PageHeader.vue';
@@ -121,13 +123,14 @@ function decodeEntities(label: string): string {
                                 />
                             </div>
 
-                            <Link
+                            <AppButton
+                                variant="gold"
                                 :href="createQuote.url()"
-                                class="inline-flex h-10 w-fit items-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
+                                class="w-fit"
                             >
                                 <Plus class="size-4" aria-hidden="true" />
                                 Novo orçamento
-                            </Link>
+                            </AppButton>
                         </div>
                     </template>
                 </PageHeader>
@@ -144,90 +147,66 @@ function decodeEntities(label: string): string {
                     class="overflow-hidden rounded-3xl bg-zinc-900/[0.04] dark:bg-white/[0.04]"
                 >
                     <div class="overflow-x-auto">
-                        <table class="min-w-full text-left text-sm">
-                            <thead
-                                class="border-b border-zinc-900/[0.07] dark:border-white/10"
+                        <DataTable
+                            ><template #head>
+                                <th>Referência</th>
+                                <th>Cliente</th>
+                                <th>Validade</th>
+                                <th>Estado</th>
+                                <th class="text-right">Total</th>
+                            </template>
+                            <tr
+                                v-for="quote in quotes.data"
+                                :key="quote.public_id"
                             >
-                                <tr>
-                                    <th class="px-5 py-3 eyebrow text-zinc-500">
-                                        Referência
-                                    </th>
-                                    <th class="px-5 py-3 eyebrow text-zinc-500">
-                                        Cliente
-                                    </th>
-                                    <th class="px-5 py-3 eyebrow text-zinc-500">
-                                        Validade
-                                    </th>
-                                    <th class="px-5 py-3 eyebrow text-zinc-500">
-                                        Estado
-                                    </th>
-                                    <th
-                                        class="px-5 py-3 text-right eyebrow text-zinc-500"
+                                <td>
+                                    <Link
+                                        data-nav-row
+                                        :href="editQuote.url(quote.public_id)"
+                                        class="rounded numeric font-medium text-zinc-950 underline-offset-4 focus-ring hover:underline dark:text-white"
                                     >
-                                        Total
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody
-                                class="divide-y divide-zinc-900/[0.06] dark:divide-white/10"
-                            >
-                                <tr
-                                    v-for="quote in quotes.data"
-                                    :key="quote.public_id"
+                                        {{ quote.reference }}
+                                    </Link>
+                                    <p
+                                        v-if="quote.converted_document"
+                                        class="text-xs text-emerald-700 dark:text-emerald-400"
+                                    >
+                                        →
+                                        {{
+                                            quote.converted_document
+                                                .document_no ?? 'rascunho'
+                                        }}
+                                    </p>
+                                </td>
+                                <td class="text-zinc-700 dark:text-zinc-300">
+                                    {{ quote.customer_name }}
+                                </td>
+                                <td
+                                    class="whitespace-nowrap"
+                                    :class="
+                                        quote.has_lapsed
+                                            ? 'text-amber-700 dark:text-amber-400'
+                                            : 'text-zinc-600 dark:text-zinc-400'
+                                    "
                                 >
-                                    <td class="px-5 py-3">
-                                        <Link
-                                            data-nav-row
-                                            :href="
-                                                editQuote.url(quote.public_id)
-                                            "
-                                            class="rounded numeric font-medium text-zinc-950 underline-offset-4 focus-ring hover:underline dark:text-white"
-                                        >
-                                            {{ quote.reference }}
-                                        </Link>
-                                        <p
-                                            v-if="quote.converted_document"
-                                            class="text-xs text-emerald-700 dark:text-emerald-400"
-                                        >
-                                            →
-                                            {{
-                                                quote.converted_document
-                                                    .document_no ?? 'rascunho'
-                                            }}
-                                        </p>
-                                    </td>
-                                    <td
-                                        class="px-5 py-3 text-zinc-700 dark:text-zinc-300"
-                                    >
-                                        {{ quote.customer_name }}
-                                    </td>
-                                    <td
-                                        class="px-5 py-3 whitespace-nowrap"
-                                        :class="
-                                            quote.has_lapsed
-                                                ? 'text-amber-700 dark:text-amber-400'
-                                                : 'text-zinc-600 dark:text-zinc-400'
+                                    {{ formatDate(quote.valid_until) }}
+                                </td>
+                                <td>
+                                    <StatusBadge
+                                        :tone="
+                                            statusTone[quote.status] ??
+                                            'neutral'
                                         "
-                                    >
-                                        {{ formatDate(quote.valid_until) }}
-                                    </td>
-                                    <td class="px-5 py-3">
-                                        <StatusBadge
-                                            :tone="
-                                                statusTone[quote.status] ??
-                                                'neutral'
-                                            "
-                                            :label="quote.status_label"
-                                        />
-                                    </td>
-                                    <td
-                                        class="px-5 py-3 text-right numeric font-medium whitespace-nowrap text-zinc-950 dark:text-white"
-                                    >
-                                        {{ money(quote.gross_total_minor) }}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                                        :label="quote.status_label"
+                                    />
+                                </td>
+                                <td
+                                    class="text-right numeric font-medium whitespace-nowrap text-zinc-950 dark:text-white"
+                                >
+                                    {{ money(quote.gross_total_minor) }}
+                                </td>
+                            </tr>
+                        </DataTable>
                     </div>
 
                     <nav

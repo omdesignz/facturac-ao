@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
 import { LoaderCircle } from '@lucide/vue';
-import FormError from '@/components/FormError.vue';
+import AppButton from '@/components/AppButton.vue';
+import FormField from '@/components/FormField.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import { focusFirstInvalid } from '@/lib/focus';
 import { update as passwordUpdate } from '@/routes/password';
@@ -29,13 +30,12 @@ defineProps<{
         >
             <input type="hidden" name="token" :value="token" />
 
-            <div>
-                <label
-                    for="email"
-                    class="block text-sm/6 font-medium text-zinc-900 dark:text-zinc-100"
-                    >Email</label
-                >
-                <input
+            <FormField
+                for="email"
+                label="Email"
+                :error="errors.email"
+                error-id="email-error"
+                ><input
                     id="email"
                     name="email"
                     type="email"
@@ -45,18 +45,15 @@ defineProps<{
                     :aria-invalid="errors.email ? 'true' : undefined"
                     :aria-describedby="errors.email ? 'email-error' : undefined"
                     :value="email"
-                    class="mt-2 block form-input"
-                />
-                <FormError id="email-error" :message="errors.email" />
-            </div>
+                    class="block form-input"
+            /></FormField>
 
-            <div>
-                <label
-                    for="password"
-                    class="block text-sm/6 font-medium text-zinc-900 dark:text-zinc-100"
-                    >Nova palavra-passe</label
-                >
-                <input
+            <FormField
+                for="password"
+                label="Nova palavra-passe"
+                :error="errors.password"
+                error-id="password-error"
+                ><input
                     id="password"
                     name="password"
                     type="password"
@@ -67,31 +64,27 @@ defineProps<{
                     :aria-describedby="
                         errors.password ? 'password-error' : undefined
                     "
-                    class="mt-2 block form-input"
-                />
-                <FormError id="password-error" :message="errors.password" />
-            </div>
+                    class="block form-input"
+            /></FormField>
 
-            <div>
-                <label
-                    for="password-confirmation"
-                    class="block text-sm/6 font-medium text-zinc-900 dark:text-zinc-100"
-                    >Confirmar palavra-passe</label
-                >
-                <input
+            <FormField
+                for="password-confirmation"
+                label="Confirmar palavra-passe"
+                ><input
                     id="password-confirmation"
                     name="password_confirmation"
                     type="password"
                     autocomplete="new-password"
                     required
-                    class="mt-2 block form-input"
-                />
-            </div>
+                    class="block form-input"
+            /></FormField>
 
-            <button
+            <AppButton
+                variant="ink"
+                size="lg"
                 type="submit"
                 :disabled="processing"
-                class="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-brand-950 px-4 text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
+                class="w-full"
             >
                 <LoaderCircle
                     v-if="processing"
@@ -99,7 +92,7 @@ defineProps<{
                     aria-hidden="true"
                 />
                 {{ processing ? 'A guardar…' : 'Guardar nova palavra-passe' }}
-            </button>
+            </AppButton>
         </Form>
     </AuthLayout>
 </template>

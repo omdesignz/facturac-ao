@@ -2,7 +2,8 @@
 import { Form, Head } from '@inertiajs/vue3';
 import { KeyRound, LoaderCircle, Smartphone } from '@lucide/vue';
 import { ref, watch } from 'vue';
-import FormError from '@/components/FormError.vue';
+import AppButton from '@/components/AppButton.vue';
+import FormField from '@/components/FormField.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import { focusFirstInvalid } from '@/lib/focus';
 import { store as twoFactorLoginStore } from '@/routes/two-factor/login';
@@ -63,13 +64,13 @@ watch(
             @error="focusFirstInvalid()"
             #default="{ errors, processing }"
         >
-            <div v-if="useRecoveryCode">
-                <label
-                    for="recovery-code"
-                    class="block text-sm/6 font-medium text-zinc-900 dark:text-zinc-100"
-                    >Código de recuperação</label
-                >
-                <input
+            <FormField
+                v-if="useRecoveryCode"
+                for="recovery-code"
+                label="Código de recuperação"
+                :error="errors.recovery_code"
+                error-id="recovery-code-error"
+                ><input
                     id="recovery-code"
                     ref="recoveryInput"
                     name="recovery_code"
@@ -83,20 +84,15 @@ watch(
                     :aria-describedby="
                         errors.recovery_code ? 'recovery-code-error' : undefined
                     "
-                    class="mt-2 block form-input font-mono tracking-wider uppercase"
-                />
-                <FormError
-                    id="recovery-code-error"
-                    :message="errors.recovery_code"
-                />
-            </div>
-            <div v-else>
-                <label
-                    for="code"
-                    class="block text-sm/6 font-medium text-zinc-900 dark:text-zinc-100"
-                    >Código da aplicação</label
-                >
-                <input
+                    class="block form-input font-mono tracking-wider uppercase"
+            /></FormField>
+            <FormField
+                v-else
+                for="code"
+                label="Código da aplicação"
+                :error="errors.code"
+                error-id="code-error"
+                ><input
                     id="code"
                     ref="codeInput"
                     name="code"
@@ -111,15 +107,15 @@ watch(
                     autofocus
                     :aria-invalid="errors.code ? 'true' : undefined"
                     :aria-describedby="errors.code ? 'code-error' : undefined"
-                    class="mt-2 block form-input py-3 ps-[calc(0.75rem+0.45em)] pe-3 text-center font-mono text-2xl tracking-[0.45em]"
-                />
-                <FormError id="code-error" :message="errors.code" />
-            </div>
+                    class="block form-input py-3 ps-[calc(0.75rem+0.45em)] pe-3 text-center font-mono text-2xl tracking-[0.45em]"
+            /></FormField>
 
-            <button
+            <AppButton
+                variant="ink"
+                size="lg"
                 type="submit"
                 :disabled="processing"
-                class="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-brand-950 px-4 text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
+                class="w-full"
             >
                 <LoaderCircle
                     v-if="processing"
@@ -127,7 +123,7 @@ watch(
                     aria-hidden="true"
                 />
                 {{ processing ? 'A validar…' : 'Validar acesso' }}
-            </button>
+            </AppButton>
         </Form>
 
         <template #footer>

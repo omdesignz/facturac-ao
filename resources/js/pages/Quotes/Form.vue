@@ -10,9 +10,11 @@ import {
     UserRound,
 } from '@lucide/vue';
 import { computed } from 'vue';
+import AppButton from '@/components/AppButton.vue';
 import DateInput from '@/components/DateInput.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
 import FormError from '@/components/FormError.vue';
+import FormField from '@/components/FormField.vue';
 import SectionHeading from '@/components/SectionHeading.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
@@ -443,14 +445,13 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                             :label="quote.status_label"
                         />
 
-                        <button
+                        <AppButton
+                            variant="outline"
                             v-if="quote && quote.status === 'draft'"
-                            type="button"
-                            class="inline-flex h-10 items-center justify-center rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
                             @click="mark('sent')"
                         >
                             Marcar como enviado
-                        </button>
+                        </AppButton>
                         <button
                             v-if="quote && quote.status === 'sent'"
                             type="button"
@@ -468,15 +469,14 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                             Recusado
                         </button>
 
-                        <button
+                        <AppButton
+                            variant="ink"
                             v-if="quote?.can_convert"
-                            type="button"
-                            class="inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                             @click="convert"
                         >
                             <Receipt class="size-4" aria-hidden="true" />
                             Passar a factura
-                        </button>
+                        </AppButton>
                     </div>
                 </header>
 
@@ -500,106 +500,74 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                             </SectionHeading>
 
                             <div class="mt-6 grid gap-5 sm:grid-cols-2">
-                                <div>
-                                    <label class="field-label">Cliente</label>
-                                    <div class="mt-2">
+                                <FormField label="Cliente"
+                                    ><div>
                                         <SelectInput
                                             v-model="form.customer_public_id"
                                             :options="customerOptions"
                                             @update:model-value="selectCustomer"
-                                        />
-                                    </div>
-                                </div>
+                                        /></div
+                                ></FormField>
 
-                                <div>
-                                    <label class="field-label"
-                                        >Estabelecimento</label
-                                    >
-                                    <div class="mt-2">
+                                <FormField
+                                    label="Estabelecimento"
+                                    :error="form.errors.establishment_public_id"
+                                    ><div>
                                         <SelectInput
                                             v-model="
                                                 form.establishment_public_id
                                             "
                                             :options="establishments"
-                                        />
-                                    </div>
-                                    <FormError
-                                        :message="
-                                            form.errors.establishment_public_id
-                                        "
-                                    />
-                                </div>
+                                        /></div
+                                ></FormField>
 
-                                <div>
-                                    <label
-                                        for="quote-customer-name"
-                                        class="field-label"
-                                        >Nome no orçamento</label
-                                    >
-                                    <input
+                                <FormField
+                                    for="quote-customer-name"
+                                    label="Nome no orçamento"
+                                    :error="form.errors['customer.name']"
+                                    ><input
                                         id="quote-customer-name"
                                         v-model="form.customer.name"
                                         type="text"
-                                        class="mt-2 form-input"
-                                    />
-                                    <FormError
-                                        :message="form.errors['customer.name']"
-                                    />
-                                </div>
+                                        class="form-input"
+                                /></FormField>
 
-                                <div>
-                                    <label
-                                        for="quote-customer-nif"
-                                        class="field-label"
-                                        >NIF
-                                        <span
-                                            class="font-normal text-zinc-500 dark:text-zinc-400"
-                                            >(opcional)</span
-                                        ></label
-                                    >
-                                    <input
+                                <FormField
+                                    for="quote-customer-nif"
+                                    label="NIF"
+                                    optional
+                                    ><input
                                         id="quote-customer-nif"
                                         v-model="
                                             form.customer
                                                 .tax_identification_number
                                         "
                                         type="text"
-                                        class="mt-2 form-input numeric"
-                                    />
-                                </div>
+                                        class="form-input numeric"
+                                /></FormField>
 
-                                <div>
-                                    <label for="quote-issue" class="field-label"
-                                        >Data</label
-                                    >
-                                    <DateInput
+                                <FormField
+                                    for="quote-issue"
+                                    label="Data"
+                                    :error="form.errors.issue_date"
+                                    ><DateInput
                                         id="quote-issue"
                                         v-model="form.issue_date"
-                                        class="mt-2"
                                         :clearable="false"
                                         aria-label="Data do orçamento"
-                                    />
-                                    <FormError
-                                        :message="form.errors.issue_date"
-                                    />
-                                </div>
+                                /></FormField>
 
-                                <div>
-                                    <label for="quote-valid" class="field-label"
-                                        >Válido até</label
-                                    >
-                                    <DateInput
+                                <FormField
+                                    for="quote-valid"
+                                    label="Válido até"
+                                    :error="form.errors.valid_until"
+                                    ><DateInput
                                         id="quote-valid"
                                         v-model="form.valid_until"
-                                        class="mt-2"
                                         :clearable="false"
                                         :min-date="form.issue_date"
                                         aria-label="Válido até"
-                                    />
-                                    <FormError
-                                        :message="form.errors.valid_until"
-                                    />
-                                </div>
+                                /></FormField>
                             </div>
                         </section>
 
@@ -614,14 +582,14 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                         linha.</template
                                     >
                                 </SectionHeading>
-                                <button
-                                    type="button"
-                                    class="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-700 ring-1 ring-zinc-300 focus-ring transition hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5 pointer-coarse:min-h-11"
+                                <AppButton
+                                    variant="outline"
+                                    size="sm"
                                     @click="addLine"
                                 >
                                     <Plus class="size-4" aria-hidden="true" />
                                     Linha
-                                </button>
+                                </AppButton>
                             </header>
 
                             <ul
@@ -898,10 +866,10 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                     </fieldset>
 
                     <div v-if="!readOnly" class="flex justify-end">
-                        <button
+                        <AppButton
+                            variant="ink"
                             type="submit"
                             :disabled="form.processing"
-                            class="inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                         >
                             <LoaderCircle
                                 v-if="form.processing"
@@ -911,7 +879,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                             {{
                                 quote ? 'Guardar alterações' : 'Criar orçamento'
                             }}
-                        </button>
+                        </AppButton>
                     </div>
                 </form>
             </div>

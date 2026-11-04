@@ -2,6 +2,8 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import { Filter, Plus, Search, Truck } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import AppButton from '@/components/AppButton.vue';
+import DataTable from '@/components/DataTable.vue';
 import DateInput from '@/components/DateInput.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
@@ -198,14 +200,15 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                     description="Prepare guias de remessa, transporte, activos próprios e devoluções. Depois de emitidas, ficam imutáveis e seguem no SAF-T (AO)."
                 >
                     <template #actions>
-                        <Link
+                        <AppButton
+                            variant="gold"
                             v-if="permissions.create"
                             :href="createTransportDocument.url()"
-                            class="inline-flex h-10 w-fit items-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
+                            class="w-fit"
                         >
                             <Plus class="size-4" aria-hidden="true" />
                             Nova guia
-                        </Link>
+                        </AppButton>
                     </template>
                     <template #stats>
                         <PageStat
@@ -311,125 +314,101 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                     class="overflow-hidden rounded-3xl bg-zinc-900/[0.04] dark:bg-white/[0.04]"
                 >
                     <div class="overflow-x-auto">
-                        <table class="min-w-full text-left text-sm">
-                            <thead
-                                class="border-b border-zinc-900/[0.07] dark:border-white/10"
+                        <DataTable
+                            ><template #head>
+                                <th>Documento</th>
+                                <th>Contraparte</th>
+                                <th>Percurso</th>
+                                <th>Data</th>
+                                <th>Estado</th>
+                                <th class="text-right">Valor</th>
+                            </template>
+                            <tr
+                                v-for="document in documents.data"
+                                :key="document.public_id"
+                                class="align-top"
                             >
-                                <tr>
-                                    <th class="px-5 py-3 eyebrow text-zinc-500">
-                                        Documento
-                                    </th>
-                                    <th class="px-5 py-3 eyebrow text-zinc-500">
-                                        Contraparte
-                                    </th>
-                                    <th class="px-5 py-3 eyebrow text-zinc-500">
-                                        Percurso
-                                    </th>
-                                    <th class="px-5 py-3 eyebrow text-zinc-500">
-                                        Data
-                                    </th>
-                                    <th class="px-5 py-3 eyebrow text-zinc-500">
-                                        Estado
-                                    </th>
-                                    <th
-                                        class="px-5 py-3 text-right eyebrow text-zinc-500"
+                                <td>
+                                    <Link
+                                        data-nav-row
+                                        :href="
+                                            editTransportDocument.url(
+                                                document.public_id,
+                                            )
+                                        "
+                                        class="rounded font-semibold text-zinc-950 underline-offset-4 focus-ring hover:underline dark:text-white"
                                     >
-                                        Valor
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody
-                                class="divide-y divide-zinc-900/[0.06] dark:divide-white/10"
-                            >
-                                <tr
-                                    v-for="document in documents.data"
-                                    :key="document.public_id"
-                                    class="align-top"
+                                        {{
+                                            document.document_no ??
+                                            `Rascunho · ${document.document_type}`
+                                        }}
+                                    </Link>
+                                    <p class="mt-1 text-xs text-zinc-500">
+                                        {{ document.document_type_label }} ·
+                                        {{ document.establishment.code }}
+                                    </p>
+                                </td>
+                                <td>
+                                    <p
+                                        class="font-medium text-zinc-800 dark:text-zinc-200"
+                                    >
+                                        {{ document.recipient_name }}
+                                    </p>
+                                    <p
+                                        class="mt-1 numeric text-xs text-zinc-500"
+                                    >
+                                        NIF
+                                        {{
+                                            document.recipient_tax_identification_number
+                                        }}
+                                    </p>
+                                </td>
+                                <td class="text-zinc-600 dark:text-zinc-400">
+                                    <p>
+                                        {{
+                                            document.destination ||
+                                            'Destino registado'
+                                        }}
+                                    </p>
+                                    <p
+                                        v-if="document.vehicle_registration"
+                                        class="mt-1 numeric text-xs"
+                                    >
+                                        Matrícula
+                                        {{ document.vehicle_registration }}
+                                    </p>
+                                </td>
+                                <td
+                                    class="whitespace-nowrap text-zinc-600 dark:text-zinc-400"
                                 >
-                                    <td class="px-5 py-4">
-                                        <Link
-                                            data-nav-row
-                                            :href="
-                                                editTransportDocument.url(
-                                                    document.public_id,
-                                                )
-                                            "
-                                            class="rounded font-semibold text-zinc-950 underline-offset-4 focus-ring hover:underline dark:text-white"
-                                        >
-                                            {{
-                                                document.document_no ??
-                                                `Rascunho · ${document.document_type}`
-                                            }}
-                                        </Link>
-                                        <p class="mt-1 text-xs text-zinc-500">
-                                            {{ document.document_type_label }} ·
-                                            {{ document.establishment.code }}
-                                        </p>
-                                    </td>
-                                    <td class="px-5 py-4">
-                                        <p
-                                            class="font-medium text-zinc-800 dark:text-zinc-200"
-                                        >
-                                            {{ document.recipient_name }}
-                                        </p>
-                                        <p
-                                            class="mt-1 numeric text-xs text-zinc-500"
-                                        >
-                                            NIF
-                                            {{
-                                                document.recipient_tax_identification_number
-                                            }}
-                                        </p>
-                                    </td>
-                                    <td
-                                        class="px-5 py-4 text-zinc-600 dark:text-zinc-400"
+                                    {{ formatDate(document.movement_date) }}
+                                </td>
+                                <td>
+                                    <StatusBadge
+                                        :label="document.status_label"
+                                        :tone="
+                                            statusTone[document.status] ??
+                                            'neutral'
+                                        "
+                                    />
+                                    <a
+                                        v-if="document.can_print"
+                                        :href="
+                                            printTransportDocument.url(
+                                                document.public_id,
+                                            )
+                                        "
+                                        class="mt-2 block w-fit text-xs font-semibold text-brand-700 hover:underline dark:text-brand-300"
+                                        >Abrir impressão</a
                                     >
-                                        <p>
-                                            {{
-                                                document.destination ||
-                                                'Destino registado'
-                                            }}
-                                        </p>
-                                        <p
-                                            v-if="document.vehicle_registration"
-                                            class="mt-1 numeric text-xs"
-                                        >
-                                            Matrícula
-                                            {{ document.vehicle_registration }}
-                                        </p>
-                                    </td>
-                                    <td
-                                        class="px-5 py-4 whitespace-nowrap text-zinc-600 dark:text-zinc-400"
-                                    >
-                                        {{ formatDate(document.movement_date) }}
-                                    </td>
-                                    <td class="px-5 py-4">
-                                        <StatusBadge
-                                            :label="document.status_label"
-                                            :tone="
-                                                statusTone[document.status] ??
-                                                'neutral'
-                                            "
-                                        />
-                                        <a
-                                            v-if="document.can_print"
-                                            :href="
-                                                printTransportDocument.url(
-                                                    document.public_id,
-                                                )
-                                            "
-                                            class="mt-2 block w-fit text-xs font-semibold text-brand-700 hover:underline dark:text-brand-300"
-                                            >Abrir impressão</a
-                                        >
-                                    </td>
-                                    <td
-                                        class="px-5 py-4 text-right numeric font-medium whitespace-nowrap text-zinc-950 dark:text-white"
-                                    >
-                                        {{ money(document) }}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                                </td>
+                                <td
+                                    class="text-right numeric font-medium whitespace-nowrap text-zinc-950 dark:text-white"
+                                >
+                                    {{ money(document) }}
+                                </td>
+                            </tr>
+                        </DataTable>
                     </div>
 
                     <nav

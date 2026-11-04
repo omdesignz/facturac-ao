@@ -14,7 +14,8 @@ import {
     ShieldCheck,
 } from '@lucide/vue';
 import { computed } from 'vue';
-import FormError from '@/components/FormError.vue';
+import AppButton from '@/components/AppButton.vue';
+import FormField from '@/components/FormField.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -273,113 +274,87 @@ const whatsappHref = computed(
 
                     <form class="space-y-5 p-5" @submit.prevent="submit">
                         <div class="grid gap-5 sm:grid-cols-2">
-                            <div class="sm:col-span-2">
-                                <label class="field-label">
-                                    Assunto da reclamação
-                                </label>
-                                <div class="mt-2">
+                            <FormField
+                                class="sm:col-span-2"
+                                label="Assunto da reclamação"
+                                :error="form.errors.category"
+                                ><div>
                                     <SelectInput
                                         v-model="form.category"
                                         :options="categoryOptions"
-                                    />
-                                </div>
-                                <FormError :message="form.errors.category" />
-                            </div>
+                                    /></div
+                            ></FormField>
 
-                            <div class="sm:col-span-2">
-                                <label
-                                    for="complaint-subject"
-                                    class="field-label"
-                                >
-                                    Resumo
-                                </label>
-                                <input
+                            <FormField
+                                class="sm:col-span-2"
+                                for="complaint-subject"
+                                label="Resumo"
+                                :error="form.errors.subject"
+                                ><input
                                     id="complaint-subject"
                                     v-model="form.subject"
                                     type="text"
                                     maxlength="150"
                                     placeholder="Ex.: a factura FT 2026/14 não foi comunicada"
-                                    class="mt-2 form-input"
-                                />
-                                <FormError :message="form.errors.subject" />
-                            </div>
+                                    class="form-input"
+                            /></FormField>
 
-                            <div class="sm:col-span-2">
-                                <label for="complaint-body" class="field-label">
-                                    O que aconteceu
-                                </label>
+                            <FormField
+                                class="sm:col-span-2"
+                                for="complaint-body"
+                                label="O que aconteceu"
+                                :error="form.errors.body"
+                            >
                                 <textarea
                                     id="complaint-body"
                                     v-model="form.body"
                                     rows="5"
                                     maxlength="4000"
                                     placeholder="Descreva o que correu mal, quando, e o que já tentou."
-                                    class="mt-2 form-input [--form-rows:5]"
+                                    class="form-input [--form-rows:5]"
                                 />
-                                <FormError :message="form.errors.body" />
-                            </div>
+                            </FormField>
 
-                            <div>
-                                <label for="complaint-name" class="field-label">
-                                    O seu nome
-                                </label>
-                                <input
+                            <FormField
+                                for="complaint-name"
+                                label="O seu nome"
+                                :error="form.errors.contact_name"
+                                ><input
                                     id="complaint-name"
                                     v-model="form.contact_name"
                                     type="text"
-                                    class="mt-2 form-input"
-                                />
-                                <FormError
-                                    :message="form.errors.contact_name"
-                                />
-                            </div>
+                                    class="form-input"
+                            /></FormField>
 
-                            <div>
-                                <label
-                                    for="complaint-email"
-                                    class="field-label"
-                                >
-                                    Email para resposta
-                                </label>
-                                <input
+                            <FormField
+                                for="complaint-email"
+                                label="Email para resposta"
+                                :error="form.errors.contact_email"
+                                ><input
                                     id="complaint-email"
                                     v-model="form.contact_email"
                                     type="email"
-                                    class="mt-2 form-input"
-                                />
-                                <FormError
-                                    :message="form.errors.contact_email"
-                                />
-                            </div>
+                                    class="form-input"
+                            /></FormField>
 
-                            <div>
-                                <label
-                                    for="complaint-phone"
-                                    class="field-label"
-                                >
-                                    Telefone
-                                    <span
-                                        class="font-normal text-zinc-500 dark:text-zinc-400"
-                                        >(opcional)</span
-                                    >
-                                </label>
-                                <input
+                            <FormField
+                                for="complaint-phone"
+                                label="Telefone"
+                                optional
+                                :error="form.errors.contact_phone"
+                                ><input
                                     id="complaint-phone"
                                     v-model="form.contact_phone"
                                     type="tel"
-                                    class="mt-2 form-input"
-                                />
-                                <FormError
-                                    :message="form.errors.contact_phone"
-                                />
-                            </div>
+                                    class="form-input"
+                            /></FormField>
                         </div>
 
                         <div class="flex justify-end">
-                            <button
+                            <AppButton
+                                variant="gold"
                                 type="submit"
                                 :disabled="form.processing"
-                                class="inline-flex h-10 items-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 <LoaderCircle
                                     v-if="form.processing"
@@ -387,7 +362,7 @@ const whatsappHref = computed(
                                     aria-hidden="true"
                                 />
                                 Registar reclamação
-                            </button>
+                            </AppButton>
                         </div>
                     </form>
                 </section>

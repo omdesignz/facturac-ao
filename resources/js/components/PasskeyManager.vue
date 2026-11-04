@@ -3,6 +3,8 @@ import { router } from '@inertiajs/vue3';
 import { usePasskeyRegister } from '@laravel/passkeys/vue';
 import { Fingerprint, LoaderCircle, Plus, Trash2 } from '@lucide/vue';
 import { computed, onMounted, ref } from 'vue';
+import AppButton from '@/components/AppButton.vue';
+import FormField from '@/components/FormField.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import { confirmAction } from '@/lib/confirm';
 import { destroy as destroyPasskey } from '@/routes/passkey';
@@ -216,11 +218,11 @@ async function remove(passkey: Passkey): Promise<void> {
                 </li>
             </ul>
 
-            <div class="p-6">
-                <label for="passkey-name" class="field-label">
-                    Nome do dispositivo
-                </label>
-                <div class="mt-2 flex flex-col gap-3 sm:flex-row">
+            <FormField
+                class="p-6"
+                for="passkey-name"
+                label="Nome do dispositivo"
+                ><div class="flex flex-col gap-3 sm:flex-row">
                     <input
                         id="passkey-name"
                         v-model="name"
@@ -235,9 +237,8 @@ async function remove(passkey: Passkey): Promise<void> {
                         class="block form-input sm:max-w-xs"
                         @keydown.enter.prevent="submit"
                     />
-                    <button
-                        type="button"
-                        class="inline-flex h-10 items-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
+                    <AppButton
+                        variant="gold"
                         :disabled="isLoading"
                         @click="submit"
                     >
@@ -248,7 +249,7 @@ async function remove(passkey: Passkey): Promise<void> {
                         />
                         <Plus v-else class="size-4" aria-hidden="true" />
                         Adicionar passkey
-                    </button>
+                    </AppButton>
                 </div>
                 <p
                     id="passkey-name-hint"
@@ -263,8 +264,8 @@ async function remove(passkey: Passkey): Promise<void> {
                     role="alert"
                 >
                     {{ shownError }}
-                </p>
-            </div>
+                </p></FormField
+            >
         </template>
     </section>
 </template>

@@ -2,6 +2,7 @@
 import { Form, Head, Link, usePage } from '@inertiajs/vue3';
 import { CheckCircle2, LoaderCircle, Mail } from '@lucide/vue';
 import { computed } from 'vue';
+import AppButton from '@/components/AppButton.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import { logout } from '@/routes';
 import { send as verificationSend } from '@/routes/verification';
@@ -51,10 +52,12 @@ const linkWasSent = computed(
             class="mt-6"
             #default="{ processing }"
         >
-            <button
+            <AppButton
+                variant="ink"
+                size="lg"
                 type="submit"
                 :disabled="processing"
-                class="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-brand-950 px-4 text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
+                class="w-full"
             >
                 <LoaderCircle
                     v-if="processing"
@@ -62,7 +65,7 @@ const linkWasSent = computed(
                     aria-hidden="true"
                 />
                 {{ processing ? 'A reenviar…' : 'Reenviar email' }}
-            </button>
+            </AppButton>
         </Form>
 
         <template #footer>

@@ -1775,6 +1775,32 @@ tbody tr {
 }
 
 /*
+ * The shared table's cells. Unlayered so one padding lines every column up with
+ * its heading; the dense rule below still tightens rows on a desktop.
+ */
+.data-table :is(th, td) {
+    padding-inline: 1rem;
+}
+
+.data-table thead th {
+    padding-block: 0.75rem;
+    font-size: 0.75rem;
+    line-height: 1.2;
+    font-weight: 500;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--color-zinc-500);
+}
+
+.dark .data-table thead th {
+    color: var(--color-zinc-400);
+}
+
+:where(.data-table) tbody td {
+    padding-block: 0.75rem;
+}
+
+/*
  * Lists are scanned, so on a desktop their rows stay tight and only ask for a
  * row's actions once the pointer or the keyboard is on it. A row holding fields
  * keeps its room, and a touch screen keeps its targets.

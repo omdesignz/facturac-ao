@@ -12,8 +12,9 @@ import {
     Trash2,
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import AppButton from '@/components/AppButton.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
-import FormError from '@/components/FormError.vue';
+import FormField from '@/components/FormField.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
@@ -195,15 +196,14 @@ const withoutSeries = computed(() =>
                         </p>
                     </div>
 
-                    <button
+                    <AppButton
+                        variant="gold"
                         v-if="canManage"
-                        type="button"
-                        class="inline-flex h-10 items-center gap-2 rounded-full bg-accent-400 px-[1.125rem] text-sm font-semibold text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_1px_2px_rgb(150_95_0/0.25)] focus-ring transition hover:bg-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
                         @click="openCreate"
                     >
                         <Plus class="size-4" aria-hidden="true" />
                         Novo estabelecimento
-                    </button>
+                    </AppButton>
                 </header>
 
                 <div
@@ -408,83 +408,69 @@ const withoutSeries = computed(() =>
         >
             <form class="space-y-5" @submit.prevent="submit">
                 <div class="grid gap-5 sm:grid-cols-2">
-                    <div>
-                        <label for="establishment-code" class="field-label">
-                            Código
-                        </label>
-                        <input
+                    <FormField
+                        for="establishment-code"
+                        label="Código"
+                        :error="form.errors.code"
+                        ><input
                             id="establishment-code"
                             v-model="form.code"
                             type="text"
                             required
                             placeholder="LOJA2"
-                            class="mt-2 form-input numeric uppercase"
-                        />
-                        <FormError :message="form.errors.code" />
-                    </div>
+                            class="form-input numeric uppercase"
+                    /></FormField>
 
-                    <div>
-                        <label for="establishment-name" class="field-label">
-                            Nome
-                        </label>
-                        <input
+                    <FormField
+                        for="establishment-name"
+                        label="Nome"
+                        :error="form.errors.name"
+                        ><input
                             id="establishment-name"
                             v-model="form.name"
                             type="text"
                             required
                             placeholder="Loja do Kilamba"
-                            class="mt-2 form-input"
-                        />
-                        <FormError :message="form.errors.name" />
-                    </div>
+                            class="form-input"
+                    /></FormField>
 
-                    <div class="sm:col-span-2">
-                        <label for="establishment-address" class="field-label">
-                            Morada
-                        </label>
-                        <input
+                    <FormField
+                        class="sm:col-span-2"
+                        for="establishment-address"
+                        label="Morada"
+                        :error="form.errors.address_line"
+                        ><input
                             id="establishment-address"
                             v-model="form.address_line"
                             type="text"
                             required
                             placeholder="Rua 21 de Janeiro, n.º 4"
-                            class="mt-2 form-input"
-                        />
-                        <FormError :message="form.errors.address_line" />
-                    </div>
+                            class="form-input"
+                    /></FormField>
 
-                    <div>
-                        <label
-                            for="establishment-municipality"
-                            class="field-label"
-                        >
-                            Município
-                            <span
-                                class="font-normal text-zinc-500 dark:text-zinc-400"
-                                >(opcional)</span
-                            >
-                        </label>
-                        <input
+                    <FormField
+                        for="establishment-municipality"
+                        label="Município"
+                        optional
+                        :error="form.errors.municipality"
+                        ><input
                             id="establishment-municipality"
                             v-model="form.municipality"
                             type="text"
                             placeholder="Belas"
-                            class="mt-2 form-input"
-                        />
-                        <FormError :message="form.errors.municipality" />
-                    </div>
+                            class="form-input"
+                    /></FormField>
 
-                    <div>
-                        <label class="field-label"> Província </label>
-                        <div class="mt-2">
+                    <FormField
+                        label="Província"
+                        :error="form.errors.province_code"
+                        ><div>
                             <SelectInput
                                 v-model="form.province_code"
                                 :options="provinceOptions"
                                 placeholder="Escolha a província"
-                            />
-                        </div>
-                        <FormError :message="form.errors.province_code" />
-                    </div>
+                            /></div
+                    ></FormField>
                 </div>
 
                 <label
@@ -515,17 +501,13 @@ const withoutSeries = computed(() =>
                 </p>
 
                 <div class="flex justify-end gap-3 pt-2">
-                    <button
-                        type="button"
-                        class="inline-flex h-10 items-center justify-center rounded-full px-[1.125rem] text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
-                        @click="dialogOpen = false"
-                    >
+                    <AppButton variant="outline" @click="dialogOpen = false">
                         Cancelar
-                    </button>
-                    <button
+                    </AppButton>
+                    <AppButton
+                        variant="ink"
                         type="submit"
                         :disabled="form.processing"
-                        class="inline-flex h-10 items-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white"
                     >
                         <LoaderCircle
                             v-if="form.processing"
@@ -537,7 +519,7 @@ const withoutSeries = computed(() =>
                                 ? 'Criar estabelecimento'
                                 : 'Guardar alterações'
                         }}
-                    </button>
+                    </AppButton>
                 </div>
             </form>
         </RecordDialog>

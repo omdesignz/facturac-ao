@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
 import { Check, CircleDashed } from '@lucide/vue';
 import { computed } from 'vue';
+import AppButton from '@/components/AppButton.vue';
 import { onboarding } from '@/routes';
 import { show as connectionShow } from '@/routes/agt/connection';
 import { create as createInvoice } from '@/routes/invoices';
@@ -127,18 +127,17 @@ const nextLink = computed(() => {
         <div
             class="mt-6 flex flex-wrap items-center gap-4 border-t border-zinc-100 pt-5 dark:border-white/10"
         >
-            <a
+            <AppButton
+                variant="gold"
+                size="lg"
+                external
                 v-if="nextLink.href.startsWith('#')"
                 :href="nextLink.href"
-                class="inline-flex min-h-11 items-center rounded-full bg-accent-400 px-5 text-sm font-semibold text-brand-950 focus-ring hover:bg-accent-300"
-                >{{ nextLink.label }}</a
+                >{{ nextLink.label }}</AppButton
             >
-            <Link
-                v-else
-                :href="nextLink.href"
-                class="inline-flex min-h-11 items-center rounded-full bg-accent-400 px-5 text-sm font-semibold text-brand-950 focus-ring hover:bg-accent-300"
-                >{{ nextLink.label }}</Link
-            >
+            <AppButton variant="gold" size="lg" v-else :href="nextLink.href">{{
+                nextLink.label
+            }}</AppButton>
             <p class="max-w-xl text-sm/6 text-zinc-500 dark:text-zinc-400">
                 {{
                     nextItem

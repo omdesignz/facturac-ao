@@ -2,16 +2,17 @@
 import { Link, useForm } from '@inertiajs/vue3';
 import { LoaderCircle, LockKeyhole, Plus, Store } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import AppButton from '@/components/AppButton.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
 import FormError from '@/components/FormError.vue';
+import FormField from '@/components/FormField.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import { focusFirstInvalid } from '@/lib/focus';
 import { minorToDecimalString, parseMoneyToMinor } from '@/lib/pos';
 import {
     buttonGold,
-    buttonOutline,
     currencyLabel,
     formatClock,
     wellItem,
@@ -117,16 +118,16 @@ function submit(): void {
                 description="Abra uma caixa para começar a vender. Cada venda sai como factura-recibo por defeito, com envio para a AGT."
             >
                 <template #actions>
-                    <Link :href="sessionsIndex.url()" :class="buttonOutline">
+                    <AppButton variant="outline" :href="sessionsIndex.url()">
                         Turnos
-                    </Link>
-                    <Link
+                    </AppButton>
+                    <AppButton
+                        variant="outline"
                         v-if="canManageRegisters"
                         :href="registersIndex.url()"
-                        :class="buttonOutline"
                     >
                         Caixas
-                    </Link>
+                    </AppButton>
                 </template>
             </PageHeader>
 
@@ -150,14 +151,14 @@ function submit(): void {
                         : 'Peça a um administrador para criar a primeira caixa.'
                 "
             >
-                <Link
+                <AppButton
+                    variant="gold"
                     v-if="canManageRegisters"
                     :href="registersIndex.url()"
-                    :class="buttonGold"
                 >
                     <Plus class="size-4" aria-hidden="true" />
                     Criar caixa
-                </Link>
+                </AppButton>
             </EmptyState>
 
             <form
@@ -279,13 +280,13 @@ function submit(): void {
                     </p>
                 </fieldset>
 
-                <div :class="[wellSection, 'p-5 sm:p-6']">
-                    <label
-                        for="pos-opening-float"
-                        class="block text-sm font-medium text-zinc-900 dark:text-white"
-                        >Fundo de caixa</label
-                    >
-                    <div class="relative mt-2 max-w-xs">
+                <FormField
+                    :class="[wellSection, 'p-5 sm:p-6']"
+                    for="pos-opening-float"
+                    label="Fundo de caixa"
+                    :error="floatError"
+                    error-id="pos-opening-float-error"
+                    ><div class="relative max-w-xs">
                         <input
                             id="pos-opening-float"
                             v-model="form.opening_float"
@@ -316,12 +317,8 @@ function submit(): void {
                         class="mt-2 text-sm text-zinc-600 dark:text-zinc-400"
                     >
                         O dinheiro que já está na gaveta ao abrir.
-                    </p>
-                    <FormError
-                        id="pos-opening-float-error"
-                        :message="floatError"
-                    />
-                </div>
+                    </p></FormField
+                >
 
                 <div class="flex justify-end">
                     <button
