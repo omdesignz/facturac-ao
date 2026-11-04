@@ -1929,3 +1929,208 @@ summary:focus-visible {
         translate: 0 2rem;
     }
 }
+
+/*
+ * The phones on the public pages. Sizes are device points (--u), taken from the
+ * real devices: 393pt wide with a 54pt status bar for the iPhone, 412dp with a
+ * 40dp status bar for the Android. The screen stays white in both themes,
+ * because it is a picture of the app in its light theme.
+ */
+.device {
+    container-type: inline-size;
+    inline-size: 100%;
+    color: #000;
+}
+
+.device-iphone {
+    --device-points: 417;
+}
+
+.device-android {
+    --device-points: 432;
+}
+
+.device-rim {
+    --u: calc(100cqw / var(--device-points));
+    position: relative;
+    padding: calc(3 * var(--u));
+    border-radius: calc(67 * var(--u));
+    background: linear-gradient(
+        135deg,
+        #77777b 0%,
+        #38383b 18%,
+        #1d1d1f 50%,
+        #38383b 82%,
+        #6a6a6e 100%
+    );
+    box-shadow:
+        0 0 0 1px rgb(0 0 0 / 0.35),
+        0 calc(40 * var(--u)) calc(70 * var(--u)) calc(-24 * var(--u))
+            rgb(40 25 0 / 0.55),
+        0 calc(12 * var(--u)) calc(24 * var(--u)) calc(-10 * var(--u))
+            rgb(0 0 0 / 0.35);
+}
+
+.device-bezel {
+    padding: calc(9 * var(--u));
+    border-radius: calc(64 * var(--u));
+    background: #050506;
+}
+
+.device-screen {
+    position: relative;
+    overflow: hidden;
+    border-radius: calc(55 * var(--u));
+    background: #fff;
+}
+
+.device-status {
+    position: relative;
+    display: flex;
+    block-size: calc(54 * var(--u));
+    align-items: center;
+    justify-content: space-between;
+    padding-inline: calc(30 * var(--u)) calc(24 * var(--u));
+    padding-block-start: calc(6 * var(--u));
+    font-family:
+        -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Hanken Grotesk',
+        sans-serif;
+    font-size: calc(16 * var(--u));
+    line-height: 1;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.device-camera {
+    position: absolute;
+    inset-block-start: calc(11 * var(--u));
+    inset-inline-start: 50%;
+    inline-size: calc(122 * var(--u));
+    block-size: calc(35 * var(--u));
+    border-radius: 9999px;
+    background: #000;
+    translate: -50% 0;
+}
+
+.device-indicators {
+    display: flex;
+    align-items: center;
+    gap: calc(5 * var(--u));
+}
+
+.device-indicators svg {
+    display: block;
+    block-size: calc(12 * var(--u));
+    inline-size: auto;
+}
+
+.device-gesture {
+    position: relative;
+    block-size: calc(22 * var(--u));
+    background: #fff;
+}
+
+.device-gesture span {
+    position: absolute;
+    inset-block-end: calc(8 * var(--u));
+    inset-inline-start: 50%;
+    inline-size: calc(136 * var(--u));
+    block-size: calc(5 * var(--u));
+    border-radius: 9999px;
+    background: #000;
+    translate: -50% 0;
+}
+
+.device-button {
+    position: absolute;
+    inline-size: calc(3 * var(--u));
+    background: linear-gradient(90deg, #4c4c50, #232325);
+}
+
+.device-action,
+.device-volume-up,
+.device-volume-down {
+    inset-inline-start: calc(-2.5 * var(--u));
+    border-radius: calc(2 * var(--u)) 0 0 calc(2 * var(--u));
+}
+
+.device-action {
+    inset-block-start: calc(120 * var(--u));
+    block-size: calc(32 * var(--u));
+}
+
+.device-volume-up {
+    inset-block-start: calc(178 * var(--u));
+    block-size: calc(62 * var(--u));
+}
+
+.device-volume-down {
+    inset-block-start: calc(254 * var(--u));
+    block-size: calc(62 * var(--u));
+}
+
+.device-power,
+.device-volume {
+    inset-inline-end: calc(-2.5 * var(--u));
+    border-radius: 0 calc(2 * var(--u)) calc(2 * var(--u)) 0;
+}
+
+.device-power {
+    inset-block-start: calc(210 * var(--u));
+    block-size: calc(100 * var(--u));
+}
+
+/* The Android: flatter corners, a matte rim and a punch-hole camera. */
+.device-android .device-rim {
+    border-radius: calc(40 * var(--u));
+    background: linear-gradient(135deg, #4a4b4f, #26272a 45%, #3a3b3f);
+}
+
+.device-android .device-bezel {
+    padding: calc(7 * var(--u));
+    border-radius: calc(37 * var(--u));
+}
+
+.device-android .device-screen {
+    border-radius: calc(30 * var(--u));
+}
+
+.device-android .device-status {
+    block-size: calc(40 * var(--u));
+    padding-inline: calc(26 * var(--u)) calc(22 * var(--u));
+    padding-block-start: calc(2 * var(--u));
+    font-family: Roboto, 'Hanken Grotesk', ui-sans-serif, sans-serif;
+    font-size: calc(14 * var(--u));
+    font-weight: 500;
+}
+
+.device-android .device-camera {
+    inset-block-start: calc(9 * var(--u));
+    inline-size: calc(22 * var(--u));
+    block-size: calc(22 * var(--u));
+}
+
+.device-android .device-indicators svg {
+    block-size: calc(11 * var(--u));
+}
+
+.device-android .device-gesture {
+    block-size: calc(20 * var(--u));
+}
+
+.device-android .device-gesture span {
+    inset-block-end: calc(7 * var(--u));
+    inline-size: calc(108 * var(--u));
+    block-size: calc(4 * var(--u));
+    background: #1f1f1f;
+}
+
+.device-android .device-power {
+    inset-block-start: calc(190 * var(--u));
+    block-size: calc(76 * var(--u));
+}
+
+.device-android .device-volume {
+    inset-block-start: calc(300 * var(--u));
+    block-size: calc(120 * var(--u));
+}

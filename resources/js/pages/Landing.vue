@@ -5,6 +5,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 import PeriodSwitch from '@/components/billing/PeriodSwitch.vue';
 import BrandWordmark from '@/components/BrandWordmark.vue';
 import CookieConsent from '@/components/CookieConsent.vue';
+import DevicePhone from '@/components/DevicePhone.vue';
 import { initialPeriod, periodOptions } from '@/lib/packages';
 import { currencyLabel } from '@/lib/pos-ui';
 import { login, register } from '@/routes';
@@ -44,10 +45,6 @@ const props = defineProps<{
 }>();
 
 const menuOpen = ref(false);
-
-/** The one device frame on the page, so every phone is the same object. */
-const phoneFrame =
-    'overflow-hidden rounded-[2.25rem] bg-white shadow-[0_0_0_8px_#171716,0_30px_60px_-24px_rgb(23_23_22/0.5)]';
 
 /*
  * Packages are priced for one payment period at a time. Only the periods some
@@ -619,7 +616,7 @@ const questions: { question: string; answer: string }[] = [
             <!-- ---------------------------------------------------------- hero -->
             <section id="topo" class="overflow-clip">
                 <div
-                    class="mx-auto max-w-5xl px-5 pt-12 text-center sm:px-8 lg:pt-14"
+                    class="mx-auto max-w-6xl px-5 pt-12 text-center sm:px-8 lg:pt-14"
                 >
                     <h1
                         class="font-display text-[length:clamp(2.75rem,1.45rem+6vw,6rem)] leading-[1.04] font-bold tracking-[-0.018em] text-balance [font-variant-ligatures:none]"
@@ -662,33 +659,38 @@ const questions: { question: string; answer: string }[] = [
                         <div
                             class="hero-window hidden aspect-[16/8.6] overflow-hidden rounded-t-2xl bg-white shadow-[0_0_0_1px_rgb(23_23_22/0.12),0_40px_80px_-30px_rgb(92_54_0/0.55)] sm:block"
                         >
-                            <img
-                                src="/images/landing/documents-1440.webp"
-                                srcset="
-                                    /images/landing/documents-1440.webp 1440w,
-                                    /images/landing/documents-2880.webp 2880w
-                                "
-                                sizes="(min-width: 72rem) 68rem, 100vw"
-                                width="1440"
-                                height="900"
-                                fetchpriority="high"
-                                class="block h-auto w-full"
-                                alt="O ecrã Documentos da aplicação: a lista de facturas validadas e, ao lado, os detalhes de uma factura com o seu estado na AGT."
-                            />
-                        </div>
-                        <div
-                            class="hero-phone mx-auto -mb-28 w-64 sm:absolute sm:right-10 sm:bottom-0 sm:mb-0 sm:w-52 sm:translate-y-16 lg:right-0 lg:w-60"
-                        >
-                            <div :class="phoneFrame">
+                            <picture>
+                                <source
+                                    media="(min-width: 40rem)"
+                                    srcset="
+                                        /images/landing/documents-1440.webp 1440w,
+                                        /images/landing/documents-2880.webp 2880w
+                                    "
+                                    sizes="(min-width: 72rem) 68rem, 100vw"
+                                />
                                 <img
-                                    src="/images/landing/phone-today.webp"
-                                    width="780"
-                                    height="1688"
+                                    src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
+                                    width="1440"
+                                    height="900"
                                     fetchpriority="high"
                                     class="block h-auto w-full"
-                                    alt="O ecrã Hoje no telemóvel, com o total facturado no dia e o valor por receber."
+                                    alt="O ecrã Documentos da aplicação: a lista de facturas validadas e, ao lado, os detalhes de uma factura com o seu estado na AGT."
                                 />
-                            </div>
+                            </picture>
+                        </div>
+                        <div
+                            class="hero-phone mx-auto w-64 pb-10 sm:absolute sm:right-[4%] sm:bottom-6 sm:w-[21%] sm:pb-0"
+                        >
+                            <DevicePhone
+                                kind="iphone"
+                                src="/images/landing/iphone-today.webp"
+                                :width="786"
+                                :height="1554"
+                                time="18:54"
+                                loading="eager"
+                                fetchpriority="high"
+                                alt="O ecrã Hoje num iPhone, com o total facturado no dia, o valor por receber e a barra de navegação da aplicação."
+                            />
                         </div>
                     </div>
                 </div>
@@ -949,33 +951,27 @@ const questions: { question: string; answer: string }[] = [
                                 </li>
                             </ul>
                         </div>
-                        <div class="flex justify-center gap-5 sm:gap-8">
-                            <div
-                                :class="phoneFrame"
-                                class="-mb-16 w-56 sm:w-64"
-                            >
-                                <img
-                                    src="/images/landing/phone-debts.webp"
-                                    width="780"
-                                    height="1688"
-                                    loading="lazy"
-                                    decoding="async"
-                                    class="block h-auto w-full"
-                                    alt="O ecrã Dívidas no telemóvel, com o total por receber e os clientes em atraso."
+                        <div
+                            class="flex items-end justify-center gap-4 pb-14 sm:gap-8 lg:pb-20"
+                        >
+                            <div class="w-[47%] max-w-64">
+                                <DevicePhone
+                                    kind="iphone"
+                                    src="/images/landing/iphone-today.webp"
+                                    :width="786"
+                                    :height="1554"
+                                    time="18:54"
+                                    alt="O ecrã Hoje num iPhone, com o total facturado no dia e o valor por receber."
                                 />
                             </div>
-                            <div
-                                :class="phoneFrame"
-                                class="-mb-16 hidden w-64 translate-y-12 sm:block"
-                            >
-                                <img
-                                    src="/images/landing/phone-today.webp"
-                                    width="780"
-                                    height="1688"
-                                    loading="lazy"
-                                    decoding="async"
-                                    class="block h-auto w-full"
-                                    alt="O ecrã Hoje no telemóvel, com o total facturado no dia e o valor por receber."
+                            <div class="w-[47%] max-w-[15.5rem]">
+                                <DevicePhone
+                                    kind="android"
+                                    src="/images/landing/android-debts.webp"
+                                    :width="824"
+                                    :height="1720"
+                                    time="18:54"
+                                    alt="O ecrã Dívidas num telemóvel Android, com o total por receber e os clientes em atraso."
                                 />
                             </div>
                         </div>

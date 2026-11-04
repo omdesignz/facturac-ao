@@ -66,6 +66,28 @@ test('every product image exists, is described, and keeps its size reserved', fu
     }
 });
 
+test('the phones are whole devices, so the app bar at the foot of the screen shows', function () {
+    $landing = (string) file_get_contents(resource_path('js/pages/Landing.vue'));
+    $device = (string) file_get_contents(resource_path('js/components/DevicePhone.vue'));
+
+    expect($landing)
+        ->toContain('kind="iphone"')
+        ->toContain('kind="android"')
+        ->not->toContain('-mb-16')
+        ->and($device)
+        ->toContain('device-status')
+        ->toContain('device-camera')
+        ->toContain('device-gesture');
+
+    preg_match_all('/<DevicePhone\\b.*?\\/>/s', $landing, $phones);
+
+    expect($phones[0])->not->toBeEmpty();
+
+    foreach ($phones[0] as $phone) {
+        expect($phone)->toContain(':width=')->toContain(':height=')->toMatch('/alt="[^"]{10,}"/');
+    }
+});
+
 test('the page keeps the wording it chose to drop out of the copy', function () {
     $page = (string) file_get_contents(resource_path('js/pages/Landing.vue'));
 
