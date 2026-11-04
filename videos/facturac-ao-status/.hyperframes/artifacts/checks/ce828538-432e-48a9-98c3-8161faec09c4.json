@@ -1,0 +1,291 @@
+{
+  "ok": true,
+  "strict": false,
+  "browserSkipped": false,
+  "lint": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "filesScanned": 9
+  },
+  "runtime": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": []
+  },
+  "layout": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "duration": 30,
+    "samples": [
+      1.667,
+      5,
+      8.333,
+      11.667,
+      15,
+      18.333,
+      21.667,
+      25,
+      28.333
+    ],
+    "transitionSamples": [],
+    "transitionSamplesDropped": 0,
+    "tolerance": 2,
+    "totalIssueCount": 0,
+    "truncated": false
+  },
+  "motion": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "enabled": false,
+    "samples": 0
+  },
+  "contrast": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "enabled": true,
+    "samples": [
+      1.667,
+      8.333,
+      15,
+      21.667,
+      28.333
+    ],
+    "checked": 10,
+    "passed": 10
+  },
+  "craft": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 7,
+    "infoCount": 0,
+    "findings": [
+      {
+        "code": "first_frame_empty",
+        "severity": "warning",
+        "message": "Frame 0 shows only the background, and the first frame is the thumbnail on social players: have the title or key image already on screen at 0 s instead of entering from nothing; see references/review.md.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0
+      },
+      {
+        "code": "text_below_floor",
+        "severity": "warning",
+        "message": "Type floor is 28 px (2.6% of the 1080 px short side, what a phone can read) and 2 text elements stay under it for 0.5 s or more, the smallest \"19:38\" at 20 px: set reading text to at least 28 px, or put data-layout-ignore on text that is texture rather than reading; see references/look.md.",
+        "text": "19:38",
+        "selector": "#el-s2-telemovel > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > span:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/s2-telemovel.html",
+        "bbox": {
+          "x": 283.3,
+          "y": 1402.82,
+          "width": 49.51,
+          "height": 26
+        },
+        "time": 4.375,
+        "times": [
+          4.375,
+          5.75
+        ],
+        "fontPx": 19.96,
+        "floorPx": 28,
+        "seconds": 1.375,
+        "elements": [
+          {
+            "selector": "#el-s2-telemovel > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > span:nth-of-type(1)",
+            "text": "19:38",
+            "fontPx": 19.96,
+            "time": 4.375,
+            "seconds": 1.375
+          },
+          {
+            "selector": "#el-s2-telemovel > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > span:nth-of-type(1)",
+            "text": "19:38",
+            "fontPx": 24.56,
+            "time": 5.75,
+            "seconds": 1.125
+          }
+        ]
+      },
+      {
+        "code": "text_below_floor",
+        "severity": "warning",
+        "message": "Type floor is 28 px (2.6% of the 1080 px short side, what a phone can read) and \"19:38\" renders at 25 px for 2.75 s: set reading text to at least 28 px, or put data-layout-ignore on text that is texture rather than reading; see references/look.md.",
+        "text": "19:38",
+        "selector": "#el-s3-balcao > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > span:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/s3-balcao.html",
+        "bbox": {
+          "x": 284.44,
+          "y": 1003.31,
+          "width": 60.89,
+          "height": 32
+        },
+        "time": 8.25,
+        "times": [
+          8.25
+        ],
+        "fontPx": 24.56,
+        "floorPx": 28,
+        "seconds": 2.75,
+        "elements": [
+          {
+            "selector": "#el-s3-balcao > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > span:nth-of-type(1)",
+            "text": "19:38",
+            "fontPx": 24.56,
+            "time": 8.25,
+            "seconds": 2.75
+          }
+        ]
+      },
+      {
+        "code": "text_below_floor",
+        "severity": "warning",
+        "message": "Type floor is 28 px (2.6% of the 1080 px short side, what a phone can read) and \"19:38\" renders at 25 px for 2.75 s: set reading text to at least 28 px, or put data-layout-ignore on text that is texture rather than reading; see references/look.md.",
+        "text": "19:38",
+        "selector": "#el-s4-documentos > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > span:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/s4-documentos.html",
+        "bbox": {
+          "x": 284.44,
+          "y": 1143.55,
+          "width": 60.89,
+          "height": 32
+        },
+        "time": 12.25,
+        "times": [
+          12.25
+        ],
+        "fontPx": 24.56,
+        "floorPx": 28,
+        "seconds": 2.75,
+        "elements": [
+          {
+            "selector": "#el-s4-documentos > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > span:nth-of-type(1)",
+            "text": "19:38",
+            "fontPx": 24.56,
+            "time": 12.25,
+            "seconds": 2.75
+          }
+        ]
+      },
+      {
+        "code": "text_below_floor",
+        "severity": "warning",
+        "message": "Type floor is 28 px (2.6% of the 1080 px short side, what a phone can read) and 2 text elements stay under it for 0.5 s or more, the smallest \"19:38\" at 20 px: set reading text to at least 28 px, or put data-layout-ignore on text that is texture rather than reading; see references/look.md.",
+        "text": "19:38",
+        "selector": "#el-s5-cobrar > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > span:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/s5-cobrar.html",
+        "bbox": {
+          "x": 638.67,
+          "y": 492.19,
+          "width": 49.51,
+          "height": 26
+        },
+        "time": 15.875,
+        "times": [
+          15.875,
+          17.75
+        ],
+        "fontPx": 19.96,
+        "floorPx": 28,
+        "seconds": 1.75,
+        "elements": [
+          {
+            "selector": "#el-s5-cobrar > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > span:nth-of-type(1)",
+            "text": "19:38",
+            "fontPx": 19.96,
+            "time": 15.875,
+            "seconds": 1.75
+          },
+          {
+            "selector": "#el-s5-cobrar > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > span:nth-of-type(1)",
+            "text": "19:38",
+            "fontPx": 24.56,
+            "time": 17.75,
+            "seconds": 1.875
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"Notas de crédito\" (3 words) is on screen 0.47 s (±0.01 s), under its 1.05 s floor: hold it about 0.5 s + 0.3 s a word (1.40 s here) before it leaves or changes; see references/motion.md.",
+        "text": "Notas de crédito",
+        "selector": "#mw2",
+        "dataAttributes": {},
+        "sourceFile": "compositions/s6-tudo.html",
+        "bbox": {
+          "x": 117.98,
+          "y": 732.83,
+          "width": 844.03,
+          "height": 453.72000000000014
+        },
+        "time": 20.5,
+        "words": 3,
+        "seconds": 0.469,
+        "floorSeconds": 1.05
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"N.º FE/419/AGT/2026\" (6 words) is on screen 1.37 s (±0.01 s), under its 1.72 s floor: hold it about 0.5 s + 0.3 s a word (2.30 s here) before it leaves or changes; see references/motion.md.",
+        "text": "N.º FE/419/AGT/2026",
+        "selector": "#a3",
+        "dataAttributes": {},
+        "sourceFile": "compositions/s7-certificado.html",
+        "bbox": {
+          "x": 281.05,
+          "y": 1070,
+          "width": 517.8900000000001,
+          "height": 63
+        },
+        "time": 23.836,
+        "words": 6,
+        "seconds": 1.367,
+        "floorSeconds": 1.725
+      }
+    ],
+    "enabled": true,
+    "step": 0.125,
+    "samples": 240
+  },
+  "audio": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": []
+  },
+  "hdr": {
+    "autoPromotion": null,
+    "inspection": "available"
+  },
+  "snapshots": {
+    "enabled": false,
+    "files": [],
+    "times": [],
+    "findingFiles": []
+  }
+}

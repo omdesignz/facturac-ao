@@ -1,0 +1,85 @@
+<template>
+  <style>
+    @font-face { font-family: "CG"; font-weight: 700; font-display: block;
+      src: local("Century Gothic Bold"), local("CenturyGothic-Bold"); }
+    @font-face { font-family: "Hanken Grotesk"; font-weight: 600; font-display: block;
+      src: url("assets/fonts/HankenGrotesk-600.woff2") format("woff2"); }
+    #root { position: absolute; inset: 0; width: 1080px; height: 1920px; overflow: hidden;
+      font-family: "CG", sans-serif; font-weight: 700; font-variant-ligatures: none; color: #171716; }
+    .abs { position: absolute; }
+    .t { position: absolute; left: 0; width: 1080px; text-align: center; white-space: nowrap; line-height: 1; letter-spacing: -0.018em; }
+    .w { display: inline-block; }
+    .pt { display: inline-block; width: .19em; height: .19em; margin-left: .065em; border-radius: 50%; background: #f9b233; }
+    .cam { position: absolute; inset: 0; transform-origin: 0 0; }
+    .burst { position: absolute; left: -710.0px; top: -290.0px; width: 2500px; height: 2500px; border-radius: 50%; background: #f9b233; }
+
+    #root { background: #ffffff; }
+
+    .device { position: absolute; container-type: inline-size; color: #000; }
+    .device-iphone { --pts: 417; } .device-android { --pts: 432; }
+    .rim { --u: calc(100cqw / var(--pts)); position: relative; padding: calc(3 * var(--u)); border-radius: calc(67 * var(--u));
+      background: linear-gradient(135deg, #8a8a8f 0%, #3c3c3f 18%, #1d1d1f 50%, #3c3c3f 82%, #7a7a7f 100%);
+      box-shadow: 0 0 0 1px rgb(0 0 0 / .35), 0 calc(46 * var(--u)) calc(80 * var(--u)) calc(-26 * var(--u)) rgb(40 25 0 / .6); }
+    .bezel { padding: calc(9 * var(--u)); border-radius: calc(64 * var(--u)); background: #050506; }
+    .screen { position: relative; overflow: hidden; border-radius: calc(55 * var(--u)); background: #fff; }
+    .status { position: relative; display: flex; height: calc(54 * var(--u)); align-items: center; justify-content: space-between;
+      padding: calc(6 * var(--u)) calc(24 * var(--u)) 0 calc(30 * var(--u)); font-family: "Hanken Grotesk", sans-serif; font-size: calc(16 * var(--u)); line-height: 1; font-weight: 600; letter-spacing: 0; }
+    .island { position: absolute; top: calc(11 * var(--u)); left: 50%; width: calc(122 * var(--u)); height: calc(35 * var(--u));
+      margin-left: calc(-61 * var(--u)); border-radius: 999px; background: #000; }
+    .icons { display: flex; align-items: center; gap: calc(5 * var(--u)); }
+    .icons svg { display: block; height: calc(12 * var(--u)); width: auto; }
+    .stack { position: relative; }
+    .stack img { display: block; width: 100%; height: auto; }
+    .stack img + img { position: absolute; left: 0; top: 0; }
+    .gesture { position: relative; height: calc(22 * var(--u)); background: #fff; }
+    .gesture span { position: absolute; bottom: calc(8 * var(--u)); left: 50%; width: calc(136 * var(--u)); height: calc(5 * var(--u));
+      margin-left: calc(-68 * var(--u)); border-radius: 999px; background: #000; }
+    .btn { position: absolute; width: calc(3 * var(--u)); background: linear-gradient(90deg, #55555a, #232325); }
+    .b-l { left: calc(-2.5 * var(--u)); border-radius: calc(2 * var(--u)) 0 0 calc(2 * var(--u)); }
+    .b-r { right: calc(-2.5 * var(--u)); border-radius: 0 calc(2 * var(--u)) calc(2 * var(--u)) 0; }
+    .device-android .rim { border-radius: calc(40 * var(--u)); background: linear-gradient(135deg, #55565a, #26272a 45%, #44454a); }
+    .device-android .bezel { padding: calc(7 * var(--u)); border-radius: calc(37 * var(--u)); }
+    .device-android .screen { border-radius: calc(30 * var(--u)); }
+    .device-android .status { height: calc(40 * var(--u)); padding: calc(2 * var(--u)) calc(22 * var(--u)) 0 calc(26 * var(--u)); font-size: calc(14 * var(--u)); }
+    .device-android .island { top: calc(9 * var(--u)); width: calc(22 * var(--u)); height: calc(22 * var(--u)); margin-left: calc(-11 * var(--u)); }
+    .device-android .icons svg { height: calc(11 * var(--u)); }
+    .device-android .gesture { height: calc(20 * var(--u)); }
+    .device-android .gesture span { bottom: calc(7 * var(--u)); width: calc(108 * var(--u)); height: calc(4 * var(--u)); margin-left: calc(-54 * var(--u)); background: #1f1f1f; }
+#sun { position: absolute; left: -360px; top: 640px; width: 1800px; height: 1800px; border-radius: 50%; background: #f9b233; }
+  </style>
+  <div id="root" data-composition-id="s4-documentos" data-width="1080" data-height="1920">
+<div id="sun" data-layout-allow-overflow></div>
+    <div id="cam" class="cam" data-layout-allow-overflow>
+      <div id="iphone" class="device device-iphone" style="left:220.0px;top:470px;width:640px" data-layout-allow-overflow><div class="rim"><span class="btn b-l" style="top:calc(120*var(--u));height:calc(32*var(--u))"></span><span class="btn b-l" style="top:calc(178*var(--u));height:calc(62*var(--u))"></span><span class="btn b-l" style="top:calc(254*var(--u));height:calc(62*var(--u))"></span><span class="btn b-r" style="top:calc(210*var(--u));height:calc(100*var(--u))"></span><div class="bezel"><div class="screen"><div class="status"><span>09:46</span><span class="island"></span><span class="icons"><svg viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx=".8"/><rect x="5" y="5.5" width="3" height="6.5" rx=".8"/><rect x="10" y="3" width="3" height="9" rx=".8"/><rect x="15" y="0" width="3" height="12" rx=".8"/></svg><svg viewBox="0 0 17 12" fill="currentColor"><path d="M8.5 2.3c2.4 0 4.6.9 6.2 2.5.1.1.3.1.4 0l1.2-1.2c.2-.2.2-.4 0-.5C14.2 1 11.5 0 8.5 0S2.8 1 .7 3.1c-.2.1-.2.3 0 .5l1.2 1.2c.1.1.3.1.4 0 1.6-1.6 3.8-2.5 6.2-2.5Z"/><path d="M8.5 6.2c1.3 0 2.5.5 3.5 1.4.1.1.3.1.4 0l1.2-1.2c.2-.2.2-.4 0-.5-1.4-1.3-3.2-2.1-5.1-2.1s-3.7.8-5.1 2.1c-.2.1-.2.3 0 .5l1.2 1.2c.1.1.3.1.4 0 1-.9 2.2-1.4 3.5-1.4Z"/><path d="M10.9 9c.1-.1.1-.3 0-.5-.7-.6-1.5-.9-2.4-.9s-1.700.3-2.400.9c-.1.2-.1.4 0 .5l2.100 2.100c.2.2.4.2.6 0L10.900 9Z"/></svg><svg viewBox="0 0 27 12" fill="none"><rect x=".5" y=".5" width="22" height="11" rx="3.2" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="17" height="8" rx="1.9" fill="currentColor"/><path d="M24 4v4c.8-.3 1.400-1.100 1.400-2S24.800 4.300 24 4Z" fill="currentColor" opacity=".45"/></svg></span></div><div class="stack"><img src="assets/screens/m-documents.webp" alt="" /></div><div class="gesture"><span></span></div></div></div></div></div>
+    </div>
+    <div class="t" id="l1" style="top:192px;font-size:92px;color:#171716;"><span class="w l1-w">Cada</span> <span class="w l1-w">documento,</span></div>
+    <div class="t" id="l2" style="top:302px;font-size:92px;color:#171716;"><span class="w l2-w">comunicado</span> <span class="w l2-w">à</span> <span class="w l2-w">AGT</span><span class="w l2-w"><span class="pt" style="background:#f9b233"></span></span></div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      // Every word lands blurred and sharpens, then holds dead still.
+      const land = (sel, at, stagger = 0.07) => tl.fromTo(sel,
+        { opacity: 0, filter: "blur(10px)" },
+        { opacity: 1, filter: "blur(0px)", duration: 0.16, stagger, ease: "power1.out" }, at);
+      const leave = (sel, at) => tl.to(sel,
+        { opacity: 0, filter: "blur(10px)", duration: 0.14, ease: "power2.in" }, at);
+      const tap = (at) => {
+        tl.to("#hop", { opacity: 0, duration: 0.1, ease: "power1.in" }, at + 0.1);
+        tl.fromTo("#ring", { scale: 0.4, opacity: 0.9 }, { scale: 2.6, opacity: 0, duration: 0.46, ease: "expo.out", immediateRender: false }, at);
+      };
+
+      gsap.set("#sun", { scale: 3.4, transformOrigin: "50% 50%" });
+      tl.to("#sun", { scale: 1, duration: 0.72, ease: "power3.inOut" }, 0);
+      tl.to("#sun", { y: -30, duration: 2.14, ease: "none" }, 0.72);
+      tl.to("#cam", { x: -16.2, y: -33.0, scale: 1.03, duration: 2.8, ease: "none" }, 0);
+      tl.fromTo("#iphone", { y: 1500 }, { y: 0, duration: 0.85, ease: "expo.out" }, 0.22);
+      land(".l1-w", 0.46); land(".l2-w", 0.62);
+      leave(".l1-w, .l2-w", 2.700000000000001);
+      tl.to("#cam", { x: -637.5, y: -1935.0, scale: 2.1, duration: 0.56, ease: "power2.inOut" }, 2.8);
+      tl.to("#cam, #sun", { x: "-=1700", duration: 0.24, ease: "power3.in" }, 3.58);
+    
+      window.__timelines["s4-documentos"] = tl;
+    })();
+  </script>
+</template>

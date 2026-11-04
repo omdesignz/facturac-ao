@@ -1,0 +1,76 @@
+<template>
+  <style>
+    @font-face { font-family: "CG"; font-weight: 700; font-display: block;
+      src: local("Century Gothic Bold"), local("CenturyGothic-Bold"); }
+    @font-face { font-family: "Hanken Grotesk"; font-weight: 600; font-display: block;
+      src: url("assets/fonts/HankenGrotesk-600.woff2") format("woff2"); }
+    #root { position: absolute; inset: 0; width: 1080px; height: 1920px; overflow: hidden;
+      font-family: "CG", sans-serif; font-weight: 700; font-variant-ligatures: none; color: #171716; }
+    .abs { position: absolute; }
+    .t { position: absolute; left: 0; width: 1080px; text-align: center; white-space: nowrap; line-height: 1; letter-spacing: -0.018em; }
+    .w { display: inline-block; }
+    .pt { display: inline-block; width: .19em; height: .19em; margin-left: .065em; border-radius: 50%; background: #f9b233; }
+    .cam { position: absolute; inset: 0; transform-origin: 0 0; }
+    .burst { position: absolute; left: -710.0px; top: -290.0px; width: 2500px; height: 2500px; border-radius: 50%; background: #f9b233; }
+
+    #root { background: #ffffff; }
+
+  </style>
+  <div id="root" data-composition-id="s6-tudo" data-width="1080" data-height="1920">
+<div id="m0" class="abs" style="inset:0;background:#ffffff;opacity:0;display:flex;align-items:center;justify-content:center;text-align:center"><div id="mw0" style="white-space:nowrap;line-height:1.04;letter-spacing:-.018em;font-size:210px;color:#171716">Facturas<span id="mp0" class="pt" style="background:#f9b233"></span></div></div>
+<div id="m1" class="abs" style="inset:0;background:#f9b233;opacity:0;display:flex;align-items:center;justify-content:center;text-align:center"><div id="mw1" style="white-space:nowrap;line-height:1.04;letter-spacing:-.018em;font-size:224px;color:#171716">Recibos<span id="mp1" class="pt" style="background:#171716"></span></div></div>
+<div id="m2" class="abs" style="inset:0;background:#171716;opacity:0;display:flex;align-items:center;justify-content:center;text-align:center"><div id="mw2" style="white-space:nowrap;line-height:1.04;letter-spacing:-.018em;font-size:222px;color:#ffffff">Clientes<span id="mp2" class="pt" style="background:#f9b233"></span></div></div>
+<div id="m3" class="abs" style="inset:0;background:#ffffff;opacity:0;display:flex;align-items:center;justify-content:center;text-align:center"><div id="mw3" style="white-space:nowrap;line-height:1.04;letter-spacing:-.018em;font-size:300px;color:#171716">Guias<span id="mp3" class="pt" style="background:#f9b233"></span></div></div>
+<div id="m4" class="abs" style="inset:0;background:#f9b233;opacity:0;display:flex;align-items:center;justify-content:center;text-align:center"><div id="mw4" style="white-space:nowrap;line-height:1.04;letter-spacing:-.018em;font-size:310px;color:#171716">Stock<span id="mp4" class="pt" style="background:#171716"></span></div></div>
+<div id="m5" class="abs" style="inset:0;background:#171716;opacity:0;display:flex;align-items:center;justify-content:center;text-align:center"><div id="mw5" style="white-space:nowrap;line-height:1.04;letter-spacing:-.018em;font-size:145px;color:#ffffff">Orçamentos<span id="mp5" class="pt" style="background:#f9b233"></span></div></div>
+<div id="m6" class="abs" style="inset:0;background:#ffffff;opacity:0;display:flex;align-items:center;justify-content:center;text-align:center"><div id="mw6" style="white-space:nowrap;line-height:1.04;letter-spacing:-.018em;font-size:200px;color:#171716">Kwanzas<span id="mp6" class="pt" style="background:#f9b233"></span></div></div>
+<div id="m7" class="abs" style="inset:0;background:#f9b233;opacity:0;display:flex;align-items:center;justify-content:center;text-align:center"><div id="mw7" style="white-space:nowrap;line-height:1.04;letter-spacing:-.018em;font-size:160px;color:#171716">21<br>províncias<span id="mp7" class="pt" style="background:#171716"></span></div></div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      // Every word lands blurred and sharpens, then holds dead still.
+      const land = (sel, at, stagger = 0.07) => tl.fromTo(sel,
+        { opacity: 0, filter: "blur(10px)" },
+        { opacity: 1, filter: "blur(0px)", duration: 0.16, stagger, ease: "power1.out" }, at);
+      const leave = (sel, at) => tl.to(sel,
+        { opacity: 0, filter: "blur(10px)", duration: 0.14, ease: "power2.in" }, at);
+      const tap = (at) => {
+        tl.to("#hop", { opacity: 0, duration: 0.1, ease: "power1.in" }, at + 0.1);
+        tl.fromTo("#ring", { scale: 0.4, opacity: 0.9 }, { scale: 2.6, opacity: 0, duration: 0.46, ease: "expo.out", immediateRender: false }, at);
+      };
+tl.set("#m0", { opacity: 1 }, 0.0);
+tl.fromTo("#mw0", { scale: 1.09, filter: "blur(8px)" }, { scale: 1, filter: "blur(0px)", duration: 0.2, ease: "expo.out" }, 0.0);
+tl.fromTo("#mp0", { scale: 0 }, { scale: 1, duration: 0.3, ease: "elastic.out(1, 0.55)" }, 0.09);
+tl.set("#m1", { opacity: 1 }, 0.48);
+tl.fromTo("#mw1", { scale: 1.09, filter: "blur(8px)" }, { scale: 1, filter: "blur(0px)", duration: 0.2, ease: "expo.out" }, 0.48);
+tl.fromTo("#mp1", { scale: 0 }, { scale: 1, duration: 0.3, ease: "elastic.out(1, 0.55)" }, 0.57);
+tl.set("#m0", { opacity: 0 }, 0.48);
+tl.set("#m2", { opacity: 1 }, 0.96);
+tl.fromTo("#mw2", { scale: 1.09, filter: "blur(8px)" }, { scale: 1, filter: "blur(0px)", duration: 0.2, ease: "expo.out" }, 0.96);
+tl.fromTo("#mp2", { scale: 0 }, { scale: 1, duration: 0.3, ease: "elastic.out(1, 0.55)" }, 1.05);
+tl.set("#m1", { opacity: 0 }, 0.96);
+tl.set("#m3", { opacity: 1 }, 1.43);
+tl.fromTo("#mw3", { scale: 1.09, filter: "blur(8px)" }, { scale: 1, filter: "blur(0px)", duration: 0.2, ease: "expo.out" }, 1.43);
+tl.fromTo("#mp3", { scale: 0 }, { scale: 1, duration: 0.3, ease: "elastic.out(1, 0.55)" }, 1.52);
+tl.set("#m2", { opacity: 0 }, 1.43);
+tl.set("#m4", { opacity: 1 }, 1.9);
+tl.fromTo("#mw4", { scale: 1.09, filter: "blur(8px)" }, { scale: 1, filter: "blur(0px)", duration: 0.2, ease: "expo.out" }, 1.9);
+tl.fromTo("#mp4", { scale: 0 }, { scale: 1, duration: 0.3, ease: "elastic.out(1, 0.55)" }, 1.99);
+tl.set("#m3", { opacity: 0 }, 1.9);
+tl.set("#m5", { opacity: 1 }, 2.38);
+tl.fromTo("#mw5", { scale: 1.09, filter: "blur(8px)" }, { scale: 1, filter: "blur(0px)", duration: 0.2, ease: "expo.out" }, 2.38);
+tl.fromTo("#mp5", { scale: 0 }, { scale: 1, duration: 0.3, ease: "elastic.out(1, 0.55)" }, 2.47);
+tl.set("#m4", { opacity: 0 }, 2.38);
+tl.set("#m6", { opacity: 1 }, 2.86);
+tl.fromTo("#mw6", { scale: 1.09, filter: "blur(8px)" }, { scale: 1, filter: "blur(0px)", duration: 0.2, ease: "expo.out" }, 2.86);
+tl.fromTo("#mp6", { scale: 0 }, { scale: 1, duration: 0.3, ease: "elastic.out(1, 0.55)" }, 2.95);
+tl.set("#m5", { opacity: 0 }, 2.86);
+tl.set("#m7", { opacity: 1 }, 3.34);
+tl.fromTo("#mw7", { scale: 1.09, filter: "blur(8px)" }, { scale: 1, filter: "blur(0px)", duration: 0.2, ease: "expo.out" }, 3.34);
+tl.fromTo("#mp7", { scale: 0 }, { scale: 1, duration: 0.3, ease: "elastic.out(1, 0.55)" }, 3.43);
+tl.set("#m6", { opacity: 0 }, 3.34);
+      window.__timelines["s6-tudo"] = tl;
+    })();
+  </script>
+</template>

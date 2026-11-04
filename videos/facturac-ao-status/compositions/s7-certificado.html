@@ -1,0 +1,52 @@
+<template>
+  <style>
+    @font-face { font-family: "CG"; font-weight: 700; font-display: block;
+      src: local("Century Gothic Bold"), local("CenturyGothic-Bold"); }
+    @font-face { font-family: "Hanken Grotesk"; font-weight: 600; font-display: block;
+      src: url("assets/fonts/HankenGrotesk-600.woff2") format("woff2"); }
+    #root { position: absolute; inset: 0; width: 1080px; height: 1920px; overflow: hidden;
+      font-family: "CG", sans-serif; font-weight: 700; font-variant-ligatures: none; color: #171716; }
+    .abs { position: absolute; }
+    .t { position: absolute; left: 0; width: 1080px; text-align: center; white-space: nowrap; line-height: 1; letter-spacing: -0.018em; }
+    .w { display: inline-block; }
+    .pt { display: inline-block; width: .19em; height: .19em; margin-left: .065em; border-radius: 50%; background: #f9b233; }
+    .cam { position: absolute; inset: 0; transform-origin: 0 0; }
+    .burst { position: absolute; left: -710.0px; top: -290.0px; width: 2500px; height: 2500px; border-radius: 50%; background: #f9b233; }
+
+    #root { background: #171716; }
+
+  </style>
+  <div id="root" data-composition-id="s7-certificado" data-width="1080" data-height="1920">
+<div class="t" id="a1" style="top:700px;font-size:160px;color:#ffffff;"><span class="w a1-w">Certificado</span></div>
+    <div class="t" id="a2" style="top:876px;font-size:160px;color:#ffffff;"><span class="w a2-w">pela</span> <span class="w a2-w">AGT</span><span class="w a2-w"><span class="pt" style="background:#f9b233"></span></span></div>
+    <div class="t" id="a3" style="top:1128px;font-size:52px;color:#a1a1aa;letter-spacing:0;"><span class="w a3-w">N.º</span> <span class="w a3-w">FE/419/AGT/2026</span></div>
+    <div class="t" id="b1" style="top:680px;font-size:120px;color:#ffffff;"><span class="w b1-w">Obrigatória</span> <span class="w b1-w">a</span></div>
+    <div class="t" id="b2" style="top:824px;font-size:120px;color:#ffffff;"><span class="w b2-w">1</span> <span class="w b2-w">de</span> <span class="w b2-w">janeiro</span></div>
+    <div class="t" id="b3" style="top:968px;font-size:120px;color:#ffffff;"><span class="w b3-w">de</span> <span class="w b3-w">2027</span><span class="w b3-w"><span class="pt" style="background:#f9b233"></span></span></div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      // Every word lands blurred and sharpens, then holds dead still.
+      const land = (sel, at, stagger = 0.07) => tl.fromTo(sel,
+        { opacity: 0, filter: "blur(10px)" },
+        { opacity: 1, filter: "blur(0px)", duration: 0.16, stagger, ease: "power1.out" }, at);
+      const leave = (sel, at) => tl.to(sel,
+        { opacity: 0, filter: "blur(10px)", duration: 0.14, ease: "power2.in" }, at);
+      const tap = (at) => {
+        tl.to("#hop", { opacity: 0, duration: 0.1, ease: "power1.in" }, at + 0.1);
+        tl.fromTo("#ring", { scale: 0.4, opacity: 0.9 }, { scale: 2.6, opacity: 0, duration: 0.46, ease: "expo.out", immediateRender: false }, at);
+      };
+
+      gsap.set(".b1-w, .b2-w, .b3-w", { opacity: 0 });
+      land(".a1-w", 0.0); land(".a2-w", 0.14); land(".a3-w", 0.42, 0.05);
+      leave(".a1-w, .a2-w", 1.7499999999999987);
+      land(".b1-w", 1.8999999999999986, 0.09); land(".b2-w", 2.0799999999999987, 0.08); land(".b3-w", 2.2399999999999984, 0.08);
+      // The full stop leaps out of the top of the frame, and the end card's dot falls back in.
+      tl.to("#b3 .pt", { scaleX: 1.15, scaleY: 0.6, duration: 0.08, ease: "power2.out" }, 3.489999999999999);
+      tl.to("#b3 .pt", { x: -29, y: -1120, scaleX: 1.2, scaleY: 1.9, duration: 0.24, ease: "power2.in" }, 3.5699999999999985);
+    
+      window.__timelines["s7-certificado"] = tl;
+    })();
+  </script>
+</template>
