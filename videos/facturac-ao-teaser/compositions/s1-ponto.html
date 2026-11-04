@@ -1,11 +1,13 @@
 <template>
   <style>
-    @font-face { font-family: "Outfit"; font-weight: 700; font-display: block;
-      src: url("assets/fonts/Outfit-700.woff2") format("woff2"); }
+    @font-face { font-family: "CG"; font-weight: 700; font-display: block;
+      src: local("Century Gothic Bold"), local("CenturyGothic-Bold"); }
+    @font-face { font-family: "Hanken Grotesk"; font-weight: 600; font-display: block;
+      src: url("assets/fonts/HankenGrotesk-600.woff2") format("woff2"); }
     #root { position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: hidden;
-      font-family: "Outfit", sans-serif; font-weight: 700; color: #171716; }
+      font-family: "CG", sans-serif; font-weight: 700; font-variant-ligatures: none; color: #171716; }
     .abs { position: absolute; }
-    .t { position: absolute; white-space: nowrap; line-height: 1; letter-spacing: -0.03em; }
+    .t { position: absolute; white-space: nowrap; line-height: 1; letter-spacing: -0.018em; }
     .w { display: inline-block; }
     .pt { display: inline-block; width: .19em; height: .19em; margin-left: .065em; border-radius: 50%; background: #f9b233; }
     .shot { position: absolute; overflow: hidden; background: #fff; border-radius: 26px;
@@ -13,12 +15,12 @@
     .shot img { position: absolute; left: 0; top: 0; width: 100%; height: auto; display: block; }
 
     #root { background: #ffffff; }
-#dot { position: absolute; left: 0; top: 0; width: 57px; height: 57px; border-radius: 50%; background: #f9b233; }#flood { position: absolute; left: -90.90000000000009px; top: -777.5px; width: 2800px; height: 2800px; border-radius: 50%; background: #f9b233; }
+#dot { position: absolute; left: 0; top: 0; width: 57px; height: 57px; border-radius: 50%; background: #f9b233; }#flood { position: absolute; left: -59.90000000000009px; top: -771.5px; width: 2800px; height: 2800px; border-radius: 50%; background: #f9b233; }
   </style>
   <div id="root" data-composition-id="s1-ponto" data-width="1920" data-height="1080">
-<div class="t" id="w0" style="left:413.4px;top:390px;font-size:300px;opacity:0">Emitida<span class="pt" style="opacity:0"></span></div>
-<div class="t" id="w1" style="left:339.9px;top:390px;font-size:300px;opacity:0">Validada<span class="pt" style="opacity:0"></span></div>
-<div class="t" id="w2" style="left:582.45px;top:390px;font-size:300px;opacity:0">Paga<span class="pt" style="opacity:0"></span></div>
+<div class="t" id="w0" style="left:406.65px;top:390px;font-size:300px;opacity:0">Emitida<span class="pt" style="opacity:0"></span></div>
+<div class="t" id="w1" style="left:271.20000000000005px;top:390px;font-size:300px;opacity:0">Validada<span class="pt" style="opacity:0"></span></div>
+<div class="t" id="w2" style="left:551.4px;top:390px;font-size:300px;opacity:0">Paga<span class="pt" style="opacity:0"></span></div>
 <div id="flood" data-layout-allow-overflow></div>
 <div id="dot"></div>
   </div>
@@ -31,11 +33,15 @@
         { opacity: 1, filter: "blur(0px)", duration: 0.16, stagger, ease: "power1.out" }, at);
       const leave = (sel, at) => tl.to(sel,
         { opacity: 0, filter: "blur(10px)", duration: 0.14, ease: "power2.in" }, at);
+      const tap = (at) => {
+        tl.to("#hop", { opacity: 0, duration: 0.1, ease: "power1.in" }, at + 0.1);
+        tl.fromTo("#ring", { scale: 0.4, opacity: 0.9 }, { scale: 2.6, opacity: 0, duration: 0.46, ease: "expo.out", immediateRender: false }, at);
+      };
 
-      gsap.set("#dot", { x: 1449.6, y: 90, scaleX: 3.6, scaleY: 3.6, transformOrigin: "50% 100%" });
+      gsap.set("#dot", { x: 931.5, y: 380, scaleX: 3.6, scaleY: 3.6, transformOrigin: "50% 100%" });
       gsap.set("#flood", { scale: 0, opacity: 0 });
       // Falls onto the first beat, and the word is there when it lands.
-      tl.to("#dot", { y: 594, scaleX: 1, scaleY: 1, duration: 0.485, ease: "power2.in" }, 0);
+      tl.to("#dot", { x: 1456.3, y: 600, scaleX: 1, scaleY: 1, duration: 0.485, ease: "power2.in" }, 0);
       const landing = (at) => {
         tl.to("#dot", { scaleX: 1.34, scaleY: 0.62, duration: 0.05, ease: "power2.out" }, at);
         tl.to("#dot", { scaleX: 1, scaleY: 1, duration: 0.42, ease: "elastic.out(1, 0.5)" }, at + 0.05);
@@ -47,11 +53,18 @@
       const hop = (from, to, x) => {
         const d = to - from;
         tl.to("#dot", { x, duration: d, ease: "sine.inOut" }, from);
-        tl.to("#dot", { y: 294, duration: d / 2, ease: "power2.out" }, from);
-        tl.to("#dot", { y: 594, duration: d / 2, ease: "power2.in" }, from + d / 2);
+        tl.to("#dot", { y: 300, duration: d / 2, ease: "power2.out" }, from);
+        tl.to("#dot", { y: 600, duration: d / 2, ease: "power2.in" }, from + d / 2);
       };
-      hop(0.965, 1.445, 1523.1); leave("#w0", 1.2750000000000001); say("#w1", 1.415); landing(1.445);
-      hop(1.915, 2.385, 1280.6); leave("#w1", 2.215); say("#w2", 2.355); landing(2.385);
+      hop(0.965, 1.445, 1591.8); leave("#w0", 1.2750000000000001); say("#w1", 1.415); landing(1.445);
+      hop(1.915, 2.385, 1311.6); leave("#w1", 2.215); say("#w2", 2.355); landing(2.385);
+      // "Paga" holds while the dot bounces twice on the beat, smaller each time.
+      const bounce = (from, to, height) => {
+        tl.to("#dot", { y: 600 - height, duration: (to - from) / 2, ease: "power2.out" }, from);
+        tl.to("#dot", { y: 600, duration: (to - from) / 2, ease: "power2.in" }, from + (to - from) / 2);
+        landing(to);
+      };
+      bounce(2.525, 2.865, 130); bounce(2.9250000000000003, 3.345, 70);
       // Then the full stop of "Paga" grows until it is the whole frame.
       tl.set("#flood", { opacity: 1 }, 3.665);
       tl.fromTo("#flood", { scale: 0.0203 }, { scale: 1, duration: 0.62, ease: "power3.in" }, 3.665);

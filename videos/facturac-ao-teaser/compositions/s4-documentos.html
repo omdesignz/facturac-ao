@@ -1,11 +1,13 @@
 <template>
   <style>
-    @font-face { font-family: "Outfit"; font-weight: 700; font-display: block;
-      src: url("assets/fonts/Outfit-700.woff2") format("woff2"); }
+    @font-face { font-family: "CG"; font-weight: 700; font-display: block;
+      src: local("Century Gothic Bold"), local("CenturyGothic-Bold"); }
+    @font-face { font-family: "Hanken Grotesk"; font-weight: 600; font-display: block;
+      src: url("assets/fonts/HankenGrotesk-600.woff2") format("woff2"); }
     #root { position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: hidden;
-      font-family: "Outfit", sans-serif; font-weight: 700; color: #171716; }
+      font-family: "CG", sans-serif; font-weight: 700; font-variant-ligatures: none; color: #171716; }
     .abs { position: absolute; }
-    .t { position: absolute; white-space: nowrap; line-height: 1; letter-spacing: -0.03em; }
+    .t { position: absolute; white-space: nowrap; line-height: 1; letter-spacing: -0.018em; }
     .w { display: inline-block; }
     .pt { display: inline-block; width: .19em; height: .19em; margin-left: .065em; border-radius: 50%; background: #f9b233; }
     .shot { position: absolute; overflow: hidden; background: #fff; border-radius: 26px;
@@ -22,7 +24,7 @@
         <img src="assets/screens/documents.webp" alt="" />
       </div>
     </div>
-    <div class="t" id="h" style="left:960px;top:92px;font-size:88px;color:#171716;transform:translateX(-50%);"><span class="w h-w">Cada</span> <span class="w h-w">documento,</span> <span class="w h-w">comunicado</span> <span class="w h-w">à</span> <span class="w h-w">AGT</span><span class="w h-w"><span class="pt" style="background:#f9b233"></span></span></div>
+    <div class="t" id="h" style="left:960px;top:104px;font-size:80px;color:#171716;transform:translateX(-50%);"><span class="w h-w">Cada</span> <span class="w h-w">documento,</span> <span class="w h-w">comunicado</span> <span class="w h-w">à</span> <span class="w h-w">AGT</span><span class="w h-w"><span class="pt" style="background:#f9b233"></span></span></div>
   </div>
   <script>
     (function () {
@@ -33,13 +35,20 @@
         { opacity: 1, filter: "blur(0px)", duration: 0.16, stagger, ease: "power1.out" }, at);
       const leave = (sel, at) => tl.to(sel,
         { opacity: 0, filter: "blur(10px)", duration: 0.14, ease: "power2.in" }, at);
+      const tap = (at) => {
+        tl.to("#hop", { opacity: 0, duration: 0.1, ease: "power1.in" }, at + 0.1);
+        tl.fromTo("#ring", { scale: 0.4, opacity: 0.9 }, { scale: 2.6, opacity: 0, duration: 0.46, ease: "expo.out", immediateRender: false }, at);
+      };
 
       gsap.set("#sun", { scale: 3.2, transformOrigin: "50% 50%" });
       tl.to("#sun", { scale: 1, duration: 0.72, ease: "power3.inOut" }, 0);
+      tl.to("#sun", { y: -26, duration: 2.14, ease: "none" }, 0.72);
+      tl.to("#cam", { x: -28.8, y: -21.0, scale: 1.03, duration: 2.8, ease: "none" }, 0);
       tl.fromTo("#doc", { y: 820 }, { y: 0, duration: 0.85, ease: "expo.out" }, 0.22);
       land(".h-w", 0.5, 0.05);
       leave(".h-w", 2.700000000000001);
       tl.to("#cam", { x: -712.1, y: -1100.9, scale: 3.0, duration: 0.56, ease: "power2.inOut" }, 2.8);
+      tl.to("#cam, #sun", { x: "-=2100", duration: 0.24, ease: "power3.in" }, 3.58);
     
       window.__timelines["s4-documentos"] = tl;
     })();
