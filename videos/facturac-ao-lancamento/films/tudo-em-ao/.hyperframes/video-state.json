@@ -1,0 +1,388 @@
+{
+  "version": 1,
+  "historyId": "fd0a7f28-5223-445b-8c5b-f0e7379755bf",
+  "currentRevision": "e36b81b6-c187-4ecf-8a4c-c4c369bd93b6",
+  "pendingChanges": false,
+  "files": {
+    "compositions/tudo-1-atencao.html": {
+      "hash": "e53ed8c248e2d32343ee2b0136ab00018a5a283acbe752516975c45dd05bad13",
+      "content": "/Users/Oz/.cache/hyperframes/history/fd0a7f28-5223-445b-8c5b-f0e7379755bf/blobs/e5/e53ed8c248e2d32343ee2b0136ab00018a5a283acbe752516975c45dd05bad13"
+    },
+    "compositions/tudo-2-migracao.html": {
+      "hash": "4f8faad042816c31d6f73b6f2421899fac54ee6de71d7aa778be53438eb2c452",
+      "content": "/Users/Oz/.cache/hyperframes/history/fd0a7f28-5223-445b-8c5b-f0e7379755bf/blobs/4f/4f8faad042816c31d6f73b6f2421899fac54ee6de71d7aa778be53438eb2c452"
+    },
+    "compositions/tudo-3-comunicacao.html": {
+      "hash": "3e8abce19600de7190595c4bc0ac1faaab4fe58f8e96b1e33e3e8336a2b6fff0",
+      "content": "/Users/Oz/.cache/hyperframes/history/fd0a7f28-5223-445b-8c5b-f0e7379755bf/blobs/3e/3e8abce19600de7190595c4bc0ac1faaab4fe58f8e96b1e33e3e8336a2b6fff0"
+    },
+    "compositions/tudo-4-fim.html": {
+      "hash": "292e22d9fd58bd3c60612ec7be8344ff519920ec4d549502728ec70957368f6f",
+      "content": "/Users/Oz/.cache/hyperframes/history/fd0a7f28-5223-445b-8c5b-f0e7379755bf/blobs/29/292e22d9fd58bd3c60612ec7be8344ff519920ec4d549502728ec70957368f6f"
+    },
+    "compositions/tudo-5-disponivel.html": {
+      "hash": "f076378793a2fd938ac6f490c6e70146f5fa6b9e769d5593a14538196604e9c3",
+      "content": "/Users/Oz/.cache/hyperframes/history/fd0a7f28-5223-445b-8c5b-f0e7379755bf/blobs/f0/f076378793a2fd938ac6f490c6e70146f5fa6b9e769d5593a14538196604e9c3"
+    },
+    "hyperframes.json": {
+      "hash": "35a6d4ea79ebe911f0d81705f7aace5d8ff0316b745b0311d56af50c9c237cb7",
+      "content": "/Users/Oz/.cache/hyperframes/history/fd0a7f28-5223-445b-8c5b-f0e7379755bf/blobs/35/35a6d4ea79ebe911f0d81705f7aace5d8ff0316b745b0311d56af50c9c237cb7"
+    },
+    "index.html": {
+      "hash": "7b45803450c4c825f618329140430cff18abadae88b80757d91949b15c3d859c",
+      "content": "/Users/Oz/.cache/hyperframes/history/fd0a7f28-5223-445b-8c5b-f0e7379755bf/blobs/7b/7b45803450c4c825f618329140430cff18abadae88b80757d91949b15c3d859c"
+    },
+    "meta.json": {
+      "hash": "aea99cabd219a36a8f7fa408df3560e19893b4220ef177cae77e89516b2e0cd0",
+      "content": "/Users/Oz/.cache/hyperframes/history/fd0a7f28-5223-445b-8c5b-f0e7379755bf/blobs/ae/aea99cabd219a36a8f7fa408df3560e19893b4220ef177cae77e89516b2e0cd0"
+    }
+  },
+  "revisions": {
+    "e36b81b6-c187-4ecf-8a4c-c4c369bd93b6": {
+      "actor": {
+        "kind": "outside",
+        "name": "Outside"
+      },
+      "label": "Changed outside the app",
+      "startedAt": 1793828535885,
+      "endedAt": 1793828535886,
+      "files": {
+        "index.html": {
+          "before": "/Users/Oz/.cache/hyperframes/history/fd0a7f28-5223-445b-8c5b-f0e7379755bf/blobs/af/af36c935fe72feeec98b251319a83aa6c26afa4756488de3ee36c7f1553b98eb",
+          "after": "/Users/Oz/.cache/hyperframes/history/fd0a7f28-5223-445b-8c5b-f0e7379755bf/blobs/7b/7b45803450c4c825f618329140430cff18abadae88b80757d91949b15c3d859c"
+        }
+      }
+    }
+  },
+  "checks": {
+    "latest": {
+      "revision": "e36b81b6-c187-4ecf-8a4c-c4c369bd93b6",
+      "id": "7a941e0d-5b31-4ed6-b003-125b9c6cc87f"
+    },
+    "revisions": {
+      "e36b81b6-c187-4ecf-8a4c-c4c369bd93b6": [
+        {
+          "id": "7a941e0d-5b31-4ed6-b003-125b9c6cc87f",
+          "scope": "project",
+          "report": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/tudo-em-ao/.hyperframes/artifacts/checks/7a941e0d-5b31-4ed6-b003-125b9c6cc87f.json",
+          "metadata": {
+            "ok": true,
+            "browserSkipped": false,
+            "options": {
+              "samples": 9,
+              "atTransitions": false,
+              "maxIssues": 80,
+              "collapseStatic": true,
+              "tolerance": 2,
+              "timeout": 45000,
+              "contrast": true,
+              "strict": false,
+              "snapshots": false,
+              "browserGpuMode": "auto"
+            }
+          },
+          "createdAt": 1793828541139,
+          "contentHash": "0906de964dbeb29909a31e838a7194d0b88f8636d14d57c029a7aaab6d4a3f57",
+          "revision": "e36b81b6-c187-4ecf-8a4c-c4c369bd93b6",
+          "inputFingerprint": "337bed5e37f4c84933f84626c11fba72eea54ce7cea02d3db2c75c1cd849bb64",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        }
+      ]
+    },
+    "unversioned": [
+      {
+        "id": "104939e2-e2ca-4a32-9a3d-186e086d32a4",
+        "scope": "project",
+        "report": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/tudo-em-ao/.hyperframes/artifacts/checks/104939e2-e2ca-4a32-9a3d-186e086d32a4.json",
+        "metadata": {
+          "ok": true,
+          "browserSkipped": false,
+          "options": {
+            "samples": 9,
+            "atTransitions": false,
+            "maxIssues": 80,
+            "collapseStatic": true,
+            "tolerance": 2,
+            "timeout": 45000,
+            "contrast": true,
+            "strict": false,
+            "snapshots": false,
+            "browserGpuMode": "auto"
+          }
+        },
+        "createdAt": 1793828425566,
+        "contentHash": "0906de964dbeb29909a31e838a7194d0b88f8636d14d57c029a7aaab6d4a3f57",
+        "revision": null,
+        "inputFingerprint": "9bd78907c85609f8548d95f45d7ced8a545ab47b4c3503553edf50436024ea2e",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      }
+    ]
+  },
+  "snapshots": {
+    "latest": {
+      "revision": "e36b81b6-c187-4ecf-8a4c-c4c369bd93b6",
+      "id": "c81f8fd3-6e65-48f7-8d69-83a496d52c40-0"
+    },
+    "revisions": {
+      "e36b81b6-c187-4ecf-8a4c-c4c369bd93b6": [
+        {
+          "scope": "full",
+          "id": "c81f8fd3-6e65-48f7-8d69-83a496d52c40-0",
+          "image": "/private/tmp/claude-501/-Users-Oz-Apps-vap-invoice/3ffa4b29-b469-4938-b316-2c4d9d981f82/scratchpad/fix/t/frame-00-at-13.9s.png",
+          "time": 13.9,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793828558532,
+          "contentHash": "3570e29383bac25aac462690fec04d7aeb51af9579b0956e208dbe7ab9d0bc64",
+          "revision": "e36b81b6-c187-4ecf-8a4c-c4c369bd93b6",
+          "inputFingerprint": "337bed5e37f4c84933f84626c11fba72eea54ce7cea02d3db2c75c1cd849bb64",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        }
+      ]
+    },
+    "unversioned": [
+      {
+        "scope": "full",
+        "id": "4978d6a2-2f02-4ae1-919b-71100654d8d4-0",
+        "image": "/private/tmp/claude-501/-Users-Oz-Apps-vap-invoice/3ffa4b29-b469-4938-b316-2c4d9d981f82/scratchpad/snap-tudo-em-ao/frame-00-at-0s.png",
+        "time": 0,
+        "metadata": {
+          "width": 1080,
+          "height": 1920,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793828457704,
+        "contentHash": "b475f7af148f2a3bc45b41506fc8b3de0034b7b49921a221b3b734a539c6b5d5",
+        "revision": null,
+        "inputFingerprint": "9bd78907c85609f8548d95f45d7ced8a545ab47b4c3503553edf50436024ea2e",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "4978d6a2-2f02-4ae1-919b-71100654d8d4-1",
+        "image": "/private/tmp/claude-501/-Users-Oz-Apps-vap-invoice/3ffa4b29-b469-4938-b316-2c4d9d981f82/scratchpad/snap-tudo-em-ao/frame-01-at-1.2s.png",
+        "time": 1.2,
+        "metadata": {
+          "width": 1080,
+          "height": 1920,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793828457704,
+        "contentHash": "8135d6e0fc1aaec2f5ba62f4f3b5f3f249ddcc23dbe309bb1afd563e6a42bc03",
+        "revision": null,
+        "inputFingerprint": "9bd78907c85609f8548d95f45d7ced8a545ab47b4c3503553edf50436024ea2e",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "4978d6a2-2f02-4ae1-919b-71100654d8d4-2",
+        "image": "/private/tmp/claude-501/-Users-Oz-Apps-vap-invoice/3ffa4b29-b469-4938-b316-2c4d9d981f82/scratchpad/snap-tudo-em-ao/frame-02-at-2.6s.png",
+        "time": 2.6,
+        "metadata": {
+          "width": 1080,
+          "height": 1920,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793828457704,
+        "contentHash": "3604fc77e92b3f0572cd97b6497cfc5fc9780183f98a1b8578badc548f49058e",
+        "revision": null,
+        "inputFingerprint": "9bd78907c85609f8548d95f45d7ced8a545ab47b4c3503553edf50436024ea2e",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "4978d6a2-2f02-4ae1-919b-71100654d8d4-3",
+        "image": "/private/tmp/claude-501/-Users-Oz-Apps-vap-invoice/3ffa4b29-b469-4938-b316-2c4d9d981f82/scratchpad/snap-tudo-em-ao/frame-03-at-4s.png",
+        "time": 4,
+        "metadata": {
+          "width": 1080,
+          "height": 1920,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793828457704,
+        "contentHash": "bb605f89e9226a13d55f7ded7aef4d17aacdc1fdf9ee0aac0d03429854395d13",
+        "revision": null,
+        "inputFingerprint": "9bd78907c85609f8548d95f45d7ced8a545ab47b4c3503553edf50436024ea2e",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "4978d6a2-2f02-4ae1-919b-71100654d8d4-4",
+        "image": "/private/tmp/claude-501/-Users-Oz-Apps-vap-invoice/3ffa4b29-b469-4938-b316-2c4d9d981f82/scratchpad/snap-tudo-em-ao/frame-04-at-5.6s.png",
+        "time": 5.6,
+        "metadata": {
+          "width": 1080,
+          "height": 1920,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793828457704,
+        "contentHash": "eb505b7e9314f111383d5af86107d7a6b046ab78fdc1596538bf10d8868831a9",
+        "revision": null,
+        "inputFingerprint": "9bd78907c85609f8548d95f45d7ced8a545ab47b4c3503553edf50436024ea2e",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "4978d6a2-2f02-4ae1-919b-71100654d8d4-5",
+        "image": "/private/tmp/claude-501/-Users-Oz-Apps-vap-invoice/3ffa4b29-b469-4938-b316-2c4d9d981f82/scratchpad/snap-tudo-em-ao/frame-05-at-6.6s.png",
+        "time": 6.6,
+        "metadata": {
+          "width": 1080,
+          "height": 1920,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793828457704,
+        "contentHash": "a434876c558e355b00b006eebd56b037f73f2c733eb8e6fc4c9de8744cd4b807",
+        "revision": null,
+        "inputFingerprint": "9bd78907c85609f8548d95f45d7ced8a545ab47b4c3503553edf50436024ea2e",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "4978d6a2-2f02-4ae1-919b-71100654d8d4-6",
+        "image": "/private/tmp/claude-501/-Users-Oz-Apps-vap-invoice/3ffa4b29-b469-4938-b316-2c4d9d981f82/scratchpad/snap-tudo-em-ao/frame-06-at-8.5s.png",
+        "time": 8.5,
+        "metadata": {
+          "width": 1080,
+          "height": 1920,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793828457704,
+        "contentHash": "c35b0c93b2723d1c440c00885d406dc0f673b300c36ddf98d62c692ae2c5ffc2",
+        "revision": null,
+        "inputFingerprint": "9bd78907c85609f8548d95f45d7ced8a545ab47b4c3503553edf50436024ea2e",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "4978d6a2-2f02-4ae1-919b-71100654d8d4-7",
+        "image": "/private/tmp/claude-501/-Users-Oz-Apps-vap-invoice/3ffa4b29-b469-4938-b316-2c4d9d981f82/scratchpad/snap-tudo-em-ao/frame-07-at-11.2s.png",
+        "time": 11.2,
+        "metadata": {
+          "width": 1080,
+          "height": 1920,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793828457704,
+        "contentHash": "2c58fc2675137d60a32e49b837a81ffefba0bc5d34c35131498ebd5ccf72fedc",
+        "revision": null,
+        "inputFingerprint": "9bd78907c85609f8548d95f45d7ced8a545ab47b4c3503553edf50436024ea2e",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "4978d6a2-2f02-4ae1-919b-71100654d8d4-8",
+        "image": "/private/tmp/claude-501/-Users-Oz-Apps-vap-invoice/3ffa4b29-b469-4938-b316-2c4d9d981f82/scratchpad/snap-tudo-em-ao/frame-08-at-13.8s.png",
+        "time": 13.8,
+        "metadata": {
+          "width": 1080,
+          "height": 1920,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793828457704,
+        "contentHash": "d422997edb9602133f17840d3df65ef015b6b216e6229e1112ea107801549f9f",
+        "revision": null,
+        "inputFingerprint": "9bd78907c85609f8548d95f45d7ced8a545ab47b4c3503553edf50436024ea2e",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "4978d6a2-2f02-4ae1-919b-71100654d8d4-9",
+        "image": "/private/tmp/claude-501/-Users-Oz-Apps-vap-invoice/3ffa4b29-b469-4938-b316-2c4d9d981f82/scratchpad/snap-tudo-em-ao/frame-09-at-16.5s.png",
+        "time": 16.5,
+        "metadata": {
+          "width": 1080,
+          "height": 1920,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793828457704,
+        "contentHash": "ec301ad8c613b3c435aabc5b11476c438e0e85574a8bd9eaef57a512a2971f68",
+        "revision": null,
+        "inputFingerprint": "9bd78907c85609f8548d95f45d7ced8a545ab47b4c3503553edf50436024ea2e",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "4978d6a2-2f02-4ae1-919b-71100654d8d4-10",
+        "image": "/private/tmp/claude-501/-Users-Oz-Apps-vap-invoice/3ffa4b29-b469-4938-b316-2c4d9d981f82/scratchpad/snap-tudo-em-ao/frame-10-at-19.5s.png",
+        "time": 19.5,
+        "metadata": {
+          "width": 1080,
+          "height": 1920,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793828457704,
+        "contentHash": "b7a8462ce66aacf8fdf0d6ef232ab01c15c3d6043146e9a53b73c32d8c23054b",
+        "revision": null,
+        "inputFingerprint": "9bd78907c85609f8548d95f45d7ced8a545ab47b4c3503553edf50436024ea2e",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      }
+    ]
+  },
+  "renders": {
+    "latest": {
+      "id": "cb6367d0-4464-488f-b0e1-d1a22d7073d4",
+      "completedAt": 1793828637468,
+      "output": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/tudo-em-ao/renders/raw.mp4",
+      "status": "completed",
+      "revision": "e36b81b6-c187-4ecf-8a4c-c4c369bd93b6"
+    },
+    "retainedRevisions": [
+      "e36b81b6-c187-4ecf-8a4c-c4c369bd93b6"
+    ]
+  },
+  "pendingArtifactCleanup": []
+}

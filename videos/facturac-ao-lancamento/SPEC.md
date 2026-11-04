@@ -75,3 +75,8 @@ QA:      0.0 (thumbnail: word + phone), 1.2 (til gone), 2.8 (facturac.ao closed)
 3. `python3 tools/build_ponto.py` (needs fontTools and Century Gothic Bold installed),
    `npx hyperframes render --fps 30 -q delivery --crf 12 -o renders/ponto-raw.mp4`, then
    `../tools/master_audio.sh` and `../tools/export_social.sh` as in the other films.
+4. The other three films: `python3 tools/build_films.py` writes films/tudo-em-ao, films/mudar and
+   films/endereco (each its own project, its assets a link to this folder's); render and
+   check from inside each, then master and export as above. Endereço shows the website, so
+   its phone and address bar are drawn, never Apple's frame; its page is captured with
+   `node tools/capture_site.mjs https://vap-invoice.test/ assets/capture/site-top.png`.
