@@ -472,7 +472,7 @@ onBeforeUnmount(() => {
     <div class="flex min-w-0 flex-1 items-center max-xl:justify-end">
         <button
             type="button"
-            class="group flex h-10 w-full max-w-md min-w-0 items-center gap-3 rounded-full bg-zinc-900/[0.04] pr-2 pl-3.5 text-left text-sm text-zinc-500 focus-ring transition hover:bg-zinc-900/[0.07] hover:text-zinc-700 max-xl:size-10 max-xl:w-10 max-xl:justify-center max-xl:px-0 xl:min-w-44 dark:bg-white/[0.06] dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-zinc-200"
+            class="group flex h-10 w-full max-w-md min-w-0 items-center gap-3 rounded-full bg-zinc-900/[0.04] pr-2 pl-3.5 text-left text-sm text-zinc-500 focus-ring transition hover:bg-zinc-900/[0.07] hover:text-zinc-700 max-xl:size-10 max-xl:w-10 max-xl:shrink-0 max-xl:justify-center max-xl:px-0 xl:min-w-44 dark:bg-white/[0.06] dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-zinc-200"
             aria-haspopup="dialog"
             :aria-keyshortcuts="isApplePlatform ? 'Meta+K' : 'Control+K'"
             @click="openPalette"

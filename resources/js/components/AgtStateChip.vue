@@ -15,7 +15,7 @@ const agt = computed(() => usePage().props.currentWorkspace?.legal_entity?.agt);
     <Link
         v-if="agt"
         :href="agtConnection.url()"
-        class="flex h-9 shrink-0 items-center gap-2 rounded-full bg-zinc-900/[0.04] px-3 text-xs font-semibold text-zinc-800 focus-ring transition hover:bg-zinc-900/[0.07] dark:bg-white/[0.08] dark:text-zinc-100 dark:hover:bg-white/15"
+        class="flex h-9 shrink-0 items-center justify-center gap-2 rounded-full bg-zinc-900/[0.04] px-3 text-xs font-semibold text-zinc-800 focus-ring transition hover:bg-zinc-900/[0.07] max-[30rem]:w-9 max-[30rem]:px-0 dark:bg-white/[0.08] dark:text-zinc-100 dark:hover:bg-white/15 pointer-coarse:max-[30rem]:size-11"
     >
         <span
             :class="[
@@ -24,6 +24,9 @@ const agt = computed(() => usePage().props.currentWorkspace?.legal_entity?.agt);
             ]"
             aria-hidden="true"
         />
-        {{ agt.verified ? 'AGT ligada' : 'AGT por verificar' }}
+        <!-- On a narrow phone the dot alone says it, so the header keeps its room. -->
+        <span class="max-[30rem]:sr-only">{{
+            agt.verified ? 'AGT ligada' : 'AGT por verificar'
+        }}</span>
     </Link>
 </template>
