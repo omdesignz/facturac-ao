@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="pt-AO">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1080px; height: 1920px; overflow: hidden; background: #fff; }
+      #root { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: #fff; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="11.0" data-width="1080" data-height="1920" data-motion-blur="on" data-motion-blur-shutter="120">
+      <div id="el-s1-oficio" class="clip" data-composition-id="s1-oficio" data-composition-src="compositions/s1-oficio.html" data-start="0.0" data-duration="2.385" data-track-index="1" data-track-kind="graphics" data-width="1080" data-height="1920"></div>
+      <div id="el-s2-caixa" class="clip" data-composition-id="s2-caixa" data-composition-src="compositions/s2-caixa.html" data-start="2.385" data-duration="5.71" data-track-index="1" data-track-kind="graphics" data-width="1080" data-height="1920"></div>
+      <div id="el-s3-fim" class="clip" data-composition-id="s3-fim" data-composition-src="compositions/s3-fim.html" data-start="8.095" data-duration="2.905" data-track-index="1" data-track-kind="graphics" data-width="1080" data-height="1920"></div>
+
+      <audio id="bgm" src="assets/bgm/track-cut.mp3" data-start="0" data-duration="11.0" data-track-index="10" data-volume="0.95"></audio>
+      <audio id="fx0" src="assets/sfx/drop-thud.mp3" data-start="0.468" data-duration="0.792" data-track-index="20" data-volume="0.55"></audio>
+      <audio id="fx1" src="assets/sfx/pop-soft.mp3" data-start="1.448" data-duration="0.575" data-track-index="21" data-volume="0.22"></audio>
+      <audio id="fx2" src="assets/sfx/whoosh-up.mp3" data-start="1.788" data-duration="1.579" data-track-index="22" data-volume="0.3"></audio>
+      <audio id="fx3" src="assets/sfx/whoosh-soft.mp3" data-start="2.158" data-duration="1.579" data-track-index="23" data-volume="0.2"></audio>
+      <audio id="fx4" src="assets/sfx/pop-soft.mp3" data-start="3.348" data-duration="0.575" data-track-index="24" data-volume="0.32"></audio>
+      <audio id="fx5" src="assets/sfx/pop-confirm.mp3" data-start="3.818" data-duration="0.575" data-track-index="25" data-volume="0.28"></audio>
+      <audio id="fx6" src="assets/sfx/pop-soft.mp3" data-start="4.288" data-duration="0.575" data-track-index="26" data-volume="0.32"></audio>
+      <audio id="fx7" src="assets/sfx/pop-confirm.mp3" data-start="4.778" data-duration="0.575" data-track-index="27" data-volume="0.28"></audio>
+      <audio id="fx8" src="assets/sfx/pop-confirm.mp3" data-start="5.248" data-duration="0.575" data-track-index="28" data-volume="0.36"></audio>
+      <audio id="fx9" src="assets/sfx/whoosh-soft.mp3" data-start="4.908" data-duration="1.579" data-track-index="29" data-volume="0.2"></audio>
+      <audio id="fx10" src="assets/sfx/pop-confirm.mp3" data-start="6.678" data-duration="0.575" data-track-index="30" data-volume="0.42"></audio>
+      <audio id="fx11" src="assets/sfx/whoosh-soft.mp3" data-start="6.918" data-duration="1.579" data-track-index="31" data-volume="0.2"></audio>
+      <audio id="fx12" src="assets/sfx/whoosh-up.mp3" data-start="7.518" data-duration="1.579" data-track-index="32" data-volume="0.3"></audio>
+      <audio id="fx13" src="assets/sfx/pop-confirm.mp3" data-start="9.058" data-duration="0.575" data-track-index="33" data-volume="0.55"></audio>
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = gsap.timeline({ paused: true });
+    </script>
+  </body>
+</html>
