@@ -8,6 +8,7 @@ use App\Models\SubscriptionPlan;
 use App\Models\User;
 use App\Province;
 use App\SubscriptionInterval;
+use Database\Seeders\SubscriptionCatalogueSeeder;
 use Inertia\Testing\AssertableInertia as Assert;
 
 test('a visitor without an account gets the landing page', function () {
@@ -86,6 +87,19 @@ test('the phones are whole devices, so the app bar at the foot of the screen sho
     foreach ($phones[0] as $phone) {
         expect($phone)->toContain(':width=')->toContain(':height=')->toMatch('/alt="[^"]{10,}"/');
     }
+});
+
+test('the homepage does not advertise SAF-T, which electronic invoicing does not require', function () {
+    expect((string) file_get_contents(resource_path('js/pages/Landing.vue')))->not->toContain('SAF-T');
+});
+
+test('the catalogue lists document access without advertising SAF-T', function () {
+    $this->seed(SubscriptionCatalogueSeeder::class);
+
+    $features = SubscriptionPackage::query()->pluck('features')->flatten();
+
+    expect($features)->toContain('Consulta dos documentos emitidos')
+        ->and($features->filter(fn (string $feature): bool => str_contains($feature, 'SAF-T')))->toBeEmpty();
 });
 
 test('the page keeps the wording it chose to drop out of the copy', function () {

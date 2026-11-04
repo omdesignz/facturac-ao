@@ -16,7 +16,7 @@ class SubscriptionCatalogueSeeder extends Seeder
         DB::transaction(function (): void {
             foreach (config('subscriptions.catalogue') as $code => $definition) {
                 $limits = ['entitlement_version' => 1];
-                $features = ['Documentos sem limite de quantidade', 'Exportação SAF-T e consulta dos documentos emitidos'];
+                $features = ['Documentos sem limite de quantidade', 'Consulta dos documentos emitidos'];
                 foreach (SubscriptionFeature::cases() as $feature) {
                     $limits[$feature->key()] = in_array($feature->value, $definition['features'], true);
                     if ($limits[$feature->key()]) {

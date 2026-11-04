@@ -144,7 +144,7 @@ const pricingTerms: { term: string; value: string }[] = [
     },
     {
         term: 'Arquivo sempre disponível',
-        value: 'A consulta dos documentos e o SAF-T ficam disponíveis após o fim da assinatura.',
+        value: 'A consulta dos documentos fica disponível após o fim da assinatura.',
     },
 ];
 const menuButton = ref<HTMLButtonElement | null>(null);
@@ -303,22 +303,6 @@ const moments: {
         },
     },
     {
-        tag: 'SAF-T',
-        situation: 'O contabilista pediu o ficheiro do trimestre.',
-        answer: 'Escolhe as datas e descarrega o ficheiro SAF-T (AO).',
-        proof: {
-            eyebrow: 'Exportação SAF-T',
-            title: '2.º trimestre de 2026',
-            status: 'Ficheiro validado',
-            tone: 'valid',
-            rows: [
-                { label: 'Período', value: '01 abr a 30 jun' },
-                { label: 'Versão', value: 'SAF-T (AO) 1.01_01' },
-                { label: 'Documentos', value: '184', numeric: true },
-            ],
-        },
-    },
-    {
         tag: 'Estado',
         situation: 'Vendeu ao Estado e retiveram-lhe parte do imposto.',
         answer: 'A retenção na fonte e o IVA cativo ficam registados no documento, cada um na sua base.',
@@ -414,10 +398,6 @@ const obligations: { term: string; value: string }[] = [
         value: 'Cada documento é assinado e submetido, e a resposta fica guardada.',
     },
     {
-        term: 'SAF-T (AO) 1.01_01',
-        value: 'O ficheiro de auditoria do período, quando precisar.',
-    },
-    {
         term: 'Conservação legal',
         value: 'Os documentos ficam guardados durante o prazo legal.',
     },
@@ -487,7 +467,7 @@ const questions: { question: string; answer: string }[] = [
     },
     {
         question: 'Preciso de contabilista para começar?',
-        answer: 'Não. Cria a conta e preenche o NIF e os dados da empresa. O IVA, as retenções e a comunicação à AGT são tratados pela aplicação. Quando o contabilista precisar, gera o SAF-T do período.',
+        answer: 'Não. Cria a conta e preenche o NIF e os dados da empresa. O IVA, as retenções e a comunicação à AGT são tratados pela aplicação.',
     },
     {
         question: 'E se a internet falhar?',
@@ -509,7 +489,7 @@ const questions: { question: string; answer: string }[] = [
         <title>facturac.ao: facturação electrónica certificada pela AGT</title>
         <meta
             name="description"
-            content="Software de facturação certificado pela AGT: facturas, recibos, ponto de venda, SAF-T e contas correntes. A factura electrónica é obrigatória a 1 de janeiro de 2027."
+            content="Software de facturação certificado pela AGT: facturas, recibos, ponto de venda e contas correntes. A factura electrónica é obrigatória a 1 de janeiro de 2027."
         />
     </Head>
 

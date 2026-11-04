@@ -74,7 +74,7 @@ class SaveSubscriptionPackage
                     $included = array_map(fn (SubscriptionFeature $feature): string => $feature->label(), array_filter(SubscriptionFeature::cases(), fn (SubscriptionFeature $feature): bool => $attributes['limits'][$feature->key()] === true));
                     $attributes['features'] = array_values(array_unique([
                         'Documentos sem limite de quantidade',
-                        'Exportação SAF-T e consulta dos documentos emitidos',
+                        'Consulta dos documentos emitidos',
                         ...$included,
                         ...array_diff($data['features'], $labels),
                     ]));
