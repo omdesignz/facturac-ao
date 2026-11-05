@@ -1,0 +1,41 @@
+<template>
+  <style>
+
+    @font-face { font-family: "Inter"; font-weight: 500; font-style: normal; font-display: block;
+      src: url("assets/fonts/Inter-Medium.woff2") format("woff2"); }
+    @font-face { font-family: "Inter"; font-weight: 600; font-style: normal; font-display: block;
+      src: url("assets/fonts/Inter-SemiBold.woff2") format("woff2"); }
+    @font-face { font-family: "Inter Display"; font-weight: 600; font-style: normal; font-display: block;
+      src: url("assets/fonts/InterDisplay-SemiBold.woff2") format("woff2"); }
+
+    #root { position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: hidden;
+      font-family: "Inter", sans-serif; color: #171716; }
+    #frame-ponto-10-disponivel-line { position: absolute; left: 0; right: 0; top: 230px; display: flex; justify-content: center; align-items: baseline;
+      font: 600 156px/1 "Inter Display", sans-serif; letter-spacing: -0.04em; color: #171716; }
+    #frame-ponto-10-disponivel-word { display: inline-block; }
+    #frame-ponto-10-disponivel-dot { display: inline-block; width: 30px; height: 30px; margin-left: 10px; border-radius: 50%; background: #f9b233; }
+    #frame-ponto-10-disponivel-mark { position: absolute; left: 740.00px; top: 460px; width: 440px; height: 67.51px; }
+    #frame-ponto-10-disponivel-cta { position: absolute; left: 50%; top: 640px; width: 640px; margin-left: -320px; height: 112px; border-radius: 26px;
+      display: flex; align-items: center; justify-content: center; background: #f9b233; color: #171716; font: 600 42px/1 "Inter", sans-serif; letter-spacing: -0.012em; }
+  </style>
+  <div id="root" data-composition-id="ponto-10-disponivel" data-width="1920" data-height="1080">
+    <div id="frame-ponto-10-disponivel-stage" class="clip" data-start="0" data-duration="4.22" data-layout-allow-overflow>
+      <div id="frame-ponto-10-disponivel-line"><span id="frame-ponto-10-disponivel-word">Disponível</span><span id="frame-ponto-10-disponivel-dot"></span></div>
+      <img id="frame-ponto-10-disponivel-mark" src="assets/facturac-ao.svg" alt="facturac.ao">
+      <div id="frame-ponto-10-disponivel-cta">Abra a sua conta grátis</div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      tl.set({}, {}, 4.22);
+      tl.fromTo("#frame-ponto-10-disponivel-word", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.34, ease: "power3.out" }, 0.3);
+      tl.fromTo("#frame-ponto-10-disponivel-dot", { y: -760, opacity: 1 }, { y: 0, opacity: 1, duration: 0.34, ease: "power2.in", immediateRender: true }, 0.46);
+      tl.to("#frame-ponto-10-disponivel-dot", { scaleX: 1.25, scaleY: 0.78, duration: 0.05, transformOrigin: "50% 100%" }, 0.8);
+      tl.to("#frame-ponto-10-disponivel-dot", { scaleX: 1, scaleY: 1, duration: 0.22, ease: "power2.out" }, 0.85);
+      tl.fromTo("#frame-ponto-10-disponivel-mark", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.36, ease: "power3.out" }, 1.26);
+      tl.fromTo("#frame-ponto-10-disponivel-cta", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.36, ease: "power3.out" }, 1.66);
+      window.__timelines["ponto-10-disponivel"] = tl;
+    })();
+  </script>
+</template>

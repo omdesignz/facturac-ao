@@ -1,0 +1,41 @@
+<template>
+  <style>
+
+    @font-face { font-family: "Inter"; font-weight: 500; font-style: normal; font-display: block;
+      src: url("assets/fonts/Inter-Medium.woff2") format("woff2"); }
+    @font-face { font-family: "Inter"; font-weight: 600; font-style: normal; font-display: block;
+      src: url("assets/fonts/Inter-SemiBold.woff2") format("woff2"); }
+    @font-face { font-family: "Inter Display"; font-weight: 600; font-style: normal; font-display: block;
+      src: url("assets/fonts/InterDisplay-SemiBold.woff2") format("woff2"); }
+
+    #root { position: absolute; inset: 0; width: 1080px; height: 1920px; overflow: hidden;
+      font-family: "Inter", sans-serif; color: #171716; }
+    #frame-farmacia-2-factura-c1 { position: absolute; left: 54px; right: 54px; top: 170px; text-align: center; opacity: 0; font: 500 48px/1.2 "Inter", sans-serif; letter-spacing: -0.014em; color: #6b6b70; }
+    #frame-farmacia-2-factura-c2 { position: absolute; left: 54px; right: 54px; top: 170px; text-align: center; opacity: 0; font: 500 48px/1.2 "Inter", sans-serif; letter-spacing: -0.014em; color: #6b6b70; }
+    #frame-farmacia-2-factura-c3 { position: absolute; left: 54px; right: 54px; top: 170px; text-align: center; opacity: 0; font: 500 48px/1.2 "Inter", sans-serif; letter-spacing: -0.014em; color: #6b6b70; }
+    #frame-farmacia-2-factura-c4 { position: absolute; left: 54px; right: 54px; top: 170px; text-align: center; opacity: 0; font: 500 48px/1.2 "Inter", sans-serif; letter-spacing: -0.014em; color: #6b6b70; }
+  </style>
+  <div id="root" data-composition-id="farmacia-2-factura" data-width="1080" data-height="1920">
+    <div id="frame-farmacia-2-factura-stage" class="clip" data-start="0" data-duration="10.92" data-layout-allow-overflow>
+      <div id="frame-farmacia-2-factura-c1">Com o cliente ao balcão.</div>
+      <div id="frame-farmacia-2-factura-c2">O total já vem com IVA.</div>
+      <div id="frame-farmacia-2-factura-c3">Emitida e enviada à AGT.</div>
+      <div id="frame-farmacia-2-factura-c4">Sozinha.</div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      tl.set({}, {}, 10.92);
+      tl.fromTo("#frame-farmacia-2-factura-c1", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.24, ease: "power3.out" }, 0.3);
+      tl.to("#frame-farmacia-2-factura-c1", { opacity: 0, y: -10, duration: 0.16, ease: "power2.in" }, 2.32);
+      tl.fromTo("#frame-farmacia-2-factura-c2", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.24, ease: "power3.out" }, 5.9);
+      tl.to("#frame-farmacia-2-factura-c2", { opacity: 0, y: -10, duration: 0.16, ease: "power2.in" }, 7.56);
+      tl.fromTo("#frame-farmacia-2-factura-c3", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.24, ease: "power3.out" }, 7.86);
+      tl.to("#frame-farmacia-2-factura-c3", { opacity: 0, y: -10, duration: 0.16, ease: "power2.in" }, 10.12);
+      tl.fromTo("#frame-farmacia-2-factura-c4", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.24, ease: "power3.out" }, 10.36);
+      tl.to("#frame-farmacia-2-factura-c4", { opacity: 0, y: -10, duration: 0.16, ease: "power2.in" }, 10.76);
+      window.__timelines["farmacia-2-factura"] = tl;
+    })();
+  </script>
+</template>

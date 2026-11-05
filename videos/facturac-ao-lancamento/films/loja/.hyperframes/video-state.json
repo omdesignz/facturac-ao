@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "historyId": "e11d164a-0ad6-4726-a0c1-b014d2f76a1f",
+  "currentRevision": null,
+  "pendingChanges": false,
+  "files": {
+    "compositions/loja-1-pergunta.html": {
+      "hash": "404d4f64934012cffa2f7bfa55aa6758b39c61abe9b328395a66127ef39f1c19",
+      "content": "/Users/Oz/.cache/hyperframes/history/e11d164a-0ad6-4726-a0c1-b014d2f76a1f/blobs/40/404d4f64934012cffa2f7bfa55aa6758b39c61abe9b328395a66127ef39f1c19"
+    },
+    "compositions/loja-2-factura.html": {
+      "hash": "ec228ca94eb71d09326eddb0ea9a9814d2af881e398d812eac4bade2b970d28d",
+      "content": "/Users/Oz/.cache/hyperframes/history/e11d164a-0ad6-4726-a0c1-b014d2f76a1f/blobs/ec/ec228ca94eb71d09326eddb0ea9a9814d2af881e398d812eac4bade2b970d28d"
+    },
+    "compositions/loja-3-disponivel.html": {
+      "hash": "e68c59f6e66094cbb54a51ce9c327cab0f4385e8bc4b8469a588813490ed367e",
+      "content": "/Users/Oz/.cache/hyperframes/history/e11d164a-0ad6-4726-a0c1-b014d2f76a1f/blobs/e6/e68c59f6e66094cbb54a51ce9c327cab0f4385e8bc4b8469a588813490ed367e"
+    },
+    "hyperframes.json": {
+      "hash": "35a6d4ea79ebe911f0d81705f7aace5d8ff0316b745b0311d56af50c9c237cb7",
+      "content": "/Users/Oz/.cache/hyperframes/history/e11d164a-0ad6-4726-a0c1-b014d2f76a1f/blobs/35/35a6d4ea79ebe911f0d81705f7aace5d8ff0316b745b0311d56af50c9c237cb7"
+    },
+    "index.html": {
+      "hash": "2f8e146ff4460f32606e2da8bb36552305782ca6b9258c388ff987f2815d4f63",
+      "content": "/Users/Oz/.cache/hyperframes/history/e11d164a-0ad6-4726-a0c1-b014d2f76a1f/blobs/2f/2f8e146ff4460f32606e2da8bb36552305782ca6b9258c388ff987f2815d4f63"
+    },
+    "meta.json": {
+      "hash": "f038c82e8c07fe7166e45a5eb4cb8a7852ca31081e109e26897e0c811262a848",
+      "content": "/Users/Oz/.cache/hyperframes/history/e11d164a-0ad6-4726-a0c1-b014d2f76a1f/blobs/f0/f038c82e8c07fe7166e45a5eb4cb8a7852ca31081e109e26897e0c811262a848"
+    }
+  },
+  "revisions": {},
+  "checks": {
+    "latest": {
+      "revision": null,
+      "id": "523a3f46-5d62-4a33-bbc1-ae6dad165981"
+    },
+    "revisions": {},
+    "unversioned": [
+      {
+        "id": "523a3f46-5d62-4a33-bbc1-ae6dad165981",
+        "scope": "project",
+        "report": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/loja/.hyperframes/artifacts/checks/523a3f46-5d62-4a33-bbc1-ae6dad165981.json",
+        "metadata": {
+          "ok": true,
+          "browserSkipped": false,
+          "options": {
+            "samples": 9,
+            "atTransitions": false,
+            "maxIssues": 80,
+            "collapseStatic": true,
+            "tolerance": 2,
+            "timeout": 45000,
+            "contrast": true,
+            "strict": false,
+            "snapshots": false,
+            "browserGpuMode": "auto"
+          }
+        },
+        "createdAt": 1793857600800,
+        "contentHash": "b1fdb31ea6133f328bb4b44506c856b9fc22b13de9a7ba36bdd5d1d64b8ab415",
+        "revision": null,
+        "inputFingerprint": "e085094b090d51d5a60e67eb2f3051b55103c8dff12297757e0cf63bad1e5de9",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      }
+    ]
+  },
+  "snapshots": {
+    "latest": null,
+    "revisions": {},
+    "unversioned": []
+  },
+  "renders": {
+    "latest": {
+      "id": "0eb45b32-ea2a-4b42-b7d4-baf324866075",
+      "completedAt": 1793857618591,
+      "output": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/loja/renders/raw.mp4",
+      "status": "completed",
+      "revision": null
+    },
+    "retainedRevisions": []
+  },
+  "pendingArtifactCleanup": []
+}

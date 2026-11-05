@@ -1,0 +1,58 @@
+<template>
+  <style>
+
+    @font-face { font-family: "Inter"; font-weight: 500; font-style: normal; font-display: block;
+      src: url("assets/fonts/Inter-Medium.woff2") format("woff2"); }
+    @font-face { font-family: "Inter"; font-weight: 600; font-style: normal; font-display: block;
+      src: url("assets/fonts/Inter-SemiBold.woff2") format("woff2"); }
+    @font-face { font-family: "Inter Display"; font-weight: 600; font-style: normal; font-display: block;
+      src: url("assets/fonts/InterDisplay-SemiBold.woff2") format("woff2"); }
+
+    #root { position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: hidden;
+      font-family: "Inter", sans-serif; color: #171716; }
+    #frame-ponto-7-tudo-l1 { position: absolute; left: 110px; width: 900px; top: 440px; display: flex; justify-content: flex-start; flex-wrap: wrap; gap: 0 17.3px; font: 600 72px/1.08 "Inter Display", sans-serif; letter-spacing: -0.032em; color: #171716; }
+    .frame-ponto-7-tudo-l1-w { display: inline-block; opacity: 0; }
+    #frame-ponto-7-tudo-l1 b { font-weight: inherit; color: #f9b233; }
+    #frame-ponto-7-tudo-l2 { position: absolute; left: 110px; width: 900px; top: 440px; display: flex; justify-content: flex-start; flex-wrap: wrap; gap: 0 17.3px; font: 600 72px/1.08 "Inter Display", sans-serif; letter-spacing: -0.032em; color: #171716; }
+    .frame-ponto-7-tudo-l2-w { display: inline-block; opacity: 0; }
+    #frame-ponto-7-tudo-l2 b { font-weight: inherit; color: #f9b233; }
+    #frame-ponto-7-tudo-l3 { position: absolute; left: 110px; width: 900px; top: 440px; display: flex; justify-content: flex-start; flex-wrap: wrap; gap: 0 17.3px; font: 600 72px/1.08 "Inter Display", sans-serif; letter-spacing: -0.032em; color: #171716; }
+    .frame-ponto-7-tudo-l3-w { display: inline-block; opacity: 0; }
+    #frame-ponto-7-tudo-l3 b { font-weight: inherit; color: #f9b233; }
+    #frame-ponto-7-tudo-l4 { position: absolute; left: 110px; width: 900px; top: 440px; display: flex; justify-content: flex-start; flex-wrap: wrap; gap: 0 17.3px; font: 600 72px/1.08 "Inter Display", sans-serif; letter-spacing: -0.032em; color: #171716; }
+    .frame-ponto-7-tudo-l4-w { display: inline-block; opacity: 0; }
+    #frame-ponto-7-tudo-l4 b { font-weight: inherit; color: #f9b233; }
+    #frame-ponto-7-tudo-l5 { position: absolute; left: 110px; width: 900px; top: 440px; display: flex; justify-content: flex-start; flex-wrap: wrap; gap: 0 17.3px; font: 600 72px/1.08 "Inter Display", sans-serif; letter-spacing: -0.032em; color: #171716; }
+    .frame-ponto-7-tudo-l5-w { display: inline-block; opacity: 0; }
+    #frame-ponto-7-tudo-l5 b { font-weight: inherit; color: #f9b233; }
+  </style>
+  <div id="root" data-composition-id="ponto-7-tudo" data-width="1920" data-height="1080">
+    <div id="frame-ponto-7-tudo-stage" class="clip" data-start="0" data-duration="4.46" data-layout-allow-overflow>
+      <div id="frame-ponto-7-tudo-l1"><span id="frame-ponto-7-tudo-l1-w0" class="frame-ponto-7-tudo-l1-w">Facturas.</span></div>
+      <div id="frame-ponto-7-tudo-l2"><span id="frame-ponto-7-tudo-l2-w0" class="frame-ponto-7-tudo-l2-w">Recibos.</span></div>
+      <div id="frame-ponto-7-tudo-l3"><span id="frame-ponto-7-tudo-l3-w0" class="frame-ponto-7-tudo-l3-w">Clientes.</span></div>
+      <div id="frame-ponto-7-tudo-l4"><span id="frame-ponto-7-tudo-l4-w0" class="frame-ponto-7-tudo-l4-w">Artigos.</span></div>
+      <div id="frame-ponto-7-tudo-l5"><span id="frame-ponto-7-tudo-l5-w0" class="frame-ponto-7-tudo-l5-w">Tudo</span><span id="frame-ponto-7-tudo-l5-w1" class="frame-ponto-7-tudo-l5-w">no</span><span id="frame-ponto-7-tudo-l5-w2" class="frame-ponto-7-tudo-l5-w">mesmo</span><span id="frame-ponto-7-tudo-l5-w3" class="frame-ponto-7-tudo-l5-w">sítio.</span></div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      tl.set({}, {}, 4.46);
+      tl.fromTo("#frame-ponto-7-tudo-l1-w0", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 0.06);
+      tl.to("#frame-ponto-7-tudo-l1", { opacity: 0, y: -10, duration: 0.16, ease: "power2.in" }, 0.58);
+      tl.fromTo("#frame-ponto-7-tudo-l2-w0", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 0.78);
+      tl.to("#frame-ponto-7-tudo-l2", { opacity: 0, y: -10, duration: 0.16, ease: "power2.in" }, 1.24);
+      tl.fromTo("#frame-ponto-7-tudo-l3-w0", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 1.44);
+      tl.to("#frame-ponto-7-tudo-l3", { opacity: 0, y: -10, duration: 0.16, ease: "power2.in" }, 1.96);
+      tl.fromTo("#frame-ponto-7-tudo-l4-w0", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 2.16);
+      tl.to("#frame-ponto-7-tudo-l4", { opacity: 0, y: -10, duration: 0.16, ease: "power2.in" }, 2.9);
+      tl.fromTo("#frame-ponto-7-tudo-l5-w0", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 3.1);
+      tl.fromTo("#frame-ponto-7-tudo-l5-w1", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 3.145);
+      tl.fromTo("#frame-ponto-7-tudo-l5-w2", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 3.19);
+      tl.fromTo("#frame-ponto-7-tudo-l5-w3", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 3.235);
+      tl.to("#frame-ponto-7-tudo-l5", { opacity: 0, y: -10, duration: 0.16, ease: "power2.in" }, 4.3);
+      window.__timelines["ponto-7-tudo"] = tl;
+    })();
+  </script>
+</template>

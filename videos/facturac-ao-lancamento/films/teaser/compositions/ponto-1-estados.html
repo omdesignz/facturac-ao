@@ -1,0 +1,43 @@
+<template>
+  <style>
+
+    @font-face { font-family: "Inter"; font-weight: 500; font-style: normal; font-display: block;
+      src: url("assets/fonts/Inter-Medium.woff2") format("woff2"); }
+    @font-face { font-family: "Inter"; font-weight: 600; font-style: normal; font-display: block;
+      src: url("assets/fonts/Inter-SemiBold.woff2") format("woff2"); }
+    @font-face { font-family: "Inter Display"; font-weight: 600; font-style: normal; font-display: block;
+      src: url("assets/fonts/InterDisplay-SemiBold.woff2") format("woff2"); }
+
+    #root { position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: hidden;
+      font-family: "Inter", sans-serif; color: #171716; }
+    #frame-ponto-1-estados-l1 { position: absolute; left: 110px; width: 900px; top: 410px; display: flex; justify-content: flex-start; flex-wrap: wrap; gap: 0 31.7px; font: 600 132px/1.08 "Inter Display", sans-serif; letter-spacing: -0.032em; color: #171716; }
+    .frame-ponto-1-estados-l1-w { display: inline-block; opacity: 0; }
+    #frame-ponto-1-estados-l1 b { font-weight: inherit; color: #f9b233; }
+    #frame-ponto-1-estados-l2 { position: absolute; left: 110px; width: 900px; top: 410px; display: flex; justify-content: flex-start; flex-wrap: wrap; gap: 0 31.7px; font: 600 132px/1.08 "Inter Display", sans-serif; letter-spacing: -0.032em; color: #171716; }
+    .frame-ponto-1-estados-l2-w { display: inline-block; opacity: 0; }
+    #frame-ponto-1-estados-l2 b { font-weight: inherit; color: #f9b233; }
+    #frame-ponto-1-estados-l3 { position: absolute; left: 110px; width: 900px; top: 410px; display: flex; justify-content: flex-start; flex-wrap: wrap; gap: 0 31.7px; font: 600 132px/1.08 "Inter Display", sans-serif; letter-spacing: -0.032em; color: #171716; }
+    .frame-ponto-1-estados-l3-w { display: inline-block; opacity: 0; }
+    #frame-ponto-1-estados-l3 b { font-weight: inherit; color: #f9b233; }
+  </style>
+  <div id="root" data-composition-id="ponto-1-estados" data-width="1920" data-height="1080">
+    <div id="frame-ponto-1-estados-stage" class="clip" data-start="0" data-duration="3.21" data-layout-allow-overflow>
+      <div id="frame-ponto-1-estados-l1"><span id="frame-ponto-1-estados-l1-w0" class="frame-ponto-1-estados-l1-w">Emitida<b>.</b></span></div>
+      <div id="frame-ponto-1-estados-l2"><span id="frame-ponto-1-estados-l2-w0" class="frame-ponto-1-estados-l2-w">Validada<b>.</b></span></div>
+      <div id="frame-ponto-1-estados-l3"><span id="frame-ponto-1-estados-l3-w0" class="frame-ponto-1-estados-l3-w">Paga<b>.</b></span></div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      tl.set({}, {}, 3.21);
+      tl.set("#frame-ponto-1-estados-l1-w0", { opacity: 1 }, 0);
+      tl.to("#frame-ponto-1-estados-l1", { opacity: 0, y: -10, duration: 0.16, ease: "power2.in" }, 1.23);
+      tl.fromTo("#frame-ponto-1-estados-l2-w0", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 1.43);
+      tl.to("#frame-ponto-1-estados-l2", { opacity: 0, y: -10, duration: 0.16, ease: "power2.in" }, 2.25);
+      tl.fromTo("#frame-ponto-1-estados-l3-w0", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 2.45);
+      tl.to("#frame-ponto-1-estados-l3", { opacity: 0, y: -10, duration: 0.16, ease: "power2.in" }, 3.05);
+      window.__timelines["ponto-1-estados"] = tl;
+    })();
+  </script>
+</template>

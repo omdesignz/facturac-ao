@@ -1,0 +1,44 @@
+<template>
+  <style>
+
+    @font-face { font-family: "Inter"; font-weight: 500; font-style: normal; font-display: block;
+      src: url("assets/fonts/Inter-Medium.woff2") format("woff2"); }
+    @font-face { font-family: "Inter"; font-weight: 600; font-style: normal; font-display: block;
+      src: url("assets/fonts/Inter-SemiBold.woff2") format("woff2"); }
+    @font-face { font-family: "Inter Display"; font-weight: 600; font-style: normal; font-display: block;
+      src: url("assets/fonts/InterDisplay-SemiBold.woff2") format("woff2"); }
+
+    #root { position: absolute; inset: 0; width: 1080px; height: 1920px; overflow: hidden;
+      font-family: "Inter", sans-serif; color: #171716; }
+    #frame-deve-3-seu-l1 { position: absolute; left: 54px; right: 54px; top: 690px; display: flex; justify-content: center; flex-wrap: wrap; gap: 0 26.9px; font: 600 112px/1.08 "Inter Display", sans-serif; letter-spacing: -0.032em; color: #171716; }
+    .frame-deve-3-seu-l1-w { display: inline-block; opacity: 0; }
+    #frame-deve-3-seu-l1 b { font-weight: inherit; color: #f9b233; }
+    #frame-deve-3-seu-l2 { position: absolute; left: 54px; right: 54px; top: 815px; display: flex; justify-content: center; flex-wrap: wrap; gap: 0 26.9px; font: 600 112px/1.08 "Inter Display", sans-serif; letter-spacing: -0.032em; color: #171716; }
+    .frame-deve-3-seu-l2-w { display: inline-block; opacity: 0; }
+    #frame-deve-3-seu-l2 b { font-weight: inherit; color: #f9b233; }
+    #frame-deve-3-seu-c3 { position: absolute; left: 54px; right: 54px; top: 975px; text-align: center; opacity: 0; font: 500 56px/1.2 "Inter", sans-serif; letter-spacing: -0.014em; color: #6b6b70; }
+  </style>
+  <div id="root" data-composition-id="deve-3-seu" data-width="1080" data-height="1920">
+    <div id="frame-deve-3-seu-stage" class="clip" data-start="0" data-duration="3.3" data-layout-allow-overflow>
+      <div id="frame-deve-3-seu-l1"><span id="frame-deve-3-seu-l1-w0" class="frame-deve-3-seu-l1-w">Este</span><span id="frame-deve-3-seu-l1-w1" class="frame-deve-3-seu-l1-w">dinheiro</span></div>
+      <div id="frame-deve-3-seu-l2"><span id="frame-deve-3-seu-l2-w0" class="frame-deve-3-seu-l2-w">já</span><span id="frame-deve-3-seu-l2-w1" class="frame-deve-3-seu-l2-w">era</span><span id="frame-deve-3-seu-l2-w2" class="frame-deve-3-seu-l2-w">seu<b>.</b></span></div>
+      <div id="frame-deve-3-seu-c3">Só faltava lembrar.</div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      tl.set({}, {}, 3.3);
+      tl.fromTo("#frame-deve-3-seu-l1-w0", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 0.04);
+      tl.fromTo("#frame-deve-3-seu-l1-w1", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 0.085);
+      tl.to("#frame-deve-3-seu-l1", { opacity: 0, y: -10, duration: 0.16, ease: "power2.in" }, 3.14);
+      tl.fromTo("#frame-deve-3-seu-l2-w0", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 0.76);
+      tl.fromTo("#frame-deve-3-seu-l2-w1", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 0.805);
+      tl.fromTo("#frame-deve-3-seu-l2-w2", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 0.85);
+      tl.to("#frame-deve-3-seu-l2", { opacity: 0, y: -10, duration: 0.16, ease: "power2.in" }, 3.14);
+      tl.fromTo("#frame-deve-3-seu-c3", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.24, ease: "power3.out" }, 1.9);
+      tl.to("#frame-deve-3-seu-c3", { opacity: 0, y: -10, duration: 0.16, ease: "power2.in" }, 3.14);
+      window.__timelines["deve-3-seu"] = tl;
+    })();
+  </script>
+</template>

@@ -1,0 +1,45 @@
+<template>
+  <style>
+
+    @font-face { font-family: "Inter"; font-weight: 500; font-style: normal; font-display: block;
+      src: url("assets/fonts/Inter-Medium.woff2") format("woff2"); }
+    @font-face { font-family: "Inter"; font-weight: 600; font-style: normal; font-display: block;
+      src: url("assets/fonts/Inter-SemiBold.woff2") format("woff2"); }
+    @font-face { font-family: "Inter Display"; font-weight: 600; font-style: normal; font-display: block;
+      src: url("assets/fonts/InterDisplay-SemiBold.woff2") format("woff2"); }
+
+    #root { position: absolute; inset: 0; width: 1080px; height: 1920px; overflow: hidden;
+      font-family: "Inter", sans-serif; color: #171716; }
+    #frame-deve-2-lembrete-c1 { position: absolute; left: 54px; right: 54px; top: 150px; text-align: center; opacity: 0; font: 500 52px/1.2 "Inter", sans-serif; letter-spacing: -0.014em; color: #6b6b70; }
+    #frame-deve-2-lembrete-c2 { position: absolute; left: 54px; right: 54px; top: 150px; text-align: center; opacity: 0; font: 500 52px/1.2 "Inter", sans-serif; letter-spacing: -0.014em; color: #6b6b70; }
+    #frame-deve-2-lembrete-c3 { position: absolute; left: 54px; right: 54px; top: 150px; text-align: center; opacity: 0; font: 500 52px/1.2 "Inter", sans-serif; letter-spacing: -0.014em; color: #6b6b70; }
+    #frame-deve-2-lembrete-c4 { position: absolute; left: 54px; right: 54px; top: 150px; text-align: center; opacity: 0; font: 500 52px/1.2 "Inter", sans-serif; letter-spacing: -0.014em; color: #6b6b70; }
+    #frame-deve-2-lembrete-c5 { position: absolute; left: 54px; right: 54px; top: 150px; text-align: center; opacity: 0; font: 500 52px/1.2 "Inter", sans-serif; letter-spacing: -0.014em; color: #6b6b70; }
+  </style>
+  <div id="root" data-composition-id="deve-2-lembrete" data-width="1080" data-height="1920">
+    <div id="frame-deve-2-lembrete-stage" class="clip" data-start="0" data-duration="8.88" data-layout-allow-overflow>
+      <div id="frame-deve-2-lembrete-c1">O lembrete já vem escrito.</div>
+      <div id="frame-deve-2-lembrete-c2">Nada é enviado até confirmar.</div>
+      <div id="frame-deve-2-lembrete-c3">O cliente paga.</div>
+      <div id="frame-deve-2-lembrete-c4">Regista.</div>
+      <div id="frame-deve-2-lembrete-c5">E o número desce.</div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      tl.set({}, {}, 8.88);
+      tl.fromTo("#frame-deve-2-lembrete-c1", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.24, ease: "power3.out" }, 0.16);
+      tl.to("#frame-deve-2-lembrete-c1", { opacity: 0, y: -10, duration: 0.16, ease: "power2.in" }, 3.12);
+      tl.fromTo("#frame-deve-2-lembrete-c2", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.24, ease: "power3.out" }, 3.34);
+      tl.to("#frame-deve-2-lembrete-c2", { opacity: 0, y: -10, duration: 0.16, ease: "power2.in" }, 5.38);
+      tl.fromTo("#frame-deve-2-lembrete-c3", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.24, ease: "power3.out" }, 5.6);
+      tl.to("#frame-deve-2-lembrete-c3", { opacity: 0, y: -10, duration: 0.16, ease: "power2.in" }, 6.62);
+      tl.fromTo("#frame-deve-2-lembrete-c4", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.24, ease: "power3.out" }, 6.84);
+      tl.to("#frame-deve-2-lembrete-c4", { opacity: 0, y: -10, duration: 0.16, ease: "power2.in" }, 7.46);
+      tl.fromTo("#frame-deve-2-lembrete-c5", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.24, ease: "power3.out" }, 7.68);
+      tl.to("#frame-deve-2-lembrete-c5", { opacity: 0, y: -10, duration: 0.16, ease: "power2.in" }, 8.72);
+      window.__timelines["deve-2-lembrete"] = tl;
+    })();
+  </script>
+</template>

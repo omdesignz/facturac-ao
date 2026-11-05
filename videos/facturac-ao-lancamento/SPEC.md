@@ -76,6 +76,21 @@ a highlight dims the screen around what the voice is naming.
 Takes in use: o-ponto ponto-a, tudo-em-ao tudo-c, mudar mudar-a, endereco endereco-a. To
 swap one, re-read its word timings and adjust the `c(...)` cues.
 
+## The older teasers, recreated (2026-11-05)
+
+"Quem me deve", the four "Por ofício" cuts and "O ponto" (vertical `status`, landscape
+`teaser`, one read and the same cuts) replace the drawn phones of `../facturac-ao-quem-deve`,
+`../facturac-ao-oficios`, `../facturac-ao-status` and `../facturac-ao-teaser`, which stay as
+they were. tools/build_teasers.py writes them under films/, reusing build_films.py; captures
+are in assets/capture-teasers. The app has no till, so a trade's film shows its catalogue and
+the gold plus, not the old charge screen. Each trade's shelf comes from tools/demo/trade.php;
+tools/demo/agt_replay.php replays the AGT's answer for a document issued in the simulator.
+Issuing too quickly hits the app's real "demasiadas tentativas" limit: leave a minute.
+
+Takes in use: quem-deve quemdeve-a, oficina oficina-a, farmacia farmacia-b ("Aviu" in take a), restaurante
+restaurante-a, loja loja-a, status and teaser status-a. Alternates for auditioning the name
+are the other files of each pair in assets/vo. Build with `/usr/bin/python3 tools/build_teasers.py` (it has fontTools).
+
 ## Rebuilding
 
 1. Apple's frame: mount Bezel-iPhone-17.dmg from developer.apple.com/design/resources (its

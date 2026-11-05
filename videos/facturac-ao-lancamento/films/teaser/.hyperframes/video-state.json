@@ -1,0 +1,397 @@
+{
+  "version": 1,
+  "historyId": "06f5c472-9a0a-4661-a53c-985a6be3a400",
+  "currentRevision": "bd5d5350-31f3-41f6-a4b6-aefb9af44771",
+  "pendingChanges": false,
+  "files": {
+    "compositions/ponto-1-estados.html": {
+      "hash": "e12916d548b0476cb10d1d61f3014c0f56ad49f7376e48d3106733618ba1ad0b",
+      "content": "/Users/Oz/.cache/hyperframes/history/06f5c472-9a0a-4661-a53c-985a6be3a400/blobs/e1/e12916d548b0476cb10d1d61f3014c0f56ad49f7376e48d3106733618ba1ad0b"
+    },
+    "compositions/ponto-10-disponivel.html": {
+      "hash": "c21c1d6fd167d0b733a961194f839378a55848db722df74a4251475116539fda",
+      "content": "/Users/Oz/.cache/hyperframes/history/06f5c472-9a0a-4661-a53c-985a6be3a400/blobs/c2/c21c1d6fd167d0b733a961194f839378a55848db722df74a4251475116539fda"
+    },
+    "compositions/ponto-2-telemovel.html": {
+      "hash": "1d08f24a4052a049f182c303e9a3c470fa5e32971144677187ab1061ad468818",
+      "content": "/Users/Oz/.cache/hyperframes/history/06f5c472-9a0a-4661-a53c-985a6be3a400/blobs/1d/1d08f24a4052a049f182c303e9a3c470fa5e32971144677187ab1061ad468818"
+    },
+    "compositions/ponto-3-emitir.html": {
+      "hash": "2beaa4de280fb63ab8ede543ca1f9c27f74617f679e52c270f449cf1a36cf8fb",
+      "content": "/Users/Oz/.cache/hyperframes/history/06f5c472-9a0a-4661-a53c-985a6be3a400/blobs/2b/2beaa4de280fb63ab8ede543ca1f9c27f74617f679e52c270f449cf1a36cf8fb"
+    },
+    "compositions/ponto-4-agt.html": {
+      "hash": "c6c8b9514b9c19aa0ec47ac8d84335fa99bc02e6a2db33f1dc07a512ef6431c6",
+      "content": "/Users/Oz/.cache/hyperframes/history/06f5c472-9a0a-4661-a53c-985a6be3a400/blobs/c6/c6c8b9514b9c19aa0ec47ac8d84335fa99bc02e6a2db33f1dc07a512ef6431c6"
+    },
+    "compositions/ponto-5-cobrar.html": {
+      "hash": "61d75936492191fc9a8356e8e6338f0a9460ab83023816def1e6ae6a0a808593",
+      "content": "/Users/Oz/.cache/hyperframes/history/06f5c472-9a0a-4661-a53c-985a6be3a400/blobs/61/61d75936492191fc9a8356e8e6338f0a9460ab83023816def1e6ae6a0a808593"
+    },
+    "compositions/ponto-6-recebeu.html": {
+      "hash": "77027e580235aaede4150e6935c7fa997aaadeae3d37f24daeb74d70b2e32d4f",
+      "content": "/Users/Oz/.cache/hyperframes/history/06f5c472-9a0a-4661-a53c-985a6be3a400/blobs/77/77027e580235aaede4150e6935c7fa997aaadeae3d37f24daeb74d70b2e32d4f"
+    },
+    "compositions/ponto-7-tudo.html": {
+      "hash": "8da62a5ad31a8d235c0f0b26f55ec48adcc66fc2316f82d91d159a9387a080f4",
+      "content": "/Users/Oz/.cache/hyperframes/history/06f5c472-9a0a-4661-a53c-985a6be3a400/blobs/8d/8da62a5ad31a8d235c0f0b26f55ec48adcc66fc2316f82d91d159a9387a080f4"
+    },
+    "compositions/ponto-8-certificado.html": {
+      "hash": "8d070b49237b3f3565f6c9d9e0ca1602d3d338f0403c5912c744449c2836739a",
+      "content": "/Users/Oz/.cache/hyperframes/history/06f5c472-9a0a-4661-a53c-985a6be3a400/blobs/8d/8d070b49237b3f3565f6c9d9e0ca1602d3d338f0403c5912c744449c2836739a"
+    },
+    "compositions/ponto-9-obrigatoria.html": {
+      "hash": "98d0e708c8c14f0d6b61a845452a1a35628ac527d1d135c623f57750908a3677",
+      "content": "/Users/Oz/.cache/hyperframes/history/06f5c472-9a0a-4661-a53c-985a6be3a400/blobs/98/98d0e708c8c14f0d6b61a845452a1a35628ac527d1d135c623f57750908a3677"
+    },
+    "hyperframes.json": {
+      "hash": "35a6d4ea79ebe911f0d81705f7aace5d8ff0316b745b0311d56af50c9c237cb7",
+      "content": "/Users/Oz/.cache/hyperframes/history/06f5c472-9a0a-4661-a53c-985a6be3a400/blobs/35/35a6d4ea79ebe911f0d81705f7aace5d8ff0316b745b0311d56af50c9c237cb7"
+    },
+    "index.html": {
+      "hash": "278208af763dfe824ed400d25844ddb5691f973de8839ee2d0cd62dc393a8199",
+      "content": "/Users/Oz/.cache/hyperframes/history/06f5c472-9a0a-4661-a53c-985a6be3a400/blobs/27/278208af763dfe824ed400d25844ddb5691f973de8839ee2d0cd62dc393a8199"
+    },
+    "meta.json": {
+      "hash": "08e7d0a2540dd478b4d69a9e4168ce27912f08b2f8e270dc3f4097ad404d36f1",
+      "content": "/Users/Oz/.cache/hyperframes/history/06f5c472-9a0a-4661-a53c-985a6be3a400/blobs/08/08e7d0a2540dd478b4d69a9e4168ce27912f08b2f8e270dc3f4097ad404d36f1"
+    }
+  },
+  "revisions": {
+    "bd5d5350-31f3-41f6-a4b6-aefb9af44771": {
+      "actor": {
+        "kind": "outside",
+        "name": "Outside"
+      },
+      "label": "Changed outside the app",
+      "startedAt": 1793857661391,
+      "endedAt": 1793857661396,
+      "files": {
+        "compositions/ponto-8-certificado.html": {
+          "before": "/Users/Oz/.cache/hyperframes/history/06f5c472-9a0a-4661-a53c-985a6be3a400/blobs/db/db14b3c109c0044d5bb172a161583cd462d7d70df81449796102254ce63e4a7d",
+          "after": "/Users/Oz/.cache/hyperframes/history/06f5c472-9a0a-4661-a53c-985a6be3a400/blobs/8d/8d070b49237b3f3565f6c9d9e0ca1602d3d338f0403c5912c744449c2836739a"
+        }
+      }
+    }
+  },
+  "checks": {
+    "latest": {
+      "revision": "bd5d5350-31f3-41f6-a4b6-aefb9af44771",
+      "id": "a635bd54-3c9c-4ea3-88b9-f0321b9e52e8"
+    },
+    "revisions": {
+      "bd5d5350-31f3-41f6-a4b6-aefb9af44771": [
+        {
+          "id": "a635bd54-3c9c-4ea3-88b9-f0321b9e52e8",
+          "scope": "project",
+          "report": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/teaser/.hyperframes/artifacts/checks/a635bd54-3c9c-4ea3-88b9-f0321b9e52e8.json",
+          "metadata": {
+            "ok": true,
+            "browserSkipped": false,
+            "options": {
+              "samples": 9,
+              "atTransitions": false,
+              "maxIssues": 80,
+              "collapseStatic": true,
+              "tolerance": 2,
+              "timeout": 45000,
+              "contrast": true,
+              "strict": false,
+              "snapshots": false,
+              "browserGpuMode": "auto"
+            }
+          },
+          "createdAt": 1793857668116,
+          "contentHash": "640bdd953ee7ba84b2154feac3c32e9febf25294e82f5dad2ec91b0a684e1b5e",
+          "revision": "bd5d5350-31f3-41f6-a4b6-aefb9af44771",
+          "inputFingerprint": "86651d7865c388d87ce2ffb6d5693e552bdf1bd78537cc435275a500d35be1e9",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        }
+      ]
+    },
+    "unversioned": []
+  },
+  "snapshots": {
+    "latest": {
+      "revision": null,
+      "id": "65ffd542-9995-488d-a021-63368669e87a-12"
+    },
+    "revisions": {},
+    "unversioned": [
+      {
+        "scope": "full",
+        "id": "65ffd542-9995-488d-a021-63368669e87a-0",
+        "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/teaser/.hyperframes/artifacts/snapshots/1f081685-0759-4835-b22b-07630d190d37/frame-00-at-0s.png",
+        "time": 0,
+        "metadata": {
+          "width": 1920,
+          "height": 1080,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793857445936,
+        "contentHash": "176ace1ece51353b8ec2a27701acb1d29432b7d2aa3f757eb8a955e654872981",
+        "revision": null,
+        "inputFingerprint": "90d9bd7f0b97e8463ae4cc4f49ca10c87c1b3195dd7bc8af4c4714cdc1093247",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "65ffd542-9995-488d-a021-63368669e87a-1",
+        "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/teaser/.hyperframes/artifacts/snapshots/1f081685-0759-4835-b22b-07630d190d37/frame-01-at-2.7s.png",
+        "time": 2.7,
+        "metadata": {
+          "width": 1920,
+          "height": 1080,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793857445936,
+        "contentHash": "9552fb0d2dd0d1eeb95b9d093e31c90b8854f086a4a6c2e95c158913f07170f1",
+        "revision": null,
+        "inputFingerprint": "90d9bd7f0b97e8463ae4cc4f49ca10c87c1b3195dd7bc8af4c4714cdc1093247",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "65ffd542-9995-488d-a021-63368669e87a-2",
+        "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/teaser/.hyperframes/artifacts/snapshots/1f081685-0759-4835-b22b-07630d190d37/frame-02-at-4.8s.png",
+        "time": 4.8,
+        "metadata": {
+          "width": 1920,
+          "height": 1080,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793857445936,
+        "contentHash": "612bb01a34f6325585dea09c56284ed6cccd8dd75d4aae3795ca1f8a99fccab7",
+        "revision": null,
+        "inputFingerprint": "90d9bd7f0b97e8463ae4cc4f49ca10c87c1b3195dd7bc8af4c4714cdc1093247",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "65ffd542-9995-488d-a021-63368669e87a-3",
+        "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/teaser/.hyperframes/artifacts/snapshots/1f081685-0759-4835-b22b-07630d190d37/frame-03-at-8.1s.png",
+        "time": 8.1,
+        "metadata": {
+          "width": 1920,
+          "height": 1080,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793857445936,
+        "contentHash": "2b7866f45c88d29baf7019d1ef95bf34c20b03965946e4e0cc6e9bebd9d8c291",
+        "revision": null,
+        "inputFingerprint": "90d9bd7f0b97e8463ae4cc4f49ca10c87c1b3195dd7bc8af4c4714cdc1093247",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "65ffd542-9995-488d-a021-63368669e87a-4",
+        "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/teaser/.hyperframes/artifacts/snapshots/1f081685-0759-4835-b22b-07630d190d37/frame-04-at-10.5s.png",
+        "time": 10.5,
+        "metadata": {
+          "width": 1920,
+          "height": 1080,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793857445936,
+        "contentHash": "9d3e4f28235c82f03006f0cb00f4d3f1aa36c47009029a6a0fc778689350eda3",
+        "revision": null,
+        "inputFingerprint": "90d9bd7f0b97e8463ae4cc4f49ca10c87c1b3195dd7bc8af4c4714cdc1093247",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "65ffd542-9995-488d-a021-63368669e87a-5",
+        "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/teaser/.hyperframes/artifacts/snapshots/1f081685-0759-4835-b22b-07630d190d37/frame-05-at-14.5s.png",
+        "time": 14.5,
+        "metadata": {
+          "width": 1920,
+          "height": 1080,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793857445936,
+        "contentHash": "61409eadf9466f47645d986003661a2b68783fe51bd22e6f531d5568a83a1618",
+        "revision": null,
+        "inputFingerprint": "90d9bd7f0b97e8463ae4cc4f49ca10c87c1b3195dd7bc8af4c4714cdc1093247",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "65ffd542-9995-488d-a021-63368669e87a-6",
+        "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/teaser/.hyperframes/artifacts/snapshots/1f081685-0759-4835-b22b-07630d190d37/frame-06-at-17.9s.png",
+        "time": 17.9,
+        "metadata": {
+          "width": 1920,
+          "height": 1080,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793857445936,
+        "contentHash": "afdd987cbefc5fe3ee476aa77c50a94373af714840497072f1551eb5b34cc349",
+        "revision": null,
+        "inputFingerprint": "90d9bd7f0b97e8463ae4cc4f49ca10c87c1b3195dd7bc8af4c4714cdc1093247",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "65ffd542-9995-488d-a021-63368669e87a-7",
+        "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/teaser/.hyperframes/artifacts/snapshots/1f081685-0759-4835-b22b-07630d190d37/frame-07-at-19.7s.png",
+        "time": 19.7,
+        "metadata": {
+          "width": 1920,
+          "height": 1080,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793857445936,
+        "contentHash": "87d46d7b61ab28401b2f3e3067a1a0696762ca006f2fc5ce9d05c74d9471ca1d",
+        "revision": null,
+        "inputFingerprint": "90d9bd7f0b97e8463ae4cc4f49ca10c87c1b3195dd7bc8af4c4714cdc1093247",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "65ffd542-9995-488d-a021-63368669e87a-8",
+        "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/teaser/.hyperframes/artifacts/snapshots/1f081685-0759-4835-b22b-07630d190d37/frame-08-at-22.2s.png",
+        "time": 22.2,
+        "metadata": {
+          "width": 1920,
+          "height": 1080,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793857445936,
+        "contentHash": "6079cc153a21acc2d5bc279396045dcf26f049e8060051a9b57935c5ca4aa919",
+        "revision": null,
+        "inputFingerprint": "90d9bd7f0b97e8463ae4cc4f49ca10c87c1b3195dd7bc8af4c4714cdc1093247",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "65ffd542-9995-488d-a021-63368669e87a-9",
+        "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/teaser/.hyperframes/artifacts/snapshots/1f081685-0759-4835-b22b-07630d190d37/frame-09-at-24.6s.png",
+        "time": 24.6,
+        "metadata": {
+          "width": 1920,
+          "height": 1080,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793857445936,
+        "contentHash": "b94ec19427247ae89e3b9b9972c53047718ca2e0512478d0654c34b31aa11f61",
+        "revision": null,
+        "inputFingerprint": "90d9bd7f0b97e8463ae4cc4f49ca10c87c1b3195dd7bc8af4c4714cdc1093247",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "65ffd542-9995-488d-a021-63368669e87a-10",
+        "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/teaser/.hyperframes/artifacts/snapshots/1f081685-0759-4835-b22b-07630d190d37/frame-10-at-29.6s.png",
+        "time": 29.6,
+        "metadata": {
+          "width": 1920,
+          "height": 1080,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793857445936,
+        "contentHash": "7ccd892ba8c9579bf3204a113f558a793e6e2e1a7920c3adeb76a878846b91c6",
+        "revision": null,
+        "inputFingerprint": "90d9bd7f0b97e8463ae4cc4f49ca10c87c1b3195dd7bc8af4c4714cdc1093247",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "65ffd542-9995-488d-a021-63368669e87a-11",
+        "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/teaser/.hyperframes/artifacts/snapshots/1f081685-0759-4835-b22b-07630d190d37/frame-11-at-34.2s.png",
+        "time": 34.2,
+        "metadata": {
+          "width": 1920,
+          "height": 1080,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793857445936,
+        "contentHash": "d8d6ec79684022d6cd725fc1b1a0c25a0d916500447f56ba6dadca9bfdf2b996",
+        "revision": null,
+        "inputFingerprint": "90d9bd7f0b97e8463ae4cc4f49ca10c87c1b3195dd7bc8af4c4714cdc1093247",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "65ffd542-9995-488d-a021-63368669e87a-12",
+        "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/teaser/.hyperframes/artifacts/snapshots/1f081685-0759-4835-b22b-07630d190d37/frame-12-at-34.96s.png",
+        "time": 34.96,
+        "metadata": {
+          "width": 1920,
+          "height": 1080,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793857445936,
+        "contentHash": "d8d6ec79684022d6cd725fc1b1a0c25a0d916500447f56ba6dadca9bfdf2b996",
+        "revision": null,
+        "inputFingerprint": "90d9bd7f0b97e8463ae4cc4f49ca10c87c1b3195dd7bc8af4c4714cdc1093247",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      }
+    ]
+  },
+  "renders": {
+    "latest": {
+      "id": "b84146fc-d625-4778-807a-20e73ec0bc70",
+      "completedAt": 1793857698094,
+      "output": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/teaser/renders/raw.mp4",
+      "status": "completed",
+      "revision": "bd5d5350-31f3-41f6-a4b6-aefb9af44771"
+    },
+    "retainedRevisions": [
+      "bd5d5350-31f3-41f6-a4b6-aefb9af44771"
+    ]
+  },
+  "pendingArtifactCleanup": []
+}

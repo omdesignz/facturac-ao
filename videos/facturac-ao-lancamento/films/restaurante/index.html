@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js" integrity="sha384-sG0Hv1tP1lZCk9KQmrIbY/XNwi+OY84GQqhMscbnsoBFqAz8KNCil1kvfL3Hbbk2" crossorigin="anonymous"></script>
+    <style>
+      
+    @font-face { font-family: "Inter"; font-weight: 500; font-style: normal; font-display: block;
+      src: url("assets/fonts/Inter-Medium.woff2") format("woff2"); }
+    @font-face { font-family: "Inter"; font-weight: 600; font-style: normal; font-display: block;
+      src: url("assets/fonts/Inter-SemiBold.woff2") format("woff2"); }
+    @font-face { font-family: "Inter Display"; font-weight: 600; font-style: normal; font-display: block;
+      src: url("assets/fonts/InterDisplay-SemiBold.woff2") format("woff2"); }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1080px; height: 1920px; overflow: hidden; background: #fff; }
+      #root { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: #ffffff; }
+      .scene { position: absolute; inset: 0; width: 100%; height: 100%; }
+      #phone { position: absolute; left: 0; top: 0; width: 1350px; height: 2760px;
+        filter: drop-shadow(0 34px 60px rgba(0,0,0,0.14)) drop-shadow(0 6px 14px rgba(0,0,0,0.08)); }
+      #screen { position: absolute; left: 72px; top: 69px; width: 1206px; height: 2622px;
+        overflow: hidden; border-radius: 150px; background: #fff; }
+      #screen > img, #screen > video { position: absolute; left: 0; top: 0; width: 1206px; height: 2622px; display: block; }
+      .spot { position: absolute; border-radius: 34px; box-shadow: 0 0 0 4000px rgba(255,255,255,0.74); opacity: 0; }
+      #spot-0 { left: 40px; top: 2210px; width: 1126px; height: 120px; } #spot-1 { left: 102px; top: 720px; width: 460px; height: 92px; }
+      #bezel { position: absolute; inset: 0; width: 1350px; height: 2760px; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="16.81" data-width="1080" data-height="1920">
+      <div id="phone" data-layout-allow-overflow>
+        <div id="screen">
+          <img id="shot-0" class="clip" src="assets/capture-teasers/restaurante-artigos.png" data-start="0" data-duration="1.77" data-track-index="0" alt="">
+          <img id="shot-1" class="clip" src="assets/capture-teasers/restaurante-0.png" data-start="1.57" data-duration="3.08" data-track-index="1" alt="">
+          <img id="shot-2" class="clip" src="assets/capture-teasers/restaurante-1.png" data-start="4.45" data-duration="1.1" data-track-index="0" alt="">
+          <img id="shot-3" class="clip" src="assets/capture-teasers/restaurante-2.png" data-start="5.35" data-duration="0.88" data-track-index="1" alt="">
+          <img id="shot-4" class="clip" src="assets/capture-teasers/restaurante-linhas.png" data-start="6.03" data-duration="2.9" data-track-index="0" alt="">
+          <video id="shot-5" class="clip" src="assets/capture-teasers/restaurante-emitir.mp4" data-start="8.73" data-duration="1.9" data-track-index="1" muted playsinline data-media-start="0"></video>
+          <img id="shot-6" class="clip" src="assets/capture-teasers/restaurante-validada.png" data-start="10.43" data-duration="6.38" data-track-index="0" alt="">
+          <div id="spot-0" class="spot"></div><div id="spot-1" class="spot"></div>
+        </div>
+        <img id="bezel" src="assets/apple/iphone-17-black.png" alt="">
+      </div>
+      <div id="el-restaurante-1-pergunta" class="scene" data-composition-id="restaurante-1-pergunta" data-composition-src="compositions/restaurante-1-pergunta.html" data-start="0" data-duration="1.37" data-track-index="2" data-track-kind="graphics"></div>
+      <div id="el-restaurante-2-factura" class="scene" data-composition-id="restaurante-2-factura" data-composition-src="compositions/restaurante-2-factura.html" data-start="1.37" data-duration="11.1" data-track-index="3" data-track-kind="graphics"></div>
+      <div id="el-restaurante-3-disponivel" class="scene" data-composition-id="restaurante-3-disponivel" data-composition-src="compositions/restaurante-3-disponivel.html" data-start="12.47" data-duration="4.34" data-track-index="4" data-track-kind="graphics"></div>
+      <audio id="music" src="assets/bgm/track-phone.mp3" data-start="0" data-duration="16.81" data-volume="0.9" data-fade-out="1.2" data-track-index="9"></audio>
+      <audio id="sfx-0" src="assets/sfx/tick-soft.mp3" data-start="4.53" data-duration="0.6" data-volume="0.12" data-track-index="10"></audio>
+      <audio id="sfx-1" src="assets/sfx/tick-soft.mp3" data-start="5.43" data-duration="0.6" data-volume="0.12" data-track-index="11"></audio>
+      <audio id="sfx-2" src="assets/sfx/tick-soft.mp3" data-start="6.11" data-duration="0.6" data-volume="0.12" data-track-index="12"></audio>
+      <audio id="sfx-3" src="assets/sfx/pop-confirm.mp3" data-start="9.43" data-duration="0.575" data-volume="0.12" data-track-index="13"></audio>
+      <audio id="sfx-4" src="assets/sfx/chime-resolve.mp3" data-start="11.45" data-duration="1.441" data-volume="0.09" data-track-index="14"></audio>
+      <audio id="sfx-5" src="assets/sfx/impact-soft.mp3" data-start="13.53" data-duration="2.0" data-volume="0.16" data-track-index="15"></audio>
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      tl.set({}, {}, 16.81);
+      tl.set("#phone", { x: 162.0, y: 330, scale: 0.56, transformOrigin: "0 0" }, 0);
+      tl.fromTo("#shot-1", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power1.inOut" }, 1.57);
+      tl.fromTo("#shot-2", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power1.inOut" }, 4.45);
+      tl.fromTo("#shot-3", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power1.inOut" }, 5.35);
+      tl.fromTo("#shot-4", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power1.inOut" }, 6.03);
+      tl.fromTo("#shot-5", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power1.inOut" }, 8.73);
+      tl.fromTo("#shot-6", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power1.inOut" }, 10.43);
+      tl.fromTo("#spot-0", { opacity: 0 }, { opacity: 1, duration: 0.26, ease: "power2.out" }, 7.19);
+      tl.to("#spot-0", { opacity: 0, duration: 0.2, ease: "power2.in" }, 8.63);
+      tl.fromTo("#spot-1", { opacity: 0 }, { opacity: 1, duration: 0.26, ease: "power2.out" }, 11.45);
+      tl.to("#spot-1", { opacity: 0, duration: 0.2, ease: "power2.in" }, 12.11);
+      tl.to("#phone", { x: 54.0, y: 310, scale: 0.72, duration: 0.5, ease: "power3.inOut" }, 1.33);
+      tl.to("#phone", { x: 121.5, y: 250, scale: 0.62, duration: 0.42, ease: "power3.inOut" }, 6.75);
+      tl.to("#phone", { x: 162.0, y: 2080, scale: 0.56, duration: 0.42, ease: "power2.in" }, 12.17);
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

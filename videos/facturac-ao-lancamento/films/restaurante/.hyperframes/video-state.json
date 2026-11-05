@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "historyId": "2e223924-7f99-4b5b-ba9a-c5ed3dcf6041",
+  "currentRevision": null,
+  "pendingChanges": false,
+  "files": {
+    "compositions/restaurante-1-pergunta.html": {
+      "hash": "294156a8ac6e16de580a24398e852cfd82163abea6908962131660e7df119e93",
+      "content": "/Users/Oz/.cache/hyperframes/history/2e223924-7f99-4b5b-ba9a-c5ed3dcf6041/blobs/29/294156a8ac6e16de580a24398e852cfd82163abea6908962131660e7df119e93"
+    },
+    "compositions/restaurante-2-factura.html": {
+      "hash": "f57ba2eca561ed6f780c87669c0a90b2756b8a3667e23af015d36af9e7b8e02e",
+      "content": "/Users/Oz/.cache/hyperframes/history/2e223924-7f99-4b5b-ba9a-c5ed3dcf6041/blobs/f5/f57ba2eca561ed6f780c87669c0a90b2756b8a3667e23af015d36af9e7b8e02e"
+    },
+    "compositions/restaurante-3-disponivel.html": {
+      "hash": "a6d03eb1a13dc40c2dec3558d884f2df6f2d551c3d2fa1cb37bede0ce0526b93",
+      "content": "/Users/Oz/.cache/hyperframes/history/2e223924-7f99-4b5b-ba9a-c5ed3dcf6041/blobs/a6/a6d03eb1a13dc40c2dec3558d884f2df6f2d551c3d2fa1cb37bede0ce0526b93"
+    },
+    "hyperframes.json": {
+      "hash": "35a6d4ea79ebe911f0d81705f7aace5d8ff0316b745b0311d56af50c9c237cb7",
+      "content": "/Users/Oz/.cache/hyperframes/history/2e223924-7f99-4b5b-ba9a-c5ed3dcf6041/blobs/35/35a6d4ea79ebe911f0d81705f7aace5d8ff0316b745b0311d56af50c9c237cb7"
+    },
+    "index.html": {
+      "hash": "0c3536cf65c9a91193a4c345bfbc1a2d3af97bbafbf81ed2249a5cde7b105076",
+      "content": "/Users/Oz/.cache/hyperframes/history/2e223924-7f99-4b5b-ba9a-c5ed3dcf6041/blobs/0c/0c3536cf65c9a91193a4c345bfbc1a2d3af97bbafbf81ed2249a5cde7b105076"
+    },
+    "meta.json": {
+      "hash": "62ea0874c72225d43cbd73c5b382e1f67e21f340b187da22a7444716daf73f40",
+      "content": "/Users/Oz/.cache/hyperframes/history/2e223924-7f99-4b5b-ba9a-c5ed3dcf6041/blobs/62/62ea0874c72225d43cbd73c5b382e1f67e21f340b187da22a7444716daf73f40"
+    }
+  },
+  "revisions": {},
+  "checks": {
+    "latest": {
+      "revision": null,
+      "id": "5f5280be-ef6b-4603-a3cc-1e996d70797c"
+    },
+    "revisions": {},
+    "unversioned": [
+      {
+        "id": "5f5280be-ef6b-4603-a3cc-1e996d70797c",
+        "scope": "project",
+        "report": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/restaurante/.hyperframes/artifacts/checks/5f5280be-ef6b-4603-a3cc-1e996d70797c.json",
+        "metadata": {
+          "ok": true,
+          "browserSkipped": false,
+          "options": {
+            "samples": 9,
+            "atTransitions": false,
+            "maxIssues": 80,
+            "collapseStatic": true,
+            "tolerance": 2,
+            "timeout": 45000,
+            "contrast": true,
+            "strict": false,
+            "snapshots": false,
+            "browserGpuMode": "auto"
+          }
+        },
+        "createdAt": 1793857573372,
+        "contentHash": "b3dbaa65eca14fa92198000fe5ea0545f24812067da70df0b567f7ab5f5fcf1f",
+        "revision": null,
+        "inputFingerprint": "e5793fd7902ae6dcfeedbbeea0b154325012ca37d0baaecdbbadb273a9d05f3e",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      }
+    ]
+  },
+  "snapshots": {
+    "latest": null,
+    "revisions": {},
+    "unversioned": []
+  },
+  "renders": {
+    "latest": {
+      "id": "01dc1f87-98f1-47fa-8914-f3138eb70292",
+      "completedAt": 1793857593901,
+      "output": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/restaurante/renders/raw.mp4",
+      "status": "completed",
+      "revision": null
+    },
+    "retainedRevisions": []
+  },
+  "pendingArtifactCleanup": []
+}

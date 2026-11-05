@@ -1,0 +1,47 @@
+<template>
+  <style>
+
+    @font-face { font-family: "Inter"; font-weight: 500; font-style: normal; font-display: block;
+      src: url("assets/fonts/Inter-Medium.woff2") format("woff2"); }
+    @font-face { font-family: "Inter"; font-weight: 600; font-style: normal; font-display: block;
+      src: url("assets/fonts/Inter-SemiBold.woff2") format("woff2"); }
+    @font-face { font-family: "Inter Display"; font-weight: 600; font-style: normal; font-display: block;
+      src: url("assets/fonts/InterDisplay-SemiBold.woff2") format("woff2"); }
+
+    #root { position: absolute; inset: 0; width: 1080px; height: 1920px; overflow: hidden;
+      font-family: "Inter", sans-serif; color: #171716; }
+    #frame-ponto-9-obrigatoria-c1 { position: absolute; left: 54px; right: 54px; top: 660px; text-align: center; opacity: 0; font: 500 48px/1.2 "Inter", sans-serif; letter-spacing: -0.014em; color: #6b6b70; }
+    #frame-ponto-9-obrigatoria-l2 { position: absolute; left: 54px; right: 54px; top: 750px; display: flex; justify-content: center; flex-wrap: wrap; gap: 0 26.9px; font: 600 112px/1.08 "Inter Display", sans-serif; letter-spacing: -0.032em; color: #171716; }
+    .frame-ponto-9-obrigatoria-l2-w { display: inline-block; opacity: 0; }
+    #frame-ponto-9-obrigatoria-l2 b { font-weight: inherit; color: #f9b233; }
+    #frame-ponto-9-obrigatoria-l3 { position: absolute; left: 54px; right: 54px; top: 880px; display: flex; justify-content: center; flex-wrap: wrap; gap: 0 20.2px; font: 600 84px/1.08 "Inter Display", sans-serif; letter-spacing: -0.032em; color: #171716; }
+    .frame-ponto-9-obrigatoria-l3-w { display: inline-block; opacity: 0; }
+    #frame-ponto-9-obrigatoria-l3 b { font-weight: inherit; color: #f9b233; }
+  </style>
+  <div id="root" data-composition-id="ponto-9-obrigatoria" data-width="1080" data-height="1920">
+    <div id="frame-ponto-9-obrigatoria-stage" class="clip" data-start="0" data-duration="5.28" data-layout-allow-overflow>
+      <div id="frame-ponto-9-obrigatoria-c1">A factura electrónica</div>
+      <div id="frame-ponto-9-obrigatoria-l2"><span id="frame-ponto-9-obrigatoria-l2-w0" class="frame-ponto-9-obrigatoria-l2-w">é</span><span id="frame-ponto-9-obrigatoria-l2-w1" class="frame-ponto-9-obrigatoria-l2-w">obrigatória</span></div>
+      <div id="frame-ponto-9-obrigatoria-l3"><span id="frame-ponto-9-obrigatoria-l3-w0" class="frame-ponto-9-obrigatoria-l3-w">a</span><span id="frame-ponto-9-obrigatoria-l3-w1" class="frame-ponto-9-obrigatoria-l3-w">1</span><span id="frame-ponto-9-obrigatoria-l3-w2" class="frame-ponto-9-obrigatoria-l3-w">de</span><span id="frame-ponto-9-obrigatoria-l3-w3" class="frame-ponto-9-obrigatoria-l3-w">janeiro</span><span id="frame-ponto-9-obrigatoria-l3-w4" class="frame-ponto-9-obrigatoria-l3-w">de</span><span id="frame-ponto-9-obrigatoria-l3-w5" class="frame-ponto-9-obrigatoria-l3-w">2027<b>.</b></span></div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      tl.set({}, {}, 5.28);
+      tl.fromTo("#frame-ponto-9-obrigatoria-c1", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.24, ease: "power3.out" }, 0.08);
+      tl.to("#frame-ponto-9-obrigatoria-c1", { opacity: 0, y: -10, duration: 0.16, ease: "power2.in" }, 5.12);
+      tl.fromTo("#frame-ponto-9-obrigatoria-l2-w0", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 1.34);
+      tl.fromTo("#frame-ponto-9-obrigatoria-l2-w1", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 1.385);
+      tl.to("#frame-ponto-9-obrigatoria-l2", { opacity: 0, y: -10, duration: 0.16, ease: "power2.in" }, 5.12);
+      tl.fromTo("#frame-ponto-9-obrigatoria-l3-w0", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 2.68);
+      tl.fromTo("#frame-ponto-9-obrigatoria-l3-w1", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 2.725);
+      tl.fromTo("#frame-ponto-9-obrigatoria-l3-w2", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 2.77);
+      tl.fromTo("#frame-ponto-9-obrigatoria-l3-w3", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 2.815);
+      tl.fromTo("#frame-ponto-9-obrigatoria-l3-w4", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 2.86);
+      tl.fromTo("#frame-ponto-9-obrigatoria-l3-w5", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 2.905);
+      tl.to("#frame-ponto-9-obrigatoria-l3", { opacity: 0, y: -10, duration: 0.16, ease: "power2.in" }, 5.12);
+      window.__timelines["ponto-9-obrigatoria"] = tl;
+    })();
+  </script>
+</template>

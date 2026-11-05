@@ -1,0 +1,41 @@
+<template>
+  <style>
+
+    @font-face { font-family: "Inter"; font-weight: 500; font-style: normal; font-display: block;
+      src: url("assets/fonts/Inter-Medium.woff2") format("woff2"); }
+    @font-face { font-family: "Inter"; font-weight: 600; font-style: normal; font-display: block;
+      src: url("assets/fonts/Inter-SemiBold.woff2") format("woff2"); }
+    @font-face { font-family: "Inter Display"; font-weight: 600; font-style: normal; font-display: block;
+      src: url("assets/fonts/InterDisplay-SemiBold.woff2") format("woff2"); }
+
+    #root { position: absolute; inset: 0; width: 1080px; height: 1920px; overflow: hidden;
+      font-family: "Inter", sans-serif; color: #171716; }
+    #frame-deve-1-quanto-l1 { position: absolute; left: 54px; right: 54px; top: 86px; display: flex; justify-content: center; flex-wrap: wrap; gap: 0 22.1px; font: 600 92px/1.08 "Inter Display", sans-serif; letter-spacing: -0.032em; color: #171716; }
+    .frame-deve-1-quanto-l1-w { display: inline-block; opacity: 0; }
+    #frame-deve-1-quanto-l1 b { font-weight: inherit; color: #f9b233; }
+    #frame-deve-1-quanto-c2 { position: absolute; left: 54px; right: 54px; top: 214px; text-align: center; opacity: 0; font: 500 46px/1.2 "Inter", sans-serif; letter-spacing: -0.014em; color: #6b6b70; }
+    #frame-deve-1-quanto-c3 { position: absolute; left: 54px; right: 54px; top: 214px; text-align: center; opacity: 0; font: 500 46px/1.2 "Inter", sans-serif; letter-spacing: -0.014em; color: #6b6b70; }
+  </style>
+  <div id="root" data-composition-id="deve-1-quanto" data-width="1080" data-height="1920">
+    <div id="frame-deve-1-quanto-stage" class="clip" data-start="0" data-duration="6.19" data-layout-allow-overflow>
+      <div id="frame-deve-1-quanto-l1"><span id="frame-deve-1-quanto-l1-w0" class="frame-deve-1-quanto-l1-w">Quem</span><span id="frame-deve-1-quanto-l1-w1" class="frame-deve-1-quanto-l1-w">me</span><span id="frame-deve-1-quanto-l1-w2" class="frame-deve-1-quanto-l1-w">deve<b>?</b></span></div>
+      <div id="frame-deve-1-quanto-c2">Aqui vê quanto.</div>
+      <div id="frame-deve-1-quanto-c3">O mais antigo primeiro.</div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      tl.set({}, {}, 6.19);
+      tl.set("#frame-deve-1-quanto-l1-w0", { opacity: 1 }, 0);
+      tl.set("#frame-deve-1-quanto-l1-w1", { opacity: 1 }, 0);
+      tl.set("#frame-deve-1-quanto-l1-w2", { opacity: 1 }, 0);
+      tl.to("#frame-deve-1-quanto-l1", { opacity: 0, y: -10, duration: 0.16, ease: "power2.in" }, 6.03);
+      tl.fromTo("#frame-deve-1-quanto-c2", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.24, ease: "power3.out" }, 2.21);
+      tl.to("#frame-deve-1-quanto-c2", { opacity: 0, y: -10, duration: 0.16, ease: "power2.in" }, 3.23);
+      tl.fromTo("#frame-deve-1-quanto-c3", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.24, ease: "power3.out" }, 3.45);
+      tl.to("#frame-deve-1-quanto-c3", { opacity: 0, y: -10, duration: 0.16, ease: "power2.in" }, 6.03);
+      window.__timelines["deve-1-quanto"] = tl;
+    })();
+  </script>
+</template>

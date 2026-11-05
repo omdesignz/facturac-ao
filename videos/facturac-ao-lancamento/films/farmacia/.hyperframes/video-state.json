@@ -1,0 +1,449 @@
+{
+  "version": 1,
+  "historyId": "c218914a-b605-43de-a07b-b565ffa75f65",
+  "currentRevision": "7605344c-dd2a-4336-99b1-7c6f5f12d14f",
+  "pendingChanges": false,
+  "files": {
+    "compositions/farmacia-1-pergunta.html": {
+      "hash": "a4a5a969a13bb152c13020541712075c757664f809c6130bd36fdebedca00c5b",
+      "content": "/Users/Oz/.cache/hyperframes/history/c218914a-b605-43de-a07b-b565ffa75f65/blobs/a4/a4a5a969a13bb152c13020541712075c757664f809c6130bd36fdebedca00c5b"
+    },
+    "compositions/farmacia-2-factura.html": {
+      "hash": "e691cb4711706b22cee5f859a4bd9be957ef085929bfdb9a05f3b1578a68347e",
+      "content": "/Users/Oz/.cache/hyperframes/history/c218914a-b605-43de-a07b-b565ffa75f65/blobs/e6/e691cb4711706b22cee5f859a4bd9be957ef085929bfdb9a05f3b1578a68347e"
+    },
+    "compositions/farmacia-3-disponivel.html": {
+      "hash": "52abeb0906f4176633e112f78f3e413172d6989e26ba327a1f43fa96ab5f77e6",
+      "content": "/Users/Oz/.cache/hyperframes/history/c218914a-b605-43de-a07b-b565ffa75f65/blobs/52/52abeb0906f4176633e112f78f3e413172d6989e26ba327a1f43fa96ab5f77e6"
+    },
+    "hyperframes.json": {
+      "hash": "35a6d4ea79ebe911f0d81705f7aace5d8ff0316b745b0311d56af50c9c237cb7",
+      "content": "/Users/Oz/.cache/hyperframes/history/c218914a-b605-43de-a07b-b565ffa75f65/blobs/35/35a6d4ea79ebe911f0d81705f7aace5d8ff0316b745b0311d56af50c9c237cb7"
+    },
+    "index.html": {
+      "hash": "c0c449fffe9db119cf69349db0e24d42f28e8f2ce8beea71bac059c395286a0a",
+      "content": "/Users/Oz/.cache/hyperframes/history/c218914a-b605-43de-a07b-b565ffa75f65/blobs/c0/c0c449fffe9db119cf69349db0e24d42f28e8f2ce8beea71bac059c395286a0a"
+    },
+    "meta.json": {
+      "hash": "2ca356602bcb59a08be8fed24fe399f3ed1853509d8c3e3b7f6b2fae417a8c34",
+      "content": "/Users/Oz/.cache/hyperframes/history/c218914a-b605-43de-a07b-b565ffa75f65/blobs/2c/2ca356602bcb59a08be8fed24fe399f3ed1853509d8c3e3b7f6b2fae417a8c34"
+    }
+  },
+  "revisions": {
+    "7605344c-dd2a-4336-99b1-7c6f5f12d14f": {
+      "actor": {
+        "kind": "outside",
+        "name": "Outside"
+      },
+      "label": "Changed outside the app",
+      "startedAt": 1793857708146,
+      "endedAt": 1793857708152,
+      "files": {
+        "compositions/farmacia-1-pergunta.html": {
+          "before": "/Users/Oz/.cache/hyperframes/history/c218914a-b605-43de-a07b-b565ffa75f65/blobs/13/131684f7455ef4121ac9d048ed03c6ed703b3b75b2413386746a7e378bf00df3",
+          "after": "/Users/Oz/.cache/hyperframes/history/c218914a-b605-43de-a07b-b565ffa75f65/blobs/a4/a4a5a969a13bb152c13020541712075c757664f809c6130bd36fdebedca00c5b"
+        },
+        "compositions/farmacia-2-factura.html": {
+          "before": "/Users/Oz/.cache/hyperframes/history/c218914a-b605-43de-a07b-b565ffa75f65/blobs/03/03c06d63d5d95eee04fc42909ced37172d9e5606a90f00dc60ab1bbe5860f2cb",
+          "after": "/Users/Oz/.cache/hyperframes/history/c218914a-b605-43de-a07b-b565ffa75f65/blobs/e6/e691cb4711706b22cee5f859a4bd9be957ef085929bfdb9a05f3b1578a68347e"
+        },
+        "compositions/farmacia-3-disponivel.html": {
+          "before": "/Users/Oz/.cache/hyperframes/history/c218914a-b605-43de-a07b-b565ffa75f65/blobs/59/591e8f37bbacbf03ac29f879fa237fc70e0c765a86d57eae04e303321655363e",
+          "after": "/Users/Oz/.cache/hyperframes/history/c218914a-b605-43de-a07b-b565ffa75f65/blobs/52/52abeb0906f4176633e112f78f3e413172d6989e26ba327a1f43fa96ab5f77e6"
+        },
+        "index.html": {
+          "before": "/Users/Oz/.cache/hyperframes/history/c218914a-b605-43de-a07b-b565ffa75f65/blobs/2c/2c4deda57893048accdc3a152a4ef3b28342538c9337c099505b1d1dc341db28",
+          "after": "/Users/Oz/.cache/hyperframes/history/c218914a-b605-43de-a07b-b565ffa75f65/blobs/c0/c0c449fffe9db119cf69349db0e24d42f28e8f2ce8beea71bac059c395286a0a"
+        }
+      }
+    }
+  },
+  "checks": {
+    "latest": {
+      "revision": "7605344c-dd2a-4336-99b1-7c6f5f12d14f",
+      "id": "4d4261f6-e4f7-4e6e-a905-18fb23a00e91"
+    },
+    "revisions": {
+      "7605344c-dd2a-4336-99b1-7c6f5f12d14f": [
+        {
+          "id": "4d4261f6-e4f7-4e6e-a905-18fb23a00e91",
+          "scope": "project",
+          "report": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/farmacia/.hyperframes/artifacts/checks/4d4261f6-e4f7-4e6e-a905-18fb23a00e91.json",
+          "metadata": {
+            "ok": true,
+            "browserSkipped": false,
+            "options": {
+              "samples": 9,
+              "atTransitions": false,
+              "maxIssues": 80,
+              "collapseStatic": true,
+              "tolerance": 2,
+              "timeout": 45000,
+              "contrast": true,
+              "strict": false,
+              "snapshots": false,
+              "browserGpuMode": "auto"
+            }
+          },
+          "createdAt": 1793857712769,
+          "contentHash": "60c142358318997517dfbdce7c4b2689c03fde398e92059a7139baa7a76ecc27",
+          "revision": "7605344c-dd2a-4336-99b1-7c6f5f12d14f",
+          "inputFingerprint": "d8b019144640343f4768aed0672d8c9f866bc3169b02caddcbb2dbaf04066144",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        }
+      ]
+    },
+    "unversioned": [
+      {
+        "id": "80b2528c-698e-4c1b-b288-772801a03d8a",
+        "scope": "project",
+        "report": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/farmacia/.hyperframes/artifacts/checks/80b2528c-698e-4c1b-b288-772801a03d8a.json",
+        "metadata": {
+          "ok": true,
+          "browserSkipped": false,
+          "options": {
+            "samples": 9,
+            "atTransitions": false,
+            "maxIssues": 80,
+            "collapseStatic": true,
+            "tolerance": 2,
+            "timeout": 45000,
+            "contrast": true,
+            "strict": false,
+            "snapshots": false,
+            "browserGpuMode": "auto"
+          }
+        },
+        "createdAt": 1793857544876,
+        "contentHash": "ed9cfa6b94c464624ac724f064e67838d9316b4163d0549fdf6ad449eb5d00d9",
+        "revision": null,
+        "inputFingerprint": "3910ead3004acf98f9895a6b9485edd457b978112677823e03085d4256c8afa8",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      }
+    ]
+  },
+  "snapshots": {
+    "latest": {
+      "revision": null,
+      "id": "0147fdbf-5c5d-41a6-8978-2b29a1f08f2e-14"
+    },
+    "revisions": {},
+    "unversioned": [
+      {
+        "scope": "full",
+        "id": "0147fdbf-5c5d-41a6-8978-2b29a1f08f2e-0",
+        "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/farmacia/.hyperframes/artifacts/snapshots/872de36f-3cf4-42c5-92db-6eacdd493a6f/frame-00-at-0s.png",
+        "time": 0,
+        "metadata": {
+          "width": 1080,
+          "height": 1920,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793857425459,
+        "contentHash": "b0a9c4a745c6918bb3d4fb8b8cf49372574d2df588d2944892b041bd042bab7f",
+        "revision": null,
+        "inputFingerprint": "3910ead3004acf98f9895a6b9485edd457b978112677823e03085d4256c8afa8",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "0147fdbf-5c5d-41a6-8978-2b29a1f08f2e-1",
+        "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/farmacia/.hyperframes/artifacts/snapshots/872de36f-3cf4-42c5-92db-6eacdd493a6f/frame-01-at-1s.png",
+        "time": 1,
+        "metadata": {
+          "width": 1080,
+          "height": 1920,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793857425459,
+        "contentHash": "c8e880151bd98d44e68b280bd40f5bb0b0bbf6125f1c6bafe7a141d1420469ac",
+        "revision": null,
+        "inputFingerprint": "3910ead3004acf98f9895a6b9485edd457b978112677823e03085d4256c8afa8",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "0147fdbf-5c5d-41a6-8978-2b29a1f08f2e-2",
+        "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/farmacia/.hyperframes/artifacts/snapshots/872de36f-3cf4-42c5-92db-6eacdd493a6f/frame-02-at-2.2s.png",
+        "time": 2.2,
+        "metadata": {
+          "width": 1080,
+          "height": 1920,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793857425459,
+        "contentHash": "48d8225289f68fd8a972cf718b9fcc23cec4d3b5d3639da914bb83bbd43851b3",
+        "revision": null,
+        "inputFingerprint": "3910ead3004acf98f9895a6b9485edd457b978112677823e03085d4256c8afa8",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "0147fdbf-5c5d-41a6-8978-2b29a1f08f2e-3",
+        "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/farmacia/.hyperframes/artifacts/snapshots/872de36f-3cf4-42c5-92db-6eacdd493a6f/frame-03-at-4.5s.png",
+        "time": 4.5,
+        "metadata": {
+          "width": 1080,
+          "height": 1920,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793857425459,
+        "contentHash": "1bd0e99cfc0f6e1a3050ec35d5f95d526b8411aaafde7d2b98b4aac23cbfc729",
+        "revision": null,
+        "inputFingerprint": "3910ead3004acf98f9895a6b9485edd457b978112677823e03085d4256c8afa8",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "0147fdbf-5c5d-41a6-8978-2b29a1f08f2e-4",
+        "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/farmacia/.hyperframes/artifacts/snapshots/872de36f-3cf4-42c5-92db-6eacdd493a6f/frame-04-at-5.6s.png",
+        "time": 5.6,
+        "metadata": {
+          "width": 1080,
+          "height": 1920,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793857425459,
+        "contentHash": "f7b7667a80c08c92366012a0b8d81b5f3f9c0669bcbba08d50038cb26d281840",
+        "revision": null,
+        "inputFingerprint": "3910ead3004acf98f9895a6b9485edd457b978112677823e03085d4256c8afa8",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "0147fdbf-5c5d-41a6-8978-2b29a1f08f2e-5",
+        "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/farmacia/.hyperframes/artifacts/snapshots/872de36f-3cf4-42c5-92db-6eacdd493a6f/frame-05-at-6.7s.png",
+        "time": 6.7,
+        "metadata": {
+          "width": 1080,
+          "height": 1920,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793857425459,
+        "contentHash": "7d1277f44abff1eb82b45154b76b9695db6c35202dc1bd324a7920be15dcdecb",
+        "revision": null,
+        "inputFingerprint": "3910ead3004acf98f9895a6b9485edd457b978112677823e03085d4256c8afa8",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "0147fdbf-5c5d-41a6-8978-2b29a1f08f2e-6",
+        "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/farmacia/.hyperframes/artifacts/snapshots/872de36f-3cf4-42c5-92db-6eacdd493a6f/frame-06-at-7.8s.png",
+        "time": 7.8,
+        "metadata": {
+          "width": 1080,
+          "height": 1920,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793857425459,
+        "contentHash": "fb2a00dcf3d377a751fc037f78ca156840fbfd2190a2fb10bb9e222d14f4fe29",
+        "revision": null,
+        "inputFingerprint": "3910ead3004acf98f9895a6b9485edd457b978112677823e03085d4256c8afa8",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "0147fdbf-5c5d-41a6-8978-2b29a1f08f2e-7",
+        "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/farmacia/.hyperframes/artifacts/snapshots/872de36f-3cf4-42c5-92db-6eacdd493a6f/frame-07-at-9s.png",
+        "time": 9,
+        "metadata": {
+          "width": 1080,
+          "height": 1920,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793857425459,
+        "contentHash": "e6305b73d8a88aae18923618b7a8b2d9f1667ec0bc5019c70a26d11d0fa3a8f2",
+        "revision": null,
+        "inputFingerprint": "3910ead3004acf98f9895a6b9485edd457b978112677823e03085d4256c8afa8",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "0147fdbf-5c5d-41a6-8978-2b29a1f08f2e-8",
+        "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/farmacia/.hyperframes/artifacts/snapshots/872de36f-3cf4-42c5-92db-6eacdd493a6f/frame-08-at-9.6s.png",
+        "time": 9.6,
+        "metadata": {
+          "width": 1080,
+          "height": 1920,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793857425459,
+        "contentHash": "1364d8114f2a0398031aa316881d9c6207c9d78d9df108d9baed6aabe78989ac",
+        "revision": null,
+        "inputFingerprint": "3910ead3004acf98f9895a6b9485edd457b978112677823e03085d4256c8afa8",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "0147fdbf-5c5d-41a6-8978-2b29a1f08f2e-9",
+        "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/farmacia/.hyperframes/artifacts/snapshots/872de36f-3cf4-42c5-92db-6eacdd493a6f/frame-09-at-10.5s.png",
+        "time": 10.5,
+        "metadata": {
+          "width": 1080,
+          "height": 1920,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793857425459,
+        "contentHash": "dff5b4b5422026636641a6a6f591fdf7bde414d1047d86993fe12364f4c947d8",
+        "revision": null,
+        "inputFingerprint": "3910ead3004acf98f9895a6b9485edd457b978112677823e03085d4256c8afa8",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "0147fdbf-5c5d-41a6-8978-2b29a1f08f2e-10",
+        "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/farmacia/.hyperframes/artifacts/snapshots/872de36f-3cf4-42c5-92db-6eacdd493a6f/frame-10-at-11.3s.png",
+        "time": 11.3,
+        "metadata": {
+          "width": 1080,
+          "height": 1920,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793857425459,
+        "contentHash": "3f826baf71882d138d3aea3f387e02d7d0f154a8eaee9f1e688be514d12c003d",
+        "revision": null,
+        "inputFingerprint": "3910ead3004acf98f9895a6b9485edd457b978112677823e03085d4256c8afa8",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "0147fdbf-5c5d-41a6-8978-2b29a1f08f2e-11",
+        "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/farmacia/.hyperframes/artifacts/snapshots/872de36f-3cf4-42c5-92db-6eacdd493a6f/frame-11-at-12.2s.png",
+        "time": 12.2,
+        "metadata": {
+          "width": 1080,
+          "height": 1920,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793857425459,
+        "contentHash": "a0d188c2df37508e489912c6a733911f917b96fd2b0ea1c86db8f4d5399f0faa",
+        "revision": null,
+        "inputFingerprint": "3910ead3004acf98f9895a6b9485edd457b978112677823e03085d4256c8afa8",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "0147fdbf-5c5d-41a6-8978-2b29a1f08f2e-12",
+        "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/farmacia/.hyperframes/artifacts/snapshots/872de36f-3cf4-42c5-92db-6eacdd493a6f/frame-12-at-13.3s.png",
+        "time": 13.3,
+        "metadata": {
+          "width": 1080,
+          "height": 1920,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793857425459,
+        "contentHash": "194de63f45fc1ac5926ac852123ccc1ce0f53c58afe1cdba05fd670fff259af3",
+        "revision": null,
+        "inputFingerprint": "3910ead3004acf98f9895a6b9485edd457b978112677823e03085d4256c8afa8",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "0147fdbf-5c5d-41a6-8978-2b29a1f08f2e-13",
+        "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/farmacia/.hyperframes/artifacts/snapshots/872de36f-3cf4-42c5-92db-6eacdd493a6f/frame-13-at-15.4s.png",
+        "time": 15.4,
+        "metadata": {
+          "width": 1080,
+          "height": 1920,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793857425459,
+        "contentHash": "f618d746896b5b4feb5f1e7129c2e0f222e7760aba25d58303c2d36f0d47f23e",
+        "revision": null,
+        "inputFingerprint": "3910ead3004acf98f9895a6b9485edd457b978112677823e03085d4256c8afa8",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "0147fdbf-5c5d-41a6-8978-2b29a1f08f2e-14",
+        "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/farmacia/.hyperframes/artifacts/snapshots/872de36f-3cf4-42c5-92db-6eacdd493a6f/frame-14-at-16.58s.png",
+        "time": 16.58,
+        "metadata": {
+          "width": 1080,
+          "height": 1920,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793857425459,
+        "contentHash": "f618d746896b5b4feb5f1e7129c2e0f222e7760aba25d58303c2d36f0d47f23e",
+        "revision": null,
+        "inputFingerprint": "3910ead3004acf98f9895a6b9485edd457b978112677823e03085d4256c8afa8",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      }
+    ]
+  },
+  "renders": {
+    "latest": {
+      "id": "5fafe87b-62db-4819-ac01-9f69a62f7c6d",
+      "completedAt": 1793857733166,
+      "output": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/farmacia/renders/raw.mp4",
+      "status": "completed",
+      "revision": "7605344c-dd2a-4336-99b1-7c6f5f12d14f"
+    },
+    "retainedRevisions": [
+      "7605344c-dd2a-4336-99b1-7c6f5f12d14f"
+    ]
+  },
+  "pendingArtifactCleanup": []
+}

@@ -1,0 +1,45 @@
+<template>
+  <style>
+
+    @font-face { font-family: "Inter"; font-weight: 500; font-style: normal; font-display: block;
+      src: url("assets/fonts/Inter-Medium.woff2") format("woff2"); }
+    @font-face { font-family: "Inter"; font-weight: 600; font-style: normal; font-display: block;
+      src: url("assets/fonts/Inter-SemiBold.woff2") format("woff2"); }
+    @font-face { font-family: "Inter Display"; font-weight: 600; font-style: normal; font-display: block;
+      src: url("assets/fonts/InterDisplay-SemiBold.woff2") format("woff2"); }
+
+    #root { position: absolute; inset: 0; width: 1080px; height: 1920px; overflow: hidden;
+      font-family: "Inter", sans-serif; color: #171716; }
+    #frame-ponto-7-tudo-c1 { position: absolute; left: 54px; right: 54px; top: 150px; text-align: center; opacity: 0; font: 500 52px/1.2 "Inter", sans-serif; letter-spacing: -0.014em; color: #6b6b70; }
+    #frame-ponto-7-tudo-c2 { position: absolute; left: 54px; right: 54px; top: 150px; text-align: center; opacity: 0; font: 500 52px/1.2 "Inter", sans-serif; letter-spacing: -0.014em; color: #6b6b70; }
+    #frame-ponto-7-tudo-c3 { position: absolute; left: 54px; right: 54px; top: 150px; text-align: center; opacity: 0; font: 500 52px/1.2 "Inter", sans-serif; letter-spacing: -0.014em; color: #6b6b70; }
+    #frame-ponto-7-tudo-c4 { position: absolute; left: 54px; right: 54px; top: 150px; text-align: center; opacity: 0; font: 500 52px/1.2 "Inter", sans-serif; letter-spacing: -0.014em; color: #6b6b70; }
+    #frame-ponto-7-tudo-c5 { position: absolute; left: 54px; right: 54px; top: 150px; text-align: center; opacity: 0; font: 500 52px/1.2 "Inter", sans-serif; letter-spacing: -0.014em; color: #6b6b70; }
+  </style>
+  <div id="root" data-composition-id="ponto-7-tudo" data-width="1080" data-height="1920">
+    <div id="frame-ponto-7-tudo-stage" class="clip" data-start="0" data-duration="4.46" data-layout-allow-overflow>
+      <div id="frame-ponto-7-tudo-c1">Facturas.</div>
+      <div id="frame-ponto-7-tudo-c2">Recibos.</div>
+      <div id="frame-ponto-7-tudo-c3">Clientes.</div>
+      <div id="frame-ponto-7-tudo-c4">Artigos.</div>
+      <div id="frame-ponto-7-tudo-c5">Tudo no mesmo sítio.</div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      tl.set({}, {}, 4.46);
+      tl.fromTo("#frame-ponto-7-tudo-c1", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.24, ease: "power3.out" }, 0.06);
+      tl.to("#frame-ponto-7-tudo-c1", { opacity: 0, y: -10, duration: 0.16, ease: "power2.in" }, 0.58);
+      tl.fromTo("#frame-ponto-7-tudo-c2", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.24, ease: "power3.out" }, 0.78);
+      tl.to("#frame-ponto-7-tudo-c2", { opacity: 0, y: -10, duration: 0.16, ease: "power2.in" }, 1.24);
+      tl.fromTo("#frame-ponto-7-tudo-c3", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.24, ease: "power3.out" }, 1.44);
+      tl.to("#frame-ponto-7-tudo-c3", { opacity: 0, y: -10, duration: 0.16, ease: "power2.in" }, 1.96);
+      tl.fromTo("#frame-ponto-7-tudo-c4", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.24, ease: "power3.out" }, 2.16);
+      tl.to("#frame-ponto-7-tudo-c4", { opacity: 0, y: -10, duration: 0.16, ease: "power2.in" }, 2.9);
+      tl.fromTo("#frame-ponto-7-tudo-c5", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.24, ease: "power3.out" }, 3.1);
+      tl.to("#frame-ponto-7-tudo-c5", { opacity: 0, y: -10, duration: 0.16, ease: "power2.in" }, 4.3);
+      window.__timelines["ponto-7-tudo"] = tl;
+    })();
+  </script>
+</template>

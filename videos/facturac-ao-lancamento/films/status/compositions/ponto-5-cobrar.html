@@ -1,0 +1,33 @@
+<template>
+  <style>
+
+    @font-face { font-family: "Inter"; font-weight: 500; font-style: normal; font-display: block;
+      src: url("assets/fonts/Inter-Medium.woff2") format("woff2"); }
+    @font-face { font-family: "Inter"; font-weight: 600; font-style: normal; font-display: block;
+      src: url("assets/fonts/Inter-SemiBold.woff2") format("woff2"); }
+    @font-face { font-family: "Inter Display"; font-weight: 600; font-style: normal; font-display: block;
+      src: url("assets/fonts/InterDisplay-SemiBold.woff2") format("woff2"); }
+
+    #root { position: absolute; inset: 0; width: 1080px; height: 1920px; overflow: hidden;
+      font-family: "Inter", sans-serif; color: #171716; }
+    #frame-ponto-5-cobrar-c1 { position: absolute; left: 54px; right: 54px; top: 150px; text-align: center; opacity: 0; font: 500 52px/1.2 "Inter", sans-serif; letter-spacing: -0.014em; color: #6b6b70; }
+    #frame-ponto-5-cobrar-c2 { position: absolute; left: 54px; right: 54px; top: 150px; text-align: center; opacity: 0; font: 500 52px/1.2 "Inter", sans-serif; letter-spacing: -0.014em; color: #6b6b70; }
+  </style>
+  <div id="root" data-composition-id="ponto-5-cobrar" data-width="1080" data-height="1920">
+    <div id="frame-ponto-5-cobrar-stage" class="clip" data-start="0" data-duration="2.94" data-layout-allow-overflow>
+      <div id="frame-ponto-5-cobrar-c1">Sabe quem lhe deve.</div>
+      <div id="frame-ponto-5-cobrar-c2">O lembrete já vem escrito.</div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      tl.set({}, {}, 2.94);
+      tl.fromTo("#frame-ponto-5-cobrar-c1", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.24, ease: "power3.out" }, 0.06);
+      tl.to("#frame-ponto-5-cobrar-c1", { opacity: 0, y: -10, duration: 0.16, ease: "power2.in" }, 0.88);
+      tl.fromTo("#frame-ponto-5-cobrar-c2", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.24, ease: "power3.out" }, 1.08);
+      tl.to("#frame-ponto-5-cobrar-c2", { opacity: 0, y: -10, duration: 0.16, ease: "power2.in" }, 2.78);
+      window.__timelines["ponto-5-cobrar"] = tl;
+    })();
+  </script>
+</template>
