@@ -63,6 +63,19 @@ QA:      0.0 (thumbnail: word + phone), 1.2 (til gone), 2.8 (facturac.ao closed)
          off by the frame, and type at least 28 px.
 ```
 
+## Voiced cuts (2026-11-05)
+
+The four films were recreated with the redesigned app, and the voice now leads: each is
+one continuous ElevenLabs read (Clara, eleven_v4, assets/vo), and tools/build_films.py
+places every cut, camera move and landing on a word of that read. The shot list above is
+the pilot's history; the timings in build_films.py are what is current. Type is Inter,
+as in the app; only the word that becomes the name stays in Century Gothic outlines. The
+gold button is flat and square-cornered like the app's, the camera does not bounce, and
+a highlight dims the screen around what the voice is naming.
+
+Takes in use: o-ponto ponto-a, tudo-em-ao tudo-c, mudar mudar-a, endereco endereco-a. To
+swap one, re-read its word timings and adjust the `c(...)` cues.
+
 ## Rebuilding
 
 1. Apple's frame: mount Bezel-iPhone-17.dmg from developer.apple.com/design/resources (its
@@ -70,13 +83,11 @@ QA:      0.0 (thumbnail: word + phone), 1.2 (til gone), 2.8 (facturac.ao closed)
    copy `PNG/iPhone 17/iPhone 17 - Black - Portrait.png` to `assets/apple/iphone-17-black.png`.
 2. Footage, only if it must be recaptured: `tools/demo/setup.sh <scratch dir>`, serve it
    with `<scratch dir>/run.sh`, sign the simulator's app in as ana@ngola.test, record with
-   `xcrun simctl io <device> recordVideo`, then `ffmpeg -i launch.mov -vf fps=60 -crf 10
-   assets/capture/launch-60.mp4`.
-3. `python3 tools/build_ponto.py` (needs fontTools and Century Gothic Bold installed),
-   `npx hyperframes render --fps 30 -q delivery --crf 12 -o renders/ponto-raw.mp4`, then
-   `../tools/master_audio.sh` and `../tools/export_social.sh` as in the other films.
-4. The other three films: `python3 tools/build_films.py` writes films/tudo-em-ao, films/mudar and
-   films/endereco (each its own project, its assets a link to this folder's); render and
-   check from inside each, then master and export as above. Endereço shows the website, so
-   its phone and address bar are drawn, never Apple's frame; its page is captured with
-   `node tools/capture_site.mjs https://vap-invoice.test/ assets/capture/site-top.png`.
+   `xcrun simctl io <device> recordVideo`, then `ffmpeg -i clip.mov -vf fps=60 -crf 12
+   assets/capture/clip-60.mp4`. Status bar: `--batteryState discharging`, or the battery
+   shows green. AGT status turns "(observação antiga)" within minutes of seeding, so capture
+   a validated document straight after replaying its acceptance.
+3. `python3 tools/build_films.py` (needs fontTools and Century Gothic Bold installed). From
+   each `films/<film>`: `npx hyperframes render --fps 30 -q delivery --crf 12 -o renders/raw.mp4`.
+4. `python3 tools/mix_voice.py <film> <take>` lays the read over the render, masters it and
+   writes `renders/social/<film>-lancamento-{instagram,whatsapp}.mp4`.

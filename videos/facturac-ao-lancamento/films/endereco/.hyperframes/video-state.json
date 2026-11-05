@@ -1,24 +1,24 @@
 {
   "version": 1,
   "historyId": "6a5571f0-f4fb-4de3-b442-dc7360c41f14",
-  "currentRevision": "e4f83459-583f-4e29-b732-27028816142d",
+  "currentRevision": "a3667e56-8802-4d64-aef8-fc23e9e07054",
   "pendingChanges": false,
   "files": {
     "compositions/endereco-1-onde.html": {
-      "hash": "ec8dabb0e8f5f6a3fd35f7acb26eab9bf6e0637dbc1a0ee423778971346fbad4",
-      "content": "/Users/Oz/.cache/hyperframes/history/6a5571f0-f4fb-4de3-b442-dc7360c41f14/blobs/ec/ec8dabb0e8f5f6a3fd35f7acb26eab9bf6e0637dbc1a0ee423778971346fbad4"
+      "hash": "af74fd411324aa0a0429500472d36a7b4b222a254d94e62311e797ab202a47af",
+      "content": "/Users/Oz/.cache/hyperframes/history/6a5571f0-f4fb-4de3-b442-dc7360c41f14/blobs/af/af74fd411324aa0a0429500472d36a7b4b222a254d94e62311e797ab202a47af"
     },
     "compositions/endereco-2-disponivel.html": {
-      "hash": "44d27b50b835b8b1155176a328eb862dad5e2bc97220795fe75f063c3f407c45",
-      "content": "/Users/Oz/.cache/hyperframes/history/6a5571f0-f4fb-4de3-b442-dc7360c41f14/blobs/44/44d27b50b835b8b1155176a328eb862dad5e2bc97220795fe75f063c3f407c45"
+      "hash": "fed1b0930d15afe6ad9002990477f8d77812510cbfa32da9feb34d020e37ee7d",
+      "content": "/Users/Oz/.cache/hyperframes/history/6a5571f0-f4fb-4de3-b442-dc7360c41f14/blobs/fe/fed1b0930d15afe6ad9002990477f8d77812510cbfa32da9feb34d020e37ee7d"
     },
     "hyperframes.json": {
       "hash": "35a6d4ea79ebe911f0d81705f7aace5d8ff0316b745b0311d56af50c9c237cb7",
       "content": "/Users/Oz/.cache/hyperframes/history/6a5571f0-f4fb-4de3-b442-dc7360c41f14/blobs/35/35a6d4ea79ebe911f0d81705f7aace5d8ff0316b745b0311d56af50c9c237cb7"
     },
     "index.html": {
-      "hash": "a2d5223b6cf9a94ba1a9c35820ef3ded1ec9c09295fb71a8665e4ea682fef3cc",
-      "content": "/Users/Oz/.cache/hyperframes/history/6a5571f0-f4fb-4de3-b442-dc7360c41f14/blobs/a2/a2d5223b6cf9a94ba1a9c35820ef3ded1ec9c09295fb71a8665e4ea682fef3cc"
+      "hash": "78f99d3619ae6868ff5dffaa1c2130c4b84791868c690a8b3d6cd940159e9335",
+      "content": "/Users/Oz/.cache/hyperframes/history/6a5571f0-f4fb-4de3-b442-dc7360c41f14/blobs/78/78f99d3619ae6868ff5dffaa1c2130c4b84791868c690a8b3d6cd940159e9335"
     },
     "meta.json": {
       "hash": "392a32bd7cf00d8e35f1840946f40c22638d5af704000e0fdae99d6e14ca265f",
@@ -57,6 +57,44 @@
         "index.html": {
           "before": "/Users/Oz/.cache/hyperframes/history/6a5571f0-f4fb-4de3-b442-dc7360c41f14/blobs/fc/fc23b3892b845f863969ef35e08f60fa221bcd386c23ab42178680ed239a85cc",
           "after": "/Users/Oz/.cache/hyperframes/history/6a5571f0-f4fb-4de3-b442-dc7360c41f14/blobs/a2/a2d5223b6cf9a94ba1a9c35820ef3ded1ec9c09295fb71a8665e4ea682fef3cc"
+        }
+      }
+    },
+    "8862ab00-6bd0-4355-ba35-64394c597ecc": {
+      "actor": {
+        "kind": "outside",
+        "name": "Outside"
+      },
+      "label": "Changed outside the app",
+      "startedAt": 1793854451914,
+      "endedAt": 1793854451918,
+      "files": {
+        "compositions/endereco-1-onde.html": {
+          "before": "/Users/Oz/.cache/hyperframes/history/6a5571f0-f4fb-4de3-b442-dc7360c41f14/blobs/ec/ec8dabb0e8f5f6a3fd35f7acb26eab9bf6e0637dbc1a0ee423778971346fbad4",
+          "after": "/Users/Oz/.cache/hyperframes/history/6a5571f0-f4fb-4de3-b442-dc7360c41f14/blobs/15/151e7c1d6c43b773b7f82d67477924161fc853b706b20b4e7ff53bddbfe7d2cb"
+        },
+        "compositions/endereco-2-disponivel.html": {
+          "before": "/Users/Oz/.cache/hyperframes/history/6a5571f0-f4fb-4de3-b442-dc7360c41f14/blobs/44/44d27b50b835b8b1155176a328eb862dad5e2bc97220795fe75f063c3f407c45",
+          "after": "/Users/Oz/.cache/hyperframes/history/6a5571f0-f4fb-4de3-b442-dc7360c41f14/blobs/fe/fed1b0930d15afe6ad9002990477f8d77812510cbfa32da9feb34d020e37ee7d"
+        },
+        "index.html": {
+          "before": "/Users/Oz/.cache/hyperframes/history/6a5571f0-f4fb-4de3-b442-dc7360c41f14/blobs/a2/a2d5223b6cf9a94ba1a9c35820ef3ded1ec9c09295fb71a8665e4ea682fef3cc",
+          "after": "/Users/Oz/.cache/hyperframes/history/6a5571f0-f4fb-4de3-b442-dc7360c41f14/blobs/78/78f99d3619ae6868ff5dffaa1c2130c4b84791868c690a8b3d6cd940159e9335"
+        }
+      }
+    },
+    "a3667e56-8802-4d64-aef8-fc23e9e07054": {
+      "actor": {
+        "kind": "outside",
+        "name": "Outside"
+      },
+      "label": "Changed outside the app",
+      "startedAt": 1793854566999,
+      "endedAt": 1793854567002,
+      "files": {
+        "compositions/endereco-1-onde.html": {
+          "before": "/Users/Oz/.cache/hyperframes/history/6a5571f0-f4fb-4de3-b442-dc7360c41f14/blobs/15/151e7c1d6c43b773b7f82d67477924161fc853b706b20b4e7ff53bddbfe7d2cb",
+          "after": "/Users/Oz/.cache/hyperframes/history/6a5571f0-f4fb-4de3-b442-dc7360c41f14/blobs/af/af74fd411324aa0a0429500472d36a7b4b222a254d94e62311e797ab202a47af"
         }
       }
     }
@@ -125,6 +163,36 @@
           "inputScope": "local-project-files",
           "attribution": "recorded-revision"
         }
+      ],
+      "8862ab00-6bd0-4355-ba35-64394c597ecc": [
+        {
+          "id": "adb423d3-7107-4b71-a3b9-aa478ac1db59",
+          "scope": "project",
+          "metadata": {
+            "ok": true,
+            "browserSkipped": false,
+            "options": {
+              "samples": 9,
+              "atTransitions": false,
+              "maxIssues": 80,
+              "collapseStatic": true,
+              "tolerance": 2,
+              "timeout": 45000,
+              "contrast": true,
+              "strict": false,
+              "snapshots": false,
+              "browserGpuMode": "auto"
+            }
+          },
+          "createdAt": 1793854455910,
+          "contentHash": "fc40b5b8c2f61cfa999737115d5035e9c5268892a3284d50218e0d54dca5b23b",
+          "revision": "8862ab00-6bd0-4355-ba35-64394c597ecc",
+          "inputFingerprint": "c5672c8fef0e641242467cae750b8c13d25667420653f8b1419519b21c79693e",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision",
+          "status": "cleaned",
+          "cleanedAfterRender": "362412bd-4bb5-4e1f-886a-1b96d4ed07c6"
+        }
       ]
     },
     "unversioned": [
@@ -159,8 +227,8 @@
   },
   "snapshots": {
     "latest": {
-      "revision": "e4f83459-583f-4e29-b732-27028816142d",
-      "id": "2a68f0cd-cf08-4eb9-bde3-544f7ace4fc2-4"
+      "revision": "a3667e56-8802-4d64-aef8-fc23e9e07054",
+      "id": "d21f09e3-7fca-49cd-9f71-06bbfcfc806d-9"
     },
     "revisions": {
       "b0134627-83ff-4b54-9fac-1b10a1a78fa7": [],
@@ -262,6 +330,208 @@
           "contentHash": "3936bdf8555311bca401fb82f9a44983de88809a5872e09d0466cb39408a9090",
           "revision": "e4f83459-583f-4e29-b732-27028816142d",
           "inputFingerprint": "123f38b021b6bdadf9d6a55427a9a82416892add36b495ddf8351de426787539",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        }
+      ],
+      "a3667e56-8802-4d64-aef8-fc23e9e07054": [
+        {
+          "scope": "full",
+          "id": "d21f09e3-7fca-49cd-9f71-06bbfcfc806d-0",
+          "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/endereco/.hyperframes/artifacts/snapshots/f61eb97b-b100-4b65-861b-5645d7fd3e5b/frame-00-at-0.1s.png",
+          "time": 0.1,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793854570329,
+          "contentHash": "86444fd43dee7ec7466cd3cc5e2fb1f664aa35b712f5d3a0d97aabfa94fbc98d",
+          "revision": "a3667e56-8802-4d64-aef8-fc23e9e07054",
+          "inputFingerprint": "334f2180a03c1e6bcf69dedf877f6305e3f981bbbf764a24b73e3ff37aa5c900",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "d21f09e3-7fca-49cd-9f71-06bbfcfc806d-1",
+          "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/endereco/.hyperframes/artifacts/snapshots/f61eb97b-b100-4b65-861b-5645d7fd3e5b/frame-01-at-2.7s.png",
+          "time": 2.7,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793854570330,
+          "contentHash": "51dfbe41ce284f4330dda49166c3f4abad54b52415a601a89bbc9b04e9131004",
+          "revision": "a3667e56-8802-4d64-aef8-fc23e9e07054",
+          "inputFingerprint": "334f2180a03c1e6bcf69dedf877f6305e3f981bbbf764a24b73e3ff37aa5c900",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "d21f09e3-7fca-49cd-9f71-06bbfcfc806d-2",
+          "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/endereco/.hyperframes/artifacts/snapshots/f61eb97b-b100-4b65-861b-5645d7fd3e5b/frame-02-at-4.3s.png",
+          "time": 4.3,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793854570330,
+          "contentHash": "5ccf6a5a7cb480b2d3229bb93093aa8d0b71f9b94eb4b764016336bf8c1757fc",
+          "revision": "a3667e56-8802-4d64-aef8-fc23e9e07054",
+          "inputFingerprint": "334f2180a03c1e6bcf69dedf877f6305e3f981bbbf764a24b73e3ff37aa5c900",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "d21f09e3-7fca-49cd-9f71-06bbfcfc806d-3",
+          "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/endereco/.hyperframes/artifacts/snapshots/f61eb97b-b100-4b65-861b-5645d7fd3e5b/frame-03-at-5.9s.png",
+          "time": 5.9,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793854570330,
+          "contentHash": "ee7506850f5ac92a95ac4449d5f1408b7f7f430ac062ae07e72d47d092ba8d1a",
+          "revision": "a3667e56-8802-4d64-aef8-fc23e9e07054",
+          "inputFingerprint": "334f2180a03c1e6bcf69dedf877f6305e3f981bbbf764a24b73e3ff37aa5c900",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "d21f09e3-7fca-49cd-9f71-06bbfcfc806d-4",
+          "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/endereco/.hyperframes/artifacts/snapshots/f61eb97b-b100-4b65-861b-5645d7fd3e5b/frame-04-at-7s.png",
+          "time": 7,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793854570330,
+          "contentHash": "c1ecab9c27ba2d31a8fc70f735987ae2812efb08284bc9e639e975b955839388",
+          "revision": "a3667e56-8802-4d64-aef8-fc23e9e07054",
+          "inputFingerprint": "334f2180a03c1e6bcf69dedf877f6305e3f981bbbf764a24b73e3ff37aa5c900",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "d21f09e3-7fca-49cd-9f71-06bbfcfc806d-5",
+          "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/endereco/.hyperframes/artifacts/snapshots/f61eb97b-b100-4b65-861b-5645d7fd3e5b/frame-05-at-8s.png",
+          "time": 8,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793854570330,
+          "contentHash": "1afbe92d3626033905227145c0c2aa286aeb80573711da61ab9f0c3a85078a2b",
+          "revision": "a3667e56-8802-4d64-aef8-fc23e9e07054",
+          "inputFingerprint": "334f2180a03c1e6bcf69dedf877f6305e3f981bbbf764a24b73e3ff37aa5c900",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "d21f09e3-7fca-49cd-9f71-06bbfcfc806d-6",
+          "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/endereco/.hyperframes/artifacts/snapshots/f61eb97b-b100-4b65-861b-5645d7fd3e5b/frame-06-at-9s.png",
+          "time": 9,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793854570331,
+          "contentHash": "dcdb917caadcc28b61b4eaa610047dfe2913c0dddb7e0fc1fe57f8e6d9d2e364",
+          "revision": "a3667e56-8802-4d64-aef8-fc23e9e07054",
+          "inputFingerprint": "334f2180a03c1e6bcf69dedf877f6305e3f981bbbf764a24b73e3ff37aa5c900",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "d21f09e3-7fca-49cd-9f71-06bbfcfc806d-7",
+          "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/endereco/.hyperframes/artifacts/snapshots/f61eb97b-b100-4b65-861b-5645d7fd3e5b/frame-07-at-10.2s.png",
+          "time": 10.2,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793854570331,
+          "contentHash": "a72d4c9bb12bc09c56e9a9bbf8c1c770c73404a1170574f9517cfa24352b2a83",
+          "revision": "a3667e56-8802-4d64-aef8-fc23e9e07054",
+          "inputFingerprint": "334f2180a03c1e6bcf69dedf877f6305e3f981bbbf764a24b73e3ff37aa5c900",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "d21f09e3-7fca-49cd-9f71-06bbfcfc806d-8",
+          "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/endereco/.hyperframes/artifacts/snapshots/f61eb97b-b100-4b65-861b-5645d7fd3e5b/frame-08-at-12.5s.png",
+          "time": 12.5,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793854570331,
+          "contentHash": "f618d746896b5b4feb5f1e7129c2e0f222e7760aba25d58303c2d36f0d47f23e",
+          "revision": "a3667e56-8802-4d64-aef8-fc23e9e07054",
+          "inputFingerprint": "334f2180a03c1e6bcf69dedf877f6305e3f981bbbf764a24b73e3ff37aa5c900",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "d21f09e3-7fca-49cd-9f71-06bbfcfc806d-9",
+          "image": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/endereco/.hyperframes/artifacts/snapshots/f61eb97b-b100-4b65-861b-5645d7fd3e5b/frame-09-at-14.7s.png",
+          "time": 14.7,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1793854570331,
+          "contentHash": "f618d746896b5b4feb5f1e7129c2e0f222e7760aba25d58303c2d36f0d47f23e",
+          "revision": "a3667e56-8802-4d64-aef8-fc23e9e07054",
+          "inputFingerprint": "334f2180a03c1e6bcf69dedf877f6305e3f981bbbf764a24b73e3ff37aa5c900",
           "inputScope": "local-project-files",
           "attribution": "recorded-revision"
         }
@@ -452,13 +722,14 @@
   },
   "renders": {
     "latest": {
-      "id": "623ad85f-2ebf-44e1-b381-781c2778ec62",
-      "completedAt": 1793828689331,
+      "id": "362412bd-4bb5-4e1f-886a-1b96d4ed07c6",
+      "completedAt": 1793854688642,
       "output": "/Users/Oz/Apps/vap-invoice/videos/facturac-ao-lancamento/films/endereco/renders/raw.mp4",
       "status": "completed",
-      "revision": "e4f83459-583f-4e29-b732-27028816142d"
+      "revision": "a3667e56-8802-4d64-aef8-fc23e9e07054"
     },
     "retainedRevisions": [
+      "a3667e56-8802-4d64-aef8-fc23e9e07054",
       "e4f83459-583f-4e29-b732-27028816142d"
     ]
   },

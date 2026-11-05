@@ -4,3 +4,4 @@ snapshots/
 .media/
 assets/apple/
 .hyperframes/artifacts/
+assets/capture/*.mov
