@@ -8,6 +8,7 @@ use App\Fiscal\Calculation\CalculatedFiscalLine;
 use App\Fiscal\Calculation\FiscalCalculator;
 use App\Fiscal\Calculation\FiscalReceiptCalculator;
 use App\Fiscal\Documents\AdjustmentLineReference;
+use App\Fiscal\Documents\CreditNoteAllowance;
 use App\Fiscal\Documents\TransportDocumentOrigins;
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
@@ -34,6 +35,7 @@ final readonly class SaveFiscalDocumentDraft
         private FiscalReceiptCalculator $receiptCalculator,
         private TransportDocumentOrigins $transportOrigins,
         private AdjustmentLineReference $adjustmentLineReference,
+        private CreditNoteAllowance $creditNoteAllowance,
     ) {}
 
     /**
@@ -188,6 +190,12 @@ final readonly class SaveFiscalDocumentDraft
                         $profile['lines'][$index]['origin_transport_line_public_id'] ?? null,
                         $profile['lines'][$index]['reference_line_number'] ?? null,
                     );
+                }
+
+                $refusal = $this->creditNoteAllowance->refusal($document);
+
+                if ($refusal !== null) {
+                    throw ValidationException::withMessages([$refusal['field'] => $refusal['message']]);
                 }
             }
 

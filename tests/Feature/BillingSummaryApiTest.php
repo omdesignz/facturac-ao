@@ -492,7 +492,7 @@ test('billing actual issuance credit and source rollback preserve the native rec
         $documents[] = billingIssue($f, $profile);
     }
     $credit = billingIssue($f, [...billingIssueProfile($f, 'NC'), 'references_document_public_id' => $documents[0]->public_id]);
-    billingIssue($f, [...billingIssueProfile($f, 'NC', '2024-03-10'), 'references_document_public_id' => $documents[0]->public_id]);
+    billingIssue($f, [...billingIssueProfile($f, 'NC', '2024-03-10'), 'references_document_public_id' => $documents[1]->public_id]);
     $before = $query->read($context, $command)['currencies'];
     expect($before[0]['billed_document_count'])->toBe(4)->and($before[0]['credit_note_count'])->toBe(1)
         ->and($before[0]['invoiced_gross_minor'])->toBe('45600')->and($before[0]['credit_gross_minor'])->toBe('11400')

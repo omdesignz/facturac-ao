@@ -1,12 +1,17 @@
 <?php
 
+use App\Actions\IssueFiscalDocument;
+use App\Exceptions\FiscalFinalizationBlocked;
 use App\Fiscal\Agt\Support\CanonicalJson;
 use App\Fiscal\Documents\V2_0\FiscalDocumentPayloadBuilder;
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
+use App\Models\AgtConnection;
 use App\Models\Establishment;
 use App\Models\FiscalDocument;
 use App\Models\FiscalDocumentLine;
+use App\Models\FiscalDocumentLineTax;
+use App\Models\FiscalSeries;
 use App\Models\LegalEntity;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -37,11 +42,16 @@ function adjustmentCompany(): array
     ]);
 
     foreach ([1, 2, 3] as $lineNumber) {
-        FiscalDocumentLine::factory()->create([
+        $line = FiscalDocumentLine::factory()->create([
             'fiscal_document_id' => $invoice->id,
             'line_number' => $lineNumber,
             'product_code' => 'SAME-PRODUCT',
+            'product_description' => "Artigo {$lineNumber}",
+            'quantity_units' => 20_000,
+            'unit_price_base_minor' => 1000_00,
+            'unit_price_micros' => 1_000_000_000,
         ]);
+        FiscalDocumentLineTax::factory()->create(['fiscal_document_line_id' => $line->id]);
     }
     FiscalDocument::withoutEvents(fn () => $invoice->forceFill([
         'status' => FiscalDocumentStatus::Issued,
@@ -342,3 +352,146 @@ test('legacy or tampered adjustment references fail before payload signing', fun
     expect(fn () => app(FiscalDocumentPayloadBuilder::class)->signableObject($note->fresh()))->toThrow(DomainException::class);
 })->with([FiscalDocumentType::CreditNote, FiscalDocumentType::DebitNote])
     ->with(['missing', 'unknown', 'other company', 'other environment', 'wrong document number']);
+
+/**
+ * A note that has already credited part of line 3 of the company's invoice.
+ */
+function earlierCreditNote(array $company, int $quantityUnits, FiscalDocumentStatus $status = FiscalDocumentStatus::Issued): FiscalDocument
+{
+    $note = FiscalDocument::factory()->create([
+        'workspace_id' => $company['legal_entity']->workspace_id,
+        'legal_entity_id' => $company['legal_entity']->id,
+        'establishment_id' => $company['establishment']->id,
+        'created_by_user_id' => $company['user']->id,
+        'updated_by_user_id' => $company['user']->id,
+        'document_type' => FiscalDocumentType::CreditNote,
+        'references_document_id' => $company['invoice']->id,
+        'references_document_no' => 'FT TESTE/1',
+        'adjustment_reason' => 'Devolução anterior',
+    ]);
+    FiscalDocumentLine::factory()->create([
+        'fiscal_document_id' => $note->id,
+        'reference_line_number' => 3,
+        'quantity_units' => $quantityUnits,
+    ]);
+
+    if ($status !== FiscalDocumentStatus::Draft) {
+        FiscalDocument::withoutEvents(fn () => $note->forceFill([
+            'status' => $status,
+            'document_no' => "NC TESTE/{$note->id}",
+            'system_entry_at' => now(),
+        ])->save());
+    }
+
+    return $note;
+}
+
+test('a credit note cannot credit more of a line than the original has', function () {
+    $company = adjustmentCompany();
+    $payload = adjustmentPayload($company);
+    $payload['lines'][0]['quantity'] = '2.0001';
+
+    $this->actingAs($company['user'])->post(route('invoices.store'), $payload)
+        ->assertSessionHasErrors(['lines.0.quantity' => 'Só pode creditar até 2 un de Artigo 3.']);
+    expect(FiscalDocument::where('document_type', FiscalDocumentType::CreditNote)->count())->toBe(0);
+});
+
+test('lines of one note crediting the same original line share what is left of it', function () {
+    $company = adjustmentCompany();
+    $payload = adjustmentPayload($company);
+    $payload['lines'][] = array_replace($payload['lines'][0], ['quantity' => '1.5']);
+
+    $this->actingAs($company['user'])->post(route('invoices.store'), $payload)
+        ->assertSessionHasErrors(['lines.1.quantity' => 'Só pode creditar até 1 un de Artigo 3.']);
+
+    $payload['lines'][1]['quantity'] = '1';
+
+    $this->post(route('invoices.store'), $payload)->assertSessionHasNoErrors();
+});
+
+test('a credit note only credits what earlier notes have left, drafts aside', function (FiscalDocumentStatus $status) {
+    $company = adjustmentCompany();
+    earlierCreditNote($company, 15_000, $status);
+    earlierCreditNote($company, 20_000, FiscalDocumentStatus::Draft);
+    $payload = adjustmentPayload($company);
+
+    $this->actingAs($company['user'])->post(route('invoices.store'), $payload)
+        ->assertSessionHasErrors(['lines.0.quantity' => 'Só pode creditar até 0.5 un de Artigo 3.']);
+
+    $payload['lines'][0]['quantity'] = '0.5';
+
+    $this->post(route('invoices.store'), $payload)->assertSessionHasNoErrors();
+})->with([
+    'issued' => FiscalDocumentStatus::Issued,
+    'validated' => FiscalDocumentStatus::Valid,
+    'returned by the AGT' => FiscalDocumentStatus::Invalid,
+]);
+
+test('a credit note credits a line at the price, discount and tax it was charged', function (string $field, array $change, string $message) {
+    $company = adjustmentCompany();
+    $payload = adjustmentPayload($company);
+    $payload['lines'][0] = array_replace_recursive($payload['lines'][0], $change);
+
+    $this->actingAs($company['user'])->post(route('invoices.store'), $payload)
+        ->assertSessionHasErrors(["lines.0.{$field}" => $message]);
+    expect(FiscalDocument::where('document_type', FiscalDocumentType::CreditNote)->count())->toBe(0);
+})->with([
+    'another price' => ['unit_price', ['unit_price' => '900.00'], 'O preço unitário tem de ser o do documento original: 1000.'],
+    'a discount' => ['discount_percentage', ['discount_percentage' => '5'], 'O desconto tem de ser o do documento original: 0%.'],
+    'an exemption' => ['tax', ['tax' => ['code' => 'ISE', 'percentage' => '0', 'exemption_code' => 'M02']], 'O imposto tem de ser o do documento original: IVA 14%.'],
+]);
+
+test('a credit note keeps the currency of the document it corrects', function () {
+    $company = adjustmentCompany();
+
+    $this->actingAs($company['user'])->post(route('invoices.store'), adjustmentPayload($company, [
+        'currency_code' => 'USD',
+        'exchange_rate' => '900',
+    ]))->assertSessionHasErrors(['currency_code' => 'A nota de crédito tem de usar a moeda do documento original (AOA).']);
+});
+
+test('a debit note may charge more, and at another price, than the original line', function () {
+    $company = adjustmentCompany();
+    $payload = adjustmentPayload($company, ['document_type' => FiscalDocumentType::DebitNote->value]);
+    $payload['lines'][0] = array_replace($payload['lines'][0], ['quantity' => '5', 'unit_price' => '2000.00']);
+
+    $this->actingAs($company['user'])->post(route('invoices.store'), $payload)
+        ->assertSessionHasNoErrors();
+});
+
+test('issuing a credit note checks again what is left and what was charged, without spending a number', function (string $change, string $message) {
+    $company = adjustmentCompany();
+    $payload = adjustmentPayload($company);
+    $payload['lines'][0]['quantity'] = '2';
+    $this->actingAs($company['user'])->post(route('invoices.store'), $payload)->assertSessionHasNoErrors();
+    $draft = FiscalDocument::where('document_type', FiscalDocumentType::CreditNote)->firstOrFail();
+
+    if ($change === 'credited meanwhile') {
+        earlierCreditNote($company, 5_000);
+    } else {
+        $draft->lines()->firstOrFail()->taxes()->firstOrFail()->update(['tax_rate_basis_points' => 700]);
+    }
+
+    $connection = AgtConnection::factory()->create([
+        'workspace_id' => $company['legal_entity']->workspace_id,
+        'legal_entity_id' => $company['legal_entity']->id,
+    ]);
+    $series = FiscalSeries::factory()->create([
+        'workspace_id' => $company['legal_entity']->workspace_id,
+        'legal_entity_id' => $company['legal_entity']->id,
+        'establishment_id' => $company['establishment']->id,
+        'agt_connection_id' => $connection->id,
+        'environment' => $connection->environment->value,
+        'document_type' => FiscalDocumentType::CreditNote,
+        'series_code' => 'NC26TEST',
+    ]);
+
+    expect(fn () => app(IssueFiscalDocument::class)->execute($draft, $company['user'], $series->public_id, $draft->revision))
+        ->toThrow(FiscalFinalizationBlocked::class, $message);
+    expect($draft->fresh()->status)->toBe(FiscalDocumentStatus::Draft)
+        ->and($draft->fresh()->document_no)->toBeNull()
+        ->and($series->fresh()->next_number)->toBe(1);
+})->with([
+    'credited meanwhile' => ['credited meanwhile', 'Linha 1: Só pode creditar até 1.5 un de Artigo 3.'],
+    'tax changed' => ['tax changed', 'Linha 1: O imposto tem de ser o do documento original: IVA 14%.'],
+]);

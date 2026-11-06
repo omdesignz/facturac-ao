@@ -27,6 +27,7 @@ use App\Models\Customer;
 use App\Models\Establishment;
 use App\Models\FiscalDocument;
 use App\Models\FiscalDocumentLine;
+use App\Models\FiscalDocumentLineTax;
 use App\Models\FiscalSeries;
 use App\Models\LegalEntity;
 use App\Models\RecurringInvoice;
@@ -760,7 +761,11 @@ test('adjustment issuance freezes the original line reference or blocks without 
         'environment' => 'homologation',
     ]);
     foreach ([1, 2, 3] as $lineNumber) {
-        FiscalDocumentLine::factory()->create(['fiscal_document_id' => $source->id, 'line_number' => $lineNumber]);
+        $line = FiscalDocumentLine::factory()->create([
+            'fiscal_document_id' => $source->id, 'line_number' => $lineNumber, 'quantity_units' => 20_000,
+            'unit_price_base_minor' => 1000_00, 'unit_price_micros' => 950_000_000, 'discount_rate_basis_points' => 500,
+        ]);
+        FiscalDocumentLineTax::factory()->create(['fiscal_document_line_id' => $line->id]);
     }
     FiscalDocument::withoutEvents(fn () => $source->forceFill([
         'status' => FiscalDocumentStatus::Issued, 'document_no' => 'FT ORIGINAL/1', 'system_entry_at' => now(),
