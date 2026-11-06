@@ -133,13 +133,13 @@ function schemaTwoSource(
 }
 
 /**
- * Gives the source's line 1 the quantity, price, discount and tax of the
+ * Gives the source's line 1 the quantity, unit, price, discount and tax of the
  * schema 2 profile line, so a credit note against it is held to nothing else.
  */
 function schemaTwoCreditableSource(FiscalDocument $source, int $discountBasisPoints = 0): void
 {
     FiscalDocumentLine::withoutEvents(fn () => $source->lines()->firstOrFail()->forceFill([
-        'quantity_units' => 12_345, 'quantity_scale' => 4,
+        'quantity_units' => 12_345, 'quantity_scale' => 4, 'unit_of_measure' => 'UN',
         'unit_price_base_minor' => 1000, 'discount_rate_basis_points' => $discountBasisPoints,
     ])->save());
     FiscalDocumentLineTax::withoutEvents(fn () => FiscalDocumentLineTax::factory()->create([

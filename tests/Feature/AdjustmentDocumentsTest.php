@@ -427,7 +427,7 @@ test('a credit note only credits what earlier notes have left, drafts aside', fu
     'returned by the AGT' => FiscalDocumentStatus::Invalid,
 ]);
 
-test('a credit note credits a line at the price, discount and tax it was charged', function (string $field, array $change, string $message) {
+test('a credit note credits a line in the unit and at the price, discount and tax it was charged', function (string $field, array $change, string $message) {
     $company = adjustmentCompany();
     $payload = adjustmentPayload($company);
     $payload['lines'][0] = array_replace_recursive($payload['lines'][0], $change);
@@ -436,6 +436,7 @@ test('a credit note credits a line at the price, discount and tax it was charged
         ->assertSessionHasErrors(["lines.0.{$field}" => $message]);
     expect(FiscalDocument::where('document_type', FiscalDocumentType::CreditNote)->count())->toBe(0);
 })->with([
+    'another unit' => ['unit_of_measure', ['unit_of_measure' => 'kg'], 'A unidade tem de ser a do documento original: un.'],
     'another price' => ['unit_price', ['unit_price' => '900.00'], 'O preço unitário tem de ser o do documento original: 1000.'],
     'a discount' => ['discount_percentage', ['discount_percentage' => '5'], 'O desconto tem de ser o do documento original: 0%.'],
     'an exemption' => ['tax', ['tax' => ['code' => 'ISE', 'percentage' => '0', 'exemption_code' => 'M02']], 'O imposto tem de ser o do documento original: IVA 14%.'],

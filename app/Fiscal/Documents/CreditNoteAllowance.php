@@ -14,10 +14,11 @@ use App\Models\FiscalDocumentLineTax;
  *
  * Each line of the original can be credited once in full, across however many
  * notes: whatever issued notes have already taken of it is gone. A note also
- * credits a line at the price, discount and tax it was charged at, so it can
- * only give back what the customer actually paid. Saving a draft checks this
- * so the form can point at the line; issuing checks it again under a lock on
- * the original, so two notes cannot both take the last of a line.
+ * credits a line in the unit, and at the price, discount and tax, it was
+ * charged at, so it can only give back what the customer actually paid.
+ * Saving a draft checks this so the form can point at the line; issuing
+ * checks it again under a lock on the original, so two notes cannot both
+ * take the last of a line.
  *
  * @phpstan-type Refusal array{field: string, message: string, line_number: int|null}
  */
@@ -76,7 +77,7 @@ final class CreditNoteAllowance
                 continue;
             }
 
-            $mismatch = $this->priceMismatch($line, $original);
+            $mismatch = $this->termsMismatch($line, $original);
 
             if ($mismatch !== null) {
                 return ['field' => "lines.{$index}.{$mismatch['field']}", 'message' => $mismatch['message'], 'line_number' => $line->line_number];
@@ -163,8 +164,13 @@ final class CreditNoteAllowance
     /**
      * @return array{field: string, message: string}|null
      */
-    private function priceMismatch(FiscalDocumentLine $line, FiscalDocumentLine $original): ?array
+    private function termsMismatch(FiscalDocumentLine $line, FiscalDocumentLine $original): ?array
     {
+        // Quantities only compare in the same unit: 2 kg is not 2 of a line in g.
+        if ($line->unit_of_measure !== $original->unit_of_measure) {
+            return ['field' => 'unit_of_measure', 'message' => "A unidade tem de ser a do documento original: {$original->unit_of_measure}."];
+        }
+
         if ((int) $line->unit_price_base_minor !== (int) $original->unit_price_base_minor) {
             $price = CanonicalNumber::fromMinorUnits((int) $original->unit_price_base_minor)->value();
 
