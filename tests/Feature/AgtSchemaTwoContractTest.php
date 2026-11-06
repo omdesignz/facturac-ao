@@ -24,6 +24,7 @@ use App\Models\AgtSubmission;
 use App\Models\Establishment;
 use App\Models\FiscalDocument;
 use App\Models\FiscalDocumentLine;
+use App\Models\FiscalDocumentLineTax;
 use App\Models\FiscalDocumentWithholding;
 use App\Models\FiscalSeries;
 use App\Models\LegalEntity;
@@ -129,6 +130,21 @@ function schemaTwoSource(
     recordAuthoritativeAgtAcceptance($source);
 
     return $source;
+}
+
+/**
+ * Gives the source's line 1 the quantity, unit, price, discount and tax of the
+ * schema 2 profile line, so a credit note against it is held to nothing else.
+ */
+function schemaTwoCreditableSource(FiscalDocument $source, int $discountBasisPoints = 0): void
+{
+    FiscalDocumentLine::withoutEvents(fn () => $source->lines()->firstOrFail()->forceFill([
+        'quantity_units' => 12_345, 'quantity_scale' => 4, 'unit_of_measure' => 'UN',
+        'unit_price_base_minor' => 1000, 'discount_rate_basis_points' => $discountBasisPoints,
+    ])->save());
+    FiscalDocumentLineTax::withoutEvents(fn () => FiscalDocumentLineTax::factory()->create([
+        'fiscal_document_line_id' => $source->lines()->firstOrFail()->id,
+    ]));
 }
 
 test('issuance freezes a schema 2 request with numeric line amounts and matching signed totals', function () {
@@ -265,6 +281,7 @@ test('printed fiscal discounts use the frozen line amounts', function (string $t
     $profile['lines'][0]['discount_percentage'] = '20';
     if ($type === 'NC') {
         $source = schemaTwoSource($company);
+        schemaTwoCreditableSource($source, 2_000);
         $profile['references_document_public_id'] = $source->public_id;
         $profile['adjustment_reason'] = 'Correcção parcial';
         $profile['lines'][0]['reference_line_number'] = 1;
@@ -459,6 +476,7 @@ test('receipt and correction issuance reject source documents from a different e
         ? schemaTwoReceiptProfile($company, $source, 11400)
         : schemaTwoProfile($company, ['document_type' => $type, 'references_document_public_id' => $source->public_id, 'adjustment_reason' => 'Correction']);
     if ($type === 'NC') {
+        schemaTwoCreditableSource($source);
         $profile['lines'][0]['reference_line_number'] = 1;
     }
     $draft = app(SaveFiscalDocumentDraft::class)->execute($company['entity'], $company['user'], $profile);

@@ -18,6 +18,7 @@ use App\Fiscal\Calculation\FiscalCalculator;
 use App\Fiscal\Calculation\FiscalReceiptCalculator;
 use App\Fiscal\Documents\AdjustmentLineReference;
 use App\Fiscal\Documents\AgtObservationReducer;
+use App\Fiscal\Documents\CreditNoteAllowance;
 use App\Fiscal\Documents\CurrentAgtState;
 use App\Fiscal\Documents\FiscalDocumentNumber;
 use App\Fiscal\Documents\FiscalDocumentPrints;
@@ -59,6 +60,7 @@ final readonly class IssueFiscalDocument
         private FiscalDocumentPrints $prints,
         private TransportDocumentOrigins $transportOrigins,
         private AdjustmentLineReference $adjustmentLineReference,
+        private CreditNoteAllowance $creditNoteAllowance,
     ) {}
 
     public function execute(
@@ -105,6 +107,10 @@ final readonly class IssueFiscalDocument
             }
 
             $this->transportOrigins->assertIssuable($document);
+
+            // Before the series, so every path takes the original first and two
+            // notes against it wait for each other instead of deadlocking.
+            $this->creditNoteAllowance->lockSource($document);
 
             $series = $this->lockedSeries($document, $seriesPublicId);
             $connection = $series->agtConnection;
@@ -360,6 +366,14 @@ final readonly class IssueFiscalDocument
                 }
             } catch (\DomainException $exception) {
                 throw FiscalFinalizationBlocked::because($exception->getMessage());
+            }
+
+            $refusal = $this->creditNoteAllowance->refusal($document);
+
+            if ($refusal !== null) {
+                throw FiscalFinalizationBlocked::because(
+                    ($refusal['line_number'] === null ? '' : "Linha {$refusal['line_number']}: ").$refusal['message'],
+                );
             }
         }
 
