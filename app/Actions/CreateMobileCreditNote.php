@@ -6,6 +6,7 @@ use App\Billing\SubscriptionAccess;
 use App\Exceptions\FiscalFinalizationBlocked;
 use App\Fiscal\Agt\Support\CanonicalNumber;
 use App\Fiscal\Calculation\FiscalCalculator;
+use App\Fiscal\Documents\CreditNoteAllowance;
 use App\Fiscal\Documents\CurrentAgtState;
 use App\Fiscal\Pos\PosSeriesResolver;
 use App\FiscalDocumentStatus;
@@ -41,9 +42,6 @@ use Illuminate\Validation\ValidationException;
  */
 final readonly class CreateMobileCreditNote
 {
-    /** Quantities are compared at the finest scale a line may have. */
-    private const int SCALE = 4;
-
     public const array CORRECTABLE = [FiscalDocumentType::Invoice, FiscalDocumentType::InvoiceReceipt];
 
     public function __construct(
@@ -51,6 +49,7 @@ final readonly class CreateMobileCreditNote
         private IssueFiscalDocument $issue,
         private PosSeriesResolver $series,
         private FiscalCalculator $calculator,
+        private CreditNoteAllowance $allowance,
     ) {}
 
     /**
@@ -65,7 +64,7 @@ final readonly class CreateMobileCreditNote
             $source->status === FiscalDocumentStatus::Invalid => 'A AGT devolveu este documento. Trate-o em facturac.ao.',
             ! CurrentAgtState::acceptanceEvidenceSatisfied($source) => 'A AGT ainda não validou este documento. Poderá corrigi-lo quando estiver válido.',
             $source->currency_code !== $legalEntity->currency_code || $source->withholdings()->exists() => 'Este documento tem moeda estrangeira ou retenções. Corrija-o em facturac.ao.',
-            array_sum(array_map(fn (array $line): int => $this->scaled($line['creditable_quantity']), $this->lines($source))) === 0 => 'Este documento já foi creditado por inteiro.',
+            array_sum(array_map(fn (array $line): int => $this->allowance->scaled($line['creditable_quantity']), $this->lines($source))) === 0 => 'Este documento já foi creditado por inteiro.',
             default => null,
         };
     }
@@ -85,20 +84,20 @@ final readonly class CreateMobileCreditNote
      */
     public function lines(FiscalDocument $source): array
     {
-        $credited = $this->creditedByLine($source);
+        $remaining = $this->allowance->remainingByLine($source);
 
         return array_values($source->lines()->with('taxes')->orderBy('line_number')->get()
-            ->map(function (FiscalDocumentLine $line) use ($credited): array {
-                $quantity = $this->scaled($this->quantity($line));
-                $done = min($quantity, $credited[$line->line_number] ?? 0);
+            ->map(function (FiscalDocumentLine $line) use ($remaining): array {
+                $quantity = $this->allowance->scaled($this->allowance->quantity($line));
+                $left = $remaining[$line->line_number] ?? $quantity;
 
                 return [
                     'line_number' => $line->line_number,
                     'description' => $line->product_description,
                     'unit_of_measure' => $line->unit_of_measure,
-                    'quantity' => $this->quantity($line),
-                    'credited_quantity' => $this->unscaled($done),
-                    'creditable_quantity' => $this->unscaled($quantity - $done),
+                    'quantity' => $this->allowance->quantity($line),
+                    'credited_quantity' => $this->allowance->unscaled($quantity - $left),
+                    'creditable_quantity' => $this->allowance->unscaled($left),
                     'unit_gross_minor' => $this->calculator->calculate(
                         [$this->draftLine($line, '1')],
                         FiscalDocumentType::CreditNote,
@@ -236,7 +235,7 @@ final readonly class CreateMobileCreditNote
                 ]);
             }
 
-            if ($this->scaled($line['quantity']) > $this->scaled($available['creditable_quantity'])) {
+            if ($this->allowance->scaled($line['quantity']) > $this->allowance->scaled($available['creditable_quantity'])) {
                 throw ValidationException::withMessages([
                     "lines.{$index}.quantity" => "Só pode creditar até {$available['creditable_quantity']} {$available['unit_of_measure']} de {$available['description']}.",
                 ]);
@@ -271,33 +270,6 @@ final readonly class CreateMobileCreditNote
             'tax_percentage' => CanonicalNumber::fromBasisPoints($tax->tax_rate_basis_points)->value(),
             'tax_exemption_code' => $tax->tax_exemption_code,
         ];
-    }
-
-    /**
-     * How much of each line issued credit notes have already taken, at SCALE.
-     * A note the AGT returned still counts: whether one may be replaced is a
-     * question the AGT has not answered yet.
-     *
-     * @return array<int, int>
-     */
-    private function creditedByLine(FiscalDocument $source): array
-    {
-        $credited = [];
-
-        FiscalDocumentLine::query()
-            ->whereHas('fiscalDocument', fn ($query) => $query
-                ->where('references_document_id', $source->id)
-                ->where('legal_entity_id', $source->legal_entity_id)
-                ->where('document_type', FiscalDocumentType::CreditNote)
-                ->where('status', '!=', FiscalDocumentStatus::Draft))
-            ->whereNotNull('reference_line_number')
-            ->get(['reference_line_number', 'quantity_units', 'quantity_scale'])
-            ->each(function (FiscalDocumentLine $line) use (&$credited): void {
-                $credited[(int) $line->reference_line_number] = ($credited[(int) $line->reference_line_number] ?? 0)
-                    + $this->scaled($this->quantity($line));
-            });
-
-        return $credited;
     }
 
     private function establishment(FiscalDocument $source): ?Establishment
@@ -335,22 +307,5 @@ final readonly class CreateMobileCreditNote
         }
 
         return $existing;
-    }
-
-    private function quantity(FiscalDocumentLine $line): string
-    {
-        return CanonicalNumber::fromScaledInteger($line->quantity_units, $line->quantity_scale)->value();
-    }
-
-    private function scaled(string $quantity): int
-    {
-        [$whole, $fraction] = array_pad(explode('.', $quantity, 2), 2, '');
-
-        return (int) $whole * 10 ** self::SCALE + (int) str_pad(substr($fraction, 0, self::SCALE), self::SCALE, '0');
-    }
-
-    private function unscaled(int $quantity): string
-    {
-        return CanonicalNumber::fromScaledInteger($quantity, self::SCALE)->value();
     }
 }
