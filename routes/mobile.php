@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\Mobile\MobileCollectionsController;
+use App\Http\Controllers\Api\Mobile\MobileCurrentCompanyController;
 use App\Http\Controllers\Api\Mobile\MobileCustomerController;
 use App\Http\Controllers\Api\Mobile\MobileCustomerCreateController;
 use App\Http\Controllers\Api\Mobile\MobileCustomerProfileController;
@@ -31,6 +32,9 @@ Route::name('mobile.v1.')->group(function (): void {
 
     Route::middleware(['auth:sanctum', 'abilities:mobile', 'verified', 'throttle:120,1'])->group(function (): void {
         Route::get('me', MobileProfileController::class)->name('me');
+        Route::put('current-company', MobileCurrentCompanyController::class)
+            ->middleware('throttle:20,1,mobile-company')
+            ->name('current-company.update');
         Route::get('sessions', [MobileSessionController::class, 'index'])->name('sessions.index');
         Route::delete('sessions/current', [MobileSessionController::class, 'destroyCurrent'])->name('sessions.destroy-current');
         Route::delete('sessions/{tokenId}', [MobileSessionController::class, 'destroy'])->whereNumber('tokenId')->name('sessions.destroy');

@@ -19,6 +19,18 @@ class EnsureMobileCompany
     public function handle(Request $request, Closure $next): Response
     {
         $workspace = $request->attributes->get('currentWorkspace');
+
+        // The account can move to another company from the web or another phone.
+        // A screen built for the old one must not read or write in the new one.
+        $expected = $request->header('X-Company');
+
+        if ($expected !== null && $workspace instanceof Workspace && $workspace->public_id !== $expected) {
+            return response()->json(['error' => [
+                'code' => 'COMPANY_CHANGED',
+                'message' => 'Esta conta passou para outra empresa. Nada foi guardado.',
+            ]], Response::HTTP_CONFLICT);
+        }
+
         $legalEntity = $workspace instanceof Workspace
             ? $workspace->legalEntities()->oldest('id')->first()
             : null;
