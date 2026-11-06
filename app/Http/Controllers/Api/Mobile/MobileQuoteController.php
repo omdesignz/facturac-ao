@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Mobile;
 
+use App\Actions\ConfirmMobileIssuer;
 use App\Actions\ConvertQuoteToInvoice;
 use App\Actions\CreateMobileQuote;
 use App\Actions\IssueFiscalDocument;
@@ -29,7 +30,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -165,6 +166,7 @@ class MobileQuoteController
         IssueFiscalDocument $issue,
         PosSeriesResolver $series,
         MobileDocumentReceipt $receipt,
+        ConfirmMobileIssuer $issuer,
     ): JsonResponse {
         $legalEntity = $this->legalEntity($request);
         $user = $this->user($request);
@@ -173,7 +175,10 @@ class MobileQuoteController
         abort_unless($document instanceof FiscalDocument, 404);
 
         $validated = $request->validate([
-            'password' => ['required', 'string', 'max:255'],
+            'password' => [Rule::requiredIf(fn (): bool => ! $request->has('passkey')), 'nullable', 'string', 'max:255'],
+            'passkey' => ['nullable', 'array:challenge_id,credential'],
+            'passkey.challenge_id' => ['required_with:passkey', 'string', 'max:64'],
+            'passkey.credential' => ['required_with:passkey', 'array'],
             'revision' => ['required', 'integer', 'min:1'],
             'expected_total_minor' => ['required', 'integer', 'min:0', 'max:999999999999999'],
         ], ['password.required' => 'Confirme a palavra-passe para emitir.']);
@@ -182,8 +187,10 @@ class MobileQuoteController
             return $this->refusal('TWO_FACTOR_REQUIRED_TO_ISSUE', 'Active a autenticação em dois passos em facturac.ao para emitir.', Response::HTTP_FORBIDDEN);
         }
 
-        if (! Hash::check((string) $validated['password'], $user->password)) {
-            return $this->refusal('PASSWORD_INCORRECT', 'A palavra-passe não está certa.', Response::HTTP_UNPROCESSABLE_ENTITY);
+        $unconfirmed = $issuer->refusal($user, $validated);
+
+        if ($unconfirmed !== null) {
+            return $this->refusal($unconfirmed['code'], $unconfirmed['message'], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         if ($document->document_no !== null) {

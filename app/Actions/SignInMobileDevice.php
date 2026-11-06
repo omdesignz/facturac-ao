@@ -44,6 +44,27 @@ class SignInMobileDevice
             $this->passTwoFactor($user, $code, $recoveryCode);
         }
 
+        return $this->issue($user, $deviceName, 'password');
+    }
+
+    /**
+     * A passkey the server has just verified stands for the password and the
+     * second step together, as it does on the web: it is something the person
+     * has, unlocked by something only they can do.
+     *
+     * @throws MobileSignInRefused
+     */
+    public function handlePasskey(User $user, string $deviceName): NewAccessToken
+    {
+        if (! $user->hasVerifiedEmail()) {
+            throw MobileSignInRefused::emailNotVerified();
+        }
+
+        return $this->issue($user, $deviceName, 'passkey');
+    }
+
+    private function issue(User $user, string $deviceName, string $method): NewAccessToken
+    {
         $token = $user->createToken($deviceName, [self::TOKEN_ABILITY], now()->addDays(self::TOKEN_LIFETIME_DAYS));
 
         activity('security')
@@ -52,6 +73,7 @@ class SignInMobileDevice
             ->withProperties([
                 'workspace_id' => $user->current_workspace_id,
                 'token_id' => $token->accessToken->getKey(),
+                'method' => $method,
             ])
             ->log('mobile device signed in');
 

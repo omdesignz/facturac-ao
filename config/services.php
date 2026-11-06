@@ -43,6 +43,14 @@ return [
         'bundle_id' => env('APNS_BUNDLE_ID', 'ao.facturac.app'),
     ],
 
+    /*
+     * The iPhone app as Apple names it, team id then bundle id. Published in
+     * apple-app-site-association so the app may use this site's passkeys.
+     */
+    'ios' => [
+        'app_id' => env('IOS_APP_ID'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

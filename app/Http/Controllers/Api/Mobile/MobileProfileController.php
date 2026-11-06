@@ -18,6 +18,7 @@ class MobileProfileController
             'name' => $user->name,
             'email' => $user->email,
             'two_factor_enabled' => $user->hasEnabledTwoFactorAuthentication(),
+            'has_passkey' => $user->passkeys()->exists(),
             'current_workspace_public_id' => $user->currentWorkspace?->public_id,
             'workspaces' => $user->workspaces()->wherePivot('is_active', true)->orderBy('name')->get()
                 ->map(fn (Workspace $workspace): array => [

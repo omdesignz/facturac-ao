@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\Mobile\MobileItemCreateController;
 use App\Http\Controllers\Api\Mobile\MobileItemLookupController;
 use App\Http\Controllers\Api\Mobile\MobileNotificationController;
 use App\Http\Controllers\Api\Mobile\MobileNotificationPreferenceController;
+use App\Http\Controllers\Api\Mobile\MobilePasskeyController;
 use App\Http\Controllers\Api\Mobile\MobilePaymentController;
 use App\Http\Controllers\Api\Mobile\MobileProfileController;
 use App\Http\Controllers\Api\Mobile\MobilePushDeviceController;
@@ -30,6 +31,12 @@ Route::name('mobile.v1.')->group(function (): void {
     Route::post('sessions', [MobileSessionController::class, 'store'])
         ->middleware('throttle:login')
         ->name('sessions.store');
+    Route::post('sessions/passkey/options', [MobilePasskeyController::class, 'signInOptions'])
+        ->middleware('throttle:20,1,mobile-passkey-options')
+        ->name('sessions.passkey-options');
+    Route::post('sessions/passkey', [MobilePasskeyController::class, 'signIn'])
+        ->middleware('throttle:10,1,mobile-passkey-sign-in')
+        ->name('sessions.passkey');
 
     Route::middleware(['auth:sanctum', 'abilities:mobile', 'verified', 'throttle:120,1'])->group(function (): void {
         Route::get('me', MobileProfileController::class)->name('me');
@@ -42,6 +49,16 @@ Route::name('mobile.v1.')->group(function (): void {
         Route::put('push-device', [MobilePushDeviceController::class, 'update'])->name('push-device.update');
         Route::get('notification-preferences', [MobileNotificationPreferenceController::class, 'show'])->name('notification-preferences.show');
         Route::put('notification-preferences', [MobileNotificationPreferenceController::class, 'update'])->name('notification-preferences.update');
+        Route::get('passkeys', [MobilePasskeyController::class, 'index'])->name('passkeys.index');
+        Route::post('passkeys/options', [MobilePasskeyController::class, 'registrationOptions'])
+            ->middleware('throttle:6,1,mobile-passkey-register')
+            ->name('passkeys.options');
+        Route::post('passkeys', [MobilePasskeyController::class, 'store'])
+            ->middleware('throttle:6,1,mobile-passkey-store')
+            ->name('passkeys.store');
+        Route::post('passkeys/confirmation', [MobilePasskeyController::class, 'confirmationOptions'])
+            ->middleware('throttle:30,1,mobile-passkey-confirm')
+            ->name('passkeys.confirmation');
 
         Route::middleware(['workspace', EnsureMobileCompany::class])->group(function (): void {
             Route::get('today', MobileTodayController::class)->name('today');

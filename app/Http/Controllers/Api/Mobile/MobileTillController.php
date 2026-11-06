@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Mobile;
 
 use App\Actions\ClosePosSession;
 use App\Actions\CompletePosSale;
+use App\Actions\ConfirmMobileIssuer;
 use App\Actions\OpenPosSession;
 use App\Actions\RecordPosCashMovement;
 use App\Exceptions\BillingActionRefused;
@@ -32,7 +33,6 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -46,7 +46,10 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class MobileTillController
 {
-    public function __construct(private readonly MobileTillState $till) {}
+    public function __construct(
+        private readonly MobileTillState $till,
+        private readonly ConfirmMobileIssuer $issuer,
+    ) {}
 
     public function show(Request $request): JsonResponse
     {
@@ -62,8 +65,10 @@ class MobileTillController
             return $this->needsTwoFactor();
         }
 
-        if (! Hash::check((string) $request->validated('password'), $user->password)) {
-            return $this->refusal('PASSWORD_INCORRECT', 'A palavra-passe não está certa.', Response::HTTP_UNPROCESSABLE_ENTITY);
+        $unconfirmed = $this->issuer->refusal($user, $request->validated());
+
+        if ($unconfirmed !== null) {
+            return $this->refusal($unconfirmed['code'], $unconfirmed['message'], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $register = PosRegister::query()

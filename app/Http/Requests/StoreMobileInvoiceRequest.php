@@ -2,8 +2,12 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ConfirmsIssuer;
+
 class StoreMobileInvoiceRequest extends PreviewMobileInvoiceRequest
 {
+    use ConfirmsIssuer;
+
     /**
      * @return array<string, array<int, mixed>>
      */
@@ -14,7 +18,7 @@ class StoreMobileInvoiceRequest extends PreviewMobileInvoiceRequest
             'client_key' => ['required', 'uuid'],
             'expected_total_minor' => ['required', 'integer', 'min:1', 'max:999999999999999'],
             'issue' => ['required', 'boolean'],
-            'password' => ['required_if:issue,true', 'nullable', 'string', 'max:255'],
+            ...$this->issuerRules($this->boolean('issue')),
         ];
     }
 
@@ -25,7 +29,7 @@ class StoreMobileInvoiceRequest extends PreviewMobileInvoiceRequest
     {
         return [
             ...parent::messages(),
-            'password.required_if' => 'Confirme a palavra-passe para emitir.',
+            'password.required' => 'Confirme a palavra-passe para emitir.',
         ];
     }
 }

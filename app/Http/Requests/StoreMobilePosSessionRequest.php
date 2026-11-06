@@ -2,12 +2,16 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ConfirmsIssuer;
+
 /**
  * The web's rules for opening a shift. The web asks for the password on a page of
  * its own; the phone sends it with the request, and the controller checks it.
  */
 class StoreMobilePosSessionRequest extends StorePosSessionRequest
 {
+    use ConfirmsIssuer;
+
     /**
      * @return array<string, array<int, mixed>>
      */
@@ -15,7 +19,7 @@ class StoreMobilePosSessionRequest extends StorePosSessionRequest
     {
         return [
             ...parent::rules(),
-            'password' => ['required', 'string', 'max:255'],
+            ...$this->issuerRules(),
         ];
     }
 

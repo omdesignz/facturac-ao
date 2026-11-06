@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Mobile;
 
+use App\Actions\ConfirmMobileIssuer;
 use App\Actions\RecordMobilePayment;
 use App\Billing\SubscriptionAccess;
 use App\Exceptions\BillingActionRefused;
@@ -18,7 +19,6 @@ use App\SubscriptionFeature;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Hash;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -29,7 +29,10 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class MobilePaymentController
 {
-    public function __construct(private readonly RecordMobilePayment $payments) {}
+    public function __construct(
+        private readonly RecordMobilePayment $payments,
+        private readonly ConfirmMobileIssuer $issuer,
+    ) {}
 
     public function show(Request $request, string $customerPublicId, SubscriptionAccess $subscription): JsonResponse
     {
@@ -73,8 +76,10 @@ class MobilePaymentController
             return $this->refusal('TWO_FACTOR_REQUIRED_TO_ISSUE', 'Active a autenticação em dois passos em facturac.ao para emitir.', Response::HTTP_FORBIDDEN);
         }
 
-        if (! Hash::check((string) $request->validated('password'), $user->password)) {
-            return $this->refusal('PASSWORD_INCORRECT', 'A palavra-passe não está certa.', Response::HTTP_UNPROCESSABLE_ENTITY);
+        $unconfirmed = $this->issuer->refusal($user, $request->validated());
+
+        if ($unconfirmed !== null) {
+            return $this->refusal($unconfirmed['code'], $unconfirmed['message'], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         try {
