@@ -88,11 +88,12 @@ function editedItem(array $overrides = []): array
 
 test('the customer profile says what can be changed', function () {
     $company = editingCompany();
-    $company['customer']->update(['address_line' => 'Rua 1']);
+    $company['customer']->update(['address_line' => 'Rua 1', 'phone' => '923 456 789']);
 
     $this->withToken($company['token'])->getJson(route('mobile.v1.customers.show', $company['customer']->public_id))
         ->assertOk()
         ->assertJsonPath('data.address_line', 'Rua 1')
+        ->assertJsonPath('data.whatsapp_to', '244923456789')
         ->assertJsonPath('data.can_edit', true);
 });
 

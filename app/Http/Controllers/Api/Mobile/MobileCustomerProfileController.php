@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Mobile;
 
 use App\Analytics\ReceivablesQuery;
+use App\Analytics\WhatsAppNumber;
 use App\Models\Customer;
 use App\Models\FiscalDocument;
 use App\Models\LegalEntity;
@@ -42,6 +43,7 @@ class MobileCustomerProfileController
             'tax_identification_number' => $customer->tax_identification_number,
             'email' => $customer->email,
             'phone' => $customer->phone,
+            'whatsapp_to' => WhatsAppNumber::from($customer->phone),
             'address_line' => $customer->address_line,
             'payment_terms_days' => $customer->payment_terms_days,
             'can_edit' => Gate::allows('update', $customer),
