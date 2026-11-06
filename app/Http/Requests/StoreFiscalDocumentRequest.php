@@ -27,6 +27,14 @@ class StoreFiscalDocumentRequest extends FormRequest
     }
 
     /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return ['lines.*.unit_price.regex' => 'O preço não pode passar de 9 999 999 999 999,99.'];
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, ValidationRule|array<mixed>|string>
@@ -181,7 +189,8 @@ class StoreFiscalDocumentRequest extends FormRequest
             'lines.*.quantity' => ['required', 'string', 'max:20', 'regex:/\A(?:0|[1-9]\d*)(?:\.\d{1,4})?\z/', 'not_in:0,0.0,0.00,0.000,0.0000'],
             'lines.*.origin_transport_line_public_id' => ['nullable', 'string', 'max:26'],
             'lines.*.unit_of_measure' => ['required', 'string', 'max:20'],
-            'lines.*.unit_price' => ['required', 'string', 'max:18', 'regex:/\A(?:0|[1-9]\d*)(?:\.\d{1,2})?\z/'],
+            // Thirteen whole digits, as in the catalogue: the calculator refuses more.
+            'lines.*.unit_price' => ['required', 'string', 'regex:/\A(?:0|[1-9]\d{0,12})(?:\.\d{1,2})?\z/'],
             'lines.*.discount_percentage' => ['required', 'string', 'max:6', 'regex:/\A(?:100(?:\.0{1,2})?|(?:0|[1-9]\d?)(?:\.\d{1,2})?)\z/'],
             'lines.*.tax' => ['required', 'array:type,code,percentage,exemption_code'],
             'lines.*.tax.type' => ['required', Rule::in(['IVA', 'NS'])],

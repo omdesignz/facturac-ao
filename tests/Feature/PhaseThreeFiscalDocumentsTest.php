@@ -115,6 +115,18 @@ beforeEach(function () {
     phaseThreeCompanyState(phaseThreeCompany());
 });
 
+test('an invoice line price too large to store is refused in words', function () {
+    $company = phaseThreeCompanyState();
+    $draft = validFiscalDraft();
+    $draft['lines'][0]['unit_price'] = '999999999999999999';
+
+    $this->actingAs($company['user'])
+        ->post(route('invoices.store'), $draft)
+        ->assertSessionHasErrors(['lines.0.unit_price' => 'O preço não pode passar de 9 999 999 999 999,99.']);
+
+    expect(FiscalDocument::query()->exists())->toBeFalse();
+});
+
 test('the composer receives real scoped company data and explicit draft guardrails', function () {
     $company = phaseThreeCompanyState();
 

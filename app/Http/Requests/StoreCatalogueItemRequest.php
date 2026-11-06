@@ -47,8 +47,9 @@ class StoreCatalogueItemRequest extends FormRequest
             'description' => ['nullable', 'string', 'max:500'],
             'unit_of_measure' => ['required', 'string', 'max:10'],
             // Kept as a decimal string and converted to minor units on save, so
-            // the price never passes through a float.
-            'unit_price' => ['required', 'string', 'max:18', 'regex:/\A(?:0|[1-9]\d*)(?:\.\d{1,2})?\z/'],
+            // the price never passes through a float. Thirteen whole digits, the same
+            // ceiling as a spreadsheet import, keep the result inside an integer.
+            'unit_price' => ['required', 'string', 'regex:/\A(?:0|[1-9]\d{0,12})(?:\.\d{1,2})?\z/'],
             'tax_type' => ['required', Rule::in(['IVA', 'NS'])],
             'tax_code' => ['nullable', Rule::in(['NOR', 'ISE'])],
             'tax_percentage' => ['required', 'string', 'max:5', 'regex:/\A(?:0|[1-9]\d?)(?:\.\d{1,2})?\z/'],
@@ -66,6 +67,7 @@ class StoreCatalogueItemRequest extends FormRequest
     {
         return [
             'code.unique' => 'Já existe um artigo com este código.',
+            'unit_price.regex' => 'O preço não pode passar de 9 999 999 999 999,99.',
             'code.regex' => 'O código só pode ter letras maiúsculas, números, ponto, hífen ou underscore.',
             'barcode.unique' => 'Já existe um artigo com este código de barras.',
             'barcode.regex' => 'O código de barras só pode ter letras, números e hífen.',
