@@ -313,6 +313,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::post('/dividas/{customer}/lembrete', [PaymentReminderController::class, 'store'])
             ->middleware('throttle:60,1')
             ->name('debts.reminder.store');
+        Route::post('/dividas/{customer}/lembrete/whatsapp', [PaymentReminderController::class, 'whatsapp'])
+            ->middleware('throttle:60,1')
+            ->name('debts.reminder.whatsapp');
 
         Route::get('/avencas', [RecurringInvoiceController::class, 'index'])
             ->name('recurring.index');

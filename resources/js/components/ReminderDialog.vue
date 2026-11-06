@@ -6,10 +6,12 @@ import AppButton from '@/components/AppButton.vue';
 import FormField from '@/components/FormField.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
 
+import { canGoByWhatsApp, whatsAppUrl } from '@/lib/reminder-draft';
 import type { ReminderDraft } from '@/lib/reminder-draft';
 import {
     show as showReminder,
     store as storeReminder,
+    whatsapp as recordWhatsAppReminder,
 } from '@/routes/debts/reminder';
 
 const props = defineProps<{
@@ -29,6 +31,24 @@ const failed = ref(false);
 
 const form = useForm({ subject: '', body: '' });
 
+/**
+ * WhatsApp cannot say whether the person pressed send, so after opening it the
+ * dialog asks, and only a yes is recorded as a reminder. One key per opening of
+ * the dialog, so a second click records nothing twice.
+ */
+const whatsAppForm = useForm({ client_key: '' });
+const asksWhetherSent = ref(false);
+
+const whatsAppable = computed(
+    () => canGoByWhatsApp(draft.value) && form.body.trim().length >= 20,
+);
+
+const whatsAppLink = computed(() =>
+    draft.value && whatsAppable.value
+        ? whatsAppUrl(draft.value, form.body)
+        : null,
+);
+
 const sendable = computed(
     () =>
         draft.value !== null &&
@@ -42,6 +62,8 @@ async function load(publicId: string): Promise<void> {
     draft.value = null;
     form.reset();
     form.clearErrors();
+    asksWhetherSent.value = false;
+    whatsAppForm.client_key = crypto.randomUUID();
 
     try {
         const response = await fetch(showReminder.url(publicId), {
@@ -94,6 +116,17 @@ const lastSent = computed(() =>
         : null,
 );
 
+function recordWhatsApp(): void {
+    if (!props.customer) {
+        return;
+    }
+
+    whatsAppForm.post(recordWhatsAppReminder.url(props.customer.public_id), {
+        preserveScroll: true,
+        onSuccess: () => emit('close'),
+    });
+}
+
 function send(): void {
     if (!props.customer || !sendable.value) {
         return;
@@ -141,16 +174,22 @@ function send(): void {
             </p>
 
             <p
-                v-else-if="draft.to === null"
+                v-else-if="draft.to === null && !canGoByWhatsApp(draft)"
                 class="rounded-xl bg-[#fde7ea] p-3 text-sm/6 text-[#9a1b30]"
                 role="alert"
             >
-                Este cliente não tem email registado. Adicione um na ficha do
-                cliente para poder enviar.
+                Este cliente não tem email nem telemóvel registado. Adicione um
+                na ficha do cliente para poder enviar.
             </p>
 
             <dl v-else class="grid gap-1 text-sm/6">
-                <div class="flex gap-2">
+                <div v-if="draft.to === null" class="flex gap-2">
+                    <dt class="w-20 shrink-0 text-zinc-500 dark:text-zinc-400">
+                        Para
+                    </dt>
+                    <dd>Sem email registado: envie pelo WhatsApp.</dd>
+                </div>
+                <div v-else class="flex gap-2">
                     <dt class="w-20 shrink-0 text-zinc-500 dark:text-zinc-400">
                         Para
                     </dt>
@@ -184,6 +223,7 @@ function send(): void {
 
             <template v-if="draft.documents.length > 0">
                 <FormField
+                    v-if="draft.to !== null"
                     for="reminder-subject"
                     label="Assunto"
                     :error="form.errors.subject"
@@ -214,11 +254,72 @@ function send(): void {
                 </FormField>
             </template>
 
-            <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <div
+                v-if="asksWhetherSent"
+                class="rounded-xl bg-zinc-900/[0.04] p-4 dark:bg-white/[0.06]"
+                role="group"
+                aria-labelledby="reminder-whatsapp-question"
+            >
+                <p
+                    id="reminder-whatsapp-question"
+                    class="text-sm/6 font-medium text-zinc-950 dark:text-white"
+                >
+                    Enviou a mensagem no WhatsApp?
+                </p>
+                <p class="text-sm/6 text-zinc-500 dark:text-zinc-400">
+                    Assim fica registado que {{ customer?.name }} foi lembrado.
+                </p>
+                <p
+                    v-if="whatsAppForm.errors.client_key"
+                    class="mt-2 text-sm/6 text-rose-700 dark:text-rose-300"
+                    role="alert"
+                >
+                    {{ whatsAppForm.errors.client_key }}
+                </p>
+                <div
+                    class="mt-3 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"
+                >
+                    <AppButton
+                        variant="outline"
+                        @click="asksWhetherSent = false"
+                    >
+                        Não enviei
+                    </AppButton>
+                    <AppButton
+                        variant="gold"
+                        :disabled="whatsAppForm.processing"
+                        @click="recordWhatsApp"
+                    >
+                        <LoaderCircle
+                            v-if="whatsAppForm.processing"
+                            class="size-4 animate-spin"
+                            aria-hidden="true"
+                        />
+                        Sim, enviei
+                    </AppButton>
+                </div>
+            </div>
+
+            <div
+                v-else
+                class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"
+            >
                 <AppButton variant="outline" @click="emit('close')">
                     Cancelar
                 </AppButton>
                 <AppButton
+                    v-if="whatsAppLink"
+                    :variant="draft.to === null ? 'gold' : 'outline'"
+                    :href="whatsAppLink"
+                    external
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    @click="asksWhetherSent = true"
+                >
+                    Abrir no WhatsApp
+                </AppButton>
+                <AppButton
+                    v-if="draft.to !== null"
                     variant="gold"
                     type="submit"
                     :disabled="!sendable || form.processing"
@@ -228,7 +329,7 @@ function send(): void {
                         class="size-4 animate-spin"
                         aria-hidden="true"
                     />
-                    Enviar lembrete
+                    Enviar por email
                 </AppButton>
             </div>
         </form>
