@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api\Mobile;
 
 use App\Actions\PreparePaymentReminder;
+use App\Actions\RecordWhatsAppReminder;
 use App\Actions\SendPaymentReminder;
 use App\Exceptions\BillingActionRefused;
 use App\Http\Requests\StoreMobileReminderRequest;
+use App\Http\Requests\StoreMobileWhatsAppReminderRequest;
 use App\Models\Customer;
 use App\Models\LegalEntity;
 use Illuminate\Http\JsonResponse;
@@ -43,6 +45,30 @@ class MobileReminderController
                 $request->user(),
                 $request->string('client_key')->toString(),
             );
+        } catch (BillingActionRefused $exception) {
+            return $this->refusal('REMINDER_REFUSED', $exception->getMessage(), Response::HTTP_CONFLICT);
+        }
+
+        return response()->json(
+            ['data' => $receipt],
+            $receipt['replayed'] ? Response::HTTP_OK : Response::HTTP_CREATED,
+        );
+    }
+
+    /**
+     * The person says they sent the reminder on WhatsApp; nothing leaves from here.
+     */
+    public function whatsapp(StoreMobileWhatsAppReminderRequest $request, string $customerPublicId, RecordWhatsAppReminder $record): JsonResponse
+    {
+        $customer = $this->customer($request, $customerPublicId);
+        $refused = $this->refusedRole($customer);
+
+        if ($refused !== null) {
+            return $refused;
+        }
+
+        try {
+            $receipt = $record->execute($customer, $request->user(), $request->string('client_key')->toString());
         } catch (BillingActionRefused $exception) {
             return $this->refusal('REMINDER_REFUSED', $exception->getMessage(), Response::HTTP_CONFLICT);
         }

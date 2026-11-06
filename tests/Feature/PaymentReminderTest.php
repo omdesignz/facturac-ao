@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Notifications\PaymentReminder;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
 use Spatie\Activitylog\Models\Activity;
 
 /**
@@ -237,4 +238,50 @@ test('the email keeps paragraphs and the list of documents', function () {
         ->and($lines[1]->toHtml())->toContain('FT 1: 10,00 Kz<br>')
         ->toContain('- FT 2: 20,00 Kz')
         ->and($lines[2])->toBe('Obrigado.');
+});
+
+test('a reminder sent on WhatsApp from the web is recorded and nothing is emailed', function () {
+    Notification::fake();
+    $fixture = reminderFixture(email: null);
+    $fixture['customer']->update(['phone' => '923 456 789']);
+    reminderInvoice($fixture, now()->subDays(5)->toDateString(), 1_000_000, 'FT 2026/11');
+    $key = (string) Str::uuid();
+
+    $this->actingAs($fixture['owner'])
+        ->getJson(route('debts.reminder.show', $fixture['customer']))
+        ->assertJsonPath('to', null)
+        ->assertJsonPath('whatsapp_to', '244923456789');
+
+    $this->actingAs($fixture['owner'])
+        ->post(route('debts.reminder.whatsapp', $fixture['customer']), ['client_key' => $key])
+        ->assertRedirect()
+        ->assertSessionHas('success');
+
+    $this->actingAs($fixture['owner'])
+        ->post(route('debts.reminder.whatsapp', $fixture['customer']), ['client_key' => $key])
+        ->assertSessionHas('success');
+
+    Notification::assertNothingSent();
+
+    $activity = Activity::query()->where('event', PreparePaymentReminder::EVENT)->sole();
+
+    expect($activity->causer_id)->toBe($fixture['owner']->id)
+        ->and($activity->properties['channel'])->toBe('whatsapp')
+        ->and($activity->properties['documents'])->toBe(['FT 2026/11']);
+});
+
+test('a WhatsApp reminder needs a phone WhatsApp can open, and someone allowed to remind', function () {
+    $fixture = reminderFixture();
+    $fixture['customer']->update(['phone' => '222 123 456']);
+    reminderInvoice($fixture, now()->subDays(5)->toDateString(), 1_000_000);
+
+    $this->actingAs($fixture['owner'])
+        ->post(route('debts.reminder.whatsapp', $fixture['customer']), ['client_key' => (string) Str::uuid()])
+        ->assertSessionHas('error', fn (string $message): bool => str_contains($message, 'telemóvel'));
+
+    $this->actingAs(User::factory()->withWorkspace('Outra')->create())
+        ->post(route('debts.reminder.whatsapp', $fixture['customer']), ['client_key' => (string) Str::uuid()])
+        ->assertForbidden();
+
+    expect(Activity::query()->where('event', PreparePaymentReminder::EVENT)->count())->toBe(0);
 });

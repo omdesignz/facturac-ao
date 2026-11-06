@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ConfirmsIssuer;
 use App\PaymentMethod;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -12,6 +13,8 @@ use Illuminate\Validation\Rule;
  */
 class StoreMobilePaymentRequest extends FormRequest
 {
+    use ConfirmsIssuer;
+
     /**
      * @return array<string, array<int, mixed>>
      */
@@ -25,7 +28,7 @@ class StoreMobilePaymentRequest extends FormRequest
             'settlements.*' => ['required', 'array:document_public_id,amount_minor'],
             'settlements.*.document_public_id' => ['required', 'string', 'max:40', 'distinct'],
             'settlements.*.amount_minor' => ['required', 'integer', 'min:1', 'max:999999999999999'],
-            'password' => ['required', 'string', 'max:255'],
+            ...$this->issuerRules(),
         ];
     }
 

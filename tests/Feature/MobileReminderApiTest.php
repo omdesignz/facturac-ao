@@ -330,3 +330,79 @@ test('a reminded customer comes back early when they owe more late', function ()
         ->assertJsonPath('data.decisions.0.customer.name', 'Mavinga & Filhos')
         ->assertJsonPath('data.decisions.0.amount_minor', 1_500_000);
 });
+
+test('the draft carries the number WhatsApp needs, worked out from how it was typed', function () {
+    $company = reminderCompanyForPhone();
+    $company['customer']->update(['phone' => '923 456 789']);
+    reminderInvoiceForPhone($company, 5);
+
+    $this->withToken($company['token'])
+        ->getJson(route('mobile.v1.reminders.show', $company['customer']->public_id))
+        ->assertJsonPath('data.whatsapp_to', '244923456789');
+});
+
+test('a reminder sent on WhatsApp is recorded only, and counts as a reminder', function () {
+    $company = reminderCompanyForPhone(email: null);
+    $company['customer']->update(['phone' => '+244 923 456 789']);
+    $invoice = reminderInvoiceForPhone($company, 5);
+    $key = (string) Str::uuid();
+    $url = route('mobile.v1.reminders.whatsapp', $company['customer']->public_id);
+
+    $this->withToken($company['token'])->postJson($url, ['client_key' => $key])
+        ->assertCreated()
+        ->assertJsonPath('data.to', '244923456789')
+        ->assertJsonPath('data.replayed', false);
+
+    Notification::assertNothingSent();
+
+    $activity = Activity::query()->where('event', PreparePaymentReminder::EVENT)->sole();
+
+    expect($activity->causer_id)->toBe($company['owner']->id)
+        ->and($activity->properties['channel'])->toBe('whatsapp')
+        ->and($activity->properties['documents'])->toBe([$invoice->document_no])
+        ->and(app(ReminderHistory::class)->lastSentAt([$company['customer']->public_id]))->toHaveKey($company['customer']->public_id);
+
+    $this->withToken($company['token'])->postJson($url, ['client_key' => $key])
+        ->assertOk()
+        ->assertJsonPath('data.replayed', true);
+
+    $this->withToken($company['token'])
+        ->getJson(route('mobile.v1.reminders.show', $company['customer']->public_id))
+        ->assertJsonPath('data.tone', 'firm');
+
+    expect(Activity::query()->where('event', PreparePaymentReminder::EVENT)->count())->toBe(1);
+});
+
+test('WhatsApp needs a number it can open and something late to say', function () {
+    $company = reminderCompanyForPhone();
+    $url = route('mobile.v1.reminders.whatsapp', $company['customer']->public_id);
+    reminderInvoiceForPhone($company, 5);
+    $company['customer']->update(['phone' => '222 123 456']);
+
+    $this->withToken($company['token'])->postJson($url, ['client_key' => (string) Str::uuid()])
+        ->assertConflict()
+        ->assertJsonPath('error.message', 'Este cliente não tem um telemóvel válido registado. Corrija-o na ficha do cliente.');
+
+    $company['customer']->update(['phone' => '923456789']);
+    FiscalDocument::query()->update(['due_date' => now()->addDay()->toDateString()]);
+
+    $this->withToken($company['token'])->postJson($url, ['client_key' => (string) Str::uuid()])
+        ->assertConflict()
+        ->assertJsonPath('error.message', 'Este cliente já não tem nada vencido. Actualize a lista.');
+
+    expect(Activity::query()->where('event', PreparePaymentReminder::EVENT)->count())->toBe(0);
+});
+
+test('a viewer cannot record a WhatsApp reminder', function () {
+    $company = reminderCompanyForPhone();
+    $company['customer']->update(['phone' => '923456789']);
+    reminderInvoiceForPhone($company, 5);
+    WorkspaceMembership::query()->where('user_id', $company['owner']->id)->update(['role' => WorkspaceRole::Viewer]);
+
+    $this->withToken($company['token'])
+        ->postJson(route('mobile.v1.reminders.whatsapp', $company['customer']->public_id), ['client_key' => (string) Str::uuid()])
+        ->assertForbidden()
+        ->assertJsonPath('error.code', 'REMINDER_NOT_ALLOWED');
+
+    expect(Activity::query()->where('event', PreparePaymentReminder::EVENT)->count())->toBe(0);
+});

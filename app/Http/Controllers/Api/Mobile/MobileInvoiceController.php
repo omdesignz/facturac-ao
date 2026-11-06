@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Mobile;
 
+use App\Actions\ConfirmMobileIssuer;
 use App\Actions\CreateMobileInvoice;
 use App\Billing\SubscriptionAccess;
 use App\Exceptions\BillingActionRefused;
@@ -20,7 +21,6 @@ use App\SubscriptionFeature;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Hash;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -33,7 +33,10 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class MobileInvoiceController
 {
-    public function __construct(private readonly CreateMobileInvoice $invoices) {}
+    public function __construct(
+        private readonly CreateMobileInvoice $invoices,
+        private readonly ConfirmMobileIssuer $issuer,
+    ) {}
 
     /**
      * What this person can do here, so the app can say so before they start.
@@ -90,8 +93,10 @@ class MobileInvoiceController
             return $this->refusal('TWO_FACTOR_REQUIRED_TO_ISSUE', 'Active a autenticação em dois passos em facturac.ao para emitir.', Response::HTTP_FORBIDDEN);
         }
 
-        if ($issue && ! Hash::check((string) $request->validated('password'), $user->password)) {
-            return $this->refusal('PASSWORD_INCORRECT', 'A palavra-passe não está certa.', Response::HTTP_UNPROCESSABLE_ENTITY);
+        $unconfirmed = $issue ? $this->issuer->refusal($user, $request->validated()) : null;
+
+        if ($unconfirmed !== null) {
+            return $this->refusal($unconfirmed['code'], $unconfirmed['message'], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         try {

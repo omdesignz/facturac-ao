@@ -3,6 +3,7 @@
 namespace App\Actions;
 
 use App\Analytics\ReceivablesQuery;
+use App\Analytics\WhatsAppNumber;
 use App\Models\Customer;
 use App\Models\FiscalDocument;
 use Carbon\CarbonImmutable;
@@ -25,7 +26,7 @@ class PreparePaymentReminder
     public function __construct(private ReceivablesQuery $receivables) {}
 
     /**
-     * @return array{customer_name: string, to: string|null, subject: string, tone: 'cordial'|'firm', body: string, documents: list<array{document_no: string, due_date: string, days_past_due: int, outstanding_minor: int}>, total_minor: int, currency_code: string, last_sent_at: string|null}
+     * @return array{customer_name: string, to: string|null, whatsapp_to: string|null, subject: string, tone: 'cordial'|'firm', body: string, documents: list<array{document_no: string, due_date: string, days_past_due: int, outstanding_minor: int}>, total_minor: int, currency_code: string, last_sent_at: string|null}
      */
     public function execute(Customer $customer): array
     {
@@ -74,6 +75,7 @@ class PreparePaymentReminder
         return [
             'customer_name' => $customer->name,
             'to' => $email,
+            'whatsapp_to' => WhatsAppNumber::from($customer->phone),
             'subject' => "Lembrete de pagamento de {$company}",
             'tone' => $tone,
             'body' => $rows === [] ? '' : $this->body($customer->name, $company, $rows, $total, $currency, $tone),

@@ -8,6 +8,7 @@ use App\Http\Controllers\AgtSeriesSyncController;
 use App\Http\Controllers\AgtSubmissionController;
 use App\Http\Controllers\AgtSubmissionRefreshController;
 use App\Http\Controllers\AnalyticsController;
+use App\Http\Controllers\AppleAppSiteAssociationController;
 use App\Http\Controllers\AssistantController;
 use App\Http\Controllers\BillingCheckoutController;
 use App\Http\Controllers\BillingController;
@@ -80,6 +81,10 @@ use Illuminate\Support\Facades\Route;
 
 // Public: the first thing a visitor without an account can see.
 Route::get('/', LandingController::class)->name('home');
+
+// Read by Apple, which needs it before the iPhone app may use passkeys here.
+Route::get('/.well-known/apple-app-site-association', AppleAppSiteAssociationController::class)
+    ->name('apple-app-site-association');
 
 // Public on purpose: someone deciding whether to sign up has to be able to read
 // the terms before they have an account.
@@ -308,6 +313,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::post('/dividas/{customer}/lembrete', [PaymentReminderController::class, 'store'])
             ->middleware('throttle:60,1')
             ->name('debts.reminder.store');
+        Route::post('/dividas/{customer}/lembrete/whatsapp', [PaymentReminderController::class, 'whatsapp'])
+            ->middleware('throttle:60,1')
+            ->name('debts.reminder.whatsapp');
 
         Route::get('/avencas', [RecurringInvoiceController::class, 'index'])
             ->name('recurring.index');
