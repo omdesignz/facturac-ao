@@ -45,6 +45,12 @@ class QuoteExpiringSoon extends WorkspaceNotification
         return "{$this->customerName} ainda não respondeu. Vale a pena ligar antes de o preço deixar de valer.";
     }
 
+    /** @return array{type: 'quote', public_id: string, label: string} */
+    public function pushTarget(): array
+    {
+        return ['type' => 'quote', 'public_id' => $this->quotePublicId, 'label' => $this->reference];
+    }
+
     public function url(): ?string
     {
         return route('quotes.edit', $this->quotePublicId);

@@ -85,6 +85,7 @@ abstract class WorkspaceNotification extends Notification implements ShouldQueue
             'tone' => $this->topic()->tone(),
             'workspace_id' => $this->workspaceId(),
             'dedupe_key' => $this->dedupeKey(),
+            'target' => $this->pushTarget(),
         ];
     }
 
@@ -92,7 +93,7 @@ abstract class WorkspaceNotification extends Notification implements ShouldQueue
      * What the phone app opens when the notification is tapped, or null to
      * just open the app. The web link is no use there.
      *
-     * @return array{type: 'document'|'customer', public_id: string, label: string}|null
+     * @return array{type: 'document'|'customer'|'quote', public_id: string, label: string}|null
      */
     public function pushTarget(): ?array
     {

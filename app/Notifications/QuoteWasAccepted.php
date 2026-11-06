@@ -47,6 +47,12 @@ class QuoteWasAccepted extends WorkspaceNotification
         return "{$this->customerName} aceitou {$amount} {$this->currencyCode}. Já pode passar a factura.";
     }
 
+    /** @return array{type: 'quote', public_id: string, label: string} */
+    public function pushTarget(): array
+    {
+        return ['type' => 'quote', 'public_id' => $this->quotePublicId, 'label' => $this->reference];
+    }
+
     public function url(): ?string
     {
         return route('quotes.edit', $this->quotePublicId);
