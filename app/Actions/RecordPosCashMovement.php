@@ -26,12 +26,13 @@ final readonly class RecordPosCashMovement
         PosCashMovementType $type,
         int $amountMinor,
         string $reason,
+        ?string $clientKey = null,
     ): PosCashMovement {
         if ($amountMinor <= 0) {
             throw BillingActionRefused::because('O valor tem de ser superior a zero.');
         }
 
-        return DB::transaction(function () use ($session, $user, $type, $amountMinor, $reason): PosCashMovement {
+        return DB::transaction(function () use ($session, $user, $type, $amountMinor, $reason, $clientKey): PosCashMovement {
             $locked = PosSession::query()
                 ->whereKey($session->id)
                 ->where('legal_entity_id', $session->legal_entity_id)
@@ -58,6 +59,7 @@ final readonly class RecordPosCashMovement
                 'workspace_id' => $locked->workspace_id,
                 'legal_entity_id' => $locked->legal_entity_id,
                 'pos_session_id' => $locked->id,
+                'client_key' => $clientKey,
                 'type' => $type,
                 'amount_minor' => $amountMinor,
                 'reason' => $reason,

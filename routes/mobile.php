@@ -16,8 +16,10 @@ use App\Http\Controllers\Api\Mobile\MobilePushDeviceController;
 use App\Http\Controllers\Api\Mobile\MobileReminderController;
 use App\Http\Controllers\Api\Mobile\MobileSessionController;
 use App\Http\Controllers\Api\Mobile\MobileStockController;
+use App\Http\Controllers\Api\Mobile\MobileTillController;
 use App\Http\Controllers\Api\Mobile\MobileTodayController;
 use App\Http\Middleware\EnsureMobileCompany;
+use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Support\Facades\Route;
 
 Route::name('mobile.v1.')->group(function (): void {
@@ -54,6 +56,22 @@ Route::name('mobile.v1.')->group(function (): void {
                 ->middleware('throttle:20,1,mobile-item')
                 ->name('items.store');
             Route::get('stock', MobileStockController::class)->name('stock.index');
+            Route::get('till', [MobileTillController::class, 'show'])->name('till.show');
+            Route::post('till/sessions', [MobileTillController::class, 'open'])
+                ->middleware('throttle:10,1,mobile-till-open')
+                ->name('till.sessions.store');
+            Route::middleware(SubstituteBindings::class)->group(function (): void {
+                Route::post('till/sessions/{posSession}/preview', [MobileTillController::class, 'preview'])->name('till.sales.preview');
+                Route::post('till/sessions/{posSession}/sales', [MobileTillController::class, 'sell'])
+                    ->middleware('throttle:120,1,mobile-till-sale')
+                    ->name('till.sales.store');
+                Route::post('till/sessions/{posSession}/movements', [MobileTillController::class, 'movement'])
+                    ->middleware('throttle:20,1,mobile-till-movement')
+                    ->name('till.movements.store');
+                Route::post('till/sessions/{posSession}/close', [MobileTillController::class, 'close'])
+                    ->middleware('throttle:10,1,mobile-till-close')
+                    ->name('till.sessions.close');
+            });
             Route::patch('customers/{customerPublicId}/tax-identification', MobileCustomerTaxIdentificationController::class)
                 ->middleware('throttle:20,1')
                 ->name('customers.tax-identification');

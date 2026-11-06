@@ -31,6 +31,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'type',
     'amount_minor',
     'reason',
+    'client_key',
     'created_by_user_id',
 ])]
 class PosCashMovement extends Model

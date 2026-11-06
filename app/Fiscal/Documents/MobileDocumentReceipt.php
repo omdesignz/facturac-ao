@@ -2,6 +2,7 @@
 
 namespace App\Fiscal\Documents;
 
+use App\Models\FiscalDocument;
 use App\Models\LegalEntity;
 use App\Models\MobileInvoice;
 
@@ -20,7 +21,14 @@ final readonly class MobileDocumentReceipt
      */
     public function for(MobileInvoice $made, LegalEntity $legalEntity): array
     {
-        $document = $made->fiscalDocument;
+        return $this->forDocument($made->fiscalDocument, $made->replayed, $legalEntity);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function forDocument(FiscalDocument $document, bool $replayed, LegalEntity $legalEntity): array
+    {
         $selected = (array) $this->register->selected($legalEntity, $document->public_id, false);
 
         return [
@@ -32,7 +40,7 @@ final readonly class MobileDocumentReceipt
             'status_label' => $selected['workflow_label'],
             'is_issued' => $document->document_no !== null,
             'share_url' => $document->document_no === null ? null : $this->presenter->signedUrl($document),
-            'replayed' => $made->replayed,
+            'replayed' => $replayed,
         ];
     }
 }
