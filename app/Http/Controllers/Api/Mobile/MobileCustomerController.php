@@ -33,14 +33,22 @@ class MobileCustomerController
         $owed = array_column($aging->byCustomer($legalEntity), 'outstanding_minor', 'customer_public_id');
 
         return $request->pageOf($customers, array_values($customers->getCollection()
-            ->map(fn (Customer $customer): array => [
-                'public_id' => $customer->public_id,
-                'name' => $customer->name,
-                'tax_identification_number' => $customer->tax_identification_number,
-                'email' => $customer->email,
-                'outstanding_minor' => $owed[$customer->public_id] ?? 0,
-                'currency_code' => $legalEntity->currency_code,
-            ])
+            ->map(fn (Customer $customer): array => self::present($customer, $legalEntity, $owed[$customer->public_id] ?? 0))
             ->all()));
+    }
+
+    /**
+     * @return array{public_id: string, name: string, tax_identification_number: string|null, email: string|null, outstanding_minor: int, currency_code: string}
+     */
+    public static function present(Customer $customer, LegalEntity $legalEntity, int $outstandingMinor): array
+    {
+        return [
+            'public_id' => $customer->public_id,
+            'name' => $customer->name,
+            'tax_identification_number' => $customer->tax_identification_number,
+            'email' => $customer->email,
+            'outstanding_minor' => $outstandingMinor,
+            'currency_code' => $legalEntity->currency_code,
+        ];
     }
 }

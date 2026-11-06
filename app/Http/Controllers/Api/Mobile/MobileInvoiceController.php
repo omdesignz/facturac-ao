@@ -8,8 +8,11 @@ use App\Exceptions\BillingActionRefused;
 use App\Exceptions\FiscalFinalizationBlocked;
 use App\Exceptions\SubscriptionRequired;
 use App\Fiscal\Documents\MobileDocumentReceipt;
+use App\Fiscal\SupportedTaxTreatment;
 use App\Http\Requests\PreviewMobileInvoiceRequest;
 use App\Http\Requests\StoreMobileInvoiceRequest;
+use App\Models\CatalogueItem;
+use App\Models\Customer;
 use App\Models\FiscalDocument;
 use App\Models\LegalEntity;
 use App\Models\User;
@@ -53,6 +56,12 @@ class MobileInvoiceController
             'can_create' => $canCreate && $subscription->allows($legalEntity->workspace_id, SubscriptionFeature::Invoicing),
             'can_issue' => $reason === null,
             'reason' => $reason,
+            'can_create_customers' => Gate::allows('create', Customer::class),
+            'can_create_items' => Gate::allows('create', CatalogueItem::class),
+            'tax_treatments' => array_map(
+                fn (array $option): array => ['value' => $option['value'], 'label' => $option['label']],
+                SupportedTaxTreatment::options(),
+            ),
         ]]);
     }
 

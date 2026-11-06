@@ -2,10 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\CreateCatalogueItem;
 use App\CatalogueItemType;
-use App\Fiscal\HumanServiceCommandContext;
-use App\Fiscal\ServiceCommands;
-use App\Fiscal\ServiceCreateInput;
 use App\Http\Requests\StoreCatalogueItemRequest;
 use App\Models\CatalogueItem;
 use App\Models\LegalEntity;
@@ -74,33 +72,13 @@ class CatalogueItemController extends Controller
         ]);
     }
 
-    public function store(StoreCatalogueItemRequest $request): RedirectResponse
+    public function store(StoreCatalogueItemRequest $request, CreateCatalogueItem $items): RedirectResponse
     {
         Gate::authorize('create', CatalogueItem::class);
         $legalEntity = $this->legalEntity($request);
         abort_unless($legalEntity instanceof LegalEntity, 404);
 
-        if ($request->validated('type') === 'service') {
-            $values = $request->validated();
-            $barcode = $values['barcode'] ?? null;
-            // The service command accepts a fixed set of fields; the barcode
-            // is added to the article once it exists.
-            unset($values['type'], $values['tracks_stock'], $values['reorder_level'], $values['barcode']);
-            $item = app(ServiceCommands::class)->create(
-                HumanServiceCommandContext::resolve($request->user(), $legalEntity),
-                ServiceCreateInput::human($values),
-            );
-
-            if ($barcode !== null) {
-                $item->update(['barcode' => $barcode]);
-            }
-        } else {
-            $legalEntity->catalogueItems()->create([
-                ...$this->attributes($request),
-                'workspace_id' => $legalEntity->workspace_id,
-                'currency_code' => $legalEntity->currency_code,
-            ]);
-        }
+        $items->execute($request->user(), $legalEntity, $request->validated(), fn (): array => $this->attributes($request));
 
         return back()->with('success', 'Artigo guardado.');
     }

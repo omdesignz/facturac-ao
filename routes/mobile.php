@@ -2,11 +2,13 @@
 
 use App\Http\Controllers\Api\Mobile\MobileCollectionsController;
 use App\Http\Controllers\Api\Mobile\MobileCustomerController;
+use App\Http\Controllers\Api\Mobile\MobileCustomerCreateController;
 use App\Http\Controllers\Api\Mobile\MobileCustomerProfileController;
 use App\Http\Controllers\Api\Mobile\MobileCustomerTaxIdentificationController;
 use App\Http\Controllers\Api\Mobile\MobileDocumentController;
 use App\Http\Controllers\Api\Mobile\MobileInvoiceController;
 use App\Http\Controllers\Api\Mobile\MobileItemController;
+use App\Http\Controllers\Api\Mobile\MobileItemCreateController;
 use App\Http\Controllers\Api\Mobile\MobileNotificationPreferenceController;
 use App\Http\Controllers\Api\Mobile\MobilePaymentController;
 use App\Http\Controllers\Api\Mobile\MobileProfileController;
@@ -43,8 +45,14 @@ Route::name('mobile.v1.')->group(function (): void {
                 ->middleware('throttle:10,1')
                 ->name('invoices.store');
             Route::get('customers', MobileCustomerController::class)->name('customers.index');
+            Route::post('customers', MobileCustomerCreateController::class)
+                ->middleware('throttle:20,1,mobile-customer')
+                ->name('customers.store');
             Route::get('customers/{customerPublicId}', MobileCustomerProfileController::class)->name('customers.show');
             Route::get('items', MobileItemController::class)->name('items.index');
+            Route::post('items', MobileItemCreateController::class)
+                ->middleware('throttle:20,1,mobile-item')
+                ->name('items.store');
             Route::get('stock', MobileStockController::class)->name('stock.index');
             Route::patch('customers/{customerPublicId}/tax-identification', MobileCustomerTaxIdentificationController::class)
                 ->middleware('throttle:20,1')
