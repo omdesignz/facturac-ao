@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\ConvertQuoteToInvoice;
 use App\Actions\ResolveCustomerPrices;
 use App\Actions\SaveQuote;
+use App\Actions\TransitionQuote;
 use App\Exceptions\BillingActionRefused;
 use App\Fiscal\SupportedTaxTreatment;
 use App\Http\Requests\StoreQuoteRequest;
@@ -14,7 +15,6 @@ use App\Models\Establishment;
 use App\Models\LegalEntity;
 use App\Models\Quote;
 use App\Models\Workspace;
-use App\Notifications\QuoteWasAccepted;
 use App\QuoteStatus;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -121,7 +121,7 @@ class QuoteController extends Controller
     }
 
     /** Records that the quote went out, was accepted, or was turned down. */
-    public function transition(Request $request, Quote $quote): RedirectResponse
+    public function transition(Request $request, Quote $quote, TransitionQuote $transition): RedirectResponse
     {
         $legalEntity = $this->legalEntity($request);
         abort_unless($legalEntity instanceof LegalEntity, 404);
@@ -133,38 +133,17 @@ class QuoteController extends Controller
         ]);
 
         $status = QuoteStatus::from((string) $validated['status']);
-
-        $allowedStatuses = match ($quote->status) {
-            QuoteStatus::Draft => [QuoteStatus::Sent],
-            QuoteStatus::Sent => [QuoteStatus::Accepted, QuoteStatus::Rejected],
-            default => [],
-        };
-
-        if ($quote->hasLapsed() || ! in_array($status, $allowedStatuses, true)) {
-            return back()->with('error', 'Esta mudança de estado não é permitida para o orçamento.');
-        }
-
-        if ($status === QuoteStatus::Sent && $quote->lines()->doesntExist()) {
-            return back()->with('error', 'Adicione pelo menos uma linha antes de enviar o orçamento.');
-        }
-
-        $quote->forceFill([
-            'status' => $status,
-            'sent_at' => $status === QuoteStatus::Sent ? now() : $quote->sent_at,
-            'decided_at' => $status === QuoteStatus::Sent ? null : now(),
-        ])->save();
-
-        activity('quote')
-            ->causedBy($request->user())
-            ->performedOn($quote)
-            ->event($status->value)
-            ->withProperties(['reference' => $quote->reference])
-            ->log("quote marked {$status->value}");
-
         $workspace = $request->attributes->get('currentWorkspace');
 
-        if ($status === QuoteStatus::Accepted && $workspace instanceof Workspace) {
-            QuoteWasAccepted::fromQuote($quote)->sendToWorkspace($workspace);
+        try {
+            $transition->execute(
+                $quote,
+                $request->user(),
+                $status,
+                $workspace instanceof Workspace ? $workspace : null,
+            );
+        } catch (BillingActionRefused $exception) {
+            return back()->with('error', $exception->getMessage());
         }
 
         return back()->with('success', "Orçamento marcado como {$status->label()}.");

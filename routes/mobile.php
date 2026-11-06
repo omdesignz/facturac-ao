@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\Mobile\MobileNotificationPreferenceController;
 use App\Http\Controllers\Api\Mobile\MobilePaymentController;
 use App\Http\Controllers\Api\Mobile\MobileProfileController;
 use App\Http\Controllers\Api\Mobile\MobilePushDeviceController;
+use App\Http\Controllers\Api\Mobile\MobileQuoteController;
 use App\Http\Controllers\Api\Mobile\MobileReminderController;
 use App\Http\Controllers\Api\Mobile\MobileSessionController;
 use App\Http\Controllers\Api\Mobile\MobileStockController;
@@ -56,6 +57,21 @@ Route::name('mobile.v1.')->group(function (): void {
                 ->middleware('throttle:20,1,mobile-item')
                 ->name('items.store');
             Route::get('stock', MobileStockController::class)->name('stock.index');
+            Route::get('quotes', [MobileQuoteController::class, 'index'])->name('quotes.index');
+            Route::post('quotes/preview', [MobileQuoteController::class, 'preview'])->name('quotes.preview');
+            Route::post('quotes', [MobileQuoteController::class, 'store'])
+                ->middleware('throttle:20,1,mobile-quote')
+                ->name('quotes.store');
+            Route::get('quotes/{quotePublicId}', [MobileQuoteController::class, 'show'])->name('quotes.show');
+            Route::put('quotes/{quotePublicId}/status', [MobileQuoteController::class, 'status'])
+                ->middleware('throttle:20,1,mobile-quote-status')
+                ->name('quotes.status');
+            Route::post('quotes/{quotePublicId}/invoice', [MobileQuoteController::class, 'convert'])
+                ->middleware('throttle:10,1,mobile-quote-convert')
+                ->name('quotes.convert');
+            Route::post('quotes/{quotePublicId}/invoice/issue', [MobileQuoteController::class, 'issue'])
+                ->middleware('throttle:10,1,mobile-quote-issue')
+                ->name('quotes.issue');
             Route::get('till', [MobileTillController::class, 'show'])->name('till.show');
             Route::post('till/sessions', [MobileTillController::class, 'open'])
                 ->middleware('throttle:10,1,mobile-till-open')

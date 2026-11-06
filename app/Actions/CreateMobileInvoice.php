@@ -184,7 +184,7 @@ final readonly class CreateMobileInvoice
         return $existing;
     }
 
-    private function customer(LegalEntity $legalEntity, string $publicId): Customer
+    public function customer(LegalEntity $legalEntity, string $publicId): Customer
     {
         $customer = Customer::query()
             ->where('public_id', $publicId)

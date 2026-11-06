@@ -33,6 +33,7 @@ use Illuminate\Support\Str;
  * @property Carbon|null $sent_at
  * @property Carbon|null $decided_at
  * @property int|null $converted_document_id
+ * @property string|null $client_key
  */
 #[Fillable([
     'workspace_id',
