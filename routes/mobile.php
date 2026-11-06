@@ -7,10 +7,12 @@ use App\Http\Controllers\Api\Mobile\MobileCustomerController;
 use App\Http\Controllers\Api\Mobile\MobileCustomerCreateController;
 use App\Http\Controllers\Api\Mobile\MobileCustomerProfileController;
 use App\Http\Controllers\Api\Mobile\MobileCustomerTaxIdentificationController;
+use App\Http\Controllers\Api\Mobile\MobileCustomerUpdateController;
 use App\Http\Controllers\Api\Mobile\MobileDocumentController;
 use App\Http\Controllers\Api\Mobile\MobileInvoiceController;
 use App\Http\Controllers\Api\Mobile\MobileItemController;
 use App\Http\Controllers\Api\Mobile\MobileItemCreateController;
+use App\Http\Controllers\Api\Mobile\MobileItemDetailController;
 use App\Http\Controllers\Api\Mobile\MobileItemLookupController;
 use App\Http\Controllers\Api\Mobile\MobileNotificationController;
 use App\Http\Controllers\Api\Mobile\MobileNotificationPreferenceController;
@@ -81,8 +83,15 @@ Route::name('mobile.v1.')->group(function (): void {
                 ->middleware('throttle:20,1,mobile-customer')
                 ->name('customers.store');
             Route::get('customers/{customerPublicId}', MobileCustomerProfileController::class)->name('customers.show');
+            Route::patch('customers/{customerPublicId}', MobileCustomerUpdateController::class)
+                ->middleware('throttle:30,1,mobile-customer-update')
+                ->name('customers.update');
             Route::get('items', MobileItemController::class)->name('items.index');
             Route::get('items/lookup', MobileItemLookupController::class)->name('items.lookup');
+            Route::get('items/{itemPublicId}', [MobileItemDetailController::class, 'show'])->name('items.show');
+            Route::patch('items/{itemPublicId}', [MobileItemDetailController::class, 'update'])
+                ->middleware('throttle:30,1,mobile-item-update')
+                ->name('items.update');
             Route::post('items', MobileItemCreateController::class)
                 ->middleware('throttle:20,1,mobile-item')
                 ->name('items.store');
