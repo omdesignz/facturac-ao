@@ -21,16 +21,19 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 try {
   let target;
+
   for (let i = 0; i < 50 && !target; i++) {
     await sleep(100);
     target = await fetch(`http://127.0.0.1:${port}/json/list`).then((r) => r.json()).then((l) => l.find((t) => t.type === 'page')).catch(() => undefined);
   }
+
   const ws = new WebSocket(target.webSocketDebuggerUrl);
   await new Promise((resolve) => ws.addEventListener('open', resolve, { once: true }));
   let id = 0;
   const pending = new Map();
   ws.addEventListener('message', (event) => {
     const msg = JSON.parse(event.data);
+
     if (msg.id && pending.has(msg.id)) {
       pending.get(msg.id)(msg);
       pending.delete(msg.id);

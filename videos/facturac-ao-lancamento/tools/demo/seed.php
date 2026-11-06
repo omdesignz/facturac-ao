@@ -22,6 +22,7 @@ use App\Models\Customer;
 use App\Models\FiscalDocument;
 use App\Models\WorkspaceSubscription;
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Queue;
@@ -37,7 +38,7 @@ $repo = dirname(__DIR__, 4);
 chdir($repo);
 require 'vendor/autoload.php';
 $app = require 'bootstrap/app.php';
-$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+$app->make(Kernel::class)->bootstrap();
 
 if (config('database.connections.sqlite.database') !== getenv('DB_DATABASE')) {
     exit("refusing: not the demo database\n");
