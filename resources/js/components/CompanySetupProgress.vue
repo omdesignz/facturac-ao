@@ -52,7 +52,7 @@ const nextLink = computed(() => {
     return {
         href: props.onConnectionPage
             ? `#${props.progress.next_step === 'association' ? 'taxpayer-association' : props.progress.next_step === 'verification' ? 'connection-check' : 'authorized-series'}`
-            : connectionShow.url(),
+            : `${connectionShow.url()}#${props.progress.next_step === 'association' ? 'taxpayer-association' : props.progress.next_step === 'verification' ? 'connection-check' : 'authorized-series'}`,
         label:
             props.progress.next_step === 'association'
                 ? 'Preparar o meu acesso'

@@ -67,6 +67,15 @@ jobs:
       - name: Typed sale gate
         run: node --test tests/typed-lines.test.mjs
 
+      - name: Draft recovery gate
+        run: node --test tests/draft-recovery.test.mjs
+
+      - name: Run company setup tests
+        run: node --test tests/company-setup.test.mjs
+
+      - name: Collection follow-up gate
+        run: node --test tests/collection-follow-ups.test.mjs
+
       - name: Run CI Checks
         run: composer ci:check
 

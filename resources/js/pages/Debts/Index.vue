@@ -3,10 +3,12 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import { CircleCheck, LoaderCircle, Mail, TriangleAlert } from '@lucide/vue';
 import { computed, onMounted, reactive, ref } from 'vue';
 import AppButton from '@/components/AppButton.vue';
+import CollectionFollowUpQueue from '@/components/CollectionFollowUpQueue.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { agingBucketColours, agingShare } from '@/lib/aging';
+import type { CollectionFollowUpEntry } from '@/lib/collection-follow-ups';
 import { concentrationLine, debtShares, shownDebtors } from '@/lib/debt-share';
 import { buttonGold, buttonQuiet } from '@/lib/pos-ui';
 import {
@@ -35,6 +37,7 @@ interface DebtRow {
 }
 
 const props = defineProps<{
+    followUps: CollectionFollowUpEntry[];
     customers: DebtRow[];
     /** Customers chosen on another page, such as the documents list. */
     preselected: string[];
@@ -331,6 +334,8 @@ const dayPill = (days: number): string =>
                         </p>
                     </div>
                 </header>
+
+                <CollectionFollowUpQueue class="mt-6" :entries="followUps" />
 
                 <template v-if="shares.length > 0">
                     <div

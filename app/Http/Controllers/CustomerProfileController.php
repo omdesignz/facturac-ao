@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Analytics\AgingQuery;
+use App\Analytics\CollectionFollowUps;
 use App\Analytics\ReceivablesQuery;
 use App\FiscalDocumentType;
 use App\Models\CatalogueItem;
@@ -26,6 +27,7 @@ class CustomerProfileController extends Controller
     public function __construct(
         private ReceivablesQuery $receivables,
         private AgingQuery $aging,
+        private CollectionFollowUps $followUps,
     ) {}
 
     public function show(Request $request, Customer $customer): Response
@@ -48,6 +50,8 @@ class CustomerProfileController extends Controller
             ->withQueryString();
 
         return Inertia::render('Customers/Show', [
+            'followUp' => $this->followUps->forCustomer($customer),
+            'canUpdateFollowUp' => Gate::allows('update', $customer),
             'customer' => [
                 'public_id' => $customer->public_id,
                 'name' => $customer->name,

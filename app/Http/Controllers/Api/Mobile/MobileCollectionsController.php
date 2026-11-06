@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Mobile;
 
 use App\Analytics\AgingQuery;
+use App\Analytics\CollectionFollowUps;
 use App\Analytics\ReminderHistory;
 use App\Models\Customer;
 use App\Models\LegalEntity;
@@ -14,6 +15,7 @@ class MobileCollectionsController
 {
     public function __construct(
         private readonly AgingQuery $aging,
+        private readonly CollectionFollowUps $followUps,
         private readonly ReminderHistory $reminders,
     ) {}
 
@@ -29,6 +31,7 @@ class MobileCollectionsController
         );
 
         return response()->json(['data' => [
+            'follow_ups' => $this->followUps->forCompany($legalEntity),
             'currency_code' => $legalEntity->currency_code,
             'outstanding_minor' => array_sum(array_column($rows, 'outstanding_minor')),
             'overdue_minor' => array_sum(array_column($rows, 'overdue_minor')),

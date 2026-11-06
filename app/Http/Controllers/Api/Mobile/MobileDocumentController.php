@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Mobile;
 
 use App\Actions\CreateMobileCreditNote;
+use App\Actions\PrepareRepeatInvoice;
 use App\Fiscal\Documents\CurrentAgtState;
 use App\Fiscal\Documents\DocumentLiveActivities;
 use App\Fiscal\Documents\FiscalDocumentPresenter;
@@ -69,6 +70,7 @@ class MobileDocumentController
             'days_past_due' => $snapshot['days_past_due'],
             'message' => $selected['workflow_message'],
             // The note sheet says why when it cannot be issued; this only says whether to offer it.
+            'can_repeat' => Gate::allows('create', FiscalDocument::class) && PrepareRepeatInvoice::supports($document),
             'can_credit' => in_array($document->document_type, CreateMobileCreditNote::CORRECTABLE, true)
                 && $selected['workflow_status'] === 'valid'
                 && Gate::allows('create', FiscalDocument::class),

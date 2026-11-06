@@ -34,6 +34,7 @@ import {
 } from 'vue';
 import AppButton from '@/components/AppButton.vue';
 import DateInput from '@/components/DateInput.vue';
+import DraftRecoveryNotice from '@/components/DraftRecoveryNotice.vue';
 import FormError from '@/components/FormError.vue';
 import FormField from '@/components/FormField.vue';
 import PageHeader from '@/components/PageHeader.vue';
@@ -42,9 +43,11 @@ import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { addDaysToIsoDate } from '@/lib/dates';
+import { invoiceRecoveryDocument } from '@/lib/draft-recovery';
 import { roundFiscalLineAmount } from '@/lib/fiscal-rounding';
 
 import { parseTypedLines } from '@/lib/typed-lines';
+import { useDraftRecovery } from '@/lib/use-draft-recovery';
 import { show as agtConnection } from '@/routes/agt/connection';
 import { issue, store, update } from '@/routes/invoices';
 import { security } from '@/routes/settings';
@@ -214,6 +217,8 @@ interface FiscalSeries {
 }
 
 const props = defineProps<{
+    recoveryScope: string;
+    repeatSource?: { public_id: string; document_no: string };
     company: Company;
     establishments: Establishment[];
     customers: Customer[];
@@ -545,6 +550,38 @@ const form = useForm({
     settlements: props.document.settlements.map((row) => ({ ...row })),
     lines: props.document.lines.map((line) => editableLine(line)),
 });
+const recovery = useDraftRecovery({
+    scope: () => [
+        page.props.auth.user?.id ?? '',
+        page.props.currentWorkspace?.public_id ?? '',
+        props.recoveryScope,
+    ],
+    document: () =>
+        invoiceRecoveryDocument(
+            props.document.public_id,
+            props.document.document_type,
+            props.repeatSource?.public_id,
+        ),
+    version: () => String(props.document.revision),
+    data: () => {
+        return Object.fromEntries(
+            Object.entries(form.data()).filter(([key]) => key !== 'revision'),
+        );
+    },
+    restore: (data) => {
+        for (const key of Object.keys(form.data())) {
+            if (key !== 'revision' && Object.hasOwn(data, key)) {
+                Object.assign(form, { [key]: data[key as keyof typeof data] });
+            }
+        }
+
+        nextLineKey.value += form.lines.length;
+        form.lines.forEach((line) => {
+            line.key = `line-${++nextLineKey.value}`;
+        });
+    },
+});
+
 const issueDialogOpen = ref(false);
 
 /**
@@ -644,6 +681,10 @@ const referenceLineOptions = computed<ListboxOption[]>(() =>
 watch(
     () => form.references_document_public_id,
     () => {
+        if (recovery.restoring.value) {
+            return;
+        }
+
         form.lines.forEach((line) => {
             line.reference_line_number = '';
         });
@@ -1344,6 +1385,12 @@ onBeforeUnmount(() => {
 });
 
 function submit(): void {
+    if (recovery.pending.value !== null) {
+        return;
+    }
+
+    const submitted = JSON.parse(JSON.stringify(form.data()));
+    recovery.beforeSave();
     form.transform((data) => ({
         ...data,
         due_date: data.due_date || null,
@@ -1391,12 +1438,21 @@ function submit(): void {
             preserveScroll: true,
             onBefore: markOwnVisit,
             onSuccess: () => {
+                if (page.props.flash.error) {
+                    return;
+                }
+
                 form.revision = props.document.revision;
-                form.defaults();
+                form.defaults({
+                    ...submitted,
+                    revision: props.document.revision,
+                });
+                recovery.saved();
             },
             onError: () => {
                 void showFirstProblem();
             },
+            onFinish: recovery.finished,
         },
     );
 }
@@ -1427,6 +1483,7 @@ function confirmIssue(): void {
         onBefore: markOwnVisit,
         onSuccess: () => {
             issueDialogOpen.value = false;
+            recovery.discard();
         },
     });
 }
@@ -1442,7 +1499,33 @@ function confirmIssue(): void {
             "
         />
 
+        <div
+            v-if="recovery.pending.value || recovery.message.value"
+            class="page-shell px-4 pt-6 sm:px-6 lg:px-8"
+        >
+            <DraftRecoveryNotice
+                :available="recovery.pending.value !== null"
+                :conflict="recovery.hasConflict.value"
+                :message="recovery.message.value"
+                @restore="recovery.restore"
+                @discard="recovery.discard"
+            />
+        </div>
+
+        <div v-if="repeatSource" class="page-shell px-4 pt-6 sm:px-6 lg:px-8">
+            <p
+                class="rounded-xl border border-zinc-200 p-4 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-300"
+                role="status"
+            >
+                Nova factura a partir de {{ repeatSource.document_no }}. Os
+                artigos foram identificados pelo código. Reveja o cliente, as
+                quantidades e os preços e impostos actuais. Descontos, retenções
+                e pagamentos anteriores não foram copiados.
+            </p>
+        </div>
+
         <form
+            :inert="recovery.pending.value !== null"
             class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7"
             @submit.prevent="submit"
         >

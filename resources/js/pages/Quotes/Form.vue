@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import {
     ArrowLeft,
     ListOrdered,
@@ -12,6 +12,7 @@ import {
 import { computed } from 'vue';
 import AppButton from '@/components/AppButton.vue';
 import DateInput from '@/components/DateInput.vue';
+import DraftRecoveryNotice from '@/components/DraftRecoveryNotice.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
 import FormError from '@/components/FormError.vue';
 import FormField from '@/components/FormField.vue';
@@ -20,6 +21,7 @@ import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { currencyLabel } from '@/lib/pos-ui';
+import { useDraftRecovery } from '@/lib/use-draft-recovery';
 import { index as quotesIndex } from '@/routes/quotes';
 import {
     convert as convertQuote,
@@ -74,6 +76,8 @@ interface TaxTreatment {
 }
 
 const props = defineProps<{
+    recoveryScope: string;
+    recoveryVersion: string;
     quote:
         | (Record<string, unknown> & {
               public_id: string;
@@ -150,6 +154,26 @@ const form = useForm({
 const readOnly = computed(
     () => props.quote !== null && !props.quote.is_editable,
 );
+
+const page = usePage();
+const recovery = useDraftRecovery({
+    scope: () => [
+        page.props.auth.user?.id ?? '',
+        page.props.currentWorkspace?.public_id ?? '',
+        props.recoveryScope,
+    ],
+    document: () => `quote:${props.quote?.public_id ?? 'new'}`,
+    version: () => props.recoveryVersion,
+    data: () => form.data(),
+    restore: (data) => {
+        for (const key of Object.keys(form.data())) {
+            if (Object.hasOwn(data, key)) {
+                Object.assign(form, { [key]: data[key as keyof typeof data] });
+            }
+        }
+    },
+    enabled: () => !readOnly.value,
+});
 
 const customerOptions = computed<SelectOption[]>(() => [
     { value: '', label: 'Cliente ocasional' },
@@ -368,13 +392,32 @@ function lineError(index: number, field: string): string | undefined {
 }
 
 function submit(): void {
+    if (recovery.pending.value !== null) {
+        return;
+    }
+
+    const submitted = JSON.parse(JSON.stringify(form.data()));
+    recovery.beforeSave();
+    const options = {
+        preserveScroll: true,
+        onSuccess: () => {
+            if (page.props.flash.error) {
+                return;
+            }
+
+            form.defaults(submitted);
+            recovery.saved();
+        },
+        onFinish: recovery.finished,
+    };
+
     if (props.quote === null) {
-        form.post(storeQuote.url());
+        form.post(storeQuote.url(), options);
 
         return;
     }
 
-    form.put(updateQuote.url(props.quote.public_id), { preserveScroll: true });
+    form.put(updateQuote.url(props.quote.public_id), options);
 }
 
 function mark(status: 'sent' | 'accepted' | 'rejected'): void {
@@ -423,6 +466,13 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                 </Link>
 
                 <FlashBanner />
+                <DraftRecoveryNotice
+                    :available="recovery.pending.value !== null"
+                    :conflict="recovery.hasConflict.value"
+                    :message="recovery.message.value"
+                    @restore="recovery.restore"
+                    @discard="recovery.discard"
+                />
 
                 <header
                     class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
@@ -489,7 +539,10 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                 </p>
 
                 <form class="space-y-6" @submit.prevent="submit">
-                    <fieldset :disabled="readOnly" class="space-y-6">
+                    <fieldset
+                        :disabled="readOnly || recovery.pending.value !== null"
+                        class="space-y-6"
+                    >
                         <section class="rounded-2xl surface p-5">
                             <SectionHeading :icon="UserRound">
                                 Cliente e validade
@@ -869,7 +922,10 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                         <AppButton
                             variant="ink"
                             type="submit"
-                            :disabled="form.processing"
+                            :disabled="
+                                form.processing ||
+                                recovery.pending.value !== null
+                            "
                         >
                             <LoaderCircle
                                 v-if="form.processing"

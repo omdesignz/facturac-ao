@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\PrepareRepeatInvoice;
 use App\Actions\ResolveCustomerPrices;
 use App\Actions\SaveFiscalDocumentDraft;
 use App\Fiscal\Agt\Support\CanonicalNumber;
@@ -26,9 +27,11 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\PaymentMethod;
 use App\WithholdingType;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -36,7 +39,7 @@ class FiscalDocumentController extends Controller
 {
     public function __construct(private ResolveCustomerPrices $resolvePrices) {}
 
-    public function create(Request $request): Response|RedirectResponse
+    public function create(Request $request, PrepareRepeatInvoice $repeat): Response|RedirectResponse
     {
         $legalEntity = $this->legalEntity($request);
 
@@ -53,6 +56,37 @@ class FiscalDocumentController extends Controller
 
         if ($requestedType === null || ! in_array($requestedType, FiscalDocumentType::issuable(), true)) {
             $requestedType = FiscalDocumentType::Invoice;
+        }
+
+        $request->validate(['repeat' => ['sometimes', 'nullable', 'string', 'max:26']]);
+
+        if ($request->filled('repeat')) {
+            try {
+                $seed = $repeat->execute($legalEntity, (string) $request->query('repeat'));
+            } catch (ValidationException $exception) {
+                return redirect()->route('documents.index', ['documento' => $request->query('repeat')])
+                    ->with('error', collect($exception->errors())->flatten()->first());
+            }
+            $props = $this->pageProps($legalEntity, repeatSeed: $seed);
+            $customer = $seed['customer'];
+            $props['repeatSource'] = ['public_id' => $seed['source']->public_id, 'document_no' => $seed['source']->document_no];
+            $props['document']['customer_public_id'] = $customer->public_id;
+            $props['document']['customer'] = [
+                'name' => $customer->name,
+                'tax_identification_number' => $customer->tax_identification_number ?? '',
+                'country_code' => $customer->country_code,
+                'address_line' => $customer->address_line ?? '',
+            ];
+            $props['document']['currency_code'] = $legalEntity->currency_code;
+            $props['document']['due_date'] = $customer->payment_terms_days > 0
+                ? now('Africa/Luanda')->addDays($customer->payment_terms_days)->toDateString() : null;
+            $props['document']['lines'] = array_map(fn (array $line): array => [
+                ...$this->emptyLine(),
+                ...array_intersect_key($line, $this->emptyLine()),
+                'operation_date' => now('Africa/Luanda')->toDateString(),
+            ], $seed['lines']);
+
+            return Inertia::render('Invoices/Create', $props);
         }
 
         return Inertia::render(
@@ -122,11 +156,15 @@ class FiscalDocumentController extends Controller
             ->with('success', "Rascunho actualizado · revisão {$document->revision}.");
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * @param  array{customer: Customer, items: Collection<int, CatalogueItem>}|null  $repeatSeed
+     * @return array<string, mixed>
+     */
     private function pageProps(
         LegalEntity $legalEntity,
         ?FiscalDocument $document = null,
         FiscalDocumentType $requestedType = FiscalDocumentType::Invoice,
+        ?array $repeatSeed = null,
     ): array {
         $establishments = $legalEntity->establishments()
             ->where('is_active', true)
@@ -138,12 +176,18 @@ class FiscalDocumentController extends Controller
             ->orderBy('name')
             ->limit(250)
             ->get();
+        if ($repeatSeed !== null) {
+            $customers = $customers->merge([$repeatSeed['customer']]);
+        }
         $agreedPrices = $this->resolvePrices->forCustomers($customers);
         $catalogueItems = $legalEntity->catalogueItems()
             ->where('is_active', true)
             ->orderBy('name')
             ->limit(500)
             ->get();
+        if ($repeatSeed !== null) {
+            $catalogueItems = $catalogueItems->merge($repeatSeed['items']);
+        }
         $adjustable = $legalEntity->fiscalDocuments()
             ->with(['customer', 'submissions', 'lines'])
             ->withSum(['settledBy as settled_minor' => fn ($query) => $query->whereHas('receipt', fn ($receipt) => $receipt->where('status', '!=', FiscalDocumentStatus::Draft)),
@@ -172,6 +216,7 @@ class FiscalDocumentController extends Controller
             ->get();
 
         return [
+            'recoveryScope' => $legalEntity->public_id,
             'transportLines' => TransportDocumentLine::query()
                 ->where('workspace_id', $legalEntity->workspace_id)
                 ->where('legal_entity_id', $legalEntity->id)

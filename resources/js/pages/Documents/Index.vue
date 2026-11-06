@@ -86,6 +86,7 @@ interface RegisterDocument {
     send_count: number;
     delivery_email: string | null;
     can_edit: boolean;
+    can_repeat: boolean;
     can_print: boolean;
     can_send: boolean;
 }
@@ -1290,6 +1291,21 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                     {{
                                         selected.sent_at ? 'Reenviar' : 'Enviar'
                                     }}
+                                </AppButton>
+                                <AppButton
+                                    v-if="selected.can_repeat"
+                                    variant="ink"
+                                    size="lg"
+                                    :href="
+                                        createInvoice.url({
+                                            query: {
+                                                repeat: selected.public_id,
+                                            },
+                                        })
+                                    "
+                                >
+                                    <Plus class="size-4" aria-hidden="true" />
+                                    Usar como base
                                 </AppButton>
                                 <AppButton
                                     variant="ink"

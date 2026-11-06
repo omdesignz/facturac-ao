@@ -194,9 +194,13 @@ class QuoteController extends Controller
             ->get();
         $agreedPrices = $this->resolvePrices->forCustomers($customers);
 
+        $quote?->load('lines');
+
         return Inertia::render('Quotes/Form', [
+            'recoveryScope' => $legalEntity->public_id,
+            'recoveryVersion' => $quote === null ? 'new' : hash('sha256', $quote->toJson()),
             'quote' => $quote === null ? null : [
-                ...$this->present($quote->load('lines')),
+                ...$this->present($quote),
                 'establishment_public_id' => $quote->establishment->public_id,
                 'customer_public_id' => $quote->customer?->public_id,
                 'customer' => [

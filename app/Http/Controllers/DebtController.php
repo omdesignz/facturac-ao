@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Analytics\AgingQuery;
+use App\Analytics\CollectionFollowUps;
 use App\Models\Customer;
 use App\Models\LegalEntity;
 use App\Models\Workspace;
@@ -17,7 +18,7 @@ use Inertia\Response;
  */
 class DebtController extends Controller
 {
-    public function __construct(private AgingQuery $aging) {}
+    public function __construct(private AgingQuery $aging, private CollectionFollowUps $followUps) {}
 
     public function __invoke(Request $request): Response|RedirectResponse
     {
@@ -45,6 +46,7 @@ class DebtController extends Controller
         ), 'customer_public_id')));
 
         return Inertia::render('Debts/Index', [
+            'followUps' => $this->followUps->forCompany($legalEntity),
             'customers' => $rows,
             'preselected' => $preselected,
             'preselectedSkipped' => count($requested) - count($preselected),

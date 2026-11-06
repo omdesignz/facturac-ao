@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import {
     ArrowLeft,
     CalendarClock,
@@ -21,6 +21,7 @@ import AppButton from '@/components/AppButton.vue';
 import ChartBars from '@/components/charts/ChartBars.vue';
 import ChartFrame from '@/components/charts/ChartFrame.vue';
 import ChartTrend from '@/components/charts/ChartTrend.vue';
+import CollectionFollowUpForm from '@/components/CollectionFollowUpForm.vue';
 import DataTable from '@/components/DataTable.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
 import FormField from '@/components/FormField.vue';
@@ -29,6 +30,7 @@ import PageStat from '@/components/PageStat.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
+import type { CollectionFollowUp } from '@/lib/collection-follow-ups';
 import { confirmAction } from '@/lib/confirm';
 import { currencyLabel } from '@/lib/pos-ui';
 import { index as customersIndex } from '@/routes/customers';
@@ -68,7 +70,10 @@ interface DocumentRow {
     opened_at: string | null;
 }
 
+const page = usePage();
 const props = defineProps<{
+    followUp: CollectionFollowUp;
+    canUpdateFollowUp: boolean;
     customer: {
         public_id: string;
         name: string;
@@ -393,6 +398,17 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                         </PageStat>
                     </template>
                 </PageHeader>
+
+                <CollectionFollowUpForm
+                    :key="customer.public_id"
+                    :customer-public-id="customer.public_id"
+                    :follow-up="followUp"
+                    :can-update="canUpdateFollowUp"
+                    :recovery-scope="[
+                        page.props.auth.user?.id ?? '',
+                        page.props.currentWorkspace?.public_id ?? '',
+                    ]"
+                />
 
                 <p class="max-w-3xl text-xs/5 text-zinc-500 dark:text-zinc-400">
                     Valores e documentos limitados à moeda da empresa; saldos

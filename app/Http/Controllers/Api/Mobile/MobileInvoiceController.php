@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api\Mobile;
 
 use App\Actions\ConfirmMobileIssuer;
 use App\Actions\CreateMobileInvoice;
+use App\Actions\PrepareRepeatInvoice;
+use App\Analytics\AgingQuery;
 use App\Billing\SubscriptionAccess;
 use App\Exceptions\BillingActionRefused;
 use App\Exceptions\FiscalFinalizationBlocked;
@@ -16,6 +18,7 @@ use App\Models\CatalogueItem;
 use App\Models\Customer;
 use App\Models\FiscalDocument;
 use App\Models\LegalEntity;
+use App\Models\MobileInvoice;
 use App\Models\User;
 use App\SubscriptionFeature;
 use Illuminate\Http\JsonResponse;
@@ -56,6 +59,7 @@ class MobileInvoiceController
         };
 
         return response()->json(['data' => [
+            'recovery_scope' => implode(':', [$user->id, $legalEntity->workspace_id, $legalEntity->public_id]),
             'can_create' => $canCreate && $subscription->allows($legalEntity->workspace_id, SubscriptionFeature::Invoicing),
             'can_issue' => $reason === null,
             'reason' => $reason,
@@ -68,6 +72,25 @@ class MobileInvoiceController
         ]]);
     }
 
+    public function repeat(Request $request, string $documentPublicId, PrepareRepeatInvoice $repeat, AgingQuery $aging): JsonResponse
+    {
+        $entity = $this->legalEntity($request);
+        $decimalQuantities = $request->query('quantity_format') === 'decimal';
+        $seed = $repeat->execute($entity, $documentPublicId, wholeQuantities: ! $decimalQuantities, combineItems: $decimalQuantities);
+        $owed = array_column($aging->byCustomer($entity), 'outstanding_minor', 'customer_public_id');
+        $items = $seed['items']->keyBy('public_id');
+
+        return response()->json(['data' => [
+            'source_public_id' => $seed['source']->public_id,
+            'source_document_no' => $seed['source']->document_no,
+            'customer' => MobileCustomerController::present($seed['customer'], $entity, $owed[$seed['customer']->public_id] ?? 0),
+            'lines' => array_map(fn (array $line): array => [
+                'item' => MobileItemController::present($items->get($line['catalogue_item_public_id'])),
+                'quantity' => $decimalQuantities ? $line['quantity'] : (int) $line['quantity'],
+            ], $seed['requested']),
+        ]])->header('Cache-Control', 'private, no-store');
+    }
+
     public function preview(PreviewMobileInvoiceRequest $request): JsonResponse
     {
         Gate::authorize('create', FiscalDocument::class);
@@ -77,6 +100,25 @@ class MobileInvoiceController
             (string) $request->validated('customer_public_id'),
             $request->invoiceLines(),
         )]);
+    }
+
+    /** Resolve a previous request without creating or issuing a document. */
+    public function recover(Request $request, string $clientKey, MobileDocumentReceipt $receipt): JsonResponse
+    {
+        $legalEntity = $this->legalEntity($request);
+        $invoice = MobileInvoice::query()->with('fiscalDocument')
+            ->where('workspace_id', $legalEntity->workspace_id)
+            ->where('legal_entity_id', $legalEntity->id)
+            ->where('created_by_user_id', $this->user($request)->id)
+            ->where('client_key', $clientKey)->first();
+
+        if ($invoice !== null) {
+            Gate::authorize('view', $invoice->fiscalDocument);
+            $invoice->replayed = true;
+        }
+
+        return response()->json(['data' => $invoice === null ? null : $receipt->for($invoice, $legalEntity)])
+            ->header('Cache-Control', 'private, no-store');
     }
 
     public function store(StoreMobileInvoiceRequest $request, MobileDocumentReceipt $receipt): JsonResponse

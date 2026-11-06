@@ -400,3 +400,20 @@ it('will not issue without two-factor authentication, and says so on the quote',
         'expected_total_minor' => PHONE_QUOTE_GROSS,
     ])->assertForbidden()->assertJsonPath('error.code', 'TWO_FACTOR_REQUIRED_TO_ISSUE');
 });
+
+test('fractional quote preview and draft retain all four decimal places', function (): void {
+    $company = phoneQuoteCompany();
+    $lines = [['catalogue_item_public_id' => $company['item']->public_id, 'quantity' => '1.2345']];
+    $this->withToken($company['token'])->postJson(route('mobile.v1.quotes.preview'), [
+        'customer_public_id' => $company['customer']->public_id, 'lines' => $lines,
+    ])->assertOk()->assertJsonPath('data.lines.0.quantity', '1.2345')->assertJsonPath('data.gross_total_minor', 14_074);
+    $this->postJson(route('mobile.v1.quotes.store'), phoneQuotePayload($company, [
+        'lines' => $lines, 'expected_total_minor' => 14_074,
+    ]))->assertCreated();
+    $quote = Quote::query()->sole();
+    expect($quote->lines()->sole()->quantity_units)->toBe(12_345);
+    expect($quote->lines()->sole()->quantity_scale)->toBe(4);
+    expect($quote->gross_total_minor)->toBe(14_074);
+    expect(FiscalDocument::count())->toBe(0);
+    Queue::assertNothingPushed();
+});

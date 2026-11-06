@@ -11,11 +11,19 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
+ * @property Carbon|null $collection_next_contact_on
+ * @property Carbon|null $collection_promised_payment_on
+ * @property Carbon|null $collection_completed_at
+ * @property Carbon|null $collection_updated_at
+ * @property string|null $collection_note
+ * @property int $collection_revision
+ * @property int|null $collection_updated_by
  * @property int $id
  * @property string $public_id
  * @property int $workspace_id
@@ -55,6 +63,16 @@ class Customer extends Model
 {
     /** @use HasFactory<CustomerFactory> */
     use HasFactory, HasUlids, LogsActivity;
+
+    protected $attributes = ['collection_revision' => 0];
+
+    protected $hidden = ['collection_note', 'collection_next_contact_on', 'collection_promised_payment_on', 'collection_completed_at', 'collection_revision', 'collection_updated_by', 'collection_updated_at'];
+
+    /** @return BelongsTo<User, $this> */
+    public function collectionUpdater(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'collection_updated_by');
+    }
 
     public function getActivitylogOptions(): LogOptions
     {
@@ -154,6 +172,11 @@ class Customer extends Model
     protected function casts(): array
     {
         return [
+            'collection_next_contact_on' => 'date',
+            'collection_promised_payment_on' => 'date',
+            'collection_completed_at' => 'datetime',
+            'collection_updated_at' => 'datetime',
+            'collection_revision' => 'integer',
             'is_active' => 'boolean',
             'auto_send_documents' => 'boolean',
             'payment_terms_days' => 'integer',

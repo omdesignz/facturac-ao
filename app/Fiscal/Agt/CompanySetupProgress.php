@@ -11,11 +11,33 @@ use App\Models\Establishment;
 use App\Models\FiscalDocument;
 use App\Models\LegalEntity;
 use App\Models\User;
+use App\Models\Workspace;
 use Illuminate\Support\Facades\Gate;
 
 final readonly class CompanySetupProgress
 {
     public function __construct(private AgtConnectionReadiness $readiness) {}
+
+    /** @return array{ready_for_draft: bool, environment: string, production_ready: bool, next_step: string, items: list<array{key: string, label: string, detail: string, done: bool}>} */
+    public function forWorkspace(Workspace $workspace, User $user): array
+    {
+        $entity = $workspace->legalEntities()->oldest('id')->first();
+        $establishment = $entity?->establishments()->orderByDesc('is_head_office')->oldest('id')->first();
+
+        return $this->evaluate($entity, $establishment, $user);
+    }
+
+    public function destination(string $step): string
+    {
+        return match ($step) {
+            'security' => route('settings.security'),
+            'association' => route('agt.connection.show').'#taxpayer-association',
+            'verification' => route('agt.connection.show').'#connection-check',
+            'series' => route('agt.connection.show').'#authorized-series',
+            'draft' => route('invoices.create'),
+            default => route('onboarding').'#company-profile',
+        };
+    }
 
     /** @return array{ready_for_draft: bool, environment: string, production_ready: bool, next_step: string, items: list<array{key: string, label: string, detail: string, done: bool}>} */
     public function evaluate(?LegalEntity $entity, ?Establishment $establishment, User $user): array

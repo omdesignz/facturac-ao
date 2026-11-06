@@ -78,6 +78,22 @@ test('the phone learns what this person can do before they start', function () {
         ->assertJsonPath('data.reason', null);
 });
 
+test('an interrupted issued invoice is recovered after trial expiry without spending another number', function (): void {
+    $company = phoneInvoiceCompany();
+    $payload = phoneInvoicePayload($company);
+    $issued = $this->withToken($company['token'])->postJson(route('mobile.v1.invoices.store'), $payload)
+        ->assertCreated()->json('data');
+    $nextNumber = $company['invoiceSeries']->fresh()->next_number;
+    $company['legalEntity']->workspace->forceFill(['created_at' => now()->subDays(30)])->save();
+
+    $this->withToken($company['token'])->getJson(route('mobile.v1.invoices.recover', $payload['client_key']))
+        ->assertOk()->assertJsonPath('data.public_id', $issued['public_id'])
+        ->assertJsonPath('data.is_issued', true)->assertJsonPath('data.replayed', true);
+
+    expect($company['invoiceSeries']->fresh()->next_number)->toBe($nextNumber);
+    expect(FiscalDocument::query()->count())->toBe(1);
+});
+
 test('without a series the phone can only keep drafts, and says why', function () {
     $company = phoneInvoiceCompany();
     $company['invoiceSeries']->delete();
@@ -315,4 +331,24 @@ test('a minute of using the app does not use up the invoices that may be issued'
     $this->withToken($company['token'])
         ->postJson(route('mobile.v1.invoices.store'), phoneInvoicePayload($company))
         ->assertCreated();
+});
+
+test('fractional invoice preview and saved draft retain all four decimal places', function (): void {
+    $company = phoneInvoiceCompany();
+    $lines = [['catalogue_item_public_id' => $company['item']->public_id, 'quantity' => '1.2345']];
+    $this->withToken($company['token'])->postJson(route('mobile.v1.invoices.preview'), [
+        'customer_public_id' => $company['customer']->public_id, 'lines' => $lines,
+    ])->assertOk()->assertJsonPath('data.lines.0.quantity', '1.2345')
+        ->assertJsonPath('data.net_total_minor', 12_345)->assertJsonPath('data.tax_total_minor', 1729)
+        ->assertJsonPath('data.gross_total_minor', 14_074);
+    $payload = phoneInvoicePayload($company, ['lines' => $lines, 'issue' => false, 'expected_total_minor' => 14_074]);
+    $this->postJson(route('mobile.v1.invoices.store'), $payload)->assertCreated()
+        ->assertJsonPath('data.gross_total_minor', 14_074)->assertJsonPath('data.is_issued', false);
+    $document = FiscalDocument::query()->sole();
+    expect($document->document_no)->toBeNull();
+    expect($document->lines()->sole()->quantity_units)->toBe(12_345);
+    expect($document->lines()->sole()->quantity_scale)->toBe(4);
+    $this->postJson(route('mobile.v1.invoices.store'), $payload)->assertOk()->assertJsonPath('data.replayed', true);
+    expect(FiscalDocument::count())->toBe(1);
+    Queue::assertNothingPushed();
 });

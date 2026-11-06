@@ -15,9 +15,11 @@ use App\Http\Controllers\BillingController;
 use App\Http\Controllers\CatalogueItemController;
 use App\Http\Controllers\CompanyBankDetailsController;
 use App\Http\Controllers\CompanyLogoController;
+use App\Http\Controllers\CompanySetupHandoffController;
 use App\Http\Controllers\CookieConsentController;
 use App\Http\Controllers\CurrentWorkspaceController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\CustomerFollowUpController;
 use App\Http\Controllers\CustomerPriceController;
 use App\Http\Controllers\CustomerProfileController;
 use App\Http\Controllers\DashboardController;
@@ -123,6 +125,11 @@ Route::delete('/impersonation', [ImpersonationController::class, 'destroy'])
     ->name('support.impersonation.destroy');
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
+    Route::get('/company-setup/{workspace}', [CompanySetupHandoffController::class, 'show'])
+        ->middleware('cache.headers:private;no_store')->name('company-setup.show');
+    Route::put('/company-setup/{workspace}', [CompanySetupHandoffController::class, 'update'])
+        ->name('company-setup.update');
+
     Route::get('/workspace/setup', [WorkspaceSetupController::class, 'create'])
         ->name('workspace.setup');
     Route::post('/workspace/setup', [WorkspaceSetupController::class, 'store'])
@@ -211,6 +218,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::get('/relatorios/exportar/historico', [TransactionReportController::class, 'history'])->middleware('throttle:60,1')->name('transaction-reports.history');
         Route::get('/relatorios/exportar/ficheiros/{transactionExport}', [TransactionReportController::class, 'file'])->middleware('throttle:30,1')->name('transaction-reports.file');
         Route::post('/relatorios/exportar/excel', [TransactionReportController::class, 'download'])->middleware('throttle:6,1')->name('transaction-reports.download');
+        Route::put('/customers/{customer}/follow-up', [CustomerFollowUpController::class, 'update'])->name('customers.follow-up.update');
         Route::get('/onboarding', [OnboardingController::class, 'show'])->name('onboarding');
         Route::put('/onboarding', [OnboardingController::class, 'update'])->name('onboarding.update');
         Route::put('/current-workspace/{workspace}', [CurrentWorkspaceController::class, 'update'])

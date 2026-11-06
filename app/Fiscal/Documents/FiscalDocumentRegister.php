@@ -2,6 +2,7 @@
 
 namespace App\Fiscal\Documents;
 
+use App\Actions\PrepareRepeatInvoice;
 use App\Analytics\DocumentSnapshot;
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
@@ -380,6 +381,7 @@ final class FiscalDocumentRegister
             'delivery_email' => is_string($deliveryEmail) && trim($deliveryEmail) !== ''
                 ? trim($deliveryEmail)
                 : null,
+            'can_repeat' => $canPrepareDocuments && PrepareRepeatInvoice::supports($document),
             'can_edit' => $canPrepareDocuments && $document->isMutable(),
             'can_print' => $document->document_no !== null,
             'can_send' => $canPrepareDocuments

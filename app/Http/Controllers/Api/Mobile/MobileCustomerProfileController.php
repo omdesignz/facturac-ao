@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Mobile;
 
+use App\Analytics\CollectionFollowUps;
 use App\Analytics\ReceivablesQuery;
 use App\Analytics\WhatsAppNumber;
 use App\Models\Customer;
@@ -22,7 +23,7 @@ class MobileCustomerProfileController
 {
     private const int MONTHS = 12;
 
-    public function __construct(private readonly ReceivablesQuery $receivables) {}
+    public function __construct(private readonly ReceivablesQuery $receivables, private readonly CollectionFollowUps $followUps) {}
 
     public function __invoke(Request $request, string $customerPublicId): JsonResponse
     {
@@ -38,6 +39,7 @@ class MobileCustomerProfileController
         $summary = $this->receivables->summarise($issued());
 
         return response()->json(['data' => [
+            'follow_up' => $this->followUps->forCustomer($customer),
             'public_id' => $customer->public_id,
             'name' => $customer->name,
             'tax_identification_number' => $customer->tax_identification_number,

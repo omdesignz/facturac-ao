@@ -1,10 +1,12 @@
 <?php
 
 use App\Http\Controllers\Api\Mobile\MobileCollectionsController;
+use App\Http\Controllers\Api\Mobile\MobileCompanySetupController;
 use App\Http\Controllers\Api\Mobile\MobileCreditNoteController;
 use App\Http\Controllers\Api\Mobile\MobileCurrentCompanyController;
 use App\Http\Controllers\Api\Mobile\MobileCustomerController;
 use App\Http\Controllers\Api\Mobile\MobileCustomerCreateController;
+use App\Http\Controllers\Api\Mobile\MobileCustomerFollowUpController;
 use App\Http\Controllers\Api\Mobile\MobileCustomerProfileController;
 use App\Http\Controllers\Api\Mobile\MobileCustomerTaxIdentificationController;
 use App\Http\Controllers\Api\Mobile\MobileCustomerUpdateController;
@@ -64,6 +66,9 @@ Route::name('mobile.v1.')->group(function (): void {
             ->middleware('throttle:30,1,mobile-passkey-confirm')
             ->name('passkeys.confirmation');
 
+        Route::get('company/setup', MobileCompanySetupController::class)
+            ->middleware('workspace')->name('company.setup');
+
         Route::middleware(['workspace', EnsureMobileCompany::class])->group(function (): void {
             Route::get('today', MobileTodayController::class)->name('today');
             Route::get('collections', MobileCollectionsController::class)->name('collections');
@@ -77,11 +82,16 @@ Route::name('mobile.v1.')->group(function (): void {
             Route::post('documents/{documentPublicId}/credit-note', [MobileCreditNoteController::class, 'store'])
                 ->middleware('throttle:10,1,mobile-credit-note')
                 ->name('credit-notes.store');
+            Route::get('documents/{documentPublicId}/repeat-invoice', [MobileInvoiceController::class, 'repeat'])->name('invoices.repeat');
             Route::get('invoices/setup', [MobileInvoiceController::class, 'setup'])->name('invoices.setup');
+            Route::get('invoices/requests/{clientKey}', [MobileInvoiceController::class, 'recover'])
+                ->whereUuid('clientKey')->name('invoices.recover');
             Route::post('invoices/preview', [MobileInvoiceController::class, 'preview'])->name('invoices.preview');
             Route::post('invoices', [MobileInvoiceController::class, 'store'])
                 ->middleware('throttle:10,1,mobile-invoice')
                 ->name('invoices.store');
+            Route::put('customers/{customerPublicId}/follow-up', [MobileCustomerFollowUpController::class, 'update'])
+                ->middleware('throttle:30,1,mobile-follow-up')->name('customers.follow-up.update');
             Route::get('customers', MobileCustomerController::class)->name('customers.index');
             Route::post('customers', MobileCustomerCreateController::class)
                 ->middleware('throttle:20,1,mobile-customer')
