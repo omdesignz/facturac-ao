@@ -110,6 +110,9 @@ Route::name('mobile.v1.')->group(function (): void {
             Route::post('customers/{customerPublicId}/reminder', [MobileReminderController::class, 'store'])
                 ->middleware('throttle:6,1')
                 ->name('reminders.store');
+            Route::post('customers/{customerPublicId}/reminder/whatsapp', [MobileReminderController::class, 'whatsapp'])
+                ->middleware('throttle:6,1,mobile-reminder-whatsapp')
+                ->name('reminders.whatsapp');
         });
     });
 });
