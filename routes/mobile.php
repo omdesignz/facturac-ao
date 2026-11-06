@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\Mobile\MobileDocumentController;
 use App\Http\Controllers\Api\Mobile\MobileInvoiceController;
 use App\Http\Controllers\Api\Mobile\MobileItemController;
 use App\Http\Controllers\Api\Mobile\MobileItemCreateController;
+use App\Http\Controllers\Api\Mobile\MobileItemLookupController;
 use App\Http\Controllers\Api\Mobile\MobileNotificationController;
 use App\Http\Controllers\Api\Mobile\MobileNotificationPreferenceController;
 use App\Http\Controllers\Api\Mobile\MobilePaymentController;
@@ -58,6 +59,7 @@ Route::name('mobile.v1.')->group(function (): void {
                 ->name('customers.store');
             Route::get('customers/{customerPublicId}', MobileCustomerProfileController::class)->name('customers.show');
             Route::get('items', MobileItemController::class)->name('items.index');
+            Route::get('items/lookup', MobileItemLookupController::class)->name('items.lookup');
             Route::post('items', MobileItemCreateController::class)
                 ->middleware('throttle:20,1,mobile-item')
                 ->name('items.store');

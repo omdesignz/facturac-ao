@@ -30,6 +30,16 @@ class StoreMobileCatalogueItemRequest extends StoreCatalogueItemRequest
                 'type', 'name', 'unit_of_measure', 'unit_price', 'tax_type', 'tax_code', 'tax_percentage', 'tax_exemption_code', 'is_active', 'tracks_stock',
             ])),
             'client_key' => ['required', 'uuid'],
+            // From the camera, when the code it read belongs to no item yet.
+            'barcode' => [
+                'nullable',
+                'string',
+                'max:64',
+                'regex:/\A[A-Za-z0-9-]+\z/',
+                Rule::unique('catalogue_items', 'barcode')
+                    ->where('legal_entity_id', $this->legalEntity()->id)
+                    ->ignore($alreadyMade),
+            ],
             'tax_treatment' => ['required', Rule::enum(SupportedTaxTreatment::class)],
             'code' => [
                 'required',

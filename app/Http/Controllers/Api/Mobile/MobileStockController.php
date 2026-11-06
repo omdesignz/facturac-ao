@@ -34,18 +34,26 @@ class MobileStockController
             ->paginate(25);
 
         return $request->pageOf($levels, array_values($levels->getCollection()
-            ->map(fn (StockLevel $level): array => [
-                'id' => $level->id,
-                'name' => $level->catalogueItem->name,
-                'establishment' => $level->establishment->name,
-                'quantity' => $this->quantity($level->quantity_units, $level->quantity_scale),
-                'unit_of_measure' => $level->catalogueItem->unit_of_measure,
-                'is_low' => $level->isBelowReorderLevel(),
-            ])
+            ->map(fn (StockLevel $level): array => self::present($level))
             ->all()));
     }
 
-    private function quantity(int $units, int $scale): string
+    /**
+     * @return array{id: int, name: string, establishment: string, quantity: string, unit_of_measure: string, is_low: bool}
+     */
+    public static function present(StockLevel $level): array
+    {
+        return [
+            'id' => $level->id,
+            'name' => $level->catalogueItem->name,
+            'establishment' => $level->establishment->name,
+            'quantity' => self::quantity($level->quantity_units, $level->quantity_scale),
+            'unit_of_measure' => $level->catalogueItem->unit_of_measure,
+            'is_low' => $level->isBelowReorderLevel(),
+        ];
+    }
+
+    private static function quantity(int $units, int $scale): string
     {
         $quantity = number_format($units / (10 ** $scale), $scale, ',', ' ');
 
