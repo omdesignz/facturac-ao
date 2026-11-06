@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Mobile;
 
+use App\Actions\CreateMobileCreditNote;
 use App\Fiscal\Documents\CurrentAgtState;
 use App\Fiscal\Documents\FiscalDocumentPresenter;
 use App\Fiscal\Documents\FiscalDocumentRegister;
@@ -64,6 +65,10 @@ class MobileDocumentController
             'outstanding_minor' => $snapshot['outstanding_minor'],
             'days_past_due' => $snapshot['days_past_due'],
             'message' => $selected['workflow_message'],
+            // The note sheet says why when it cannot be issued; this only says whether to offer it.
+            'can_credit' => in_array($document->document_type, CreateMobileCreditNote::CORRECTABLE, true)
+                && $selected['workflow_status'] === 'valid'
+                && Gate::allows('create', FiscalDocument::class),
             'can_remind' => $selected['customer_public_id'] !== null && $snapshot['days_past_due'] > 0,
             // A document the AGT refused is not something to hand a customer.
             'share_url' => $selected['can_print'] && $selected['workflow_status'] !== 'invalid' ? $presenter->signedUrl($document) : null,

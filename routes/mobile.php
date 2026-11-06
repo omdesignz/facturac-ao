@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\Mobile\MobileCollectionsController;
+use App\Http\Controllers\Api\Mobile\MobileCreditNoteController;
 use App\Http\Controllers\Api\Mobile\MobileCurrentCompanyController;
 use App\Http\Controllers\Api\Mobile\MobileCustomerController;
 use App\Http\Controllers\Api\Mobile\MobileCustomerCreateController;
@@ -65,6 +66,11 @@ Route::name('mobile.v1.')->group(function (): void {
             Route::get('collections', MobileCollectionsController::class)->name('collections');
             Route::get('documents', [MobileDocumentController::class, 'index'])->name('documents.index');
             Route::get('documents/{documentPublicId}', [MobileDocumentController::class, 'show'])->name('documents.show');
+            Route::get('documents/{documentPublicId}/credit-note', [MobileCreditNoteController::class, 'show'])->name('credit-notes.show');
+            Route::post('documents/{documentPublicId}/credit-note/preview', [MobileCreditNoteController::class, 'preview'])->name('credit-notes.preview');
+            Route::post('documents/{documentPublicId}/credit-note', [MobileCreditNoteController::class, 'store'])
+                ->middleware('throttle:10,1,mobile-credit-note')
+                ->name('credit-notes.store');
             Route::get('invoices/setup', [MobileInvoiceController::class, 'setup'])->name('invoices.setup');
             Route::post('invoices/preview', [MobileInvoiceController::class, 'preview'])->name('invoices.preview');
             Route::post('invoices', [MobileInvoiceController::class, 'store'])
