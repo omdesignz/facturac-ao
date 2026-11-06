@@ -50,9 +50,11 @@ class MobileQuoteController
         $quotes = Quote::query()
             ->where('legal_entity_id', $this->legalEntity($request)->id)
             ->when((string) $request->string('status', 'open') === 'open', fn (Builder $query) => $query->open())
-            ->when($search !== '', fn (Builder $query) => $query->where(fn (Builder $matching) => $matching
-                ->whereSearchLike('reference', $search)
-                ->orWhereSearchLike('customer_name', $search)))
+            ->when($search !== '', fn (Builder $query) => $query->where(function ($matching) use ($search): void {
+                $matching
+                    ->whereSearchLike('reference', $search)
+                    ->orWhereSearchLike('customer_name', $search);
+            }))
             ->latest('issue_date')
             ->latest('id')
             ->paginate(20);

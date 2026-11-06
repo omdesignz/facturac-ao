@@ -304,3 +304,15 @@ test('making invoices needs a token', function () {
     $this->postJson(route('mobile.v1.invoices.preview'))->assertUnauthorized();
     $this->postJson(route('mobile.v1.invoices.store'))->assertUnauthorized();
 });
+
+test('a minute of using the app does not use up the invoices that may be issued', function () {
+    $company = phoneInvoiceCompany();
+
+    foreach (range(1, 15) as $ignored) {
+        $this->withToken($company['token'])->getJson(route('mobile.v1.invoices.setup'))->assertOk();
+    }
+
+    $this->withToken($company['token'])
+        ->postJson(route('mobile.v1.invoices.store'), phoneInvoicePayload($company))
+        ->assertCreated();
+});

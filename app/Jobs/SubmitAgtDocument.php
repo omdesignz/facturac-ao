@@ -6,6 +6,7 @@ use App\AgtSubmissionAttemptOperation;
 use App\AgtSubmissionStatus;
 use App\Fiscal\Agt\Contracts\AgtGateway;
 use App\Fiscal\Documents\AgtSubmissionExecution;
+use App\Fiscal\Documents\DocumentLiveActivities;
 use App\FiscalDocumentEventType;
 use App\Models\AgtSubmission;
 use App\Models\FiscalDocumentEvent;
@@ -103,6 +104,14 @@ class SubmitAgtDocument implements ShouldBeUnique, ShouldQueueAfterCommit
                         'response_body_sha256' => $result->responseBodySha256,
                     ],
                 );
+
+                // The lock screen moves on once this is safely recorded.
+                $document = $submission->fiscalDocument;
+                DB::afterCommit(function () use ($document): void {
+                    if ($document !== null) {
+                        app(DocumentLiveActivities::class)->advance($document, DocumentLiveActivities::RECEIVED);
+                    }
+                });
 
                 return $submission->id;
             }

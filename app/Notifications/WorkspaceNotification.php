@@ -136,9 +136,10 @@ abstract class WorkspaceNotification extends Notification implements ShouldQueue
      * Each recipient's own preferences still decide the channels, so one
      * person silencing a topic does not silence it for their colleagues.
      */
-    public function sendToWorkspace(Workspace $workspace): void
+    public function sendToWorkspace(Workspace $workspace, ?User $except = null): void
     {
-        $recipients = $workspace->users()->get();
+        $recipients = $workspace->users()->get()
+            ->reject(fn (User $user): bool => $except !== null && $user->is($except));
 
         if ($recipients->isNotEmpty()) {
             NotificationFacade::send($recipients, $this);

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Mobile;
 
 use App\Actions\CreateMobileCreditNote;
 use App\Fiscal\Documents\CurrentAgtState;
+use App\Fiscal\Documents\DocumentLiveActivities;
 use App\Fiscal\Documents\FiscalDocumentPresenter;
 use App\Fiscal\Documents\FiscalDocumentRegister;
 use App\Http\Requests\MobileListRequest;
@@ -61,6 +62,8 @@ class MobileDocumentController
             'customer_public_id' => $selected['customer_public_id'],
             'customer_tax_identification_number' => $document->customer->tax_identification_number ?? $selected['customer_tax_identification_number'],
             'is_returned' => $selected['workflow_status'] === 'invalid',
+            // Where the lock-screen tracker stands, for a phone without pushes.
+            'live_stage' => DocumentLiveActivities::stageOf($selected['workflow_status']),
             'due_date' => $selected['due_date'],
             'outstanding_minor' => $snapshot['outstanding_minor'],
             'days_past_due' => $snapshot['days_past_due'],

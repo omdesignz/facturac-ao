@@ -8,9 +8,11 @@ use App\Models\Customer;
 use App\Models\FiscalDocument;
 use App\Models\FiscalDocumentSettlement;
 use App\Models\MobileInvoice;
+use App\Notifications\PaymentReceived;
 use App\PaymentMethod;
 use App\WorkspaceRole;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Spatie\Activitylog\Models\Activity;
@@ -342,4 +344,35 @@ test('another company\'s customer stays out of reach', function () {
     $stranger = Customer::factory()->create();
 
     $this->withToken($company['token'])->getJson(phonePaymentRoute('show', $stranger))->assertNotFound();
+});
+
+test('a payment tells the rest of the company, and not whoever recorded it', function () {
+    $company = phonePaymentCompany();
+    $colleague = posMember($company, WorkspaceRole::Viewer);
+    $invoice = phonePaymentInvoice($company);
+    Notification::fake();
+
+    $this->withToken($company['token'])
+        ->postJson(phonePaymentRoute('store', $company['customer']), phonePaymentPayload($invoice, 10_000))
+        ->assertCreated();
+
+    $receipt = phoneReceipts()->sole();
+
+    Notification::assertSentTo(
+        $colleague,
+        PaymentReceived::class,
+        fn (PaymentReceived $notification): bool => $notification->documentPublicId === $receipt->public_id
+            && $notification->body() === "Mavinga & Filhos pagou 100,00 Kz. Recibo {$receipt->document_no} emitido.",
+    );
+    Notification::assertNotSentTo($company['owner'], PaymentReceived::class);
+});
+
+test('issuing an invoice tells nobody a payment came in', function () {
+    $company = phonePaymentCompany();
+    $colleague = posMember($company, WorkspaceRole::Viewer);
+    Notification::fake();
+
+    phonePaymentInvoice($company, accepted: false);
+
+    Notification::assertNotSentTo($colleague, PaymentReceived::class);
 });

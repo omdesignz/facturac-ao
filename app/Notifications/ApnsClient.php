@@ -37,8 +37,6 @@ class ApnsClient
      */
     public function send(PushDevice $device, array $payload, ?string $collapseId = null): PushDelivery
     {
-        $host = $device->environment === 'sandbox' ? 'api.sandbox.push.apple.com' : 'api.push.apple.com';
-
         $headers = [
             'apns-topic' => (string) config('services.apns.bundle_id'),
             'apns-push-type' => 'alert',
@@ -53,14 +51,41 @@ class ApnsClient
             $headers['apns-collapse-id'] = $collapseId;
         }
 
+        return $this->deliver($device->token, $device->environment, $headers, $payload, ['device' => $device->id]);
+    }
+
+    /**
+     * Moves a Live Activity on: Apple redraws it on the lock screen from the
+     * new state, whether or not the app is running.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    public function sendLiveActivity(string $token, string $environment, array $payload): PushDelivery
+    {
+        return $this->deliver($token, $environment, [
+            'apns-topic' => config('services.apns.bundle_id').'.push-type.liveactivity',
+            'apns-push-type' => 'liveactivity',
+            'apns-priority' => '10',
+        ], $payload, ['live_activity' => true]);
+    }
+
+    /**
+     * @param  array<string, string>  $headers
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>  $context
+     */
+    private function deliver(string $token, string $environment, array $headers, array $payload, array $context): PushDelivery
+    {
+        $host = $environment === 'sandbox' ? 'api.sandbox.push.apple.com' : 'api.push.apple.com';
+
         try {
             $response = Http::withOptions(['version' => 2.0])
                 ->withToken($this->providerToken())
                 ->withHeaders($headers)
                 ->timeout(10)
-                ->post("https://{$host}/3/device/{$device->token}", $payload);
+                ->post("https://{$host}/3/device/{$token}", $payload);
         } catch (ConnectionException $exception) {
-            Log::warning('APNs could not be reached.', ['device' => $device->id, 'error' => $exception->getMessage()]);
+            Log::warning('APNs could not be reached.', [...$context, 'error' => $exception->getMessage()]);
 
             return PushDelivery::Failed;
         }
@@ -79,7 +104,7 @@ class ApnsClient
             Cache::forget($this->cacheKey());
         }
 
-        Log::warning('APNs refused a notification.', ['device' => $device->id, 'status' => $response->status(), 'reason' => $reason]);
+        Log::warning('APNs refused a notification.', [...$context, 'status' => $response->status(), 'reason' => $reason]);
 
         return PushDelivery::Failed;
     }

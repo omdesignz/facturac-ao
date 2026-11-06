@@ -7,6 +7,7 @@ use App\AgtSubmissionStatus;
 use App\Fiscal\Agt\Contracts\AgtGateway;
 use App\Fiscal\Agt\Data\AgtInvoiceStatusResult;
 use App\Fiscal\Documents\AgtSubmissionExecution;
+use App\Fiscal\Documents\DocumentLiveActivities;
 use App\FiscalDocumentEventType;
 use App\Models\AgtSubmission;
 use App\Models\FiscalDocument;
@@ -267,6 +268,11 @@ class PollAgtSubmissionStatus implements ShouldBeUniqueUntilProcessing, ShouldQu
             : DocumentRejectedByAgt::fromDocument($document, $errorCodes);
 
         $notification->sendToWorkspace($workspace);
+
+        DB::afterCommit(fn () => app(DocumentLiveActivities::class)->advance(
+            $document,
+            $status === AgtSubmissionStatus::Valid ? DocumentLiveActivities::VALIDATED : DocumentLiveActivities::RETURNED,
+        ));
     }
 
     /** @param list<string> $errorCodes */

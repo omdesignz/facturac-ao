@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\Mobile\MobileItemController;
 use App\Http\Controllers\Api\Mobile\MobileItemCreateController;
 use App\Http\Controllers\Api\Mobile\MobileItemDetailController;
 use App\Http\Controllers\Api\Mobile\MobileItemLookupController;
+use App\Http\Controllers\Api\Mobile\MobileLiveActivityController;
 use App\Http\Controllers\Api\Mobile\MobileNotificationController;
 use App\Http\Controllers\Api\Mobile\MobileNotificationPreferenceController;
 use App\Http\Controllers\Api\Mobile\MobilePasskeyController;
@@ -68,6 +69,9 @@ Route::name('mobile.v1.')->group(function (): void {
             Route::get('collections', MobileCollectionsController::class)->name('collections');
             Route::get('documents', [MobileDocumentController::class, 'index'])->name('documents.index');
             Route::get('documents/{documentPublicId}', [MobileDocumentController::class, 'show'])->name('documents.show');
+            Route::put('documents/{documentPublicId}/live-activity', [MobileLiveActivityController::class, 'update'])
+                ->middleware('throttle:30,1,mobile-live-activity')
+                ->name('documents.live-activity');
             Route::get('documents/{documentPublicId}/credit-note', [MobileCreditNoteController::class, 'show'])->name('credit-notes.show');
             Route::post('documents/{documentPublicId}/credit-note/preview', [MobileCreditNoteController::class, 'preview'])->name('credit-notes.preview');
             Route::post('documents/{documentPublicId}/credit-note', [MobileCreditNoteController::class, 'store'])
@@ -76,7 +80,7 @@ Route::name('mobile.v1.')->group(function (): void {
             Route::get('invoices/setup', [MobileInvoiceController::class, 'setup'])->name('invoices.setup');
             Route::post('invoices/preview', [MobileInvoiceController::class, 'preview'])->name('invoices.preview');
             Route::post('invoices', [MobileInvoiceController::class, 'store'])
-                ->middleware('throttle:10,1')
+                ->middleware('throttle:10,1,mobile-invoice')
                 ->name('invoices.store');
             Route::get('customers', MobileCustomerController::class)->name('customers.index');
             Route::post('customers', MobileCustomerCreateController::class)
@@ -132,15 +136,15 @@ Route::name('mobile.v1.')->group(function (): void {
                     ->name('till.sessions.close');
             });
             Route::patch('customers/{customerPublicId}/tax-identification', MobileCustomerTaxIdentificationController::class)
-                ->middleware('throttle:20,1')
+                ->middleware('throttle:20,1,mobile-tax-identification')
                 ->name('customers.tax-identification');
             Route::get('customers/{customerPublicId}/payment', [MobilePaymentController::class, 'show'])->name('payments.show');
             Route::post('customers/{customerPublicId}/payment', [MobilePaymentController::class, 'store'])
-                ->middleware('throttle:10,1')
+                ->middleware('throttle:10,1,mobile-payment')
                 ->name('payments.store');
             Route::get('customers/{customerPublicId}/reminder', [MobileReminderController::class, 'show'])->name('reminders.show');
             Route::post('customers/{customerPublicId}/reminder', [MobileReminderController::class, 'store'])
-                ->middleware('throttle:6,1')
+                ->middleware('throttle:6,1,mobile-reminder')
                 ->name('reminders.store');
             Route::post('customers/{customerPublicId}/reminder/whatsapp', [MobileReminderController::class, 'whatsapp'])
                 ->middleware('throttle:6,1,mobile-reminder-whatsapp')

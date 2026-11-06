@@ -38,6 +38,7 @@ use App\Models\FiscalDocumentLine;
 use App\Models\FiscalDocumentLineTax;
 use App\Models\FiscalSeries;
 use App\Models\User;
+use App\Notifications\PaymentReceived;
 use App\SubscriptionFeature;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Context;
@@ -283,6 +284,7 @@ final readonly class IssueFiscalDocument
         SubmitAgtDocument::dispatch($submission->id)->afterCommit();
 
         DB::afterCommit(fn () => $this->sendToCustomerIfConfigured($draft->fresh(), $issuer));
+        DB::afterCommit(fn () => $this->tellColleaguesOfPayment($draft->fresh(), $issuer));
 
         return $submission;
     }
@@ -308,6 +310,23 @@ final readonly class IssueFiscalDocument
 
         try {
             $this->sendToCustomer->execute($document, $issuer);
+        } catch (Throwable $exception) {
+            report($exception);
+        }
+    }
+
+    /**
+     * A receipt for invoices is money a customer paid: the rest of the company
+     * hears of it. Till sales are left out, since every sale would buzz.
+     */
+    private function tellColleaguesOfPayment(?FiscalDocument $document, User $issuer): void
+    {
+        if (! $document instanceof FiscalDocument || ! $document->document_type->settlesOtherDocuments() || $document->document_no === null) {
+            return;
+        }
+
+        try {
+            PaymentReceived::fromReceipt($document)->sendToWorkspace($document->workspace, except: $issuer);
         } catch (Throwable $exception) {
             report($exception);
         }

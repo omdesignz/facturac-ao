@@ -88,12 +88,12 @@ final readonly class MobileTillState
                 ->get()
                 ->map(fn ($movement): array => $this->presenter->cashMovement($movement))
                 ->all()),
-            'recent_sales' => array_values(array_map(
+            'recent_sales' => array_map(
                 fn (array $sale): array => array_intersect_key($sale, array_flip([
                     'public_id', 'document_public_id', 'document_no', 'customer_name', 'total_minor', 'payment_method_label', 'issued_at',
                 ])),
                 $this->presenter->sales($session->sales()->with('fiscalDocument')->latest('id')->limit(10)->get()),
-            )),
+            ),
         ];
     }
 }

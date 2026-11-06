@@ -15,6 +15,7 @@ enum NotificationTopic: string
     case DocumentAccepted = 'document_accepted';
     case DocumentRejected = 'document_rejected';
     case DocumentOpened = 'document_opened';
+    case PaymentReceived = 'payment_received';
     case InvoiceOverdue = 'invoice_overdue';
     case QuoteAccepted = 'quote_accepted';
     case QuoteExpiring = 'quote_expiring';
@@ -31,6 +32,7 @@ enum NotificationTopic: string
             self::DocumentAccepted => 'Documentos aceites pela AGT',
             self::DocumentRejected => 'Documentos recusados pela AGT',
             self::DocumentOpened => 'Documentos abertos pelo cliente',
+            self::PaymentReceived => 'Pagamentos recebidos',
             self::InvoiceOverdue => 'Facturas vencidas',
             self::QuoteAccepted => 'Orçamentos aceites',
             self::QuoteExpiring => 'Orçamentos a expirar',
@@ -49,6 +51,7 @@ enum NotificationTopic: string
             self::DocumentAccepted => 'Quando a AGT confirma um documento comunicado.',
             self::DocumentRejected => 'Quando a AGT recusa um documento e é preciso corrigi-lo.',
             self::DocumentOpened => 'Na primeira vez que o cliente abre a ligação do documento que lhe enviou.',
+            self::PaymentReceived => 'Quando um colega emite o recibo de um pagamento de cliente.',
             self::InvoiceOverdue => 'No dia seguinte ao vencimento de uma factura por pagar.',
             self::QuoteAccepted => 'Quando um orçamento passa a aceite e pode virar factura.',
             self::QuoteExpiring => 'Três dias antes de um orçamento perder a validade.',
@@ -98,6 +101,7 @@ enum NotificationTopic: string
             'push' => match ($this) {
                 self::DocumentRejected,
                 self::DocumentOpened,
+                self::PaymentReceived,
                 self::InvoiceOverdue,
                 self::QuoteAccepted,
                 self::CreditLimitExceeded,
@@ -117,7 +121,7 @@ enum NotificationTopic: string
         return match ($this) {
             self::DocumentRejected, self::CreditLimitExceeded => 'critical',
             self::InvoiceOverdue, self::QuoteExpiring, self::StockLow => 'warning',
-            self::DocumentAccepted, self::QuoteAccepted => 'success',
+            self::DocumentAccepted, self::QuoteAccepted, self::PaymentReceived => 'success',
             default => 'neutral',
         };
     }
