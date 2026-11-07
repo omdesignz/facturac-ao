@@ -132,11 +132,11 @@ function inspectPeriod(): void {
                 <FlashBanner />
 
                 <header>
-                    <p class="eyebrow text-zinc-500 dark:text-zinc-400">
+                    <p class="text-[0.8125rem] text-[var(--ui-ink-3)]">
                         Fiscal
                     </p>
                     <h1
-                        class="mt-2.5 text-[2.125rem] leading-[1.08] display text-zinc-950 dark:text-white"
+                        class="mt-0.5 text-[1.375rem] leading-[1.2] font-[650] tracking-[-0.025em] text-balance text-[var(--ui-ink)]"
                     >
                         SAF-T (AO)
                     </h1>

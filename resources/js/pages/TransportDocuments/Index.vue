@@ -222,7 +222,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                 </PageHeader>
 
                 <section
-                    class="rounded-3xl bg-zinc-900/[0.04] p-4 sm:p-5 dark:bg-white/[0.04]"
+                    class="rounded-xl bg-[var(--surface-raised)] p-4 shadow-[var(--ui-card-shadow)] sm:p-5"
                     aria-label="Filtros"
                 >
                     <form
@@ -311,7 +311,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
 
                 <section
                     v-else
-                    class="overflow-hidden rounded-3xl bg-zinc-900/[0.04] dark:bg-white/[0.04]"
+                    class="overflow-hidden rounded-xl bg-[var(--surface-raised)] shadow-[var(--ui-card-shadow)]"
                 >
                     <div class="overflow-x-auto">
                         <DataTable

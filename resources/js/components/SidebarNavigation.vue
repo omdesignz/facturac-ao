@@ -86,7 +86,7 @@ function initials(name: string): string {
         >
             <Menu as="div" class="relative w-full">
                 <MenuButton
-                    class="group flex w-full items-center gap-3 rounded-2xl bg-zinc-900/[0.04] p-3 text-left focus-ring transition hover:bg-zinc-900/[0.07] dark:bg-white/[0.05] dark:hover:bg-white/10"
+                    class="group flex w-full items-center gap-3 rounded-lg bg-[var(--ui-wash)] p-3 text-left focus-ring transition hover:bg-zinc-900/[0.07] dark:hover:bg-white/10"
                     :aria-label="`Mudar de espaço de trabalho. Actual: ${displayName}`"
                 >
                     <span

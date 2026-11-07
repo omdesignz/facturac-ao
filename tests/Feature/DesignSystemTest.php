@@ -51,6 +51,13 @@ test('the work surfaces open on a thin title bar and run edge to edge', function
         ->not->toContain('page-shell');
 })->with(['Documents/Index', 'Debts/Index', 'Invoices/Create']);
 
+test('paragraph wrapping sits in the base layer, so truncate and nowrap still work on a paragraph', function () {
+    $css = (string) file_get_contents(resource_path('css/app.css'));
+
+    expect($css)->toMatch('/@layer base \{\s*h1,\s*h2,\s*h3 \{\s*text-wrap: balance;\s*\}\s*p \{\s*text-wrap: pretty;/')
+        ->not->toMatch('/^p \{\s*text-wrap/m');
+});
+
 test('the dashboard and the debts page colour debt age the same way', function (string $page) {
     expect((string) file_get_contents(resource_path("js/pages/{$page}.vue")))
         ->toContain("import { agingBucketColours, agingShare } from '@/lib/aging';");

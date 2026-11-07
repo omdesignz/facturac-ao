@@ -872,7 +872,7 @@ function formatDate(value: string | null): string {
                             <div class="flex items-start justify-between gap-4">
                                 <div>
                                     <p
-                                        class="eyebrow text-zinc-500 dark:text-zinc-400"
+                                        class="text-[0.8125rem] text-[var(--ui-ink-3)]"
                                     >
                                         Antes de ligar
                                     </p>
@@ -1267,7 +1267,7 @@ function formatDate(value: string | null): string {
                                             </p>
                                         </td>
                                         <td
-                                            class="text-right font-mono text-sm font-semibold text-zinc-900 dark:text-white"
+                                            class="text-right numeric text-sm font-semibold text-zinc-900 dark:text-white"
                                         >
                                             {{ fiscalSeries.next_number }}
                                         </td>

@@ -250,7 +250,7 @@ watch(
                         />
                     </div>
                     <h1
-                        class="mt-4 text-4xl display text-zinc-950 dark:text-white"
+                        class="mt-4 text-[1.375rem] leading-[1.2] font-[650] tracking-[-0.025em] text-balance text-[var(--ui-ink)]"
                     >
                         Segurança da conta
                     </h1>
@@ -621,7 +621,7 @@ watch(
                         </div>
 
                         <div>
-                            <p class="eyebrow text-zinc-500 dark:text-zinc-400">
+                            <p class="text-[0.8125rem] text-[var(--ui-ink-3)]">
                                 Passo final
                             </p>
                             <h3

@@ -432,7 +432,7 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                         </Link>
                         <div class="mt-4 flex flex-wrap items-center gap-3">
                             <h1
-                                class="text-3xl display text-zinc-950 dark:text-white"
+                                class="text-[1.375rem] leading-[1.2] font-[650] tracking-[-0.025em] text-balance text-[var(--ui-ink)]"
                             >
                                 {{
                                     transportDocument?.document_no ??
@@ -446,7 +446,7 @@ const statusTone = computed<'success' | 'warning' | 'danger' | 'neutral'>(
                             />
                         </div>
                         <p
-                            class="mt-2 max-w-2xl text-sm/6 text-zinc-600 dark:text-zinc-400"
+                            class="mt-1.5 max-w-2xl text-[0.8125rem]/5 text-[var(--ui-ink-3)]"
                         >
                             A guia acompanha a mercadoria desde a origem ao
                             destino. Confirme datas, moradas e quantidades antes

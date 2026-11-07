@@ -2366,7 +2366,7 @@ function confirmIssue(): void {
                                             v-model="row.amount"
                                             type="text"
                                             inputmode="decimal"
-                                            class="block form-input text-right font-mono numeric"
+                                            class="block form-input text-right numeric"
                                     /></FormField>
 
                                     <button
@@ -2486,7 +2486,7 @@ function confirmIssue(): void {
                                         :class="[
                                             'inline-flex min-h-7 items-center rounded-full px-3 py-1 text-xs font-medium',
                                             typed.item
-                                                ? 'bg-lime-300 text-lime-950'
+                                                ? 'bg-[var(--ui-positive-wash)] text-[var(--ui-positive)]'
                                                 : 'bg-[#fde7ea] text-[#9a1b30]',
                                         ]"
                                     >
@@ -2519,7 +2519,7 @@ function confirmIssue(): void {
                                         class="flex items-center justify-between gap-4"
                                     >
                                         <p
-                                            class="eyebrow text-zinc-500 dark:text-zinc-400"
+                                            class="text-[0.8125rem] text-[var(--ui-ink-3)]"
                                         >
                                             Linha {{ index + 1 }}
                                         </p>
@@ -2725,7 +2725,7 @@ function confirmIssue(): void {
                                                 v-model="line.quantity"
                                                 type="text"
                                                 inputmode="decimal"
-                                                class="block form-input text-right font-mono"
+                                                class="block form-input text-right numeric"
                                         /></FormField>
                                         <FormField
                                             :for="`mobile-unit-${line.key}`"
@@ -2790,7 +2790,7 @@ function confirmIssue(): void {
                                                     v-model="line.unit_price"
                                                     type="text"
                                                     inputmode="decimal"
-                                                    class="block form-input form-input-sm text-right font-mono text-sm"
+                                                    class="block form-input form-input-sm text-right numeric text-sm"
                                                 />
                                                 <span
                                                     class="field-adornment-end"
@@ -2833,7 +2833,7 @@ function confirmIssue(): void {
                                                     "
                                                     type="text"
                                                     inputmode="decimal"
-                                                    class="block form-input form-input-sm text-right font-mono text-sm"
+                                                    class="block form-input form-input-sm text-right numeric text-sm"
                                                 />
                                                 <span
                                                     class="field-adornment-end"
@@ -2920,7 +2920,7 @@ function confirmIssue(): void {
                                                 Líquido
                                             </dt>
                                             <dd
-                                                class="mt-1 font-mono numeric font-semibold whitespace-nowrap text-zinc-950 dark:text-white"
+                                                class="mt-1 numeric font-semibold whitespace-nowrap text-zinc-950 dark:text-white"
                                             >
                                                 {{
                                                     formatMoney(
@@ -2937,7 +2937,7 @@ function confirmIssue(): void {
                                                 Imposto
                                             </dt>
                                             <dd
-                                                class="mt-1 font-mono numeric font-semibold whitespace-nowrap text-zinc-950 dark:text-white"
+                                                class="mt-1 numeric font-semibold whitespace-nowrap text-zinc-950 dark:text-white"
                                             >
                                                 {{
                                                     formatMoney(
@@ -2956,7 +2956,7 @@ function confirmIssue(): void {
                                                 Total
                                             </dt>
                                             <dd
-                                                class="mt-1 font-mono numeric font-bold whitespace-nowrap text-brand-700 dark:text-brand-300"
+                                                class="mt-1 numeric font-bold whitespace-nowrap text-brand-700 dark:text-brand-300"
                                             >
                                                 {{
                                                     formatMoney(
@@ -3240,7 +3240,7 @@ function confirmIssue(): void {
                                                             `lines.${index}.quantity`,
                                                         )
                                                     "
-                                                    class="block form-input form-input-sm text-right font-mono text-sm"
+                                                    class="block form-input form-input-sm text-right numeric text-sm"
                                                 />
                                                 <input
                                                     v-model="
@@ -3308,7 +3308,7 @@ function confirmIssue(): void {
                                                                 `lines.${index}.unit_price`,
                                                             )
                                                         "
-                                                        class="block form-input form-input-sm text-right font-mono text-sm"
+                                                        class="block form-input form-input-sm text-right numeric text-sm"
                                                     />
                                                     <span
                                                         class="field-adornment-end"
@@ -3350,7 +3350,7 @@ function confirmIssue(): void {
                                                                 `lines.${index}.discount_percentage`,
                                                             )
                                                         "
-                                                        class="block form-input form-input-sm text-right font-mono text-sm"
+                                                        class="block form-input form-input-sm text-right numeric text-sm"
                                                     />
                                                     <span
                                                         class="field-adornment-end"
@@ -3433,7 +3433,7 @@ function confirmIssue(): void {
                                             </td>
                                             <td class="px-3 py-4 text-right">
                                                 <p
-                                                    class="font-mono numeric text-sm font-semibold whitespace-nowrap text-zinc-950 dark:text-white"
+                                                    class="numeric text-sm font-semibold whitespace-nowrap text-zinc-950 dark:text-white"
                                                 >
                                                     {{
                                                         formatMoney(
@@ -3491,7 +3491,7 @@ function confirmIssue(): void {
                                                 Total do documento
                                             </th>
                                             <td
-                                                class="px-3 py-3 text-right font-mono numeric text-sm font-bold whitespace-nowrap text-zinc-950 dark:text-white"
+                                                class="px-3 py-3 text-right numeric text-sm font-bold whitespace-nowrap text-zinc-950 dark:text-white"
                                             >
                                                 {{ formatMoney(totals.gross) }}
                                             </td>
@@ -3742,7 +3742,7 @@ function confirmIssue(): void {
                                             v-model="row.rate_percentage"
                                             type="text"
                                             inputmode="decimal"
-                                            class="block form-input text-right font-mono numeric"
+                                            class="block form-input text-right numeric"
                                     /></FormField>
 
                                     <div class="sm:text-right">
@@ -4149,7 +4149,7 @@ function confirmIssue(): void {
                                             class="mt-5 grid gap-3 sm:grid-cols-2"
                                         >
                                             <div
-                                                class="rounded-[1.125rem] bg-zinc-900/[0.04] px-4 py-4 dark:bg-white/[0.04]"
+                                                class="rounded-lg bg-[var(--ui-wash)] px-4 py-4"
                                             >
                                                 <p
                                                     class="text-[0.8rem] text-zinc-600 dark:text-zinc-400"
@@ -4187,7 +4187,7 @@ function confirmIssue(): void {
                                                     }}
                                                 </p>
                                                 <span
-                                                    class="mt-3 inline-flex rounded-full bg-lime-300 px-2 py-0.5 text-xs font-semibold text-lime-950"
+                                                    class="mt-3 inline-flex rounded-md bg-[var(--ui-positive-wash)] px-2 py-0.5 text-xs font-semibold text-[var(--ui-positive)]"
                                                     >Assinado e enviado à
                                                     AGT</span
                                                 >
@@ -4217,7 +4217,7 @@ function confirmIssue(): void {
                                         </dl>
 
                                         <p
-                                            class="mt-4 flex items-center gap-2.5 rounded-[0.875rem] bg-zinc-900/[0.04] px-3.5 py-2.5 text-[0.78rem] text-zinc-600 dark:bg-white/[0.04] dark:text-zinc-400"
+                                            class="mt-4 flex items-center gap-2.5 rounded-lg bg-[var(--ui-wash)] px-3.5 py-2.5 text-[0.78rem] text-zinc-600 dark:text-zinc-400"
                                         >
                                             <ShieldCheck
                                                 class="size-4 shrink-0"

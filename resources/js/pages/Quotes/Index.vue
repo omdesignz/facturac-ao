@@ -144,7 +144,7 @@ function decodeEntities(label: string): string {
 
                 <div
                     v-else
-                    class="overflow-hidden rounded-3xl bg-zinc-900/[0.04] dark:bg-white/[0.04]"
+                    class="overflow-hidden rounded-xl bg-[var(--surface-raised)] shadow-[var(--ui-card-shadow)]"
                 >
                     <div class="overflow-x-auto">
                         <DataTable

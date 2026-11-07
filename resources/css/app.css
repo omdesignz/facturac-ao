@@ -177,15 +177,22 @@ body {
     text-rendering: optimizeLegibility;
 }
 
-/* Headings read better balanced; body copy better with no orphan last word. */
-h1,
-h2,
-h3 {
-    text-wrap: balance;
-}
+/*
+ * Headings read better balanced; body copy better with no orphan last word.
+ * In the base layer, so a utility such as `truncate` or `whitespace-nowrap` on a
+ * paragraph still wins: `text-wrap` also sets the wrap mode, and an unlayered
+ * rule would beat every utility.
+ */
+@layer base {
+    h1,
+    h2,
+    h3 {
+        text-wrap: balance;
+    }
 
-p {
-    text-wrap: pretty;
+    p {
+        text-wrap: pretty;
+    }
 }
 
 ::selection {

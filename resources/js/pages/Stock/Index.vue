@@ -261,7 +261,7 @@ function isInbound(quantity: string): boolean {
                 </div>
 
                 <div
-                    class="overflow-hidden rounded-3xl bg-zinc-900/[0.04] dark:bg-white/[0.04]"
+                    class="overflow-hidden rounded-xl bg-[var(--surface-raised)] shadow-[var(--ui-card-shadow)]"
                 >
                     <div
                         class="flex flex-col gap-3 border-b border-zinc-900/[0.07] p-4 sm:flex-row sm:items-center dark:border-white/10"
@@ -386,7 +386,7 @@ function isInbound(quantity: string): boolean {
                 </div>
 
                 <section
-                    class="overflow-hidden rounded-3xl bg-zinc-900/[0.04] dark:bg-white/[0.04]"
+                    class="overflow-hidden rounded-xl bg-[var(--surface-raised)] shadow-[var(--ui-card-shadow)]"
                 >
                     <header
                         class="border-b border-zinc-900/[0.07] p-4 dark:border-white/10"

@@ -345,7 +345,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                             :label="customer.is_active ? 'Activo' : 'Inactivo'"
                         />
                         <span
-                            class="font-mono text-[0.8125rem] text-zinc-600 dark:text-zinc-400"
+                            class="numeric text-[0.8125rem] text-[var(--ui-ink-3)]"
                             >NIF {{ customer.tax_identification_number }} ·
                             {{ customer.country_code }}</span
                         >

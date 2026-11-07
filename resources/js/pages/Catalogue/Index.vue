@@ -216,7 +216,7 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                 </PageHeader>
 
                 <div
-                    class="overflow-hidden rounded-3xl bg-zinc-900/[0.04] dark:bg-white/[0.04]"
+                    class="overflow-hidden rounded-xl bg-[var(--surface-raised)] shadow-[var(--ui-card-shadow)]"
                 >
                     <div
                         class="flex flex-col gap-3 border-b border-zinc-900/[0.07] p-4 sm:flex-row sm:items-center dark:border-white/10"
@@ -304,14 +304,14 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                                             {{ item.name }}
                                         </p>
                                         <p
-                                            class="mt-0.5 font-mono numeric text-xs text-zinc-500 dark:text-zinc-400"
+                                            class="mt-0.5 numeric text-xs text-zinc-500 dark:text-zinc-400"
                                         >
                                             {{ item.code }} ·
                                             {{ item.unit_of_measure }}
                                         </p>
                                         <p
                                             v-if="item.barcode"
-                                            class="mt-0.5 flex items-center gap-1 font-mono numeric text-xs text-zinc-500 dark:text-zinc-400"
+                                            class="mt-0.5 flex items-center gap-1 numeric text-xs text-zinc-500 dark:text-zinc-400"
                                         >
                                             <ScanBarcode
                                                 class="size-3 shrink-0"
@@ -475,7 +475,7 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                             type="text"
                             inputmode="decimal"
                             required
-                            class="mt-2 block form-input text-right font-mono numeric"
+                            class="mt-2 block form-input text-right numeric"
                         />
                         <FormError :message="form.errors.unit_price" />
                     </div>
@@ -491,7 +491,7 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                             type="text"
                             inputmode="decimal"
                             required
-                            class="block form-input text-right font-mono numeric"
+                            class="block form-input text-right numeric"
                     /></FormField>
 
                     <FormField

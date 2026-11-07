@@ -32,16 +32,16 @@ function submit(): void {
         <div class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
             <div class="max-w-3xl space-y-6">
                 <header>
-                    <p class="eyebrow text-zinc-500 dark:text-zinc-400">
+                    <p class="text-[0.8125rem] text-[var(--ui-ink-3)]">
                         Interno
                     </p>
                     <h1
-                        class="mt-2.5 text-[2.125rem] leading-[1.08] display text-zinc-950 dark:text-white"
+                        class="mt-0.5 text-[1.375rem] leading-[1.2] font-[650] tracking-[-0.025em] text-balance text-[var(--ui-ink)]"
                     >
                         Definições da plataforma
                     </h1>
                     <p
-                        class="mt-2 max-w-2xl text-sm/6 text-zinc-600 dark:text-zinc-400"
+                        class="mt-1.5 max-w-2xl text-[0.8125rem]/5 text-[var(--ui-ink-3)]"
                     >
                         O que os clientes vêem na página de Ajuda e nos
                         documentos legais. Muda aqui, sem nova versão da

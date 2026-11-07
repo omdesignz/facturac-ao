@@ -478,11 +478,11 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                     class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
                 >
                     <div>
-                        <p class="eyebrow text-zinc-500 dark:text-zinc-400">
+                        <p class="text-[0.8125rem] text-[var(--ui-ink-3)]">
                             {{ quote ? 'Orçamento' : 'Nova proposta' }}
                         </p>
                         <h1
-                            class="mt-2.5 text-[2.125rem] leading-[1.08] display text-zinc-950 dark:text-white"
+                            class="mt-0.5 text-[1.375rem] leading-[1.2] font-[650] tracking-[-0.025em] text-balance text-[var(--ui-ink)]"
                         >
                             {{ quote ? quote.reference : 'Novo orçamento' }}
                         </h1>
@@ -502,22 +502,22 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                         >
                             Marcar como enviado
                         </AppButton>
-                        <button
+                        <AppButton
                             v-if="quote && quote.status === 'sent'"
-                            type="button"
-                            class="inline-flex h-10 items-center justify-center rounded-full px-[1.125rem] text-sm font-semibold text-lime-800 ring-1 ring-lime-600/30 focus-ring transition ring-inset hover:bg-lime-50 dark:text-lime-300 dark:ring-lime-400/30 dark:hover:bg-lime-400/10"
+                            variant="outline"
+                            class="text-[var(--ui-positive)]"
                             @click="mark('accepted')"
                         >
                             Aceite
-                        </button>
-                        <button
+                        </AppButton>
+                        <AppButton
                             v-if="quote && quote.status === 'sent'"
-                            type="button"
-                            class="inline-flex h-10 items-center justify-center rounded-full px-[1.125rem] text-sm font-semibold text-rose-700 ring-1 ring-rose-300 focus-ring transition ring-inset hover:bg-rose-50 dark:text-rose-300 dark:ring-rose-400/30 dark:hover:bg-rose-400/10"
+                            variant="outline"
+                            class="text-[var(--ui-critical)]"
                             @click="mark('rejected')"
                         >
                             Recusado
-                        </button>
+                        </AppButton>
 
                         <AppButton
                             variant="ink"

@@ -98,7 +98,7 @@ const linkClass =
                 </p>
                 <ul
                     v-else
-                    class="divide-y divide-zinc-900/[0.07] rounded-2xl bg-zinc-900/[0.04] px-4 dark:divide-white/10 dark:bg-white/[0.04]"
+                    class="divide-y divide-zinc-900/[0.07] rounded-lg bg-[var(--ui-wash)] px-4 dark:divide-white/10"
                 >
                     <li
                         v-for="row in summary.by_method"
@@ -128,7 +128,7 @@ const linkClass =
                     Numerário esperado na gaveta
                 </h3>
                 <dl
-                    class="divide-y divide-zinc-900/[0.07] rounded-2xl bg-zinc-900/[0.04] px-4 dark:divide-white/10 dark:bg-white/[0.04]"
+                    class="divide-y divide-zinc-900/[0.07] rounded-lg bg-[var(--ui-wash)] px-4 dark:divide-white/10"
                 >
                     <div
                         v-for="row in drawerRows"
@@ -168,7 +168,7 @@ const linkClass =
                     Movimentos de caixa
                 </h3>
                 <ul
-                    class="divide-y divide-zinc-900/[0.07] rounded-2xl bg-zinc-900/[0.04] px-4 dark:divide-white/10 dark:bg-white/[0.04]"
+                    class="divide-y divide-zinc-900/[0.07] rounded-lg bg-[var(--ui-wash)] px-4 dark:divide-white/10"
                 >
                     <li
                         v-for="movement in cashMovements"
@@ -208,7 +208,7 @@ const linkClass =
                     Últimas vendas
                 </h3>
                 <ul
-                    class="divide-y divide-zinc-900/[0.07] rounded-2xl bg-zinc-900/[0.04] px-4 dark:divide-white/10 dark:bg-white/[0.04]"
+                    class="divide-y divide-zinc-900/[0.07] rounded-lg bg-[var(--ui-wash)] px-4 dark:divide-white/10"
                 >
                     <li
                         v-for="sale in recentSales"
@@ -216,9 +216,7 @@ const linkClass =
                         class="flex items-start justify-between gap-4 py-3 text-sm"
                     >
                         <div class="min-w-0">
-                            <p
-                                class="font-mono numeric text-zinc-950 dark:text-white"
-                            >
+                            <p class="numeric text-zinc-950 dark:text-white">
                                 <a
                                     v-if="sale.document_no"
                                     :href="documentHref(sale)"

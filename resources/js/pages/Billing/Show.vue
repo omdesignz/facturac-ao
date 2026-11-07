@@ -783,7 +783,7 @@ function submitCheckout(): void {
                                         : card.isCurrentPlan
                                           ? 'ring-1 ring-brand-950 dark:ring-brand-700'
                                           : 'ring-1 ring-zinc-900/10 dark:ring-white/10',
-                                    'relative flex rounded-3xl p-7 sm:p-8',
+                                    'relative flex rounded-xl p-7 sm:p-8',
                                 ]"
                             >
                                 <!-- On the card's top edge, so it adds nothing to the flow and the cards stay aligned. -->
@@ -1025,7 +1025,7 @@ function submitCheckout(): void {
                                 isCurrentPlan(plan)
                                     ? 'bg-brand-950 text-white shadow-2xl ring-brand-950 dark:bg-brand-900 dark:ring-brand-700'
                                     : 'bg-white text-zinc-950 shadow-sm ring-zinc-900/10 dark:bg-zinc-900 dark:text-white dark:ring-white/10',
-                                'relative flex rounded-3xl p-7 ring-1 sm:p-8',
+                                'relative flex rounded-xl p-7 ring-1 sm:p-8',
                             ]"
                         >
                             <div class="flex w-full flex-col">

@@ -482,7 +482,7 @@ defineExpose({ focusSearch, announce });
                     :data-highlighted="
                         highlightedId === item.public_id ? 'true' : undefined
                     "
-                    class="relative flex min-h-[7.25rem] min-w-0 flex-1 flex-col rounded-2xl bg-zinc-900/[0.04] p-3 text-start focus-ring hover:bg-zinc-900/[0.07] data-[highlighted=true]:bg-white data-[highlighted=true]:ring-2 data-[highlighted=true]:ring-brand-950 motion-safe:transition-[scale] motion-safe:duration-100 motion-safe:active:scale-[0.98] dark:bg-white/[0.04] dark:hover:bg-white/[0.08] dark:data-[highlighted=true]:bg-white/[0.1] dark:data-[highlighted=true]:ring-zinc-200"
+                    class="relative flex min-h-[7.25rem] min-w-0 flex-1 flex-col rounded-lg bg-[var(--ui-wash)] p-3 text-start focus-ring hover:bg-zinc-900/[0.07] data-[highlighted=true]:bg-white data-[highlighted=true]:ring-2 data-[highlighted=true]:ring-brand-950 motion-safe:transition-[scale] motion-safe:duration-100 motion-safe:active:scale-[0.98] dark:hover:bg-white/[0.08] dark:data-[highlighted=true]:bg-white/[0.1] dark:data-[highlighted=true]:ring-zinc-200"
                     @click="onTileClick(item, $event)"
                 >
                     <span

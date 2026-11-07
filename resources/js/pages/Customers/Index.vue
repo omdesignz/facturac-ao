@@ -305,7 +305,7 @@ async function deactivate(customer: Customer): Promise<void> {
                 </PageHeader>
 
                 <div
-                    class="overflow-hidden rounded-3xl bg-zinc-900/[0.04] dark:bg-white/[0.04]"
+                    class="overflow-hidden rounded-xl bg-[var(--surface-raised)] shadow-[var(--ui-card-shadow)]"
                 >
                     <EmptyState
                         v-if="customers.data.length === 0"
@@ -399,7 +399,7 @@ async function deactivate(customer: Customer): Promise<void> {
                                             {{ customer.name }}
                                         </Link>
                                         <p
-                                            class="mt-0.5 font-mono numeric text-xs text-zinc-500 sm:hidden dark:text-zinc-400"
+                                            class="mt-0.5 numeric text-xs text-zinc-500 sm:hidden dark:text-zinc-400"
                                         >
                                             {{
                                                 customer.tax_identification_number
@@ -427,7 +427,7 @@ async function deactivate(customer: Customer): Promise<void> {
                                         />
                                     </td>
                                     <td
-                                        class="hidden font-mono numeric text-zinc-700 sm:table-cell dark:text-zinc-300"
+                                        class="hidden numeric text-zinc-700 sm:table-cell dark:text-zinc-300"
                                     >
                                         {{ customer.tax_identification_number }}
                                     </td>

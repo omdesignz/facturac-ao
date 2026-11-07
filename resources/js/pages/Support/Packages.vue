@@ -1338,7 +1338,7 @@ const iconButton =
                     role="group"
                     tabindex="-1"
                     aria-labelledby="package-periods-label"
-                    class="@container min-w-0 rounded-2xl bg-zinc-900/[0.04] p-4 focus-ring dark:bg-white/[0.04]"
+                    class="@container min-w-0 rounded-lg bg-[var(--ui-wash)] p-4 focus-ring"
                     :aria-describedby="
                         describedBy(
                             !!periodsError && 'package-periods-error',
@@ -1696,7 +1696,7 @@ const iconButton =
 
                 <!-- Activo, em destaque -->
                 <div
-                    class="grid gap-1 rounded-2xl bg-zinc-900/[0.04] px-4 py-2 dark:bg-white/[0.04]"
+                    class="grid gap-1 rounded-lg bg-[var(--ui-wash)] px-4 py-2"
                 >
                     <ToggleSwitch id="package-active" v-model="form.is_active">
                         <template #label>Pacote activo</template>

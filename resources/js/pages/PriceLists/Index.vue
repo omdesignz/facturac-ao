@@ -350,7 +350,7 @@ function toggleDefault(): void {
 
                     <section v-if="selected" class="space-y-4">
                         <div
-                            class="rounded-3xl bg-zinc-900/[0.04] p-5 dark:bg-white/[0.04]"
+                            class="rounded-xl bg-[var(--surface-raised)] p-5 shadow-[var(--ui-card-shadow)]"
                         >
                             <div
                                 class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
@@ -430,7 +430,7 @@ function toggleDefault(): void {
                         </div>
 
                         <div
-                            class="overflow-hidden rounded-3xl bg-zinc-900/[0.04] dark:bg-white/[0.04]"
+                            class="overflow-hidden rounded-xl bg-[var(--surface-raised)] shadow-[var(--ui-card-shadow)]"
                         >
                             <header
                                 class="flex flex-col gap-3 border-b border-zinc-900/[0.07] p-5 sm:flex-row sm:items-end sm:justify-between dark:border-white/10"
@@ -580,7 +580,7 @@ function toggleDefault(): void {
 
                         <div
                             v-if="selected.customers.length > 0"
-                            class="rounded-3xl bg-zinc-900/[0.04] p-5 dark:bg-white/[0.04]"
+                            class="rounded-xl bg-[var(--surface-raised)] p-5 shadow-[var(--ui-card-shadow)]"
                         >
                             <h3
                                 class="text-sm font-semibold text-zinc-950 dark:text-white"

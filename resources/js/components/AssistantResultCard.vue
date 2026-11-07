@@ -14,7 +14,7 @@ const lines = computed(() => assistantLines(props.result));
 const headline = computed(() => assistantHeadline(props.result));
 </script>
 <template>
-    <article class="rounded-2xl bg-zinc-900/[0.04] p-5 dark:bg-white/[0.05]">
+    <article class="rounded-lg bg-[var(--ui-wash)] p-5">
         <h2 class="font-semibold text-zinc-950 dark:text-white">
             Factos consultados
         </h2>

@@ -264,7 +264,7 @@ function openChapter(id: string | null): void {
                     class="grid gap-10 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-end lg:gap-16"
                 >
                     <div class="min-w-0">
-                        <p class="eyebrow text-zinc-500 dark:text-zinc-400">
+                        <p class="text-[0.8125rem] text-[var(--ui-ink-3)]">
                             Ajuda · Guia de utilização
                         </p>
                         <h1
@@ -326,11 +326,11 @@ function openChapter(id: string | null): void {
                     <!-- Where the reader is, and the one next step. -->
                     <section
                         aria-labelledby="guide-progress"
-                        class="rounded-3xl bg-zinc-900/[0.04] p-6 dark:bg-white/[0.05]"
+                        class="rounded-xl bg-[var(--surface-raised)] p-6 shadow-[var(--ui-card-shadow)]"
                     >
                         <h2
                             id="guide-progress"
-                            class="eyebrow text-zinc-500 dark:text-zinc-400"
+                            class="text-[0.8125rem] text-[var(--ui-ink-3)]"
                         >
                             O seu percurso
                         </h2>
@@ -456,7 +456,7 @@ function openChapter(id: string | null): void {
                     </ul>
                     <div
                         v-else
-                        class="mt-4 rounded-3xl bg-zinc-900/[0.04] p-8 dark:bg-white/[0.05]"
+                        class="mt-4 rounded-xl bg-[var(--surface-raised)] p-8 shadow-[var(--ui-card-shadow)]"
                     >
                         <p class="font-semibold">Nenhum capítulo fala disso.</p>
                         <p
@@ -488,7 +488,7 @@ function openChapter(id: string | null): void {
                         >
                             <div>
                                 <p
-                                    class="eyebrow text-zinc-500 dark:text-zinc-400"
+                                    class="text-[0.8125rem] text-[var(--ui-ink-3)]"
                                 >
                                     Comece por aqui ·
                                     {{ firstSteps.minutes }} min no total
@@ -610,7 +610,7 @@ function openChapter(id: string | null): void {
                             >
                                 <Link
                                     :href="chapterUrl(chapter.id)"
-                                    class="group flex h-full flex-col rounded-2xl bg-zinc-900/[0.04] p-5 focus-ring transition hover:bg-zinc-900/[0.07] dark:bg-white/[0.05] dark:hover:bg-white/[0.08]"
+                                    class="group flex h-full flex-col rounded-lg bg-[var(--ui-wash)] p-5 focus-ring transition hover:bg-zinc-900/[0.07] dark:hover:bg-white/[0.08]"
                                     @click.prevent="openChapter(chapter.id)"
                                 >
                                     <span
@@ -708,7 +708,7 @@ function openChapter(id: string | null): void {
                 >
                     <a
                         :href="guidePdf.url()"
-                        class="group flex items-center gap-6 overflow-hidden rounded-3xl bg-accent-50 p-6 focus-ring sm:gap-8 sm:p-8 dark:bg-accent-400/[0.07]"
+                        class="group flex items-center gap-6 overflow-hidden rounded-xl bg-accent-50 p-6 focus-ring sm:gap-8 sm:p-8 dark:bg-accent-400/[0.07]"
                     >
                         <!-- The PDF's own cover, small. -->
                         <span
@@ -752,7 +752,7 @@ function openChapter(id: string | null): void {
                     </a>
                     <Link
                         :href="helpIndex.url()"
-                        class="group flex flex-col rounded-3xl bg-zinc-900/[0.04] p-6 focus-ring transition hover:bg-zinc-900/[0.07] sm:p-8 dark:bg-white/[0.05] dark:hover:bg-white/[0.08]"
+                        class="group flex flex-col rounded-xl bg-[var(--surface-raised)] p-6 shadow-[var(--ui-card-shadow)] focus-ring transition hover:bg-zinc-900/[0.07] sm:p-8 dark:hover:bg-white/[0.08]"
                     >
                         <LifeBuoy
                             class="size-6 text-zinc-500 dark:text-zinc-400"
@@ -804,7 +804,7 @@ function openChapter(id: string | null): void {
                     <!-- On a phone the list folds away above the chapter. -->
                     <details class="group mt-4 lg:hidden">
                         <summary
-                            class="flex cursor-pointer list-none items-center justify-between rounded-2xl bg-zinc-900/[0.04] px-4 py-3 text-sm font-semibold focus-ring dark:bg-white/[0.05] [&::-webkit-details-marker]:hidden"
+                            class="flex cursor-pointer list-none items-center justify-between rounded-lg bg-[var(--ui-wash)] px-4 py-3 text-sm font-semibold focus-ring [&::-webkit-details-marker]:hidden"
                         >
                             Todos os capítulos ·
                             {{ progress.completed.length }}/{{
@@ -1037,7 +1037,7 @@ function openChapter(id: string | null): void {
                         class="mt-14"
                         :aria-labelledby="`scenarios-${active.id}`"
                     >
-                        <p class="eyebrow text-zinc-500 dark:text-zinc-400">
+                        <p class="text-[0.8125rem] text-[var(--ui-ink-3)]">
                             Na prática
                         </p>
                         <h2
@@ -1056,7 +1056,7 @@ function openChapter(id: string | null): void {
                             <div
                                 v-for="scenario in active.scenarios"
                                 :key="scenario.code"
-                                class="grid grid-cols-[3.25rem_minmax(0,1fr)] gap-4 rounded-2xl bg-zinc-900/[0.04] p-5 dark:bg-white/[0.05]"
+                                class="grid grid-cols-[3.25rem_minmax(0,1fr)] gap-4 rounded-lg bg-[var(--ui-wash)] p-5"
                             >
                                 <span
                                     class="grid h-9 place-items-center rounded-lg bg-white font-mono text-sm font-semibold ring-1 ring-zinc-900/10 dark:bg-zinc-900 dark:ring-white/10"
@@ -1126,7 +1126,7 @@ function openChapter(id: string | null): void {
                         /></a>
                         <figcaption class="mt-3">
                             <span
-                                class="eyebrow text-zinc-500 dark:text-zinc-400"
+                                class="text-[0.8125rem] text-[var(--ui-ink-3)]"
                                 >Dados de demonstração · toque para
                                 ampliar</span
                             >
@@ -1258,7 +1258,7 @@ function openChapter(id: string | null): void {
                         <Link
                             v-if="nextChapter"
                             :href="chapterUrl(nextChapter.id)"
-                            class="group flex flex-col rounded-2xl bg-zinc-900/[0.04] p-5 text-end focus-ring transition hover:bg-zinc-900/[0.07] sm:col-start-2 dark:bg-white/[0.05] dark:hover:bg-white/[0.08]"
+                            class="group flex flex-col rounded-lg bg-[var(--ui-wash)] p-5 text-end focus-ring transition hover:bg-zinc-900/[0.07] sm:col-start-2 dark:hover:bg-white/[0.08]"
                             @click.prevent="openChapter(nextChapter.id)"
                         >
                             <span
@@ -1274,7 +1274,7 @@ function openChapter(id: string | null): void {
                     </nav>
 
                     <section v-if="related.length" class="mt-12">
-                        <p class="eyebrow text-zinc-500 dark:text-zinc-400">
+                        <p class="text-[0.8125rem] text-[var(--ui-ink-3)]">
                             Continue a aprender
                         </p>
                         <div class="mt-3 flex flex-wrap gap-2">

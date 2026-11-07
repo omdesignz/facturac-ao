@@ -291,7 +291,7 @@ const dueCount = computed(
                     <li
                         v-for="profile in profiles"
                         :key="profile.public_id"
-                        class="rounded-3xl bg-zinc-900/[0.04] p-5 dark:bg-white/[0.04]"
+                        class="rounded-xl bg-[var(--surface-raised)] p-5 shadow-[var(--ui-card-shadow)]"
                     >
                         <div class="flex flex-wrap items-start gap-x-4 gap-y-2">
                             <div class="min-w-0 flex-1">

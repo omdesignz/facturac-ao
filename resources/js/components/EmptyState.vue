@@ -18,24 +18,24 @@ defineProps<{
 
 <template>
     <div
-        class="flex flex-col items-center gap-3 px-6 py-14 text-center"
+        class="flex flex-col items-center gap-2 px-6 py-14 text-center"
         :class="
             bare
                 ? ''
-                : 'rounded-3xl border border-dashed border-zinc-900/15 dark:border-white/15'
+                : 'rounded-xl border border-dashed border-[var(--ui-line-strong)]'
         "
     >
         <span
-            class="grid size-12 place-items-center rounded-2xl bg-zinc-900/[0.05] text-zinc-500 dark:bg-white/[0.07] dark:text-zinc-400"
+            class="mb-1 grid size-10 place-items-center rounded-[10px] bg-[var(--ui-well)] text-[var(--ui-ink-2)]"
         >
-            <component :is="icon" class="size-6" aria-hidden="true" />
+            <component :is="icon" class="size-5" aria-hidden="true" />
         </span>
-        <p class="text-base font-semibold text-zinc-950 dark:text-white">
+        <p class="text-sm font-semibold text-[var(--ui-ink)]">
             {{ title }}
         </p>
         <p
             v-if="description"
-            class="max-w-md text-sm/6 text-zinc-500 dark:text-zinc-400"
+            class="max-w-md text-[0.8125rem]/5 text-[var(--ui-ink-3)]"
         >
             {{ description }}
         </p>

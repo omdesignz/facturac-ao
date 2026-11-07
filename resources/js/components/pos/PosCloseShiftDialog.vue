@@ -107,7 +107,7 @@ function submit(): void {
     >
         <form ref="root" class="space-y-5" novalidate @submit.prevent="submit">
             <div
-                class="flex items-baseline justify-between gap-4 rounded-2xl bg-zinc-900/[0.04] px-4 py-3 dark:bg-white/[0.04]"
+                class="flex items-baseline justify-between gap-4 rounded-lg bg-[var(--ui-wash)] px-4 py-3"
             >
                 <span class="text-sm text-zinc-700 dark:text-zinc-300"
                     >Numerário esperado</span

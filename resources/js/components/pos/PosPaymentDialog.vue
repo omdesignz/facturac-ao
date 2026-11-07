@@ -548,7 +548,7 @@ const methodPill =
                             <div v-if="stage === 'done' && result">
                                 <div class="flex items-center gap-3">
                                     <span
-                                        class="grid size-10 shrink-0 place-items-center rounded-full bg-lime-300 text-lime-950"
+                                        class="grid size-10 shrink-0 place-items-center rounded-full bg-[var(--ui-positive-wash)] text-[var(--ui-positive)]"
                                     >
                                         <CircleCheck
                                             class="size-6"
@@ -907,7 +907,7 @@ const methodPill =
 
                                         <div
                                             id="pos-change"
-                                            class="mt-4 flex min-h-12 items-center justify-between gap-4 rounded-2xl bg-zinc-900/[0.04] px-4 py-2 dark:bg-white/[0.04]"
+                                            class="mt-4 flex min-h-12 items-center justify-between gap-4 rounded-lg bg-[var(--ui-wash)] px-4 py-2"
                                         >
                                             <template
                                                 v-if="

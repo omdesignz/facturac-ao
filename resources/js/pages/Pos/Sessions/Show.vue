@@ -217,7 +217,7 @@ const linkClass =
                                 Primeiro e último documento
                             </dt>
                             <dd
-                                class="text-end font-mono numeric text-zinc-950 dark:text-white"
+                                class="text-end numeric text-zinc-950 dark:text-white"
                             >
                                 {{ summary.first_document_no }}
                                 <template
@@ -444,7 +444,7 @@ const linkClass =
                                     <Link
                                         v-if="sale.document_no"
                                         :href="documentHref(sale)"
-                                        class="font-mono numeric"
+                                        class="numeric"
                                         :class="linkClass"
                                         >{{ sale.document_no }}</Link
                                     >

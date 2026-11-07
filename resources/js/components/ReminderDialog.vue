@@ -168,7 +168,7 @@ function send(): void {
         <form v-else-if="draft" class="space-y-5" @submit.prevent="send">
             <p
                 v-if="draft.documents.length === 0"
-                class="rounded-xl bg-lime-300/40 p-3 text-sm/6 text-lime-950 dark:text-lime-100"
+                class="rounded-lg bg-[var(--ui-positive-wash)] p-3 text-sm/6 text-[var(--ui-positive)]"
             >
                 Este cliente já não tem nada vencido.
             </p>
@@ -256,7 +256,7 @@ function send(): void {
 
             <div
                 v-if="asksWhetherSent"
-                class="rounded-xl bg-zinc-900/[0.04] p-4 dark:bg-white/[0.06]"
+                class="rounded-xl bg-[var(--surface-raised)] p-4 shadow-[var(--ui-card-shadow)]"
                 role="group"
                 aria-labelledby="reminder-whatsapp-question"
             >

@@ -370,7 +370,7 @@ function abbreviate(value: string | null): string {
                                             :class="
                                                 selected?.public_id ===
                                                 submission.public_id
-                                                    ? 'bg-brand-50/70 dark:bg-brand-400/[0.06]'
+                                                    ? 'bg-[var(--ui-select)]'
                                                     : ''
                                             "
                                         >
@@ -399,7 +399,7 @@ function abbreviate(value: string | null): string {
                                                     }}
                                                 </span>
                                             </td>
-                                            <td>
+                                            <td class="max-w-[12.5rem]">
                                                 <StatusBadge
                                                     :label="
                                                         submission.status_label
@@ -417,7 +417,7 @@ function abbreviate(value: string | null): string {
                                                 />
                                             </td>
                                             <td
-                                                class="hidden text-right font-mono text-sm font-semibold whitespace-nowrap text-zinc-900 sm:table-cell dark:text-white"
+                                                class="hidden text-right numeric text-sm font-semibold whitespace-nowrap text-zinc-900 sm:table-cell dark:text-white"
                                             >
                                                 {{
                                                     formatMoney(
@@ -466,14 +466,16 @@ function abbreviate(value: string | null): string {
                         class="space-y-5 xl:sticky xl:top-24 xl:self-start"
                     >
                         <section
-                            class="overflow-hidden rounded-2xl bg-brand-950 text-white shadow-sm ring-1 ring-white/10"
+                            class="overflow-hidden rounded-xl bg-[var(--surface-raised)] text-[var(--ui-ink)] shadow-[var(--ui-card-shadow)]"
                         >
-                            <div class="border-b border-white/10 p-5">
+                            <div class="border-b border-[var(--ui-line)] p-5">
                                 <div
                                     class="flex items-start justify-between gap-4"
                                 >
                                     <div>
-                                        <p class="eyebrow text-brand-100/55">
+                                        <p
+                                            class="text-xs text-[var(--ui-ink-3)]"
+                                        >
                                             Entrega seleccionada
                                         </p>
                                         <h2
@@ -492,7 +494,9 @@ function abbreviate(value: string | null): string {
                                         "
                                     />
                                 </div>
-                                <p class="mt-4 text-sm/6 text-brand-100/70">
+                                <p
+                                    class="mt-4 text-sm/6 text-[var(--ui-ink-2)]"
+                                >
                                     {{ selected.safe_message }}
                                     <span
                                         v-if="
@@ -510,10 +514,10 @@ function abbreviate(value: string | null): string {
                                 </p>
                             </div>
                             <dl
-                                class="grid grid-cols-2 gap-px bg-white/10 text-sm"
+                                class="grid grid-cols-2 gap-px bg-[var(--ui-line)] text-sm"
                             >
-                                <div class="bg-white/[0.06] p-4">
-                                    <dt class="text-xs text-brand-100/55">
+                                <div class="bg-[var(--surface-raised)] p-4">
+                                    <dt class="text-xs text-[var(--ui-ink-3)]">
                                         Pedido AGT
                                     </dt>
                                     <dd
@@ -524,24 +528,24 @@ function abbreviate(value: string | null): string {
                                         }}
                                     </dd>
                                 </div>
-                                <div class="bg-white/[0.06] p-4">
-                                    <dt class="text-xs text-brand-100/55">
+                                <div class="bg-[var(--surface-raised)] p-4">
+                                    <dt class="text-xs text-[var(--ui-ink-3)]">
                                         Tentativas
                                     </dt>
                                     <dd class="mt-1 font-semibold">
                                         {{ selected.attempt_count }}
                                     </dd>
                                 </div>
-                                <div class="bg-white/[0.06] p-4">
-                                    <dt class="text-xs text-brand-100/55">
+                                <div class="bg-[var(--surface-raised)] p-4">
+                                    <dt class="text-xs text-[var(--ui-ink-3)]">
                                         Série
                                     </dt>
                                     <dd class="mt-1 font-semibold">
                                         {{ selected.series_code ?? '—' }}
                                     </dd>
                                 </div>
-                                <div class="bg-white/[0.06] p-4">
-                                    <dt class="text-xs text-brand-100/55">
+                                <div class="bg-[var(--surface-raised)] p-4">
+                                    <dt class="text-xs text-[var(--ui-ink-3)]">
                                         Contrato
                                     </dt>
                                     <dd class="mt-1 font-semibold">

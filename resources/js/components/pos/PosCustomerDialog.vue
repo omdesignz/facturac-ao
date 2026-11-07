@@ -292,7 +292,7 @@ defineExpose({ searchField });
                                 >{{ customer.name }}</span
                             >
                             <span
-                                class="block font-mono numeric text-xs text-zinc-500 dark:text-zinc-400"
+                                class="block numeric text-xs text-zinc-500 dark:text-zinc-400"
                                 >{{ customer.tax_identification_number }}</span
                             >
                         </span>
@@ -325,7 +325,7 @@ defineExpose({ searchField });
 
             <form
                 id="pos-customer-typed"
-                class="rounded-2xl bg-zinc-900/[0.04] p-4 sm:p-5 dark:bg-white/[0.04]"
+                class="rounded-lg bg-[var(--ui-wash)] p-4 sm:p-5"
                 novalidate
                 @submit.prevent="useTyped"
             >

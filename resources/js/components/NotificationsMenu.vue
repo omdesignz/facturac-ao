@@ -77,7 +77,7 @@ const attentionCount = computed(
 const toneChip: Record<string, string> = {
     critical: 'bg-rose-500/10 text-rose-700 dark:text-rose-300',
     warning: 'bg-orange-500/10 text-orange-700 dark:text-orange-300',
-    success: 'bg-lime-500/15 text-lime-800 dark:text-lime-300',
+    success: 'bg-[var(--ui-positive-wash)] text-[var(--ui-positive)]',
     neutral:
         'bg-zinc-900/[0.05] text-zinc-600 dark:bg-white/10 dark:text-zinc-300',
 };

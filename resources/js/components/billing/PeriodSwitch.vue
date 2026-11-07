@@ -43,7 +43,7 @@ function narrowSpan(index: number): string {
         :aria-label="label"
         :class="[
             narrowColumns,
-            'grid w-full max-w-md gap-1 rounded-3xl bg-zinc-900/[0.06] p-1 sm:flex sm:w-fit sm:max-w-full sm:[scrollbar-width:thin] sm:overflow-x-auto sm:overscroll-x-contain sm:rounded-full dark:bg-white/[0.08]',
+            'grid w-full max-w-md gap-1 rounded-xl bg-zinc-900/[0.06] p-1 sm:flex sm:w-fit sm:max-w-full sm:[scrollbar-width:thin] sm:overflow-x-auto sm:overscroll-x-contain sm:rounded-full dark:bg-white/[0.08]',
         ]"
     >
         <label

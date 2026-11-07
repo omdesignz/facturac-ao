@@ -17,27 +17,22 @@ withDefaults(
 
 <template>
     <div
-        class="min-w-0 pr-6 sm:border-l sm:border-zinc-900/10 sm:pl-6 sm:first:border-l-0 sm:first:pl-0 dark:sm:border-white/10"
+        class="min-w-0 pe-6 sm:border-s sm:border-[var(--ui-line)] sm:ps-6 sm:first:border-s-0 sm:first:ps-0"
     >
-        <dt
-            class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
-        >
+        <dt class="text-xs font-medium text-[var(--ui-ink-3)]">
             {{ label }}
         </dt>
         <dd
             :class="[
                 compact
                     ? 'text-base font-medium tracking-[-0.01em]'
-                    : 'text-stat leading-none font-light tracking-[-0.03em]',
-                'mt-2.5 numeric break-words text-zinc-950 dark:text-white',
+                    : 'text-2xl/none font-[650] tracking-[-0.03em]',
+                'mt-2 numeric break-words text-[var(--ui-ink)]',
             ]"
         >
             <slot>{{ value }}</slot>
         </dd>
-        <dd
-            v-if="detail"
-            class="mt-2 text-[0.8125rem] text-zinc-500 dark:text-zinc-400"
-        >
+        <dd v-if="detail" class="mt-1.5 text-xs text-[var(--ui-ink-3)]">
             {{ detail }}
         </dd>
     </div>

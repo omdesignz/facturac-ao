@@ -497,7 +497,7 @@ function historyUrl(publicId: string): string {
                             >
                                 <div class="px-5 py-4 sm:px-6">
                                     <dt
-                                        class="text-xs font-semibold tracking-wider text-zinc-400 uppercase"
+                                        class="text-xs font-semibold text-[var(--ui-ink-3)]"
                                     >
                                         Linhas
                                     </dt>
@@ -513,7 +513,7 @@ function historyUrl(publicId: string): string {
                                 </div>
                                 <div class="px-5 py-4 sm:px-6">
                                     <dt
-                                        class="text-xs font-semibold tracking-wider text-zinc-400 uppercase"
+                                        class="text-xs font-semibold text-[var(--ui-ink-3)]"
                                     >
                                         Válidas
                                     </dt>
@@ -525,7 +525,7 @@ function historyUrl(publicId: string): string {
                                 </div>
                                 <div class="px-5 py-4 sm:px-6">
                                     <dt
-                                        class="text-xs font-semibold tracking-wider text-zinc-400 uppercase"
+                                        class="text-xs font-semibold text-[var(--ui-ink-3)]"
                                     >
                                         Com erros
                                     </dt>
@@ -542,7 +542,7 @@ function historyUrl(publicId: string): string {
                                 </div>
                                 <div class="px-5 py-4 sm:px-6">
                                     <dt
-                                        class="text-xs font-semibold tracking-wider text-zinc-400 uppercase"
+                                        class="text-xs font-semibold text-[var(--ui-ink-3)]"
                                     >
                                         Importadas
                                     </dt>
@@ -661,7 +661,7 @@ function historyUrl(publicId: string): string {
                             >
                                 <div>
                                     <p
-                                        class="eyebrow text-zinc-500 dark:text-zinc-400"
+                                        class="text-[0.8125rem] text-[var(--ui-ink-3)]"
                                     >
                                         Correspondência
                                     </p>
@@ -932,7 +932,7 @@ function historyUrl(publicId: string): string {
                     <aside class="space-y-6">
                         <section
                             v-if="selected.status === 'ready'"
-                            class="overflow-hidden rounded-2xl bg-brand-950 text-white shadow-sm ring-1 ring-black/10"
+                            class="overflow-hidden rounded-xl bg-[var(--surface-raised)] text-[var(--ui-ink)] shadow-[var(--ui-card-shadow)]"
                             aria-labelledby="commit-heading"
                         >
                             <div class="p-6">
@@ -950,21 +950,25 @@ function historyUrl(publicId: string): string {
                                 >
                                     Pronto para gravar
                                 </h2>
-                                <p class="mt-2 text-sm/6 text-brand-100/70">
+                                <p
+                                    class="mt-2 text-sm/6 text-[var(--ui-ink-2)]"
+                                >
                                     {{ selected.valid_rows }} linhas estão
                                     válidas. Registos com o mesmo NIF ou código
                                     serão actualizados; os restantes serão
                                     criados.
                                 </p>
                                 <div
-                                    class="mt-5 rounded-xl border border-white/10 bg-white/[0.06] p-4"
+                                    class="mt-5 rounded-xl border border-[var(--ui-line)] bg-[var(--surface-raised)] p-4"
                                 >
                                     <div class="flex gap-3">
                                         <LockKeyhole
-                                            class="mt-0.5 size-4 shrink-0 text-accent-400"
+                                            class="mt-0.5 size-4 shrink-0 text-[var(--ui-gold-ink)]"
                                             aria-hidden="true"
                                         />
-                                        <p class="text-xs/5 text-brand-100/70">
+                                        <p
+                                            class="text-xs/5 text-[var(--ui-ink-2)]"
+                                        >
                                             A confirmação exige palavra-passe e
                                             MFA. É uma operação auditada e
                                             idempotente.
@@ -974,7 +978,7 @@ function historyUrl(publicId: string): string {
                                 <Link
                                     v-if="!guardrails.mfa_enabled"
                                     :href="security.url()"
-                                    class="mt-4 inline-flex text-sm font-semibold text-accent-400 underline underline-offset-4 hover:no-underline"
+                                    class="mt-4 inline-flex text-sm font-semibold text-[var(--ui-gold-ink)] underline underline-offset-4 hover:no-underline"
                                 >
                                     Activar MFA primeiro
                                 </Link>
@@ -986,7 +990,7 @@ function historyUrl(publicId: string): string {
                                         commitForm.processing
                                     "
                                     @click="submitCommit"
-                                    class="mt-5 w-full focus-ring-inverted"
+                                    class="mt-5 w-full focus-ring"
                                 >
                                     <LoaderCircle
                                         v-if="commitForm.processing"
@@ -1030,7 +1034,7 @@ function historyUrl(publicId: string): string {
                             >
                                 <div>
                                     <dt
-                                        class="text-xs font-semibold text-emerald-700 uppercase dark:text-emerald-300"
+                                        class="text-xs font-semibold text-emerald-700 dark:text-emerald-300"
                                     >
                                         Novos
                                     </dt>
@@ -1042,7 +1046,7 @@ function historyUrl(publicId: string): string {
                                 </div>
                                 <div>
                                     <dt
-                                        class="text-xs font-semibold text-emerald-700 uppercase dark:text-emerald-300"
+                                        class="text-xs font-semibold text-emerald-700 dark:text-emerald-300"
                                     >
                                         Actualizados
                                     </dt>
@@ -1124,7 +1128,7 @@ function historyUrl(publicId: string): string {
                         >
                             <div>
                                 <p
-                                    class="eyebrow text-zinc-500 dark:text-zinc-400"
+                                    class="text-[0.8125rem] text-[var(--ui-ink-3)]"
                                 >
                                     Nova importação
                                 </p>

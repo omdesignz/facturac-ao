@@ -349,7 +349,7 @@ const paymentLines = computed(() => cart.salePayloadLines());
                     class="sticky inset-bs-[calc(5rem+var(--impersonation-bar,0px))]"
                 >
                     <div
-                        class="flex max-h-[calc(100dvh-11rem-var(--impersonation-bar,0px))] flex-col overflow-clip rounded-3xl bg-zinc-900/[0.04] dark:bg-white/[0.04]"
+                        class="flex max-h-[calc(100dvh-11rem-var(--impersonation-bar,0px))] flex-col overflow-clip rounded-xl bg-[var(--surface-raised)] shadow-[var(--ui-card-shadow)]"
                     >
                         <PosCart
                             ref="cartView"

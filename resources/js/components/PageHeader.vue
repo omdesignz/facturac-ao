@@ -16,18 +16,16 @@ defineProps<{
 </script>
 
 <template>
-    <div>
+    <div class="border-b border-[var(--ui-line)] pb-5">
         <header
-            class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between"
+            class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"
         >
             <div class="max-w-3xl min-w-0">
-                <p
-                    class="text-[0.8125rem] font-medium text-zinc-500 dark:text-zinc-400"
-                >
+                <p class="text-[0.8125rem] text-[var(--ui-ink-3)]">
                     {{ eyebrow }}
                 </p>
                 <h1
-                    class="mt-1 text-page-title leading-[1.15] font-[650] tracking-[-0.025em] text-balance text-zinc-950 dark:text-white"
+                    class="mt-0.5 text-[1.375rem] leading-[1.2] font-[650] tracking-[-0.025em] text-balance text-[var(--ui-ink)]"
                 >
                     {{ title }}
                 </h1>
@@ -39,7 +37,7 @@ defineProps<{
                 </div>
                 <p
                     v-if="description"
-                    class="mt-2 max-w-2xl text-sm/6 text-zinc-600 dark:text-zinc-400"
+                    class="mt-1.5 max-w-2xl text-[0.8125rem]/5 text-[var(--ui-ink-3)]"
                 >
                     {{ description }}
                 </p>
@@ -53,7 +51,7 @@ defineProps<{
         </header>
         <dl
             v-if="$slots.stats"
-            class="mt-5 grid grid-cols-2 gap-y-6 sm:flex sm:flex-wrap"
+            class="mt-5 grid grid-cols-2 gap-y-5 sm:flex sm:flex-wrap"
         >
             <slot name="stats" />
         </dl>
