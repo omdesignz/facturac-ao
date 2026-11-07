@@ -70,10 +70,13 @@ function discardAndReload(): void {
         class="rounded-2xl surface p-5 sm:p-6"
         aria-labelledby="follow-up-heading"
     >
-        <h2 id="follow-up-heading" class="text-lg font-semibold">
+        <h2
+            id="follow-up-heading"
+            class="text-sm font-semibold text-[var(--ui-ink)]"
+        >
             Seguimento de cobrança
         </h2>
-        <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+        <p class="mt-0.5 text-[0.8125rem] text-[var(--ui-ink-3)]">
             Nota interna partilhada com a equipa. Guardar ou concluir não envia
             mensagens nem regista pagamentos.
         </p>
@@ -149,7 +152,7 @@ function discardAndReload(): void {
                     {{ form.errors.revision }}
                 </p>
                 <div class="flex flex-wrap gap-3">
-                    <AppButton type="submit" variant="gold">{{
+                    <AppButton type="submit" variant="ink">{{
                         form.processing
                             ? 'A guardar…'
                             : followUp.completed

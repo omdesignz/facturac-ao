@@ -26,7 +26,6 @@ test('the screens that used a banner now use the shared page header', function (
         ->toContain('<PageHeader');
 })->with([
     'Agt/Connection/Show',
-    'Agt/Submissions/Index',
     'Billing/Show',
     'Imports/Index',
     'Onboarding',
@@ -45,7 +44,7 @@ test('the work surfaces open on a thin title bar and run edge to edge', function
         ->toMatch('/<TitleBar\b|<header\s+class="(?=[^"]*h-\[3\.25rem\])(?=[^"]*border-b border-\[var\(--ui-line\)\])/')
         ->not->toContain('<PageHeader')
         ->not->toContain('page-shell');
-})->with(['Documents/Index', 'Debts/Index', 'Invoices/Create', 'Customers/Index', 'Catalogue/Index', 'Quotes/Index', 'TransportDocuments/Index']);
+})->with(['Documents/Index', 'Debts/Index', 'Invoices/Create', 'Customers/Index', 'Catalogue/Index', 'Quotes/Index', 'TransportDocuments/Index', 'Agt/Submissions/Index']);
 
 test('the title bar is one thin row with the content edge to edge below it', function () {
     expect((string) file_get_contents(resource_path('js/components/TitleBar.vue')))

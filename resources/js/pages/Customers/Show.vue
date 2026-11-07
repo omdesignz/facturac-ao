@@ -399,25 +399,9 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                     </template>
                 </PageHeader>
 
-                <CollectionFollowUpForm
-                    :key="customer.public_id"
-                    :customer-public-id="customer.public_id"
-                    :follow-up="followUp"
-                    :can-update="canUpdateFollowUp"
-                    :recovery-scope="[
-                        page.props.auth.user?.id ?? '',
-                        page.props.currentWorkspace?.public_id ?? '',
-                    ]"
-                />
-
-                <p class="max-w-3xl text-xs/5 text-zinc-500 dark:text-zinc-400">
-                    Valores e documentos limitados à moeda da empresa; saldos
-                    actuais, sem conversão cambial.
-                </p>
-
                 <section
                     aria-label="Contactos e condições"
-                    class="flex flex-wrap gap-x-6 gap-y-2 border-y border-zinc-900/[0.07] py-3.5 text-sm dark:border-white/10"
+                    class="flex flex-wrap gap-x-6 gap-y-2 border-b border-[var(--ui-line)] pb-3.5 text-[0.8125rem]"
                 >
                     <a
                         v-if="customer.email"
@@ -505,10 +489,10 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
 
                 <div
                     v-if="overLimit"
-                    class="flex items-start gap-3 rounded-2xl bg-orange-50 p-4 text-sm/6 text-orange-900 dark:bg-orange-400/10 dark:text-orange-200"
+                    class="flex items-start gap-2.5 rounded-lg bg-[color-mix(in_oklch,var(--ui-warning)_10%,transparent)] px-3.5 py-3 text-[0.8125rem]/5 text-[var(--ui-ink)]"
                 >
                     <TriangleAlert
-                        class="mt-0.5 size-5 shrink-0"
+                        class="mt-0.5 size-4 shrink-0 text-[var(--ui-critical)]"
                         aria-hidden="true"
                     />
                     <p>
@@ -519,10 +503,10 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
 
                 <div
                     v-if="summary.overdue_minor > 0"
-                    class="flex items-start gap-3 rounded-2xl bg-rose-50 p-4 text-sm/6 text-rose-900 dark:bg-rose-400/10 dark:text-rose-200"
+                    class="flex items-start gap-2.5 rounded-lg bg-[var(--ui-critical-wash)] px-3.5 py-3 text-[0.8125rem]/5 text-[var(--ui-ink)]"
                 >
                     <TriangleAlert
-                        class="mt-0.5 size-5 shrink-0"
+                        class="mt-0.5 size-4 shrink-0 text-[var(--ui-critical)]"
                         aria-hidden="true"
                     />
                     <p>
@@ -535,6 +519,22 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                         da data de vencimento.
                     </p>
                 </div>
+
+                <p class="max-w-3xl text-xs/5 text-[var(--ui-ink-3)]">
+                    Valores e documentos limitados à moeda da empresa; saldos
+                    actuais, sem conversão cambial.
+                </p>
+
+                <CollectionFollowUpForm
+                    :key="customer.public_id"
+                    :customer-public-id="customer.public_id"
+                    :follow-up="followUp"
+                    :can-update="canUpdateFollowUp"
+                    :recovery-scope="[
+                        page.props.auth.user?.id ?? '',
+                        page.props.currentWorkspace?.public_id ?? '',
+                    ]"
+                />
 
                 <ChartFrame
                     title="Facturação mensal"

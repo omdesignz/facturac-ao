@@ -15,10 +15,10 @@ import { computed, ref } from 'vue';
 import AppButton from '@/components/AppButton.vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
-import PageHeader from '@/components/PageHeader.vue';
 import PageStat from '@/components/PageStat.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
+import TitleBar from '@/components/TitleBar.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { index, refresh } from '@/routes/agt/submissions';
 import type { SelectOption } from '@/types/select';
@@ -216,525 +216,492 @@ function abbreviate(value: string | null): string {
     <AppLayout>
         <Head title="Monitor AGT" />
 
-        <div class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
-            <div class="page-shell space-y-7">
-                <PageHeader
-                    eyebrow="Fiscal"
-                    title="Onde está cada factura"
-                    description="Acompanhe cada documento desde a fila segura até ao resultado final devolvido pela AGT, sem repetir uma emissão."
-                >
-                    <template #actions>
-                        <Form
-                            v-if="permissions.refresh"
-                            v-bind="refresh.form()"
-                            :options="{ preserveScroll: true }"
-                            #default="{ processing }"
-                        >
-                            <AppButton
-                                variant="outline"
-                                type="submit"
-                                :disabled="processing || activeTotal === 0"
-                            >
-                                <LoaderCircle
-                                    v-if="processing"
-                                    class="size-4 animate-spin"
-                                    aria-hidden="true"
-                                />
-                                <RefreshCw
-                                    v-else
-                                    class="size-4"
-                                    aria-hidden="true"
-                                />
-                                Actualizar estados
-                            </AppButton>
-                        </Form>
-                    </template>
-                    <template #stats>
-                        <PageStat
-                            label="Validadas pela AGT"
-                            :value="summary.valid"
-                        />
-                        <PageStat
-                            label="Na fila ou em validação"
-                            :value="activeTotal"
-                        />
-                        <PageStat
-                            label="Requerem atenção"
-                            :value="attentionTotal"
-                        >
-                            <span
-                                :class="
-                                    attentionTotal > 0
-                                        ? 'text-rose-600 dark:text-rose-400'
-                                        : ''
-                                "
-                                >{{ attentionTotal }}</span
-                            >
-                        </PageStat>
-                        <PageStat
-                            label="Registos preservados"
-                            :value="total"
-                            detail="Todas as entregas ficam guardadas"
-                        />
-                    </template>
-                </PageHeader>
-
-                <div
-                    v-if="flashSuccess"
-                    class="flex items-center gap-3 rounded-2xl bg-emerald-50 p-4 text-sm font-medium text-emerald-800 ring-1 ring-emerald-200 dark:bg-emerald-400/10 dark:text-emerald-300 dark:ring-emerald-400/20"
-                    role="status"
-                >
-                    <BadgeCheck class="size-5 shrink-0" aria-hidden="true" />
-                    {{ flashSuccess }}
-                </div>
-                <div
-                    v-if="flashError"
-                    class="flex items-center gap-3 rounded-2xl bg-rose-50 p-4 text-sm font-medium text-rose-800 ring-1 ring-rose-200 dark:bg-rose-400/10 dark:text-rose-300 dark:ring-rose-400/20"
-                    role="alert"
-                >
-                    <CircleAlert class="size-5 shrink-0" aria-hidden="true" />
-                    {{ flashError }}
-                </div>
-
-                <div
-                    class="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(22rem,0.75fr)]"
-                >
-                    <section
-                        class="min-w-0 overflow-hidden rounded-2xl surface"
+        <div
+            class="flex min-h-[calc(100dvh-4rem)] flex-col lg:min-h-[calc(100dvh-3rem)]"
+        >
+            <TitleBar section="Fiscal" title="Monitor AGT">
+                <template #actions>
+                    <Form
+                        v-if="permissions.refresh"
+                        v-bind="refresh.form()"
+                        :options="{ preserveScroll: true }"
+                        #default="{ processing }"
                     >
-                        <div class="px-5 py-5 sm:px-6">
-                            <div class="sm:flex sm:items-center">
-                                <div class="sm:flex-auto">
-                                    <h2
-                                        class="text-base font-semibold text-zinc-950 dark:text-white"
-                                    >
-                                        Documentos recentes
-                                    </h2>
-                                    <p
-                                        class="mt-1 text-sm/6 text-zinc-500 dark:text-zinc-400"
-                                    >
-                                        Até
-                                        {{ guardrails.maximum_visible_records }}
-                                        entregas recentes, sem expor payloads ou
-                                        assinaturas.
-                                    </p>
-                                </div>
-                                <div class="mt-4 sm:mt-0 sm:ml-8">
-                                    <label for="status-filter" class="sr-only">
-                                        Filtrar por estado
-                                    </label>
-                                    <SelectInput
-                                        id="status-filter"
-                                        v-model="statusFilter"
-                                        :options="statusFilterOptions"
-                                    />
-                                </div>
+                        <AppButton
+                            variant="outline"
+                            size="sm"
+                            class="h-[1.875rem]"
+                            type="submit"
+                            :disabled="processing || activeTotal === 0"
+                        >
+                            <LoaderCircle
+                                v-if="processing"
+                                class="size-3.5 animate-spin"
+                                aria-hidden="true"
+                            />
+                            <RefreshCw
+                                v-else
+                                class="size-3.5"
+                                aria-hidden="true"
+                            />
+                            Actualizar estados
+                        </AppButton>
+                    </Form>
+                </template>
+            </TitleBar>
+
+            <dl
+                class="grid grid-cols-2 gap-y-4 border-b border-[var(--ui-line)] px-4 py-4 sm:flex sm:flex-wrap sm:px-6"
+            >
+                <PageStat label="Validadas pela AGT" :value="summary.valid" />
+                <PageStat
+                    label="Na fila ou em validação"
+                    :value="activeTotal"
+                />
+                <PageStat label="Requerem atenção" :value="attentionTotal">
+                    <span
+                        :class="
+                            attentionTotal > 0
+                                ? 'text-[var(--ui-critical)]'
+                                : ''
+                        "
+                        >{{ attentionTotal }}</span
+                    >
+                </PageStat>
+                <PageStat
+                    label="Registos preservados"
+                    :value="total"
+                    detail="Todas as entregas ficam guardadas"
+                />
+            </dl>
+
+            <div
+                v-if="flashSuccess"
+                class="mx-4 mt-4 flex items-center gap-2.5 rounded-lg bg-[var(--ui-positive-wash)] px-3.5 py-3 text-[0.8125rem] font-medium text-[var(--ui-positive)] sm:mx-6"
+                role="status"
+            >
+                <BadgeCheck class="size-5 shrink-0" aria-hidden="true" />
+                {{ flashSuccess }}
+            </div>
+            <div
+                v-if="flashError"
+                class="mx-4 mt-4 flex items-center gap-2.5 rounded-lg bg-[var(--ui-critical-wash)] px-3.5 py-3 text-[0.8125rem] font-medium text-[var(--ui-critical)] sm:mx-6"
+                role="alert"
+            >
+                <CircleAlert class="size-5 shrink-0" aria-hidden="true" />
+                {{ flashError }}
+            </div>
+
+            <div
+                class="flex min-w-0 flex-1 flex-col xl:flex-row xl:items-start"
+            >
+                <section class="min-w-0 flex-1">
+                    <div
+                        class="border-b border-[var(--ui-line)] bg-[var(--ui-head)] px-4 py-2.5 sm:px-6"
+                    >
+                        <div class="sm:flex sm:items-center">
+                            <div class="sm:flex-auto">
+                                <h2
+                                    class="text-[0.8125rem] font-semibold text-[var(--ui-ink)]"
+                                >
+                                    Documentos recentes
+                                </h2>
+                                <p class="text-xs text-[var(--ui-ink-3)]">
+                                    Até
+                                    {{ guardrails.maximum_visible_records }}
+                                    entregas recentes, sem expor payloads ou
+                                    assinaturas.
+                                </p>
+                            </div>
+                            <div class="mt-4 sm:mt-0 sm:ml-8">
+                                <label for="status-filter" class="sr-only">
+                                    Filtrar por estado
+                                </label>
+                                <SelectInput
+                                    id="status-filter"
+                                    v-model="statusFilter"
+                                    :options="statusFilterOptions"
+                                />
                             </div>
                         </div>
+                    </div>
 
-                        <div
-                            v-if="filteredSubmissions.length > 0"
-                            class="flow-root"
-                        >
-                            <div
-                                class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8"
-                            >
-                                <div
-                                    class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8"
-                                >
-                                    <DataTable
-                                        ><template #head>
-                                            <th scope="col">Documento</th>
-                                            <th
-                                                scope="col"
-                                                class="hidden md:table-cell"
-                                            >
-                                                Cliente
-                                            </th>
-                                            <th scope="col">Estado</th>
-                                            <th
-                                                scope="col"
-                                                class="hidden text-right sm:table-cell"
-                                            >
-                                                Total
-                                            </th>
-                                            <th scope="col" class="relative">
-                                                <span class="sr-only"
-                                                    >Abrir</span
-                                                >
-                                            </th>
-                                        </template>
-                                        <tr
-                                            v-for="submission in filteredSubmissions"
-                                            :key="submission.public_id"
-                                            :class="
-                                                selected?.public_id ===
-                                                submission.public_id
-                                                    ? 'bg-[var(--ui-select)]'
-                                                    : ''
-                                            "
+                    <div
+                        v-if="filteredSubmissions.length > 0"
+                        class="flow-root"
+                    >
+                        <div class="overflow-x-auto">
+                            <div class="inline-block min-w-full align-middle">
+                                <DataTable edge
+                                    ><template #head>
+                                        <th scope="col">Documento</th>
+                                        <th
+                                            scope="col"
+                                            class="hidden md:table-cell"
                                         >
-                                            <td>
-                                                <p
-                                                    class="text-sm font-semibold whitespace-nowrap text-zinc-950 dark:text-white"
-                                                >
-                                                    {{ submission.document_no }}
-                                                </p>
-                                                <p
-                                                    class="mt-1 text-xs whitespace-nowrap text-zinc-500 dark:text-zinc-400"
-                                                >
-                                                    {{
-                                                        formatDate(
-                                                            submission.created_at,
-                                                        )
-                                                    }}
-                                                </p>
-                                            </td>
-                                            <td
-                                                class="hidden max-w-56 text-sm text-zinc-600 md:table-cell dark:text-zinc-300"
+                                            Cliente
+                                        </th>
+                                        <th scope="col">Estado</th>
+                                        <th
+                                            scope="col"
+                                            class="hidden text-right sm:table-cell"
+                                        >
+                                            Total
+                                        </th>
+                                        <th scope="col" class="relative">
+                                            <span class="sr-only">Abrir</span>
+                                        </th>
+                                    </template>
+                                    <tr
+                                        v-for="submission in filteredSubmissions"
+                                        :key="submission.public_id"
+                                        :class="
+                                            selected?.public_id ===
+                                            submission.public_id
+                                                ? 'bg-[var(--ui-select)]'
+                                                : ''
+                                        "
+                                    >
+                                        <td>
+                                            <p
+                                                class="text-sm font-semibold whitespace-nowrap text-zinc-950 dark:text-white"
                                             >
-                                                <span class="block truncate">
-                                                    {{
-                                                        submission.customer_name
-                                                    }}
-                                                </span>
-                                            </td>
-                                            <td class="max-w-[12.5rem]">
-                                                <StatusBadge
-                                                    :label="
-                                                        submission.status_label
-                                                    "
-                                                    :tone="
-                                                        statusTone(
-                                                            submission.status,
-                                                        )
-                                                    "
-                                                    :pulse="
-                                                        activeStatuses.includes(
-                                                            submission.status,
-                                                        )
-                                                    "
-                                                />
-                                            </td>
-                                            <td
-                                                class="hidden text-right numeric text-sm font-semibold whitespace-nowrap text-zinc-900 sm:table-cell dark:text-white"
+                                                {{ submission.document_no }}
+                                            </p>
+                                            <p
+                                                class="mt-1 text-xs whitespace-nowrap text-zinc-500 dark:text-zinc-400"
                                             >
                                                 {{
-                                                    formatMoney(
-                                                        submission.gross_total,
-                                                        submission.currency_code,
+                                                    formatDate(
+                                                        submission.created_at,
                                                     )
                                                 }}
-                                            </td>
-                                            <td class="text-right">
-                                                <Link
-                                                    data-nav-row
-                                                    :href="
-                                                        index({
-                                                            query: {
-                                                                submission:
-                                                                    submission.public_id,
-                                                            },
-                                                        })
-                                                    "
-                                                    preserve-scroll
-                                                    class="inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-600 dark:text-brand-300"
-                                                >
-                                                    Abrir
-                                                    <ChevronRight
-                                                        class="size-4"
-                                                        aria-hidden="true"
-                                                    />
-                                                </Link>
-                                            </td>
-                                        </tr>
-                                    </DataTable>
-                                </div>
+                                            </p>
+                                        </td>
+                                        <td
+                                            class="hidden max-w-56 text-sm text-zinc-600 md:table-cell dark:text-zinc-300"
+                                        >
+                                            <span class="block truncate">
+                                                {{ submission.customer_name }}
+                                            </span>
+                                        </td>
+                                        <td class="max-w-[12.5rem]">
+                                            <StatusBadge
+                                                :label="submission.status_label"
+                                                :tone="
+                                                    statusTone(
+                                                        submission.status,
+                                                    )
+                                                "
+                                                :pulse="
+                                                    activeStatuses.includes(
+                                                        submission.status,
+                                                    )
+                                                "
+                                            />
+                                        </td>
+                                        <td
+                                            class="hidden text-right numeric text-sm font-semibold whitespace-nowrap text-zinc-900 sm:table-cell dark:text-white"
+                                        >
+                                            {{
+                                                formatMoney(
+                                                    submission.gross_total,
+                                                    submission.currency_code,
+                                                )
+                                            }}
+                                        </td>
+                                        <td class="text-right">
+                                            <Link
+                                                data-nav-row
+                                                :href="
+                                                    index({
+                                                        query: {
+                                                            submission:
+                                                                submission.public_id,
+                                                        },
+                                                    })
+                                                "
+                                                preserve-scroll
+                                                class="inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-600 dark:text-brand-300"
+                                            >
+                                                Abrir
+                                                <ChevronRight
+                                                    class="size-4"
+                                                    aria-hidden="true"
+                                                />
+                                            </Link>
+                                        </td>
+                                    </tr>
+                                </DataTable>
                             </div>
                         </div>
-                        <EmptyState
-                            v-else
-                            bare
-                            :icon="Inbox"
-                            title="Nenhuma submissão neste filtro"
-                            description="Os documentos aparecem aqui assim que uma factura é emitida e colocada na fila AGT."
-                        />
+                    </div>
+                    <EmptyState
+                        v-else
+                        bare
+                        :icon="Inbox"
+                        title="Nenhuma submissão neste filtro"
+                        description="Os documentos aparecem aqui assim que uma factura é emitida e colocada na fila AGT."
+                    />
+                </section>
+
+                <aside
+                    v-if="selected"
+                    class="space-y-4 border-[var(--ui-line)] p-4 max-xl:border-t sm:p-6 xl:sticky xl:inset-bs-12 xl:max-h-[calc(100dvh-3rem)] xl:w-[25rem] xl:shrink-0 xl:overflow-y-auto xl:border-s xl:p-5"
+                >
+                    <section
+                        class="overflow-hidden rounded-xl bg-[var(--surface-raised)] text-[var(--ui-ink)] shadow-[var(--ui-card-shadow)]"
+                    >
+                        <div class="border-b border-[var(--ui-line)] p-5">
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <p class="text-xs text-[var(--ui-ink-3)]">
+                                        Entrega seleccionada
+                                    </p>
+                                    <h2
+                                        class="mt-1 numeric text-2xl font-semibold tracking-tight"
+                                    >
+                                        {{ selected.document_no }}
+                                    </h2>
+                                </div>
+                                <StatusBadge
+                                    :label="selected.status_label"
+                                    :tone="statusTone(selected.status)"
+                                    :pulse="
+                                        activeStatuses.includes(selected.status)
+                                    "
+                                />
+                            </div>
+                            <p class="mt-4 text-sm/6 text-[var(--ui-ink-2)]">
+                                {{ selected.safe_message }}
+                                <span
+                                    v-if="selected.agt_operational.observed_at"
+                                >
+                                    Observação:
+                                    {{
+                                        formatDate(
+                                            selected.agt_operational
+                                                .observed_at,
+                                        )
+                                    }}.
+                                </span>
+                            </p>
+                        </div>
+                        <dl
+                            class="grid grid-cols-2 gap-px bg-[var(--ui-line)] text-sm"
+                        >
+                            <div class="bg-[var(--surface-raised)] p-4">
+                                <dt class="text-xs text-[var(--ui-ink-3)]">
+                                    Pedido AGT
+                                </dt>
+                                <dd
+                                    class="mt-1 font-mono text-xs font-semibold"
+                                >
+                                    {{ selected.request_id ?? 'A aguardar' }}
+                                </dd>
+                            </div>
+                            <div class="bg-[var(--surface-raised)] p-4">
+                                <dt class="text-xs text-[var(--ui-ink-3)]">
+                                    Tentativas
+                                </dt>
+                                <dd class="mt-1 font-semibold">
+                                    {{ selected.attempt_count }}
+                                </dd>
+                            </div>
+                            <div class="bg-[var(--surface-raised)] p-4">
+                                <dt class="text-xs text-[var(--ui-ink-3)]">
+                                    Série
+                                </dt>
+                                <dd class="mt-1 font-semibold">
+                                    {{ selected.series_code ?? '—' }}
+                                </dd>
+                            </div>
+                            <div class="bg-[var(--surface-raised)] p-4">
+                                <dt class="text-xs text-[var(--ui-ink-3)]">
+                                    Contrato
+                                </dt>
+                                <dd class="mt-1 font-semibold">
+                                    AGT {{ selected.schema_version }}
+                                </dd>
+                            </div>
+                        </dl>
                     </section>
 
-                    <aside
-                        v-if="selected"
-                        class="space-y-5 xl:sticky xl:top-24 xl:self-start"
-                    >
-                        <section
-                            class="overflow-hidden rounded-xl bg-[var(--surface-raised)] text-[var(--ui-ink)] shadow-[var(--ui-card-shadow)]"
+                    <section class="rounded-2xl surface p-5">
+                        <div class="flex items-center gap-2">
+                            <Clock3
+                                class="size-4 text-brand-700 dark:text-brand-300"
+                                aria-hidden="true"
+                            />
+                            <h2
+                                class="text-sm font-semibold text-zinc-950 dark:text-white"
+                            >
+                                Linha temporal fiscal
+                            </h2>
+                        </div>
+                        <ol
+                            v-if="selected.events.length > 0"
+                            class="mt-5 space-y-0"
                         >
-                            <div class="border-b border-[var(--ui-line)] p-5">
+                            <li
+                                v-for="(event, eventIndex) in selected.events"
+                                :key="event.id"
+                                class="relative flex gap-3 pb-5 last:pb-0"
+                            >
+                                <span
+                                    v-if="
+                                        eventIndex < selected.events.length - 1
+                                    "
+                                    class="absolute top-6 left-2.5 h-full w-px bg-zinc-200 dark:bg-white/10"
+                                    aria-hidden="true"
+                                />
+                                <span
+                                    class="relative mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-brand-100 text-brand-700 ring-4 ring-white dark:bg-brand-400/15 dark:text-brand-300 dark:ring-zinc-900"
+                                >
+                                    <span
+                                        class="size-1.5 rounded-full bg-current"
+                                    />
+                                </span>
+                                <div class="min-w-0">
+                                    <p
+                                        class="text-sm font-semibold text-zinc-900 dark:text-white"
+                                    >
+                                        {{ event.label }}
+                                    </p>
+                                    <p
+                                        class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400"
+                                    >
+                                        {{ formatDate(event.occurred_at) }}
+                                    </p>
+                                </div>
+                            </li>
+                        </ol>
+                        <p
+                            v-else
+                            class="mt-4 text-sm text-zinc-500 dark:text-zinc-400"
+                        >
+                            A primeira evidência será apresentada após a
+                            emissão.
+                        </p>
+                    </section>
+
+                    <section class="rounded-2xl surface p-5">
+                        <div class="flex items-center gap-2">
+                            <Send
+                                class="size-4 text-brand-700 dark:text-brand-300"
+                                aria-hidden="true"
+                            />
+                            <h2
+                                class="text-sm font-semibold text-zinc-950 dark:text-white"
+                            >
+                                Últimas comunicações
+                            </h2>
+                        </div>
+                        <ul
+                            v-if="selected.attempts.length > 0"
+                            class="mt-4 divide-y divide-zinc-100 dark:divide-white/10"
+                        >
+                            <li
+                                v-for="attempt in selected.attempts"
+                                :key="attempt.id"
+                                class="py-4 first:pt-0 last:pb-0"
+                            >
                                 <div
-                                    class="flex items-start justify-between gap-4"
+                                    class="flex items-start justify-between gap-3"
                                 >
                                     <div>
                                         <p
-                                            class="text-xs text-[var(--ui-ink-3)]"
+                                            class="text-xs font-semibold text-zinc-900 dark:text-white"
                                         >
-                                            Entrega seleccionada
+                                            {{ attempt.operation_label }} · #{{
+                                                attempt.attempt_number
+                                            }}
                                         </p>
-                                        <h2
-                                            class="mt-1 numeric text-2xl font-semibold tracking-tight"
+                                        <p
+                                            class="mt-1 text-xs/5 text-zinc-500 dark:text-zinc-400"
                                         >
-                                            {{ selected.document_no }}
-                                        </h2>
+                                            {{ attempt.safe_message }}
+                                        </p>
                                     </div>
-                                    <StatusBadge
-                                        :label="selected.status_label"
-                                        :tone="statusTone(selected.status)"
-                                        :pulse="
-                                            activeStatuses.includes(
-                                                selected.status,
-                                            )
-                                        "
-                                    />
+                                    <span
+                                        class="font-mono text-xs text-zinc-500 dark:text-zinc-400"
+                                    >
+                                        HTTP
+                                        {{ attempt.http_status ?? '—' }}
+                                    </span>
                                 </div>
                                 <p
-                                    class="mt-4 text-sm/6 text-[var(--ui-ink-2)]"
+                                    v-if="attempt.error_codes.length > 0"
+                                    class="mt-2 font-mono text-[0.65rem] text-rose-600 dark:text-rose-400"
                                 >
-                                    {{ selected.safe_message }}
-                                    <span
-                                        v-if="
-                                            selected.agt_operational.observed_at
-                                        "
-                                    >
-                                        Observação:
-                                        {{
-                                            formatDate(
-                                                selected.agt_operational
-                                                    .observed_at,
-                                            )
-                                        }}.
-                                    </span>
+                                    {{ attempt.error_codes.join(', ') }}
                                 </p>
-                            </div>
-                            <dl
-                                class="grid grid-cols-2 gap-px bg-[var(--ui-line)] text-sm"
-                            >
-                                <div class="bg-[var(--surface-raised)] p-4">
-                                    <dt class="text-xs text-[var(--ui-ink-3)]">
-                                        Pedido AGT
-                                    </dt>
-                                    <dd
-                                        class="mt-1 font-mono text-xs font-semibold"
-                                    >
-                                        {{
-                                            selected.request_id ?? 'A aguardar'
-                                        }}
-                                    </dd>
-                                </div>
-                                <div class="bg-[var(--surface-raised)] p-4">
-                                    <dt class="text-xs text-[var(--ui-ink-3)]">
-                                        Tentativas
-                                    </dt>
-                                    <dd class="mt-1 font-semibold">
-                                        {{ selected.attempt_count }}
-                                    </dd>
-                                </div>
-                                <div class="bg-[var(--surface-raised)] p-4">
-                                    <dt class="text-xs text-[var(--ui-ink-3)]">
-                                        Série
-                                    </dt>
-                                    <dd class="mt-1 font-semibold">
-                                        {{ selected.series_code ?? '—' }}
-                                    </dd>
-                                </div>
-                                <div class="bg-[var(--surface-raised)] p-4">
-                                    <dt class="text-xs text-[var(--ui-ink-3)]">
-                                        Contrato
-                                    </dt>
-                                    <dd class="mt-1 font-semibold">
-                                        AGT {{ selected.schema_version }}
-                                    </dd>
-                                </div>
-                            </dl>
-                        </section>
-
-                        <section class="rounded-2xl surface p-5">
-                            <div class="flex items-center gap-2">
-                                <Clock3
-                                    class="size-4 text-brand-700 dark:text-brand-300"
-                                    aria-hidden="true"
-                                />
-                                <h2
-                                    class="text-sm font-semibold text-zinc-950 dark:text-white"
-                                >
-                                    Linha temporal fiscal
-                                </h2>
-                            </div>
-                            <ol
-                                v-if="selected.events.length > 0"
-                                class="mt-5 space-y-0"
-                            >
-                                <li
-                                    v-for="(
-                                        event, eventIndex
-                                    ) in selected.events"
-                                    :key="event.id"
-                                    class="relative flex gap-3 pb-5 last:pb-0"
-                                >
-                                    <span
-                                        v-if="
-                                            eventIndex <
-                                            selected.events.length - 1
-                                        "
-                                        class="absolute top-6 left-2.5 h-full w-px bg-zinc-200 dark:bg-white/10"
-                                        aria-hidden="true"
-                                    />
-                                    <span
-                                        class="relative mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-brand-100 text-brand-700 ring-4 ring-white dark:bg-brand-400/15 dark:text-brand-300 dark:ring-zinc-900"
-                                    >
-                                        <span
-                                            class="size-1.5 rounded-full bg-current"
-                                        />
-                                    </span>
-                                    <div class="min-w-0">
-                                        <p
-                                            class="text-sm font-semibold text-zinc-900 dark:text-white"
-                                        >
-                                            {{ event.label }}
-                                        </p>
-                                        <p
-                                            class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400"
-                                        >
-                                            {{ formatDate(event.occurred_at) }}
-                                        </p>
-                                    </div>
-                                </li>
-                            </ol>
-                            <p
-                                v-else
-                                class="mt-4 text-sm text-zinc-500 dark:text-zinc-400"
-                            >
-                                A primeira evidência será apresentada após a
-                                emissão.
-                            </p>
-                        </section>
-
-                        <section class="rounded-2xl surface p-5">
-                            <div class="flex items-center gap-2">
-                                <Send
-                                    class="size-4 text-brand-700 dark:text-brand-300"
-                                    aria-hidden="true"
-                                />
-                                <h2
-                                    class="text-sm font-semibold text-zinc-950 dark:text-white"
-                                >
-                                    Últimas comunicações
-                                </h2>
-                            </div>
-                            <ul
-                                v-if="selected.attempts.length > 0"
-                                class="mt-4 divide-y divide-zinc-100 dark:divide-white/10"
-                            >
-                                <li
-                                    v-for="attempt in selected.attempts"
-                                    :key="attempt.id"
-                                    class="py-4 first:pt-0 last:pb-0"
-                                >
-                                    <div
-                                        class="flex items-start justify-between gap-3"
-                                    >
-                                        <div>
-                                            <p
-                                                class="text-xs font-semibold text-zinc-900 dark:text-white"
-                                            >
-                                                {{ attempt.operation_label }} ·
-                                                #{{ attempt.attempt_number }}
-                                            </p>
-                                            <p
-                                                class="mt-1 text-xs/5 text-zinc-500 dark:text-zinc-400"
-                                            >
-                                                {{ attempt.safe_message }}
-                                            </p>
-                                        </div>
-                                        <span
-                                            class="font-mono text-xs text-zinc-500 dark:text-zinc-400"
-                                        >
-                                            HTTP
-                                            {{ attempt.http_status ?? '—' }}
-                                        </span>
-                                    </div>
-                                    <p
-                                        v-if="attempt.error_codes.length > 0"
-                                        class="mt-2 font-mono text-[0.65rem] text-rose-600 dark:text-rose-400"
-                                    >
-                                        {{ attempt.error_codes.join(', ') }}
-                                    </p>
-                                </li>
-                            </ul>
-                            <p
-                                v-else
-                                class="mt-4 text-sm text-zinc-500 dark:text-zinc-400"
-                            >
-                                A entrega ainda não iniciou uma comunicação.
-                            </p>
-                        </section>
-
-                        <section
-                            class="rounded-2xl bg-zinc-50 p-5 ring-1 ring-zinc-200 dark:bg-white/[0.03] dark:ring-white/10"
+                            </li>
+                        </ul>
+                        <p
+                            v-else
+                            class="mt-4 text-sm text-zinc-500 dark:text-zinc-400"
                         >
-                            <div class="flex items-center gap-2">
-                                <Fingerprint
-                                    class="size-4 text-zinc-500"
-                                    aria-hidden="true"
-                                />
-                                <h2
-                                    class="eyebrow text-zinc-600 dark:text-zinc-300"
+                            A entrega ainda não iniciou uma comunicação.
+                        </p>
+                    </section>
+
+                    <section
+                        class="rounded-2xl bg-zinc-50 p-5 ring-1 ring-zinc-200 dark:bg-white/[0.03] dark:ring-white/10"
+                    >
+                        <div class="flex items-center gap-2">
+                            <Fingerprint
+                                class="size-4 text-zinc-500"
+                                aria-hidden="true"
+                            />
+                            <h2
+                                class="eyebrow text-zinc-600 dark:text-zinc-300"
+                            >
+                                Prova de integridade
+                            </h2>
+                        </div>
+                        <dl
+                            class="mt-4 space-y-3 font-mono text-[0.65rem] text-zinc-500 dark:text-zinc-400"
+                        >
+                            <div>
+                                <dt>SUBMISSÃO</dt>
+                                <dd
+                                    class="mt-0.5 break-all text-zinc-800 dark:text-zinc-200"
                                 >
-                                    Prova de integridade
-                                </h2>
+                                    {{ selected.submission_uuid }}
+                                </dd>
                             </div>
-                            <dl
-                                class="mt-4 space-y-3 font-mono text-[0.65rem] text-zinc-500 dark:text-zinc-400"
-                            >
-                                <div>
-                                    <dt>SUBMISSÃO</dt>
-                                    <dd
-                                        class="mt-0.5 break-all text-zinc-800 dark:text-zinc-200"
-                                    >
-                                        {{ selected.submission_uuid }}
-                                    </dd>
-                                </div>
-                                <div>
-                                    <dt>SHA-256 PEDIDO</dt>
-                                    <dd
-                                        class="mt-0.5 text-zinc-800 dark:text-zinc-200"
-                                    >
-                                        {{
-                                            abbreviate(
-                                                selected.request_body_sha256,
-                                            )
-                                        }}
-                                    </dd>
-                                </div>
-                                <div v-if="selected.last_response_body_sha256">
-                                    <dt>SHA-256 RESPOSTA</dt>
-                                    <dd
-                                        class="mt-0.5 text-zinc-800 dark:text-zinc-200"
-                                    >
-                                        {{
-                                            abbreviate(
-                                                selected.last_response_body_sha256,
-                                            )
-                                        }}
-                                    </dd>
-                                </div>
-                            </dl>
-                            <p
-                                class="mt-4 text-xs/5 text-zinc-500 dark:text-zinc-400"
-                            >
-                                Os bytes assinados permanecem cifrados e não são
-                                enviados ao navegador.
-                            </p>
-                        </section>
-                    </aside>
-                </div>
+                            <div>
+                                <dt>SHA-256 PEDIDO</dt>
+                                <dd
+                                    class="mt-0.5 text-zinc-800 dark:text-zinc-200"
+                                >
+                                    {{
+                                        abbreviate(selected.request_body_sha256)
+                                    }}
+                                </dd>
+                            </div>
+                            <div v-if="selected.last_response_body_sha256">
+                                <dt>SHA-256 RESPOSTA</dt>
+                                <dd
+                                    class="mt-0.5 text-zinc-800 dark:text-zinc-200"
+                                >
+                                    {{
+                                        abbreviate(
+                                            selected.last_response_body_sha256,
+                                        )
+                                    }}
+                                </dd>
+                            </div>
+                        </dl>
+                        <p
+                            class="mt-4 text-xs/5 text-zinc-500 dark:text-zinc-400"
+                        >
+                            Os bytes assinados permanecem cifrados e não são
+                            enviados ao navegador.
+                        </p>
+                    </section>
+                </aside>
             </div>
         </div>
     </AppLayout>
