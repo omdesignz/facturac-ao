@@ -1,4 +1,13 @@
 <script setup lang="ts">
+import {
+    CircleAlert,
+    CircleCheck,
+    Clock3,
+    PencilLine,
+    TriangleAlert,
+} from '@lucide/vue';
+import type { Component } from 'vue';
+
 type StatusTone =
     | 'success'
     | 'warning'
@@ -12,6 +21,7 @@ withDefaults(
     defineProps<{
         label: string;
         tone?: StatusTone;
+        /** Still moving. The clock already says so; kept so callers need not change. */
         pulse?: boolean;
     }>(),
     {
@@ -21,42 +31,53 @@ withDefaults(
 );
 
 /**
- * One pill for every status in the app.
+ * One chip for every status in the app.
  *
- * A single shape — 22px, fully round, 12/600 — so a status reads the same on
- * every page, and the colour always arrives with a word: nobody has to know
- * the palette to know what a state means. The colours keep to the brand's
- * roles: lime for done, gold for something the system is still working on,
- * orange for a warning, red for a failure, grey for everything at rest.
+ * A single shape (22px, a 6px corner, 12/550) on a soft wash of its colour, so
+ * a column of statuses reads as quiet text until something is wrong. The
+ * colour always arrives with a word and a mark, so nobody has to know the
+ * palette: green and a tick for done, gold and a clock for something the
+ * system is still working on, orange for a warning, red for a failure, grey
+ * for everything at rest.
  */
 const styles: Record<StatusTone, string> = {
-    success: 'bg-lime-300 text-lime-950',
-    info: 'bg-accent-400 text-brand-950',
+    success: 'bg-[var(--ui-positive-wash)] text-[var(--ui-positive)]',
+    info: 'bg-[var(--ui-gold-wash)] text-[var(--ui-gold-ink)]',
     warning:
-        'bg-[#fff0cf] text-[#7a4308] dark:bg-amber-400/15 dark:text-amber-200',
-    danger: 'bg-[#fde7ea] text-[#9a1b30] dark:bg-rose-400/15 dark:text-rose-200',
+        'bg-[color-mix(in_oklch,var(--ui-warning)_13%,transparent)] text-[var(--ui-warning)]',
+    danger: 'bg-[var(--ui-critical-wash)] text-[var(--ui-critical)]',
     contingency:
-        'bg-orange-100 text-orange-800 dark:bg-orange-400/15 dark:text-orange-200',
-    neutral: 'bg-[#f5f5f7] text-zinc-700 dark:bg-white/10 dark:text-zinc-300',
-    draft: 'bg-white text-zinc-600 ring-1 ring-zinc-900/10 ring-inset dark:bg-transparent dark:text-zinc-300 dark:ring-white/15',
+        'bg-[color-mix(in_oklch,var(--ui-warning)_13%,transparent)] text-[var(--ui-warning)]',
+    neutral: 'bg-[var(--ui-well)] text-[var(--ui-ink-2)]',
+    draft: 'bg-transparent text-[var(--ui-ink-2)] shadow-[inset_0_0_0_1px_var(--ui-line-strong)]',
+};
+
+const marks: Partial<Record<StatusTone, Component>> = {
+    success: CircleCheck,
+    info: Clock3,
+    warning: TriangleAlert,
+    danger: CircleAlert,
+    contingency: TriangleAlert,
+    draft: PencilLine,
 };
 </script>
 
 <template>
     <span
+        :title="label"
         :class="[
             styles[tone],
-            'inline-flex h-[1.375rem] items-center gap-1.5 rounded-full px-2 text-xs font-semibold whitespace-nowrap',
+            marks[tone] ? 'ps-1.5 pe-2' : 'px-2',
+            'inline-flex h-[1.375rem] max-w-full min-w-0 items-center gap-[0.3125rem] rounded-md text-xs font-[550] whitespace-nowrap',
         ]"
     >
-        <span v-if="pulse" class="relative flex size-1.5" aria-hidden="true">
-            <span
-                class="absolute inline-flex size-full animate-ping rounded-full bg-current opacity-40 motion-reduce:animate-none"
-            />
-            <span
-                class="relative inline-flex size-1.5 rounded-full bg-current"
-            />
-        </span>
-        {{ label }}
+        <component
+            :is="marks[tone]"
+            v-if="marks[tone]"
+            class="size-[0.8125rem] shrink-0"
+            :stroke-width="2.2"
+            aria-hidden="true"
+        />
+        <span class="truncate">{{ label }}</span>
     </span>
 </template>

@@ -3,34 +3,34 @@ import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue';
 import { Head, Link, router, usePage, InfiniteScroll } from '@inertiajs/vue3';
 import {
     ArrowUpRight,
+    BellRing,
     Check,
     ChevronDown,
-    Clock3,
-    BellRing,
+    ChevronUp,
+    Copy,
     Download,
     FileText,
-    FilterX,
+    ListFilter,
     LoaderCircle,
     PencilLine,
     Plus,
-    UserRound,
     Printer,
     Search,
     Send,
-    SlidersHorizontal,
+    UserRound,
     X,
 } from '@lucide/vue';
+import { useEventListener, useMediaQuery } from '@vueuse/core';
 import { computed, nextTick, ref, watch } from 'vue';
 import AppButton from '@/components/AppButton.vue';
 import DateInput from '@/components/DateInput.vue';
-import DocumentLifecycle from '@/components/DocumentLifecycle.vue';
 import type { LifecycleStep } from '@/components/DocumentLifecycle.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
 import LoadMore from '@/components/LoadMore.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { buttonGold } from '@/lib/button';
+import { buttonClass } from '@/lib/button';
 import { confirmAction } from '@/lib/confirm';
 import { statusTone } from '@/lib/document-status';
 import { usePaletteActions } from '@/lib/palette-actions';
@@ -408,6 +408,9 @@ function rowNumber(document: RegisterDocument): string {
     return document.document_no ?? `Rascunho · ${document.document_type_label}`;
 }
 
+const gridColumns =
+    'md:grid-cols-[2.75rem_9rem_minmax(8rem,1fr)_5rem_5rem_7.5rem_minmax(8.5rem,11rem)]';
+
 /** The row is a real link; a plain click is handled in the page, not reloaded. */
 function skipReopening(event: MouseEvent, publicId: string): void {
     const modified =
@@ -429,13 +432,15 @@ function finishOpening(publicId: string): void {
 }
 
 /**
- * Below 80rem the panel sits above the list, so a tap on a row would change
- * something off screen. Bring it into view and move focus into it; from 80rem
- * the panel is beside the list and nothing moves.
+ * Below 80rem the panel slides over the list instead of sitting beside it, so
+ * focus moves into it; from 80rem it is beside the list and focus stays on the
+ * row, so j and k keep walking the list.
  */
 watch(
     () => props.selected?.public_id,
     async (publicId) => {
+        inspectorTab.value = 'state';
+
         if (
             publicId === undefined ||
             window.matchMedia('(min-width: 80rem)').matches
@@ -444,10 +449,186 @@ watch(
         }
 
         await nextTick();
-        detailPanel.value?.scrollIntoView({ block: 'start', behavior: 'auto' });
         detailPanel.value?.focus({ preventScroll: true });
     },
 );
+
+/** Escape closes the open document, unless a menu or dialog has it first. */
+useEventListener('keydown', (event: KeyboardEvent) => {
+    if (
+        event.key !== 'Escape' ||
+        event.defaultPrevented ||
+        !props.selected ||
+        document.querySelector('[role="dialog"], [role="menu"]') !== null
+    ) {
+        return;
+    }
+
+    closeDocument();
+});
+
+/* ------------------------------------------------------------- inspector */
+
+const inspectorTab = ref<'state' | 'history' | 'details'>('state');
+
+/**
+ * From 80rem the panel sits beside the list. Narrower, it slides over
+ * everything, so it is moved to the page's root, above the app's own bars.
+ */
+const inspectorBeside = useMediaQuery('(min-width: 80rem)');
+
+const inspectorTabs = [
+    { value: 'state', label: 'Estado' },
+    { value: 'history', label: 'Histórico' },
+    { value: 'details', label: 'Detalhes' },
+] as const;
+
+/** The documents either side of the open one, in the list as it is loaded. */
+const neighbours = computed(() => {
+    const index = props.documents.data.findIndex(
+        (document) => document.public_id === props.selected?.public_id,
+    );
+
+    return {
+        previous: index > 0 ? props.documents.data[index - 1] : null,
+        next:
+            index >= 0 && index < props.documents.data.length - 1
+                ? props.documents.data[index + 1]
+                : null,
+    };
+});
+
+/** What is still owed on the open document, as a word rather than a figure. */
+const settlement = computed(() => {
+    const snapshot = props.selected?.snapshot;
+
+    if (!snapshot || snapshot.outstanding_minor <= 0) {
+        return null;
+    }
+
+    if (snapshot.days_past_due > 0) {
+        return {
+            label: `Vencida há ${snapshot.days_past_due} ${snapshot.days_past_due === 1 ? 'dia' : 'dias'}`,
+            tone: 'danger' as const,
+        };
+    }
+
+    return {
+        label: snapshot.due_date
+            ? `Por receber · vence ${formatShortDate(snapshot.due_date)}`
+            : 'Por receber',
+        tone: 'neutral' as const,
+    };
+});
+
+const stepDot: Record<LifecycleStep['state'], string> = {
+    done: 'bg-[var(--ui-positive)] text-[var(--surface-raised)]',
+    error: 'bg-[var(--ui-critical)] text-[var(--surface-raised)]',
+    current:
+        'bg-transparent shadow-[inset_0_0_0_1.5px_var(--color-accent-400)]',
+    todo: 'bg-transparent shadow-[inset_0_0_0_1.5px_var(--ui-line-strong)]',
+};
+
+/** "Hoje, 22:31" for today, "6 nov, 22:31" before. */
+function stepTime(step: LifecycleStep): string {
+    if (step.key === 'paid') {
+        return step.detail ?? (step.state === 'done' ? 'Liquidada' : '—');
+    }
+
+    if (step.at === null) {
+        return step.detail ?? 'Ainda não';
+    }
+
+    const when = new Date(step.at);
+    const day = dayKey(when);
+    const time = new Intl.DateTimeFormat('pt-AO', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: TIMEZONE,
+    }).format(when);
+
+    return day === todayKey.value
+        ? `Hoje, ${time}`
+        : `${formatShortDate(day)}, ${time}`;
+}
+
+/* ---------------------------------------------------------- date groups */
+
+const TIMEZONE = 'Africa/Luanda';
+
+function dayKey(value: Date): string {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: TIMEZONE }).format(
+        value,
+    );
+}
+
+const todayKey = computed(() => dayKey(new Date()));
+const yesterdayKey = computed(() => dayKey(new Date(Date.now() - 86_400_000)));
+
+const monthFormatter = new Intl.DateTimeFormat('pt-PT', {
+    month: 'long',
+    timeZone: 'UTC',
+});
+
+function groupLabel(date: string): string {
+    const day = date.slice(0, 10);
+
+    if (day === todayKey.value) {
+        return 'Hoje';
+    }
+
+    if (day === yesterdayKey.value) {
+        return 'Ontem';
+    }
+
+    const month = monthFormatter.format(
+        new Date(`${day.slice(0, 7)}-01T00:00:00Z`),
+    );
+    const year = day.slice(0, 4);
+    const label = `${month.charAt(0).toUpperCase()}${month.slice(1)}`;
+
+    return year === todayKey.value.slice(0, 4) ? label : `${label} de ${year}`;
+}
+
+/** The list with a heading wherever the day, or the month, changes. */
+const rows = computed(() => {
+    const result: (
+        | { kind: 'group'; key: string; label: string }
+        | { kind: 'document'; key: string; document: RegisterDocument }
+    )[] = [];
+    let current = '';
+
+    for (const document of props.documents.data) {
+        const label = groupLabel(document.document_date);
+
+        if (label !== current) {
+            current = label;
+            result.push({ kind: 'group', key: `group-${label}`, label });
+        }
+
+        result.push({
+            kind: 'document',
+            key: document.public_id,
+            document,
+        });
+    }
+
+    return result;
+});
+
+/** The document type's code, the same chip in the list and the panel. */
+function typeCode(document: RegisterDocument): string {
+    return document.document_type;
+}
+
+/**
+ * "FT26/449" from "FT FT26/449": the chip beside it already says FT, so the
+ * series and number are what the eye needs. The full number stays the
+ * accessible name and the tooltip.
+ */
+function shortNumber(document: RegisterDocument): string {
+    return document.document_no?.replace(/^\S+\s+/, '') ?? 'Rascunho';
+}
 
 function closeDocument(): void {
     router.get(
@@ -482,9 +663,9 @@ const longDateFormatter = new Intl.DateTimeFormat('pt-PT', {
     month: 'short',
     year: 'numeric',
 });
-const shortDateFormatter = new Intl.DateTimeFormat('pt-AO', {
-    day: 'numeric',
+const shortMonthFormatter = new Intl.DateTimeFormat('pt-PT', {
     month: 'short',
+    timeZone: 'UTC',
 });
 const dateTimeFormatter = new Intl.DateTimeFormat('pt-AO', {
     dateStyle: 'medium',
@@ -524,14 +705,15 @@ function formatDate(value: string | null): string {
     return longDateFormatter.format(new Date(`${value.slice(0, 10)}T12:00:00`));
 }
 
+/** "6 nov": the locale's own short date is "6/11", which reads as a fraction in a column. */
 function formatShortDate(value: string | null): string {
     if (value === null) {
         return '—';
     }
 
-    return shortDateFormatter.format(
-        new Date(`${value.slice(0, 10)}T12:00:00`),
-    );
+    const day = new Date(`${value.slice(0, 10)}T00:00:00Z`);
+
+    return `${day.getUTCDate()} ${shortMonthFormatter.format(day).replace('.', '')}`;
 }
 
 function formatDateTime(value: string | null): string {
@@ -657,350 +839,390 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
     <AppLayout>
         <Head title="Documentos fiscais" />
 
-        <div class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
-            <div class="page-shell">
-                <FlashBanner />
+        <div
+            class="flex min-h-[calc(100dvh-4rem)] flex-col lg:min-h-[calc(100dvh-3rem)]"
+        >
+            <div class="px-4 empty:hidden sm:px-6"><FlashBanner /></div>
 
-                <!-- ------------------------------------------------ header -->
-                <header
-                    class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between"
+            <!-- ------------------------------------------------ title bar -->
+            <header
+                class="flex flex-wrap items-center gap-x-3 gap-y-2.5 border-b border-[var(--ui-line)] px-4 py-2.5 sm:px-6 md:h-[3.25rem] md:flex-nowrap md:py-0"
+            >
+                <h1 class="text-[0.8125rem] font-semibold text-[var(--ui-ink)]">
+                    Documentos
+                </h1>
+                <nav
+                    aria-label="Filtrar por estado"
+                    class="-mx-4 flex min-w-0 [scrollbar-width:none] gap-0.5 overflow-x-auto px-4 max-md:order-last max-md:w-[calc(100%+2rem)] md:mx-0 md:ms-2 md:px-0"
                 >
-                    <div>
-                        <p
-                            class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
-                        >
-                            Registos
-                        </p>
-                        <h1
-                            class="mt-2.5 text-page-title leading-[1.08] font-light tracking-[-0.028em] text-zinc-950 dark:text-white"
-                        >
-                            Documentos
-                        </h1>
-                    </div>
-
-                    <div class="flex flex-wrap items-center gap-2.5">
-                        <form
-                            class="field-adorned w-full [--field-adorn-start:2.5rem] sm:w-80"
-                            role="search"
-                            @submit.prevent="applyFilters"
-                        >
-                            <Search
-                                class="field-adornment-start size-4"
-                                aria-hidden="true"
-                            />
-                            <label for="register-search" class="sr-only"
-                                >Procurar documentos</label
-                            >
-                            <input
-                                id="register-search"
-                                v-model="search"
-                                type="search"
-                                placeholder="Número, cliente ou NIF…"
-                                autocomplete="off"
-                                spellcheck="false"
-                                enterkeyhint="search"
-                                class="form-search"
-                            />
-                        </form>
-
-                        <Menu
-                            v-if="permissions.create"
-                            as="div"
-                            class="relative z-20"
-                        >
-                            <MenuButton :class="buttonGold">
-                                <Plus class="size-4" aria-hidden="true" />
-                                Novo documento
-                                <ChevronDown
-                                    class="size-4"
-                                    aria-hidden="true"
-                                />
-                            </MenuButton>
-
-                            <transition
-                                enter-active-class="transition duration-100 ease-out"
-                                enter-from-class="scale-95 opacity-0"
-                                enter-to-class="scale-100 opacity-100"
-                                leave-active-class="transition duration-75 ease-out"
-                                leave-from-class="scale-100 opacity-100"
-                                leave-to-class="scale-95 opacity-0"
-                            >
-                                <MenuItems
-                                    class="absolute left-0 z-30 mt-2 w-80 max-w-[calc(100vw-2rem)] origin-top-left menu-panel p-1.5 sm:right-0 sm:left-auto sm:origin-top-right"
-                                >
-                                    <p
-                                        class="px-3 pt-2 pb-2 text-xs font-medium tracking-[0.07em] text-zinc-400 uppercase"
-                                    >
-                                        O que vai emitir?
-                                    </p>
-                                    <MenuItem
-                                        v-for="entry in newDocumentTypes"
-                                        :key="entry.value"
-                                        v-slot="{ active }"
-                                    >
-                                        <Link
-                                            :href="
-                                                createInvoice.url({
-                                                    query: {
-                                                        type: entry.value,
-                                                    },
-                                                })
-                                            "
-                                            :class="[
-                                                active
-                                                    ? 'bg-zinc-100 dark:bg-white/5'
-                                                    : '',
-                                                'flex items-start gap-3 menu-item py-2.5 focus:outline-none',
-                                            ]"
-                                        >
-                                            <span
-                                                class="mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg bg-zinc-900/[0.06] font-mono text-xs font-semibold text-zinc-700 dark:bg-white/10 dark:text-zinc-200"
-                                            >
-                                                {{ entry.value }}
-                                            </span>
-                                            <span>
-                                                <span
-                                                    class="block text-sm font-semibold"
-                                                    >{{ entry.label }}</span
-                                                >
-                                                <span
-                                                    class="mt-0.5 block text-xs/5 text-zinc-500 dark:text-zinc-400"
-                                                    >{{ entry.detail }}</span
-                                                >
-                                            </span>
-                                        </Link>
-                                    </MenuItem>
-                                </MenuItems>
-                            </transition>
-                        </Menu>
-                    </div>
-                </header>
-
-                <!-- ---------------------------------------------- segments -->
-                <div
-                    class="mt-5 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b border-zinc-900/10 pb-3 dark:border-white/10"
-                >
-                    <div
-                        class="flex flex-wrap items-center gap-1"
-                        role="group"
-                        aria-label="Filtrar por estado"
+                    <button
+                        v-for="segment in statusSegments"
+                        :key="segment.value"
+                        type="button"
+                        :aria-pressed="status === segment.value"
+                        class="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-[7px] px-2.5 text-[0.78125rem] focus-ring transition-colors pointer-coarse:h-9"
+                        :class="
+                            status === segment.value
+                                ? 'bg-[var(--surface-raised)] font-semibold text-[var(--ui-ink)] shadow-[var(--ui-control-shadow)]'
+                                : 'font-medium text-[var(--ui-ink-2)] hover:bg-[var(--ui-wash)] hover:text-[var(--ui-ink)]'
+                        "
+                        @click="selectStatus(segment.value)"
                     >
-                        <button
-                            v-for="segment in statusSegments"
-                            :key="segment.value"
-                            type="button"
-                            :aria-pressed="status === segment.value"
-                            class="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[0.8125rem] font-medium focus-ring transition pointer-coarse:h-11"
+                        {{ segment.label }}
+                        <span
+                            class="numeric text-[0.71875rem] font-medium"
                             :class="
-                                status === segment.value
-                                    ? 'bg-brand-950 text-white dark:bg-zinc-100 dark:text-brand-950'
-                                    : 'text-zinc-600 hover:bg-zinc-900/[0.05] hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-white/5 dark:hover:text-white'
+                                segment.value === 'attention' &&
+                                segment.count > 0
+                                    ? 'text-[var(--ui-critical)]'
+                                    : segment.value === 'active' &&
+                                        segment.count > 0
+                                      ? 'text-[var(--ui-gold-ink)]'
+                                      : 'text-[var(--ui-ink-3)]'
                             "
-                            @click="selectStatus(segment.value)"
+                            >{{ segment.count }}</span
                         >
-                            {{ segment.label }}
-                            <span
-                                class="numeric"
-                                :class="
-                                    status === segment.value
-                                        ? 'text-white/60 dark:text-brand-950/60'
-                                        : segment.value === 'attention' &&
-                                            segment.count > 0
-                                          ? 'font-semibold text-rose-600 dark:text-rose-400'
-                                          : 'text-zinc-400'
-                                "
-                                >{{ segment.count }}</span
-                            >
-                        </button>
-                    </div>
-
-                    <div class="flex flex-wrap items-center gap-1">
-                        <div
-                            class="flex flex-wrap items-center gap-1"
-                            role="group"
-                            aria-label="Família de documentos"
-                        >
-                            <button
-                                v-for="option in options.families"
-                                :key="String(option.value)"
-                                type="button"
-                                :aria-pressed="family === option.value"
-                                class="inline-flex h-8 items-center rounded-full px-3 text-[0.8125rem] font-medium focus-ring transition pointer-coarse:h-11"
-                                :class="
-                                    family === option.value
-                                        ? 'bg-zinc-900/[0.06] text-zinc-950 dark:bg-white/10 dark:text-white'
-                                        : 'text-zinc-500 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'
-                                "
-                                @click="selectFamily(String(option.value))"
-                            >
-                                {{ option.label }}
-                            </button>
-                        </div>
-                        <AppButton
-                            variant="quiet"
-                            size="lg"
-                            :aria-expanded="showFilters"
-                            aria-controls="register-filters"
-                            @click="showFilters = !showFilters"
-                        >
-                            <SlidersHorizontal
-                                class="size-4"
-                                aria-hidden="true"
-                            />
-                            Filtros
-                            <span
-                                v-if="advancedFilterCount > 0"
-                                class="rounded-full bg-brand-950 px-1.5 text-xs font-semibold text-white dark:bg-zinc-100 dark:text-brand-950"
-                                >{{ advancedFilterCount }}</span
-                            >
-                        </AppButton>
-                        <AppButton
-                            variant="quiet"
-                            size="lg"
-                            v-if="activeFilterCount > 0"
-                            @click="clearFilters"
-                        >
-                            <FilterX class="size-4" aria-hidden="true" />
-                            Limpar
-                        </AppButton>
-                    </div>
-                </div>
-
+                    </button>
+                </nav>
+                <span class="flex-1" />
                 <form
-                    v-if="showFilters"
-                    id="register-filters"
-                    class="mt-4 grid gap-3 rounded-3xl bg-zinc-900/[0.04] p-4 sm:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))_auto] dark:bg-white/[0.04]"
+                    role="search"
+                    class="flex h-[1.875rem] items-center gap-2 rounded-[7px] bg-[var(--surface-raised)] px-2.5 text-[var(--ui-ink-3)] shadow-[var(--ui-control-shadow)] focus-within:shadow-[0_0_0_1px_var(--color-accent-400),0_0_0_4px_var(--ui-halo)] max-md:order-last max-md:w-full md:w-56 pointer-coarse:h-11"
                     @submit.prevent="applyFilters"
                 >
-                    <SelectInput
-                        v-model="type"
-                        :options="typeOptions"
-                        aria-label="Filtrar por tipo"
+                    <Search class="size-3.5 shrink-0" aria-hidden="true" />
+                    <label for="register-search" class="sr-only"
+                        >Procurar documentos</label
+                    >
+                    <input
+                        id="register-search"
+                        v-model="search"
+                        type="search"
+                        placeholder="Número, cliente ou NIF"
+                        autocomplete="off"
+                        spellcheck="false"
+                        enterkeyhint="search"
+                        class="min-w-0 flex-1 border-0 bg-transparent p-0 text-[0.78125rem] font-medium text-[var(--ui-ink)] outline-none placeholder:text-[var(--ui-ink-3)] [&::-webkit-search-cancel-button]:hidden"
                     />
-                    <SelectInput
-                        v-model="establishment"
-                        :options="establishmentOptions"
-                        aria-label="Filtrar por estabelecimento"
-                    />
-                    <DateInput
-                        v-model="from"
-                        aria-label="Data inicial"
-                        :max-date="to ?? undefined"
-                    />
-                    <DateInput
-                        v-model="to"
-                        aria-label="Data final"
-                        :min-date="from ?? undefined"
-                    />
-                    <AppButton variant="ink" size="lg" type="submit">
-                        Aplicar
-                    </AppButton>
                 </form>
 
-                <!-- ------------------------------------------ queue + detail -->
-                <div
-                    class="mt-4 grid items-start gap-5 xl:grid-cols-[26rem_minmax(0,1fr)]"
-                >
-                    <section
-                        aria-label="Documentos"
-                        :aria-busy="loading"
-                        class="min-w-0 transition-opacity duration-150 ease-out"
-                        :class="loading ? 'opacity-60 delay-150' : ''"
+                <Menu v-if="permissions.create" as="div" class="relative z-20">
+                    <MenuButton
+                        :class="[
+                            buttonClass('gold', 'sm'),
+                            'h-[1.875rem] ps-2.5',
+                        ]"
                     >
-                        <div
-                            v-if="documents.data.length === 0"
-                            class="grid place-items-center rounded-3xl bg-zinc-900/[0.04] px-6 py-14 text-center dark:bg-white/[0.04]"
+                        <Plus
+                            class="size-3.5"
+                            :stroke-width="2.2"
+                            aria-hidden="true"
+                        />
+                        Novo
+                        <ChevronDown
+                            class="-me-0.5 size-3.5 opacity-70"
+                            aria-hidden="true"
+                        />
+                    </MenuButton>
+
+                    <transition
+                        enter-active-class="transition duration-100 ease-out"
+                        enter-from-class="scale-95 opacity-0"
+                        enter-to-class="scale-100 opacity-100"
+                        leave-active-class="transition duration-75 ease-out"
+                        leave-from-class="scale-100 opacity-100"
+                        leave-to-class="scale-95 opacity-0"
+                    >
+                        <MenuItems
+                            class="absolute inset-e-0 z-30 mt-1.5 w-72 max-w-[calc(100vw-2rem)] origin-top-right menu-panel p-1"
                         >
-                            <FileText
-                                class="size-6 text-zinc-400"
-                                aria-hidden="true"
-                            />
-                            <h2
-                                class="mt-4 text-lg font-normal tracking-[-0.01em] text-zinc-950 dark:text-white"
-                            >
-                                {{
-                                    hasDocuments
-                                        ? 'Nenhum documento com estes filtros'
-                                        : 'Ainda não há documentos'
-                                }}
-                            </h2>
                             <p
-                                class="mt-1.5 max-w-xs text-sm/6 text-zinc-500 dark:text-zinc-400"
+                                class="px-2.5 pt-1.5 pb-1 text-xs font-medium text-[var(--ui-ink-3)]"
                             >
-                                {{
-                                    hasDocuments
-                                        ? 'Experimente outro estado, família ou intervalo de datas.'
-                                        : 'O primeiro documento começa como rascunho. Só segue para a AGT depois de o emitir.'
-                                }}
+                                O que vai emitir?
                             </p>
-                            <AppButton
-                                variant="outline"
-                                size="lg"
-                                v-if="hasDocuments"
-                                @click="clearFilters"
-                                class="mt-5"
+                            <MenuItem
+                                v-for="entry in newDocumentTypes"
+                                :key="entry.value"
+                                v-slot="{ active }"
                             >
-                                Limpar filtros
-                            </AppButton>
-                            <AppButton
-                                variant="gold"
-                                size="lg"
-                                v-else-if="permissions.create"
-                                :href="createInvoice.url()"
-                                class="mt-5"
-                            >
-                                <Plus class="size-4" aria-hidden="true" />
-                                Criar factura
-                            </AppButton>
+                                <Link
+                                    :href="
+                                        createInvoice.url({
+                                            query: { type: entry.value },
+                                        })
+                                    "
+                                    :class="[
+                                        active ? 'bg-[var(--ui-wash)]' : '',
+                                        'flex items-center gap-2.5 rounded-md px-2.5 py-2 focus:outline-none',
+                                    ]"
+                                >
+                                    <span
+                                        class="grid h-[1.125rem] w-[1.375rem] shrink-0 place-items-center rounded bg-[var(--ui-well)] text-[0.59375rem] font-bold text-[var(--ui-ink-2)]"
+                                    >
+                                        {{ entry.value }}
+                                    </span>
+                                    <span class="min-w-0">
+                                        <span
+                                            class="block text-[0.8125rem] font-medium text-[var(--ui-ink)]"
+                                            >{{ entry.label }}</span
+                                        >
+                                        <span
+                                            class="block text-xs text-[var(--ui-ink-3)]"
+                                            >{{ entry.detail }}</span
+                                        >
+                                    </span>
+                                </Link>
+                            </MenuItem>
+                        </MenuItems>
+                    </transition>
+                </Menu>
+            </header>
+
+            <!-- ---------------------------------------------- filter bar -->
+            <div
+                class="flex min-h-11 [scrollbar-width:none] items-center gap-1.5 overflow-x-auto border-b border-[var(--ui-line)] px-4 py-1.5 sm:flex-wrap sm:px-6"
+            >
+                <button
+                    type="button"
+                    :aria-expanded="showFilters"
+                    aria-controls="register-filters"
+                    class="inline-flex h-[1.625rem] items-center gap-1.5 rounded-md px-2 text-[0.78125rem] font-medium focus-ring transition-colors hover:bg-[var(--ui-wash)] pointer-coarse:h-9"
+                    :class="
+                        showFilters
+                            ? 'bg-[var(--ui-wash)] text-[var(--ui-ink)]'
+                            : 'text-[var(--ui-ink-2)] hover:text-[var(--ui-ink)]'
+                    "
+                    @click="showFilters = !showFilters"
+                >
+                    <ListFilter class="size-3.5" aria-hidden="true" />
+                    Filtrar
+                    <span
+                        v-if="advancedFilterCount > 0"
+                        class="grid h-4 min-w-4 place-items-center rounded bg-accent-400 px-1 text-[0.65625rem] font-bold text-[#1a1407]"
+                        >{{ advancedFilterCount }}</span
+                    >
+                </button>
+                <span
+                    class="mx-1 h-4 w-px bg-[var(--ui-line-strong)]"
+                    aria-hidden="true"
+                />
+                <div
+                    class="flex shrink-0 items-center gap-0.5 sm:flex-wrap"
+                    role="group"
+                    aria-label="Família de documentos"
+                >
+                    <button
+                        v-for="option in options.families"
+                        :key="String(option.value)"
+                        type="button"
+                        :aria-pressed="family === option.value"
+                        class="inline-flex h-[1.625rem] items-center rounded-md px-2 text-[0.78125rem] focus-ring transition-colors pointer-coarse:h-9"
+                        :class="
+                            family === option.value
+                                ? 'bg-[var(--ui-well)] font-semibold text-[var(--ui-ink)]'
+                                : 'font-medium text-[var(--ui-ink-2)] hover:bg-[var(--ui-wash)] hover:text-[var(--ui-ink)]'
+                        "
+                        @click="selectFamily(String(option.value))"
+                    >
+                        {{ option.label }}
+                    </button>
+                </div>
+                <button
+                    v-if="activeFilterCount > 0"
+                    type="button"
+                    class="inline-flex h-[1.625rem] items-center gap-1 rounded-md px-2 text-[0.78125rem] font-medium text-[var(--ui-ink-3)] focus-ring hover:bg-[var(--ui-wash)] hover:text-[var(--ui-ink)] pointer-coarse:h-9"
+                    @click="clearFilters"
+                >
+                    <X class="size-3" :stroke-width="2.4" aria-hidden="true" />
+                    Limpar
+                </button>
+                <span class="flex-1" />
+                <span
+                    class="shrink-0 numeric text-xs text-[var(--ui-ink-3)] max-sm:hidden"
+                    aria-live="polite"
+                    >{{ documents.total }}
+                    {{
+                        documents.total === 1 ? 'documento' : 'documentos'
+                    }}</span
+                >
+            </div>
+
+            <form
+                v-if="showFilters"
+                id="register-filters"
+                class="grid gap-2 border-b border-[var(--ui-line)] bg-[var(--ui-head)] px-4 py-3 sm:grid-cols-2 sm:px-6 xl:grid-cols-[repeat(4,minmax(0,13rem))_auto] xl:justify-start"
+                @submit.prevent="applyFilters"
+            >
+                <SelectInput
+                    v-model="type"
+                    :options="typeOptions"
+                    aria-label="Filtrar por tipo"
+                />
+                <SelectInput
+                    v-model="establishment"
+                    :options="establishmentOptions"
+                    aria-label="Filtrar por estabelecimento"
+                />
+                <DateInput
+                    v-model="from"
+                    aria-label="Data inicial"
+                    :max-date="to ?? undefined"
+                />
+                <DateInput
+                    v-model="to"
+                    aria-label="Data final"
+                    :min-date="from ?? undefined"
+                />
+                <AppButton variant="ink" type="submit">Aplicar</AppButton>
+            </form>
+
+            <!-- ------------------------------------------ list + inspector -->
+            <div class="flex min-h-0 flex-1 items-start">
+                <section
+                    aria-label="Documentos"
+                    :aria-busy="loading"
+                    class="relative min-w-0 flex-1 transition-opacity duration-150 ease-out"
+                    :class="loading ? 'opacity-60 delay-150' : ''"
+                >
+                    <div
+                        v-if="documents.data.length === 0"
+                        class="grid place-items-center px-6 py-20 text-center"
+                    >
+                        <FileText
+                            class="size-5 text-[var(--ui-ink-3)]"
+                            aria-hidden="true"
+                        />
+                        <h2
+                            class="mt-3 text-sm font-semibold text-[var(--ui-ink)]"
+                        >
+                            {{
+                                hasDocuments
+                                    ? 'Nenhum documento com estes filtros'
+                                    : 'Ainda não há documentos'
+                            }}
+                        </h2>
+                        <p
+                            class="mt-1 max-w-xs text-[0.8125rem]/5 text-[var(--ui-ink-3)]"
+                        >
+                            {{
+                                hasDocuments
+                                    ? 'Experimente outro estado, família ou intervalo de datas.'
+                                    : 'O primeiro documento começa como rascunho. Só segue para a AGT depois de o emitir.'
+                            }}
+                        </p>
+                        <AppButton
+                            v-if="hasDocuments"
+                            variant="outline"
+                            size="sm"
+                            class="mt-4"
+                            @click="clearFilters"
+                        >
+                            Limpar filtros
+                        </AppButton>
+                        <AppButton
+                            v-else-if="permissions.create"
+                            variant="gold"
+                            size="sm"
+                            :href="createInvoice.url()"
+                            class="mt-4"
+                        >
+                            Criar factura
+                        </AppButton>
+                    </div>
+
+                    <template v-else>
+                        <div
+                            :class="[
+                                gridColumns,
+                                'grid h-[2.125rem] items-center border-b border-[var(--ui-line)] pe-4 text-xs font-medium text-[var(--ui-ink-3)] max-md:hidden sm:pe-6',
+                            ]"
+                            aria-hidden="true"
+                        >
+                            <span />
+                            <span class="px-2">Documento</span>
+                            <span class="px-2">Cliente</span>
+                            <span class="px-2">Data</span>
+                            <span class="px-2">Vence</span>
+                            <span class="px-2 text-end">Total</span>
+                            <span class="ps-5 pe-2">AGT</span>
                         </div>
 
-                        <div v-else>
-                            <InfiniteScroll
-                                data="documents"
-                                :buffer="400"
-                                :manual-after="4"
-                                class="grid grid-cols-[minmax(0,1fr)] gap-0.5"
-                            >
-                                <template #next="scroll"
-                                    ><LoadMore
-                                        :shown="documents.data.length"
-                                        :total="documents.total"
-                                        :loading="scroll.loading"
-                                        :has-more="scroll.hasMore"
-                                        :manual-mode="scroll.manualMode"
-                                        :fetch="scroll.fetch"
-                                /></template>
+                        <InfiniteScroll
+                            data="documents"
+                            :buffer="400"
+                            :manual-after="4"
+                        >
+                            <template #next="scroll"
+                                ><LoadMore
+                                    :shown="documents.data.length"
+                                    :total="documents.total"
+                                    :loading="scroll.loading"
+                                    :has-more="scroll.hasMore"
+                                    :manual-mode="scroll.manualMode"
+                                    :fetch="scroll.fetch"
+                            /></template>
+                            <template v-for="row in rows" :key="row.key">
                                 <div
-                                    v-for="document in documents.data"
-                                    :key="document.public_id"
-                                    data-nav-item
-                                    class="group flex items-center"
+                                    v-if="row.kind === 'group'"
+                                    class="flex h-8 items-center gap-1.5 border-b border-[var(--ui-line)] bg-[var(--ui-head)] px-4 text-xs font-semibold text-[var(--ui-ink-2)] sm:px-6"
                                 >
+                                    <ChevronDown
+                                        class="size-3"
+                                        :stroke-width="2.2"
+                                        aria-hidden="true"
+                                    />
+                                    {{ row.label }}
+                                </div>
+                                <div
+                                    v-else
+                                    data-nav-item
+                                    :class="[
+                                        gridColumns,
+                                        'group/row relative flex items-center border-b border-[var(--ui-line)] md:grid',
+                                        chosen.includes(row.document.public_id)
+                                            ? 'bg-[var(--ui-select)]'
+                                            : selected?.public_id ===
+                                                row.document.public_id
+                                              ? 'bg-[var(--ui-wash)]'
+                                              : 'hover:bg-[var(--ui-wash)]',
+                                    ]"
+                                >
+                                    <span
+                                        v-if="
+                                            selected?.public_id ===
+                                            row.document.public_id
+                                        "
+                                        class="absolute inset-y-0 inset-s-0 w-0.5 bg-accent-400"
+                                        aria-hidden="true"
+                                    />
                                     <label
-                                        class="grid w-7 shrink-0 cursor-pointer place-items-center self-stretch transition group-hover:opacity-100 focus-within:opacity-100 pointer-coarse:w-9 pointer-coarse:opacity-100"
+                                        class="grid w-10 shrink-0 cursor-pointer place-items-center self-stretch ps-1 md:w-auto md:ps-2.5 pointer-coarse:w-11"
                                         :class="
                                             chosen.length > 0
-                                                ? 'opacity-100'
-                                                : 'opacity-0'
+                                                ? ''
+                                                : 'max-md:hidden md:opacity-0 md:group-hover/row:opacity-100 md:focus-within:opacity-100 md:pointer-coarse:opacity-100'
                                         "
-                                        :aria-hidden="!document.can_print"
+                                        :aria-hidden="!row.document.can_print"
                                     >
-                                        <template v-if="document.can_print">
+                                        <template v-if="row.document.can_print">
                                             <span class="sr-only"
                                                 >Escolher
-                                                {{ rowNumber(document) }}</span
+                                                {{
+                                                    rowNumber(row.document)
+                                                }}</span
                                             >
                                             <input
                                                 type="checkbox"
-                                                class="form-checkbox"
+                                                class="form-checkbox size-4"
                                                 :checked="
                                                     chosen.includes(
-                                                        document.public_id,
+                                                        row.document.public_id,
                                                     )
                                                 "
                                                 @change="
                                                     toggleChosen(
-                                                        document.public_id,
+                                                        row.document.public_id,
                                                     )
                                                 "
                                             />
@@ -1008,7 +1230,9 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                     </label>
                                     <Link
                                         data-nav-row="open"
-                                        :href="documentUrl(document.public_id)"
+                                        :href="
+                                            documentUrl(row.document.public_id)
+                                        "
                                         preserve-state
                                         preserve-scroll
                                         replace
@@ -1016,446 +1240,396 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                         cache-for="5s"
                                         :only="['selected']"
                                         :title="
-                                            document.workflow_message ??
+                                            row.document.workflow_message ??
                                             undefined
                                         "
                                         :aria-current="
                                             selected?.public_id ===
-                                            document.public_id
+                                            row.document.public_id
                                                 ? 'true'
                                                 : undefined
                                         "
-                                        class="block min-w-0 flex-1 rounded-2xl px-3.5 py-2 text-left focus-ring transition pointer-coarse:py-3"
-                                        :class="
-                                            selected?.public_id ===
-                                            document.public_id
-                                                ? 'bg-white shadow-[inset_0_0_0_1.5px_var(--color-accent-400),0_10px_26px_-16px_rgb(143_91_0/0.4)] dark:bg-zinc-900'
-                                                : 'hover:bg-zinc-900/[0.04] dark:hover:bg-white/[0.05]'
-                                        "
+                                        class="min-w-0 flex-1 py-2.5 pe-4 text-[0.8125rem] outline-none focus-visible:bg-[var(--ui-wash)] focus-visible:shadow-[inset_0_0_0_2px_var(--color-accent-400)] max-md:block max-md:ps-4 sm:pe-6 md:col-span-6 md:grid md:h-11 md:grid-cols-subgrid md:items-center md:py-0"
                                         @click.capture="
                                             skipReopening(
                                                 $event,
-                                                document.public_id,
+                                                row.document.public_id,
                                             )
                                         "
                                         @start="
-                                            startOpening(document.public_id)
+                                            startOpening(row.document.public_id)
                                         "
                                         @finish="
-                                            finishOpening(document.public_id)
+                                            finishOpening(
+                                                row.document.public_id,
+                                            )
                                         "
                                     >
-                                        <span
-                                            class="flex items-baseline justify-between gap-3"
-                                        >
+                                        <!-- Phone: two lines, the customer and the amount first. -->
+                                        <span class="contents md:hidden">
                                             <span
-                                                :title="document.customer_name"
-                                                class="truncate text-sm font-medium text-zinc-950 dark:text-white"
-                                                >{{
-                                                    document.customer_name
-                                                }}</span
+                                                class="flex items-baseline justify-between gap-3"
                                             >
-                                            <span
-                                                class="shrink-0 numeric text-sm font-medium text-zinc-950 dark:text-white"
-                                                >{{
-                                                    wholeAmount(
-                                                        document.gross_total_minor,
-                                                    )
-                                                }}
                                                 <span
-                                                    class="text-xs font-normal text-zinc-400"
+                                                    class="truncate font-medium text-[var(--ui-ink)]"
                                                     >{{
-                                                        currencyLabel(
-                                                            document.currency_code,
-                                                        )
-                                                    }}</span
-                                                ></span
-                                            >
-                                        </span>
-                                        <span
-                                            class="mt-0.5 flex items-center justify-between gap-3"
-                                        >
-                                            <span
-                                                class="min-w-0 truncate text-xs text-zinc-500 dark:text-zinc-400"
-                                                ><span
-                                                    :title="rowNumber(document)"
-                                                    class="font-mono"
-                                                    >{{
-                                                        rowNumber(document)
+                                                        row.document
+                                                            .customer_name
                                                     }}</span
                                                 >
-                                                ·
-                                                {{
-                                                    formatShortDate(
-                                                        document.document_date,
-                                                    )
-                                                }}</span
-                                            >
-                                            <span
-                                                class="flex shrink-0 items-center gap-1.5"
-                                            >
-                                                <LoaderCircle
-                                                    v-if="
-                                                        openingDocument ===
-                                                        document.public_id
+                                                <span
+                                                    class="shrink-0 numeric font-semibold"
+                                                    :class="
+                                                        row.document.family ===
+                                                        'adjustment'
+                                                            ? 'text-[var(--ui-critical)]'
+                                                            : 'text-[var(--ui-ink)]'
                                                     "
-                                                    class="size-3.5 animate-spin-delayed text-zinc-400"
-                                                    aria-hidden="true"
-                                                />
+                                                    >{{
+                                                        row.document.family ===
+                                                        'adjustment'
+                                                            ? '−'
+                                                            : ''
+                                                    }}{{
+                                                        wholeAmount(
+                                                            row.document
+                                                                .gross_total_minor,
+                                                        )
+                                                    }}</span
+                                                >
+                                            </span>
+                                            <span
+                                                class="mt-1 flex items-center justify-between gap-3"
+                                            >
+                                                <span
+                                                    class="min-w-0 truncate text-xs text-[var(--ui-ink-3)]"
+                                                    >{{
+                                                        rowNumber(row.document)
+                                                    }}
+                                                    ·
+                                                    {{
+                                                        formatShortDate(
+                                                            row.document
+                                                                .document_date,
+                                                        )
+                                                    }}</span
+                                                >
                                                 <StatusBadge
                                                     :label="
-                                                        document.workflow_label
+                                                        row.document
+                                                            .workflow_label
                                                     "
                                                     :tone="
                                                         statusTone(
-                                                            document.workflow_status,
-                                                        )
-                                                    "
-                                                    :pulse="
-                                                        workflowIsActive(
-                                                            document.workflow_status,
+                                                            row.document
+                                                                .workflow_status,
                                                         )
                                                     "
                                                 />
                                             </span>
                                         </span>
+
+                                        <!-- Desktop: one row, one column per fact. -->
+                                        <span
+                                            class="flex min-w-0 items-center gap-2 px-2 max-md:hidden"
+                                        >
+                                            <span
+                                                class="grid h-[1.125rem] w-[1.375rem] shrink-0 place-items-center rounded bg-[var(--ui-well)] text-[0.59375rem] font-bold text-[var(--ui-ink-2)]"
+                                                aria-hidden="true"
+                                                >{{
+                                                    typeCode(row.document)
+                                                }}</span
+                                            >
+                                            <span
+                                                class="truncate font-[550] text-[var(--ui-ink)]"
+                                                :class="
+                                                    row.document.document_no
+                                                        ? ''
+                                                        : 'text-[var(--ui-ink-3)]'
+                                                "
+                                                :title="rowNumber(row.document)"
+                                                >{{
+                                                    shortNumber(row.document)
+                                                }}</span
+                                            >
+                                            <LoaderCircle
+                                                v-if="
+                                                    openingDocument ===
+                                                    row.document.public_id
+                                                "
+                                                class="size-3 shrink-0 animate-spin-delayed text-[var(--ui-ink-3)]"
+                                                aria-hidden="true"
+                                            />
+                                        </span>
+                                        <span
+                                            class="truncate px-2 text-[var(--ui-ink)] max-md:hidden"
+                                            :title="row.document.customer_name"
+                                            >{{
+                                                row.document.customer_name
+                                            }}</span
+                                        >
+                                        <span
+                                            class="px-2 numeric text-[var(--ui-ink-2)] max-md:hidden"
+                                            >{{
+                                                formatShortDate(
+                                                    row.document.document_date,
+                                                )
+                                            }}</span
+                                        >
+                                        <span
+                                            class="px-2 numeric text-[var(--ui-ink-2)] max-md:hidden"
+                                            >{{
+                                                formatShortDate(
+                                                    row.document.due_date,
+                                                )
+                                            }}</span
+                                        >
+                                        <span
+                                            class="px-2 text-end numeric font-semibold max-md:hidden"
+                                            :class="
+                                                row.document.family ===
+                                                'adjustment'
+                                                    ? 'text-[var(--ui-critical)]'
+                                                    : 'text-[var(--ui-ink)]'
+                                            "
+                                            >{{
+                                                row.document.family ===
+                                                'adjustment'
+                                                    ? '−'
+                                                    : ''
+                                            }}{{
+                                                wholeAmount(
+                                                    row.document
+                                                        .gross_total_minor,
+                                                )
+                                            }}</span
+                                        >
+                                        <span
+                                            class="min-w-0 overflow-clip ps-5 pe-2 max-md:hidden"
+                                        >
+                                            <StatusBadge
+                                                class="max-w-full"
+                                                :label="
+                                                    row.document.workflow_label
+                                                "
+                                                :tone="
+                                                    statusTone(
+                                                        row.document
+                                                            .workflow_status,
+                                                    )
+                                                "
+                                            />
+                                        </span>
                                     </Link>
                                 </div>
-                            </InfiniteScroll>
-                            <div
-                                v-if="chosen.length > 0"
-                                class="sticky bottom-20 z-10 mt-2 flex flex-wrap items-center gap-2 rounded-2xl bg-white p-2 pl-4 shadow-[0_0_0_1px_rgb(23_23_22/0.08),0_10px_26px_-12px_rgb(23_23_22/0.3)] lg:bottom-3 dark:bg-zinc-900 dark:shadow-[0_0_0_1px_rgb(255_255_255/0.12)]"
-                                role="group"
-                                aria-label="Acções para os documentos escolhidos"
-                            >
-                                <p
-                                    class="me-auto text-sm font-medium text-zinc-950 dark:text-white"
-                                    aria-live="polite"
-                                >
-                                    {{ chosen.length }}
-                                    {{
-                                        chosen.length === 1
-                                            ? 'escolhido'
-                                            : 'escolhidos'
-                                    }}
-                                </p>
-                                <AppButton
-                                    variant="outline"
-                                    size="sm"
-                                    v-if="
-                                        canRemindCustomers &&
-                                        chosenCustomers.length > 0
-                                    "
-                                    :href="remindChosenUrl"
-                                >
-                                    <BellRing
-                                        class="size-3.5"
-                                        aria-hidden="true"
-                                    />
-                                    <span class="sr-only">Preparar</span>
-                                    Lembretes
-                                </AppButton>
-                                <AppButton
-                                    variant="outline"
-                                    size="sm"
-                                    external
-                                    v-if="chosen.length <= MAX_PDF_DOWNLOAD"
-                                    :href="downloadChosenUrl"
-                                >
-                                    <Download
-                                        class="size-3.5"
-                                        aria-hidden="true"
-                                    />
-                                    <span class="sr-only">Descarregar</span>
-                                    PDF
-                                </AppButton>
-                                <p
-                                    v-else
-                                    class="text-xs text-zinc-500 dark:text-zinc-400"
-                                >
-                                    PDF: até {{ MAX_PDF_DOWNLOAD }} de cada vez
-                                </p>
-                                <AppButton
-                                    variant="quiet"
-                                    size="sm"
-                                    @click="chosen = []"
-                                >
-                                    Limpar
-                                </AppButton>
-                            </div>
-                        </div>
-                    </section>
+                            </template>
+                        </InfiniteScroll>
 
-                    <!-- ---------------------------------------------- detail -->
-                    <section
+                        <div
+                            v-if="chosen.length > 0"
+                            role="toolbar"
+                            :aria-label="`${chosen.length} ${chosen.length === 1 ? 'documento escolhido' : 'documentos escolhidos'}`"
+                            class="sticky inset-be-20 z-10 mx-auto my-3 flex w-fit max-w-[calc(100%-2rem)] items-center rounded-[10px] bg-[var(--ui-pop)] py-1 ps-3 pe-1 text-[0.78125rem] whitespace-nowrap shadow-[var(--ui-pop-shadow)] lg:inset-be-6"
+                        >
+                            <span
+                                class="flex items-center gap-2 pe-2.5 font-semibold text-[var(--ui-ink)] shadow-[inset_-1px_0_0_var(--ui-line-strong)]"
+                                aria-live="polite"
+                            >
+                                <span
+                                    class="grid h-[1.125rem] min-w-[1.125rem] place-items-center rounded-[5px] bg-accent-400 px-1 numeric text-[0.6875rem] font-bold text-[#1a1407]"
+                                    >{{ chosen.length }}</span
+                                >
+                                {{
+                                    chosen.length === 1
+                                        ? 'escolhido'
+                                        : 'escolhidos'
+                                }}
+                            </span>
+                            <Link
+                                v-if="
+                                    canRemindCustomers &&
+                                    chosenCustomers.length > 0
+                                "
+                                :href="remindChosenUrl"
+                                class="ms-1 inline-flex h-[1.875rem] items-center gap-1.5 rounded-[7px] px-2.5 font-[550] text-[var(--ui-ink)] focus-ring hover:bg-[var(--ui-wash)]"
+                            >
+                                <BellRing class="size-3.5" aria-hidden="true" />
+                                Lembrar
+                            </Link>
+                            <a
+                                v-if="chosen.length <= MAX_PDF_DOWNLOAD"
+                                :href="downloadChosenUrl"
+                                class="inline-flex h-[1.875rem] items-center gap-1.5 rounded-[7px] px-2.5 font-[550] text-[var(--ui-ink)] focus-ring hover:bg-[var(--ui-wash)]"
+                            >
+                                <Download class="size-3.5" aria-hidden="true" />
+                                PDF
+                            </a>
+                            <span
+                                v-else
+                                class="px-2.5 text-xs text-[var(--ui-ink-3)]"
+                                >PDF: até {{ MAX_PDF_DOWNLOAD }} de cada
+                                vez</span
+                            >
+                            <button
+                                type="button"
+                                class="grid size-[1.875rem] place-items-center rounded-[7px] text-[var(--ui-ink-3)] focus-ring hover:bg-[var(--ui-wash)] hover:text-[var(--ui-ink)]"
+                                @click="chosen = []"
+                            >
+                                <X
+                                    class="size-3.5"
+                                    :stroke-width="2.2"
+                                    aria-hidden="true"
+                                />
+                                <span class="sr-only">Limpar escolha</span>
+                            </button>
+                        </div>
+                    </template>
+                </section>
+
+                <!-- --------------------------------------------- inspector -->
+                <Teleport to="body" :disabled="inspectorBeside">
+                    <div
+                        v-if="selected"
+                        class="fixed inset-0 z-40 bg-black/20 xl:hidden dark:bg-black/50"
+                        aria-hidden="true"
+                        @click="closeDocument"
+                    />
+                    <aside
                         v-if="selected"
                         ref="detailPanel"
                         tabindex="-1"
-                        class="relative order-first min-w-0 scroll-mt-20 rounded-3xl bg-zinc-900/[0.04] p-6 focus-ring xl:sticky xl:top-24 xl:order-none xl:max-h-[calc(100dvh-7rem)] xl:overflow-y-auto xl:overscroll-contain dark:bg-white/[0.04]"
-                        aria-labelledby="document-detail-title"
+                        :aria-labelledby="'document-detail-title'"
+                        class="fixed inset-y-0 inset-e-0 z-50 flex w-full flex-col overflow-y-auto overscroll-contain bg-[var(--surface-raised)] shadow-[var(--ui-pop-shadow)] outline-none sm:w-[23.75rem] xl:sticky xl:inset-bs-12 xl:z-auto xl:h-[calc(100dvh-3rem)] xl:shrink-0 xl:bg-[var(--surface-page)] xl:shadow-[inset_1px_0_0_var(--ui-line)]"
                     >
                         <div
-                            class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
+                            class="sticky inset-bs-0 z-10 flex h-11 shrink-0 items-center gap-1 border-b border-[var(--ui-line)] bg-[var(--surface-raised)] ps-5 pe-3 xl:bg-[var(--surface-page)]"
                         >
-                            <div class="min-w-0 max-lg:pe-12">
-                                <p
-                                    class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                            <span
+                                class="flex min-w-0 flex-1 items-center gap-2 text-[0.78125rem] text-[var(--ui-ink-2)]"
+                            >
+                                <span
+                                    class="grid h-[1.125rem] w-[1.375rem] shrink-0 place-items-center rounded bg-[var(--ui-well)] text-[0.59375rem] font-bold"
+                                    aria-hidden="true"
+                                    >{{ typeCode(selected) }}</span
                                 >
-                                    {{ selected.snapshot.type_label }} ·
-                                    {{ selected.establishment.name }}
-                                </p>
-                                <h2
+                                <span
                                     id="document-detail-title"
-                                    class="mt-2.5 font-mono text-[1.625rem] leading-none font-normal tracking-[-0.01em] text-zinc-950 dark:text-white"
+                                    class="truncate font-medium text-[var(--ui-ink)]"
+                                    >{{ shortNumber(selected) }}</span
                                 >
-                                    {{ selected.document_no ?? 'Rascunho' }}
-                                </h2>
-                                <p
-                                    class="mt-2 text-sm text-zinc-600 dark:text-zinc-400"
-                                >
-                                    <Link
-                                        v-if="selected.customer_public_id"
-                                        :href="
-                                            customerShow.url(
-                                                selected.customer_public_id,
-                                            )
-                                        "
-                                        class="rounded font-medium text-zinc-950 focus-ring hover:underline dark:text-white"
-                                        >{{ selected.customer_name }}</Link
-                                    >
-                                    <template v-else>{{
-                                        selected.customer_name
-                                    }}</template>
-                                    <template v-if="selected.issued_at">
-                                        · emitida a
-                                        {{ formatDateTime(selected.issued_at) }}
-                                    </template>
-                                    <template
-                                        v-if="selected.snapshot.issuer_name"
-                                    >
-                                        por {{ selected.snapshot.issuer_name }}
-                                    </template>
-                                </p>
-                            </div>
-                            <div class="flex shrink-0 flex-wrap gap-2">
-                                <AppButton
-                                    variant="outline"
-                                    size="lg"
-                                    external
-                                    v-if="selected.can_print"
-                                    :href="documentPdf.url(selected.public_id)"
-                                >
-                                    <Download
-                                        class="size-4"
-                                        aria-hidden="true"
-                                    />
-                                    PDF
-                                </AppButton>
-                                <AppButton
-                                    variant="outline"
-                                    size="lg"
-                                    external
-                                    v-if="selected.can_print"
-                                    :href="
-                                        printDocument.url(selected.public_id)
-                                    "
-                                >
-                                    <Printer
-                                        class="size-4"
-                                        aria-hidden="true"
-                                    />
-                                    Abrir
-                                </AppButton>
-                                <AppButton
-                                    variant="outline"
-                                    size="lg"
-                                    v-if="selected.can_send"
-                                    :disabled="
-                                        sendingDocument === selected.public_id
-                                    "
-                                    @click="sendDocument(selected)"
-                                >
-                                    <LoaderCircle
-                                        v-if="
-                                            sendingDocument ===
-                                            selected.public_id
-                                        "
-                                        class="size-4 animate-spin"
-                                        aria-hidden="true"
-                                    />
-                                    <Send
-                                        v-else
-                                        class="size-4"
-                                        aria-hidden="true"
-                                    />
-                                    {{
-                                        selected.sent_at ? 'Reenviar' : 'Enviar'
-                                    }}
-                                </AppButton>
-                                <AppButton
-                                    v-if="selected.can_repeat"
-                                    variant="ink"
-                                    size="lg"
-                                    :href="
-                                        createInvoice.url({
-                                            query: {
-                                                repeat: selected.public_id,
-                                            },
-                                        })
-                                    "
-                                >
-                                    <Plus class="size-4" aria-hidden="true" />
-                                    Usar como base
-                                </AppButton>
-                                <AppButton
-                                    variant="ink"
-                                    size="lg"
-                                    v-if="selected.can_edit"
-                                    :href="editInvoice.url(selected.public_id)"
-                                >
-                                    <PencilLine
-                                        class="size-4"
-                                        aria-hidden="true"
-                                    />
-                                    Continuar rascunho
-                                </AppButton>
-                                <button
-                                    type="button"
-                                    class="grid size-[2.125rem] place-items-center rounded-full text-zinc-500 focus-ring transition hover:bg-zinc-900/[0.06] hover:text-zinc-950 max-lg:absolute max-lg:inset-e-4 max-lg:inset-bs-4 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white pointer-coarse:size-11"
-                                    @click="closeDocument"
-                                >
-                                    <X class="size-4" aria-hidden="true" />
-                                    <span class="sr-only"
-                                        >Fechar documento</span
-                                    >
-                                </button>
-                            </div>
+                            </span>
+                            <component
+                                :is="neighbours.previous ? Link : 'span'"
+                                :href="
+                                    neighbours.previous
+                                        ? documentUrl(
+                                              neighbours.previous.public_id,
+                                          )
+                                        : undefined
+                                "
+                                preserve-state
+                                preserve-scroll
+                                replace
+                                :only="['selected']"
+                                class="grid size-7 place-items-center rounded-md text-[var(--ui-ink-2)] focus-ring"
+                                :class="
+                                    neighbours.previous
+                                        ? 'hover:bg-[var(--ui-wash)] hover:text-[var(--ui-ink)]'
+                                        : 'opacity-40'
+                                "
+                                :aria-disabled="!neighbours.previous"
+                                title="Documento anterior (k)"
+                            >
+                                <ChevronUp
+                                    class="size-[0.9375rem]"
+                                    aria-hidden="true"
+                                />
+                                <span class="sr-only">Documento anterior</span>
+                            </component>
+                            <component
+                                :is="neighbours.next ? Link : 'span'"
+                                :href="
+                                    neighbours.next
+                                        ? documentUrl(neighbours.next.public_id)
+                                        : undefined
+                                "
+                                preserve-state
+                                preserve-scroll
+                                replace
+                                :only="['selected']"
+                                class="grid size-7 place-items-center rounded-md text-[var(--ui-ink-2)] focus-ring"
+                                :class="
+                                    neighbours.next
+                                        ? 'hover:bg-[var(--ui-wash)] hover:text-[var(--ui-ink)]'
+                                        : 'opacity-40'
+                                "
+                                :aria-disabled="!neighbours.next"
+                                title="Documento seguinte (j)"
+                            >
+                                <ChevronDown
+                                    class="size-[0.9375rem]"
+                                    aria-hidden="true"
+                                />
+                                <span class="sr-only">Documento seguinte</span>
+                            </component>
+                            <button
+                                type="button"
+                                class="grid size-7 place-items-center rounded-md text-[var(--ui-ink-2)] focus-ring hover:bg-[var(--ui-wash)] hover:text-[var(--ui-ink)] pointer-coarse:size-11"
+                                title="Fechar (Esc)"
+                                @click="closeDocument"
+                            >
+                                <X
+                                    class="size-3.5"
+                                    :stroke-width="2.2"
+                                    aria-hidden="true"
+                                />
+                                <span class="sr-only">Fechar documento</span>
+                            </button>
                         </div>
 
-                        <dl
-                            class="mt-6 grid grid-cols-2 gap-y-5 border-y border-zinc-900/[0.07] py-5 lg:grid-cols-3 dark:border-white/10"
-                        >
-                            <div class="pe-4">
-                                <dt
-                                    class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                        <div class="flex flex-col gap-4 p-5 pbe-8">
+                            <div class="flex flex-col gap-1.5">
+                                <component
+                                    :is="
+                                        selected.customer_public_id
+                                            ? Link
+                                            : 'span'
+                                    "
+                                    :href="
+                                        selected.customer_public_id
+                                            ? customerShow.url(
+                                                  selected.customer_public_id,
+                                              )
+                                            : undefined
+                                    "
+                                    class="w-fit rounded text-[0.9375rem] font-semibold text-[var(--ui-ink)]"
+                                    :class="
+                                        selected.customer_public_id
+                                            ? 'focus-ring hover:underline hover:decoration-[var(--ui-line-strong)] hover:underline-offset-2'
+                                            : ''
+                                    "
+                                    >{{ selected.customer_name }}</component
                                 >
-                                    Total
-                                </dt>
-                                <dd
-                                    class="mt-2 numeric text-[1.375rem] leading-none tracking-[-0.025em] text-zinc-950 dark:text-white"
-                                >
-                                    {{
-                                        wholeAmount(
-                                            selected.snapshot.gross_total_minor,
-                                        )
-                                    }}<span
-                                        class="ml-1 text-xs tracking-normal text-zinc-400"
+                                <p class="flex items-baseline gap-1">
+                                    <span
+                                        class="numeric text-[1.75rem] leading-[1.15] font-[650] tracking-[-0.03em] text-[var(--ui-ink)]"
+                                        >{{
+                                            wholeAmount(
+                                                selected.snapshot
+                                                    .gross_total_minor,
+                                            )
+                                        }}</span
+                                    >
+                                    <span
+                                        class="text-xs font-semibold text-[var(--ui-ink-3)]"
                                         >{{
                                             currencyLabel(
                                                 selected.currency_code,
                                             )
                                         }}</span
                                     >
-                                </dd>
-                                <dd
-                                    class="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400"
-                                >
-                                    {{
-                                        money(
-                                            selected.snapshot.gross_total_minor,
-                                            selected.currency_code,
-                                        )
-                                    }}
-                                </dd>
-                            </div>
-                            <div
-                                class="border-s border-zinc-900/[0.07] px-4 dark:border-white/10"
-                            >
-                                <dt
-                                    class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
-                                >
-                                    IVA
-                                </dt>
-                                <dd
-                                    class="mt-2 numeric text-[1.375rem] leading-none tracking-[-0.025em] text-zinc-950 dark:text-white"
-                                >
-                                    {{
-                                        wholeAmount(
-                                            selected.snapshot.tax_payable_minor,
-                                        )
-                                    }}
-                                </dd>
-                                <dd
-                                    v-if="selected.snapshot.lines_count > 0"
-                                    class="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400"
-                                >
-                                    {{ selected.snapshot.lines_count }}
-                                    {{
-                                        selected.snapshot.lines_count === 1
-                                            ? 'linha'
-                                            : 'linhas'
-                                    }}
-                                </dd>
-                            </div>
-                            <div
-                                class="pe-4 lg:border-s lg:border-zinc-900/[0.07] lg:ps-4 dark:lg:border-white/10"
-                            >
-                                <dt
-                                    class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
-                                >
-                                    {{
-                                        selected.snapshot.outstanding_minor > 0
-                                            ? 'Por receber'
-                                            : 'Vencimento'
-                                    }}
-                                </dt>
-                                <dd
-                                    class="mt-2 numeric text-[1.375rem] leading-none tracking-[-0.025em]"
-                                    :class="
-                                        selected.snapshot.days_past_due > 0
-                                            ? 'text-rose-600 dark:text-rose-400'
-                                            : 'text-zinc-950 dark:text-white'
-                                    "
-                                >
-                                    {{
-                                        selected.snapshot.outstanding_minor > 0
-                                            ? wholeAmount(
-                                                  selected.snapshot
-                                                      .outstanding_minor,
-                                              )
-                                            : formatShortDate(
-                                                  selected.snapshot.due_date,
-                                              )
-                                    }}
-                                </dd>
-                                <dd
-                                    class="mt-1.5 text-xs"
-                                    :class="
-                                        selected.snapshot.days_past_due > 0
-                                            ? 'text-rose-600 dark:text-rose-400'
-                                            : 'text-zinc-500 dark:text-zinc-400'
-                                    "
-                                >
-                                    {{
-                                        selected.snapshot.days_past_due > 0
-                                            ? `vencida há ${selected.snapshot.days_past_due} ${selected.snapshot.days_past_due === 1 ? 'dia' : 'dias'}`
-                                            : selected.snapshot.due_date
-                                              ? `vence a ${formatDate(selected.snapshot.due_date)}`
-                                              : 'sem vencimento'
-                                    }}
-                                </dd>
-                            </div>
-                            <div
-                                class="col-span-full flex items-center justify-between gap-x-4 gap-y-2 border-t border-zinc-900/[0.07] pt-5 dark:border-white/10"
-                            >
-                                <dt
-                                    class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
-                                >
-                                    AGT
-                                </dt>
-                                <dd
-                                    class="flex min-w-0 flex-wrap items-center justify-end gap-x-3 gap-y-1"
-                                >
+                                </p>
+                                <p class="flex flex-wrap gap-1.5 pbs-0.5">
                                     <StatusBadge
                                         :label="selected.workflow_label"
                                         :tone="
@@ -1467,180 +1641,575 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                             )
                                         "
                                     />
-                                    <span
-                                        v-if="selected.submission?.request_id"
-                                        class="min-w-0 truncate font-mono text-xs text-zinc-500 dark:text-zinc-400"
-                                        :title="selected.submission.request_id"
-                                    >
-                                        {{ selected.submission.request_id }}
-                                    </span>
-                                </dd>
+                                    <StatusBadge
+                                        v-if="settlement"
+                                        :label="settlement.label"
+                                        :tone="settlement.tone"
+                                    />
+                                </p>
                             </div>
-                        </dl>
 
-                        <div
-                            v-if="selected.snapshot.agt_message"
-                            class="mt-5 rounded-2xl bg-white p-4 shadow-[0_1px_2px_rgb(23_23_22/0.04),0_6px_16px_-8px_rgb(23_23_22/0.12)] dark:bg-zinc-900 dark:ring-1 dark:ring-white/10"
-                        >
-                            <p
-                                class="text-sm font-semibold text-zinc-950 dark:text-white"
-                            >
-                                Observação AGT
-                            </p>
-                            <p
-                                class="mt-1 text-sm/6 text-zinc-600 dark:text-zinc-300"
-                            >
-                                {{ selected.snapshot.agt_message }}
-                                <span
-                                    v-if="
-                                        selected.snapshot.agt_operational
-                                            .observed_at
-                                    "
-                                >
-                                    Observação:
-                                    {{
-                                        formatDateTime(
-                                            selected.snapshot.agt_operational
-                                                .observed_at,
-                                        )
-                                    }}.
-                                </span>
-                            </p>
-                            <p
+                            <div
                                 v-if="
-                                    selected.snapshot.agt_error_codes.length > 0
+                                    selected.can_edit ||
+                                    selected.can_send ||
+                                    selected.can_print
                                 "
-                                class="mt-2 font-mono text-xs text-zinc-400"
+                                class="grid grid-cols-2 gap-2"
                             >
-                                {{
-                                    selected.snapshot.agt_error_codes.join(
-                                        ' · ',
-                                    )
-                                }}
-                            </p>
-                        </div>
-
-                        <DocumentLifecycle
-                            class="mt-7"
-                            :steps="selected.snapshot.steps"
-                        />
-
-                        <div class="mt-6">
-                            <div class="flex items-center justify-between">
-                                <h3
-                                    class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                                <AppButton
+                                    v-if="selected.can_edit"
+                                    variant="gold"
+                                    size="sm"
+                                    class="col-span-2"
+                                    :href="editInvoice.url(selected.public_id)"
                                 >
-                                    Histórico
-                                </h3>
+                                    <PencilLine
+                                        class="size-3.5"
+                                        aria-hidden="true"
+                                    />
+                                    Continuar rascunho
+                                </AppButton>
+                                <template v-else>
+                                    <AppButton
+                                        v-if="selected.can_send"
+                                        variant="gold"
+                                        size="sm"
+                                        :class="
+                                            selected.can_print
+                                                ? ''
+                                                : 'col-span-2'
+                                        "
+                                        :disabled="
+                                            sendingDocument ===
+                                            selected.public_id
+                                        "
+                                        @click="sendDocument(selected)"
+                                    >
+                                        <LoaderCircle
+                                            v-if="
+                                                sendingDocument ===
+                                                selected.public_id
+                                            "
+                                            class="size-3.5 animate-spin"
+                                            aria-hidden="true"
+                                        />
+                                        <Send
+                                            v-else
+                                            class="size-3.5"
+                                            aria-hidden="true"
+                                        />
+                                        {{
+                                            selected.sent_at
+                                                ? 'Reenviar ao cliente'
+                                                : 'Enviar ao cliente'
+                                        }}
+                                    </AppButton>
+                                    <AppButton
+                                        v-if="selected.can_print"
+                                        variant="outline"
+                                        size="sm"
+                                        external
+                                        :class="
+                                            selected.can_send
+                                                ? ''
+                                                : 'col-span-2'
+                                        "
+                                        :href="
+                                            documentPdf.url(selected.public_id)
+                                        "
+                                    >
+                                        <Download
+                                            class="size-3.5"
+                                            aria-hidden="true"
+                                        />
+                                        PDF
+                                    </AppButton>
+                                </template>
+                            </div>
+
+                            <div
+                                role="tablist"
+                                aria-label="Sobre este documento"
+                                class="flex gap-4 border-b border-[var(--ui-line)]"
+                            >
+                                <button
+                                    v-for="tab in inspectorTabs"
+                                    :id="`inspector-tab-${tab.value}`"
+                                    :key="tab.value"
+                                    type="button"
+                                    role="tab"
+                                    :aria-selected="inspectorTab === tab.value"
+                                    aria-controls="inspector-panel"
+                                    :tabindex="
+                                        inspectorTab === tab.value ? 0 : -1
+                                    "
+                                    class="-mbe-px rounded-t py-2 text-[0.78125rem] focus-ring"
+                                    :class="
+                                        inspectorTab === tab.value
+                                            ? 'font-semibold text-[var(--ui-ink)] shadow-[inset_0_-2px_0_var(--ui-ink)]'
+                                            : 'font-medium text-[var(--ui-ink-3)] hover:text-[var(--ui-ink)]'
+                                    "
+                                    @click="inspectorTab = tab.value"
+                                >
+                                    {{ tab.label }}
+                                </button>
+                            </div>
+
+                            <div
+                                id="inspector-panel"
+                                role="tabpanel"
+                                :aria-labelledby="`inspector-tab-${inspectorTab}`"
+                            >
+                                <!-- Estado: every stage the record has really reached. -->
+                                <template v-if="inspectorTab === 'state'">
+                                    <ol aria-label="Estado do documento">
+                                        <li
+                                            v-for="(step, index) in selected
+                                                .snapshot.steps"
+                                            :key="step.key"
+                                            class="flex gap-3"
+                                            :aria-current="
+                                                step.state === 'current'
+                                                    ? 'step'
+                                                    : undefined
+                                            "
+                                        >
+                                            <span
+                                                class="flex w-3.5 flex-col items-center pbs-0.5"
+                                                aria-hidden="true"
+                                            >
+                                                <span
+                                                    class="grid size-3.5 shrink-0 place-items-center rounded-full"
+                                                    :class="stepDot[step.state]"
+                                                >
+                                                    <Check
+                                                        v-if="
+                                                            step.state ===
+                                                            'done'
+                                                        "
+                                                        class="size-2"
+                                                        :stroke-width="4.5"
+                                                    />
+                                                    <X
+                                                        v-else-if="
+                                                            step.state ===
+                                                            'error'
+                                                        "
+                                                        class="size-2"
+                                                        :stroke-width="4.5"
+                                                    />
+                                                </span>
+                                                <span
+                                                    v-if="
+                                                        index <
+                                                        selected.snapshot.steps
+                                                            .length -
+                                                            1
+                                                    "
+                                                    class="my-1 w-[1.5px] flex-1"
+                                                    :class="
+                                                        selected.snapshot.steps[
+                                                            index + 1
+                                                        ].state === 'todo'
+                                                            ? 'bg-[var(--ui-line-strong)]'
+                                                            : 'bg-[var(--ui-positive)]'
+                                                    "
+                                                />
+                                            </span>
+                                            <span
+                                                class="flex min-w-0 flex-1 flex-col gap-px pbe-3.5"
+                                            >
+                                                <span
+                                                    class="text-[0.8125rem] font-[550]"
+                                                    :class="
+                                                        step.state === 'todo'
+                                                            ? 'text-[var(--ui-ink-3)]'
+                                                            : step.state ===
+                                                                'error'
+                                                              ? 'text-[var(--ui-critical)]'
+                                                              : 'text-[var(--ui-ink)]'
+                                                    "
+                                                    >{{ step.label }}</span
+                                                >
+                                                <span
+                                                    class="text-xs text-[var(--ui-ink-3)] first-letter:uppercase"
+                                                    >{{ stepTime(step) }}</span
+                                                >
+                                            </span>
+                                        </li>
+                                    </ol>
+
+                                    <div
+                                        v-if="selected.snapshot.agt_message"
+                                        class="mbs-1 rounded-lg px-3 py-2.5"
+                                        :class="
+                                            statusTone(
+                                                selected.workflow_status,
+                                            ) === 'danger'
+                                                ? 'bg-[var(--ui-critical-wash)]'
+                                                : 'bg-[var(--ui-well)]'
+                                        "
+                                    >
+                                        <p
+                                            class="text-xs font-semibold"
+                                            :class="
+                                                statusTone(
+                                                    selected.workflow_status,
+                                                ) === 'danger'
+                                                    ? 'text-[var(--ui-critical)]'
+                                                    : 'text-[var(--ui-ink-2)]'
+                                            "
+                                        >
+                                            Observação da AGT
+                                        </p>
+                                        <p
+                                            class="mt-0.5 text-[0.8125rem]/5 text-[var(--ui-ink)]"
+                                        >
+                                            {{ selected.snapshot.agt_message }}
+                                        </p>
+                                        <p
+                                            v-if="
+                                                selected.snapshot
+                                                    .agt_error_codes.length >
+                                                    0 ||
+                                                selected.snapshot
+                                                    .agt_operational.observed_at
+                                            "
+                                            class="mt-1 text-xs text-[var(--ui-ink-3)]"
+                                        >
+                                            <span class="font-mono">{{
+                                                selected.snapshot.agt_error_codes.join(
+                                                    ' · ',
+                                                )
+                                            }}</span>
+                                            <template
+                                                v-if="
+                                                    selected.snapshot
+                                                        .agt_operational
+                                                        .observed_at
+                                                "
+                                            >
+                                                {{
+                                                    selected.snapshot
+                                                        .agt_error_codes
+                                                        .length > 0
+                                                        ? ' · '
+                                                        : ''
+                                                }}Observada a
+                                                {{
+                                                    formatDateTime(
+                                                        selected.snapshot
+                                                            .agt_operational
+                                                            .observed_at,
+                                                    )
+                                                }}
+                                            </template>
+                                        </p>
+                                    </div>
+                                </template>
+
+                                <!-- Histórico: who did what, and when. -->
+                                <template
+                                    v-else-if="inspectorTab === 'history'"
+                                >
+                                    <p
+                                        v-if="selected.history.length === 0"
+                                        class="text-[0.8125rem]/5 text-[var(--ui-ink-3)]"
+                                    >
+                                        {{
+                                            selected.status === 'draft'
+                                                ? 'Um rascunho ainda não tem histórico fiscal: nada foi emitido nem enviado.'
+                                                : 'Sem acontecimentos registados.'
+                                        }}
+                                    </p>
+                                    <ol v-else>
+                                        <li
+                                            v-for="(
+                                                event, index
+                                            ) in selected.history"
+                                            :key="`${event.type}-${event.occurred_at}-${index}`"
+                                            class="flex gap-3"
+                                        >
+                                            <span
+                                                class="flex w-3.5 flex-col items-center pbs-[0.3125rem]"
+                                                aria-hidden="true"
+                                            >
+                                                <span
+                                                    class="size-2 shrink-0 rounded-full"
+                                                    :class="{
+                                                        'bg-[var(--ui-positive)]':
+                                                            event.tone ===
+                                                            'done',
+                                                        'bg-[var(--ui-critical)]':
+                                                            event.tone ===
+                                                            'error',
+                                                        'bg-accent-400':
+                                                            event.tone ===
+                                                            'pending',
+                                                    }"
+                                                />
+                                                <span
+                                                    v-if="
+                                                        index <
+                                                        selected.history
+                                                            .length -
+                                                            1
+                                                    "
+                                                    class="mt-1 w-px flex-1 bg-[var(--ui-line)]"
+                                                />
+                                            </span>
+                                            <span
+                                                class="flex min-w-0 flex-1 flex-col gap-px pbe-3.5"
+                                            >
+                                                <span
+                                                    class="text-[0.8125rem] font-[550] text-[var(--ui-ink)]"
+                                                    >{{ event.label }}</span
+                                                >
+                                                <span
+                                                    class="text-xs text-[var(--ui-ink-3)]"
+                                                    >{{
+                                                        formatDateTime(
+                                                            event.occurred_at,
+                                                        )
+                                                    }}<template
+                                                        v-if="eventMeta(event)"
+                                                    >
+                                                        ·
+                                                        {{
+                                                            eventMeta(event)
+                                                        }}</template
+                                                    ></span
+                                                >
+                                            </span>
+                                        </li>
+                                    </ol>
+                                </template>
+
+                                <!-- Detalhes: the facts someone checks when a document is questioned. -->
+                                <dl
+                                    v-else
+                                    class="grid grid-cols-[minmax(0,7rem)_minmax(0,1fr)] gap-x-3 gap-y-2.5 text-[0.8125rem]"
+                                >
+                                    <dt class="text-[var(--ui-ink-3)]">Tipo</dt>
+                                    <dd class="text-[var(--ui-ink)]">
+                                        {{ selected.snapshot.type_label }}
+                                    </dd>
+                                    <dt class="text-[var(--ui-ink-3)]">
+                                        Local
+                                    </dt>
+                                    <dd class="text-[var(--ui-ink)]">
+                                        {{ selected.establishment.name }}
+                                    </dd>
+                                    <dt class="text-[var(--ui-ink-3)]">NIF</dt>
+                                    <dd class="numeric text-[var(--ui-ink)]">
+                                        {{
+                                            selected.customer_tax_identification_number
+                                        }}
+                                    </dd>
+                                    <dt class="text-[var(--ui-ink-3)]">Data</dt>
+                                    <dd class="text-[var(--ui-ink)]">
+                                        {{ formatDate(selected.document_date) }}
+                                    </dd>
+                                    <template v-if="selected.issued_at">
+                                        <dt class="text-[var(--ui-ink-3)]">
+                                            Emitida
+                                        </dt>
+                                        <dd class="text-[var(--ui-ink)]">
+                                            {{
+                                                formatDateTime(
+                                                    selected.issued_at,
+                                                )
+                                            }}
+                                            <span
+                                                v-if="
+                                                    selected.snapshot
+                                                        .issuer_name
+                                                "
+                                                class="block text-xs text-[var(--ui-ink-3)]"
+                                                >por
+                                                {{
+                                                    selected.snapshot
+                                                        .issuer_name
+                                                }}</span
+                                            >
+                                        </dd>
+                                    </template>
+                                    <dt class="text-[var(--ui-ink-3)]">
+                                        Vencimento
+                                    </dt>
+                                    <dd class="text-[var(--ui-ink)]">
+                                        {{
+                                            selected.snapshot.due_date
+                                                ? formatDate(
+                                                      selected.snapshot
+                                                          .due_date,
+                                                  )
+                                                : 'Sem vencimento'
+                                        }}
+                                    </dd>
+                                    <dt class="text-[var(--ui-ink-3)]">
+                                        Total
+                                    </dt>
+                                    <dd class="numeric text-[var(--ui-ink)]">
+                                        {{
+                                            money(
+                                                selected.snapshot
+                                                    .gross_total_minor,
+                                                selected.currency_code,
+                                            )
+                                        }}
+                                    </dd>
+                                    <dt class="text-[var(--ui-ink-3)]">IVA</dt>
+                                    <dd class="numeric text-[var(--ui-ink)]">
+                                        {{
+                                            money(
+                                                selected.snapshot
+                                                    .tax_payable_minor,
+                                                selected.currency_code,
+                                            )
+                                        }}
+                                        <span
+                                            v-if="
+                                                selected.snapshot.lines_count >
+                                                0
+                                            "
+                                            class="block text-xs text-[var(--ui-ink-3)]"
+                                            >em
+                                            {{ selected.snapshot.lines_count }}
+                                            {{
+                                                selected.snapshot
+                                                    .lines_count === 1
+                                                    ? 'linha'
+                                                    : 'linhas'
+                                            }}</span
+                                        >
+                                    </dd>
+                                    <template
+                                        v-if="
+                                            selected.snapshot
+                                                .outstanding_minor > 0
+                                        "
+                                    >
+                                        <dt class="text-[var(--ui-ink-3)]">
+                                            Por receber
+                                        </dt>
+                                        <dd
+                                            class="numeric"
+                                            :class="
+                                                selected.snapshot
+                                                    .days_past_due > 0
+                                                    ? 'text-[var(--ui-critical)]'
+                                                    : 'text-[var(--ui-ink)]'
+                                            "
+                                        >
+                                            {{
+                                                money(
+                                                    selected.snapshot
+                                                        .outstanding_minor,
+                                                    selected.currency_code,
+                                                )
+                                            }}
+                                        </dd>
+                                    </template>
+                                    <template v-if="selected.sent_at">
+                                        <dt class="text-[var(--ui-ink-3)]">
+                                            Enviada
+                                        </dt>
+                                        <dd
+                                            class="min-w-0 text-[var(--ui-ink)]"
+                                        >
+                                            {{
+                                                formatDateTime(selected.sent_at)
+                                            }}
+                                            <span
+                                                v-if="selected.delivery_email"
+                                                class="block truncate text-xs text-[var(--ui-ink-3)]"
+                                                >para
+                                                {{
+                                                    selected.delivery_email
+                                                }}</span
+                                            >
+                                        </dd>
+                                    </template>
+                                    <template
+                                        v-if="selected.submission?.request_id"
+                                    >
+                                        <dt class="text-[var(--ui-ink-3)]">
+                                            Pedido AGT
+                                        </dt>
+                                        <dd
+                                            class="min-w-0 truncate font-mono text-xs text-[var(--ui-ink-2)]"
+                                            :title="
+                                                selected.submission.request_id
+                                            "
+                                        >
+                                            {{ selected.submission.request_id }}
+                                        </dd>
+                                    </template>
+                                </dl>
+                            </div>
+
+                            <div
+                                class="flex flex-col border-t border-[var(--ui-line)] pbs-2"
+                            >
+                                <Link
+                                    v-if="selected.can_repeat"
+                                    :href="
+                                        createInvoice.url({
+                                            query: {
+                                                repeat: selected.public_id,
+                                            },
+                                        })
+                                    "
+                                    class="flex h-8 items-center gap-2 rounded-md text-[0.78125rem] text-[var(--ui-ink-2)] focus-ring hover:text-[var(--ui-ink)]"
+                                >
+                                    <Copy class="size-3.5" aria-hidden="true" />
+                                    Usar como base para novo documento
+                                </Link>
+                                <a
+                                    v-if="selected.can_print"
+                                    :href="
+                                        printDocument.url(selected.public_id)
+                                    "
+                                    class="flex h-8 items-center gap-2 rounded-md text-[0.78125rem] text-[var(--ui-ink-2)] focus-ring hover:text-[var(--ui-ink)]"
+                                >
+                                    <Printer
+                                        class="size-3.5"
+                                        aria-hidden="true"
+                                    />
+                                    Abrir para imprimir
+                                </a>
+                                <Link
+                                    v-if="selected.customer_public_id"
+                                    :href="
+                                        customerShow.url(
+                                            selected.customer_public_id,
+                                        )
+                                    "
+                                    class="flex h-8 items-center gap-2 rounded-md text-[0.78125rem] text-[var(--ui-ink-2)] focus-ring hover:text-[var(--ui-ink)]"
+                                >
+                                    <UserRound
+                                        class="size-3.5"
+                                        aria-hidden="true"
+                                    />
+                                    Ver cliente
+                                </Link>
                                 <Link
                                     v-if="selected.submission"
                                     :href="agtSubmissions.url()"
-                                    class="inline-flex items-center gap-1 rounded text-[0.8125rem] font-semibold text-accent-700 focus-ring dark:text-accent-300"
+                                    class="flex h-8 items-center gap-2 rounded-md text-[0.78125rem] text-[var(--ui-ink-2)] focus-ring hover:text-[var(--ui-ink)]"
                                 >
-                                    Monitor AGT
                                     <ArrowUpRight
                                         class="size-3.5"
                                         aria-hidden="true"
                                     />
+                                    Acompanhar no Monitor AGT
                                 </Link>
                             </div>
-                            <p
-                                v-if="selected.history.length === 0"
-                                class="mt-3 text-sm text-zinc-500 dark:text-zinc-400"
-                            >
-                                {{
-                                    selected.status === 'draft'
-                                        ? 'Um rascunho ainda não tem histórico fiscal: nada foi emitido nem enviado.'
-                                        : 'Sem acontecimentos registados.'
-                                }}
-                            </p>
-                            <ol v-else class="mt-3">
-                                <li
-                                    v-for="(event, index) in selected.history"
-                                    :key="`${event.type}-${event.occurred_at}-${index}`"
-                                    class="relative grid grid-cols-[1.75rem_minmax(0,1fr)_auto] gap-3 pb-4 last:pb-0"
-                                >
-                                    <span
-                                        v-if="
-                                            index < selected.history.length - 1
-                                        "
-                                        class="absolute top-7 bottom-0 left-[0.84rem] w-px bg-zinc-900/10 dark:bg-white/10"
-                                        aria-hidden="true"
-                                    />
-                                    <span
-                                        class="relative grid size-7 place-items-center rounded-full"
-                                        :class="{
-                                            'bg-lime-300 text-lime-950':
-                                                event.tone === 'done',
-                                            'bg-rose-500 text-white':
-                                                event.tone === 'error',
-                                            'bg-accent-50 text-accent-700 ring-1 ring-accent-200 ring-inset dark:bg-accent-400/10 dark:text-accent-300 dark:ring-accent-400/20':
-                                                event.tone === 'pending',
-                                        }"
-                                        aria-hidden="true"
-                                    >
-                                        <Check
-                                            v-if="event.tone === 'done'"
-                                            class="size-3.5"
-                                            :stroke-width="2.5"
-                                        />
-                                        <X
-                                            v-else-if="event.tone === 'error'"
-                                            class="size-3.5"
-                                            :stroke-width="2.5"
-                                        />
-                                        <Clock3
-                                            v-else
-                                            class="size-3.5"
-                                            :stroke-width="2.25"
-                                        />
-                                    </span>
-                                    <span class="min-w-0 pt-1">
-                                        <span
-                                            class="block text-sm font-semibold text-zinc-950 dark:text-white"
-                                            >{{ event.label }}</span
-                                        >
-                                        <span
-                                            v-if="eventMeta(event)"
-                                            class="mt-0.5 block text-xs text-zinc-500 dark:text-zinc-400"
-                                            >{{ eventMeta(event) }}</span
-                                        >
-                                    </span>
-                                    <span
-                                        class="pt-1.5 numeric text-xs text-zinc-500 dark:text-zinc-400"
-                                        >{{
-                                            formatDateTime(event.occurred_at)
-                                        }}</span
-                                    >
-                                </li>
-                            </ol>
                         </div>
-                    </section>
-
-                    <!-- Nothing open: on wide screens the panel says what it will hold. -->
-                    <section
-                        v-else-if="documents.data.length > 0"
-                        class="hidden min-h-[24rem] place-items-center rounded-3xl border border-dashed border-zinc-900/15 p-10 text-center xl:grid dark:border-white/15"
-                    >
-                        <div class="max-w-xs">
-                            <FileText
-                                class="mx-auto size-6 text-zinc-400"
-                                aria-hidden="true"
-                            />
-                            <p
-                                class="mt-4 text-base text-zinc-950 dark:text-white"
-                            >
-                                Escolha um documento
-                            </p>
-                            <p
-                                class="mt-1.5 text-sm/6 text-zinc-500 dark:text-zinc-400"
-                            >
-                                Vê aqui os totais, o estado na AGT e tudo o que
-                                lhe aconteceu, por ordem.
-                            </p>
-                        </div>
-                    </section>
-                </div>
+                    </aside>
+                </Teleport>
             </div>
         </div>
     </AppLayout>

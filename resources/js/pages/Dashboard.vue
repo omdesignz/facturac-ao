@@ -9,6 +9,7 @@ import ReminderDialog from '@/components/ReminderDialog.vue';
 import TodayDecisions from '@/components/TodayDecisions.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { agingBucketColours, agingShare } from '@/lib/aging';
+import { initials } from '@/lib/initials';
 import { relativeTime } from '@/lib/relative-time';
 import { decisionsFor } from '@/lib/today-decisions';
 import { onboarding } from '@/routes';
@@ -970,17 +971,7 @@ const tableCell = 'border-b border-[var(--ui-line)] px-3 numeric';
                                                 class="grid size-6 shrink-0 place-items-center rounded-full bg-[var(--ui-well)] text-[0.59375rem] font-bold text-[var(--ui-ink-2)]"
                                                 aria-hidden="true"
                                                 >{{
-                                                    customer.name
-                                                        .split(/\s+/)
-                                                        .filter((word) =>
-                                                            /^\p{Lu}/u.test(
-                                                                word,
-                                                            ),
-                                                        )
-                                                        .slice(0, 2)
-                                                        .map((word) => word[0])
-                                                        .join('') ||
-                                                    customer.name[0]
+                                                    initials(customer.name)
                                                 }}</span
                                             >
                                             <span

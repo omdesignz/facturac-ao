@@ -1697,6 +1697,7 @@ label:has(> :is(.form-checkbox, .form-radio):not(:disabled)) {
     --ui-chart-bar: #e0e0da;
     --ui-chart-grid: rgb(16 16 16 / 0.05);
     --ui-chart-column: rgb(16 16 16 / 0.035);
+    --ui-select: #fff8e8;
 }
 
 .dark {
@@ -1728,6 +1729,7 @@ label:has(> :is(.form-checkbox, .form-radio):not(:disabled)) {
     --ui-chart-bar: #2c2c33;
     --ui-chart-grid: rgb(255 255 255 / 0.045);
     --ui-chart-column: rgb(255 255 255 / 0.04);
+    --ui-select: rgb(249 178 51 / 0.06);
 }
 
 /*
