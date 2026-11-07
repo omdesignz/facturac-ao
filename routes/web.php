@@ -104,6 +104,12 @@ Route::get('/documentos/{fiscalDocument}/pdf', [FiscalDocumentPrintController::c
     ->middleware('throttle:60,1')
     ->name('documents.pdf');
 
+// Read at a checkpoint from the QR on the driver's phone: whoever stops the
+// goods has no account, so the signature on the link is what authorises it.
+Route::get('/guias/{transportDocument}/partilhada', [TransportDocumentPrintController::class, 'shared'])
+    ->middleware(['signed', 'throttle:60,1'])
+    ->name('transport-documents.shared');
+
 // Answerable without an account: the banner is shown before sign-in too.
 Route::post('/cookie-consent', [CookieConsentController::class, 'store'])
     ->middleware('throttle:20,1')
