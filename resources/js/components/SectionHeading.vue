@@ -15,17 +15,17 @@ defineProps<{
     <div class="flex items-center gap-3">
         <span
             v-if="icon"
-            class="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-100 text-brand-700 dark:bg-brand-400/10 dark:text-brand-300"
+            class="grid size-8 shrink-0 place-items-center rounded-lg bg-[var(--ui-well)] text-[var(--ui-ink-2)]"
         >
-            <component :is="icon" class="size-5" aria-hidden="true" />
+            <component :is="icon" class="size-4" aria-hidden="true" />
         </span>
         <div class="min-w-0">
-            <h2 class="font-semibold text-zinc-950 dark:text-white">
+            <h2 class="text-sm font-semibold text-[var(--ui-ink)]">
                 <slot />
             </h2>
             <p
                 v-if="$slots.description"
-                class="mt-0.5 text-xs/5 text-zinc-500 dark:text-zinc-400"
+                class="mt-0.5 text-xs/5 text-[var(--ui-ink-3)]"
             >
                 <slot name="description" />
             </p>

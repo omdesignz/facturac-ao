@@ -327,7 +327,7 @@ const flash = computed(
                 class="rounded font-semibold text-[var(--ui-ink)] focus-ring hover:underline hover:underline-offset-2"
                 >Abrir conta</Link
             >
-            <span class="whitespace-nowrap text-[var(--ui-ink-3)]"
+            <span class="ms-1 whitespace-nowrap text-[var(--ui-ink-3)]"
                 >· sem cartão para começar</span
             >
         </template>

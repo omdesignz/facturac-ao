@@ -30,7 +30,6 @@ test('the screens that used a banner now use the shared page header', function (
     'Billing/Show',
     'Imports/Index',
     'Onboarding',
-    'Invoices/Create',
     'Customers/Index',
     'Customers/Show',
     'Catalogue/Index',
@@ -44,6 +43,13 @@ test('the screens that used a banner now use the shared page header', function (
     'Pos/Sessions/Show',
     'Support/Packages',
 ]);
+
+test('the work surfaces open on a thin title bar and run edge to edge', function (string $page) {
+    expect((string) file_get_contents(resource_path("js/pages/{$page}.vue")))
+        ->toMatch('/<header\s+class="(?=[^"]*h-\[3\.25rem\])(?=[^"]*border-b border-\[var\(--ui-line\)\])/')
+        ->not->toContain('<PageHeader')
+        ->not->toContain('page-shell');
+})->with(['Documents/Index', 'Debts/Index', 'Invoices/Create']);
 
 test('the dashboard and the debts page colour debt age the same way', function (string $page) {
     expect((string) file_get_contents(resource_path("js/pages/{$page}.vue")))
