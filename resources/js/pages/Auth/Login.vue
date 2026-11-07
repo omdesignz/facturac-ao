@@ -2,7 +2,14 @@
 import { Form, Head, Link, router, usePage } from '@inertiajs/vue3';
 import { Passkeys } from '@laravel/passkeys';
 import { usePasskeyVerify } from '@laravel/passkeys/vue';
-import { Fingerprint, LoaderCircle, LockKeyhole } from '@lucide/vue';
+import {
+    ArrowRight,
+    Eye,
+    EyeOff,
+    KeyRound,
+    LoaderCircle,
+    LockKeyhole,
+} from '@lucide/vue';
 import { computed, onMounted, ref } from 'vue';
 import AppButton from '@/components/AppButton.vue';
 import FormError from '@/components/FormError.vue';
@@ -84,6 +91,9 @@ onMounted(() => {
     }
 });
 
+/** The password stays hidden unless the reader asks to check what they typed. */
+const passwordShown = ref(false);
+
 const page = usePage();
 const flash = computed(
     () =>
@@ -98,29 +108,74 @@ const flash = computed(
 <template>
     <AuthLayout
         title="Entre na sua conta"
-        description="Use o email e a palavra-passe da sua conta."
+        :description="
+            passkeySupported
+                ? 'Use a chave de acesso deste dispositivo, ou o email e a palavra-passe.'
+                : 'Use o email e a palavra-passe da sua conta.'
+        "
     >
         <Head title="Entrar" />
 
         <div
             v-if="flash.error"
-            class="mb-6 rounded-xl bg-rose-50 p-3 text-sm/6 font-medium text-rose-700 ring-1 ring-rose-200 dark:bg-rose-400/10 dark:text-rose-300 dark:ring-rose-400/20"
+            class="mb-5 rounded-lg bg-[var(--ui-critical-wash)] px-3 py-2.5 text-[0.8125rem]/5 font-medium text-[var(--ui-critical)]"
             role="alert"
         >
             {{ flash.error }}
         </div>
         <div
             v-else-if="flash.status || flash.success"
-            class="mb-6 rounded-xl bg-emerald-50 p-3 text-sm/6 font-medium text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-400/10 dark:text-emerald-300 dark:ring-emerald-400/20"
+            class="mb-5 rounded-lg bg-[var(--ui-positive-wash)] px-3 py-2.5 text-[0.8125rem]/5 font-medium text-[var(--ui-positive)]"
             role="status"
         >
             {{ flash.success ?? flash.status }}
         </div>
 
+        <template v-if="passkeySupported">
+            <AppButton
+                variant="outline"
+                size="lg"
+                :disabled="passkeyPending"
+                class="relative h-[2.625rem] w-full rounded-[9px] text-sm font-[550]"
+                @click="signInWithPasskey"
+            >
+                <LoaderCircle
+                    v-if="passkeyPending"
+                    class="size-4 animate-spin"
+                    aria-hidden="true"
+                />
+                <KeyRound
+                    v-else
+                    class="size-[1.0625rem]"
+                    :stroke-width="1.8"
+                    aria-hidden="true"
+                />
+                {{
+                    passkeyPending
+                        ? 'A confirmar…'
+                        : 'Continuar com chave de acesso'
+                }}
+            </AppButton>
+            <p
+                v-if="passkeyMessage"
+                class="mt-2 text-center text-[0.8125rem] text-[var(--ui-critical)]"
+            >
+                {{ passkeyMessage }}
+            </p>
+            <div
+                class="my-6 flex items-center gap-3 text-xs text-[var(--ui-ink-3)]"
+                aria-hidden="true"
+            >
+                <span class="h-px flex-1 bg-[var(--ui-line)]" />ou<span
+                    class="h-px flex-1 bg-[var(--ui-line)]"
+                />
+            </div>
+        </template>
+
         <Form
             v-bind="loginStore.form()"
             :reset-on-success="['password']"
-            class="space-y-5"
+            class="flex flex-col"
             @error="focusFirstInvalid()"
             #default="{ errors, processing }"
         >
@@ -145,36 +200,62 @@ const flash = computed(
                     placeholder="nome@empresa.ao"
             /></FormField>
 
-            <div>
+            <div class="mt-[1.125rem]">
                 <FormField
-                    class="flex items-center justify-between"
+                    class="flex items-baseline justify-between"
                     for="password"
                     label="Palavra-passe"
                     ><Link
                         v-if="canResetPassword"
                         :href="passwordRequest.url()"
-                        class="rounded text-sm/6 font-semibold text-brand-700 focus-ring hover:text-brand-600 dark:text-brand-300 dark:hover:text-brand-200"
+                        class="rounded text-[0.78125rem] font-medium text-[var(--ui-ink-2)] focus-ring hover:text-[var(--ui-ink)]"
                     >
                         Esqueceu-se?
                     </Link></FormField
                 >
-                <input
-                    id="password"
-                    name="password"
-                    type="password"
-                    autocomplete="current-password"
-                    required
-                    :aria-invalid="errors.password ? 'true' : undefined"
-                    :aria-describedby="
-                        errors.password ? 'password-error' : undefined
-                    "
-                    class="mt-2 block form-input"
-                />
+                <div class="relative mt-2">
+                    <input
+                        id="password"
+                        name="password"
+                        :type="passwordShown ? 'text' : 'password'"
+                        autocomplete="current-password"
+                        required
+                        :aria-invalid="errors.password ? 'true' : undefined"
+                        :aria-describedby="
+                            errors.password ? 'password-error' : undefined
+                        "
+                        class="block form-input pe-11"
+                    />
+                    <button
+                        type="button"
+                        class="absolute inset-y-0 inset-e-1 my-auto grid size-8 place-items-center rounded-md text-[var(--ui-ink-3)] focus-ring hover:text-[var(--ui-ink)] pointer-coarse:size-10"
+                        :aria-pressed="passwordShown"
+                        :aria-label="
+                            passwordShown
+                                ? 'Esconder a palavra-passe'
+                                : 'Mostrar a palavra-passe'
+                        "
+                        @click="passwordShown = !passwordShown"
+                    >
+                        <EyeOff
+                            v-if="passwordShown"
+                            class="size-4"
+                            :stroke-width="1.8"
+                            aria-hidden="true"
+                        />
+                        <Eye
+                            v-else
+                            class="size-4"
+                            :stroke-width="1.8"
+                            aria-hidden="true"
+                        />
+                    </button>
+                </div>
                 <FormError id="password-error" :message="errors.password" />
             </div>
 
             <label
-                class="flex min-h-11 w-fit items-center gap-3 py-2 text-sm/6 text-zinc-700 dark:text-zinc-300"
+                class="mt-3 flex min-h-11 w-fit items-center gap-2.5 text-[0.8125rem] text-[var(--ui-ink-2)]"
             >
                 <input
                     name="remember"
@@ -186,11 +267,11 @@ const flash = computed(
             </label>
 
             <AppButton
-                variant="ink"
+                variant="gold"
                 size="lg"
                 type="submit"
                 :disabled="processing"
-                class="w-full"
+                class="mt-3 h-[2.625rem] w-full rounded-[9px] text-sm shadow-[inset_0_1px_0_rgb(255_255_255/0.42),0_0_0_1px_#db9520,0_1px_2px_rgb(0_0_0/0.12),0_6px_16px_rgb(249_178_51/0.22)] dark:shadow-[inset_0_1px_0_rgb(255_255_255/0.42),0_0_0_1px_#db9520,0_1px_2px_rgb(0_0_0/0.12),0_6px_16px_rgb(249_178_51/0.12)]"
             >
                 <LoaderCircle
                     v-if="processing"
@@ -198,60 +279,41 @@ const flash = computed(
                     aria-hidden="true"
                 />
                 {{ processing ? 'A entrar…' : 'Entrar' }}
-            </AppButton>
-        </Form>
-
-        <div v-if="passkeySupported" class="mt-5">
-            <AppButton
-                variant="outline"
-                size="lg"
-                :disabled="passkeyPending"
-                @click="signInWithPasskey"
-                class="w-full text-center"
-            >
-                <LoaderCircle
-                    v-if="passkeyPending"
-                    class="size-4 animate-spin"
+                <ArrowRight
+                    v-if="!processing"
+                    class="size-[0.9375rem]"
+                    :stroke-width="2.2"
                     aria-hidden="true"
                 />
-                <Fingerprint v-else class="size-4" aria-hidden="true" />
-                {{
-                    passkeyPending
-                        ? 'A confirmar…'
-                        : 'Entrar com impressão digital ou rosto'
-                }}
             </AppButton>
+
             <p
-                v-if="passkeyMessage"
-                class="mt-2 text-center text-sm text-rose-600 dark:text-rose-400"
+                class="mt-[1.125rem] flex items-center gap-2 text-[0.78125rem] text-[var(--ui-ink-3)]"
             >
-                {{ passkeyMessage }}
+                <LockKeyhole
+                    class="size-3.5 shrink-0"
+                    :stroke-width="1.9"
+                    aria-hidden="true"
+                />
+                Sessão protegida e auditável.
             </p>
-        </div>
+        </Form>
 
         <template v-if="googleEnabled">
-            <div class="relative my-7">
-                <div
-                    class="absolute inset-0 flex items-center"
-                    aria-hidden="true"
-                >
-                    <div
-                        class="w-full border-t border-zinc-200 dark:border-white/10"
-                    />
-                </div>
-                <div class="relative flex justify-center text-xs font-medium">
-                    <span
-                        class="bg-white px-4 text-zinc-500 dark:bg-zinc-950 dark:text-zinc-400"
-                        >ou continue com</span
-                    >
-                </div>
+            <div
+                class="my-6 flex items-center gap-3 text-xs text-[var(--ui-ink-3)]"
+                aria-hidden="true"
+            >
+                <span class="h-px flex-1 bg-[var(--ui-line)]" />ou<span
+                    class="h-px flex-1 bg-[var(--ui-line)]"
+                />
             </div>
             <AppButton
                 variant="outline"
                 size="lg"
                 external
                 :href="googleRedirect.url()"
-                class="w-full"
+                class="h-[2.625rem] w-full rounded-[9px] text-sm font-[550]"
             >
                 <GoogleMark />
                 Continuar com Google
@@ -259,20 +321,15 @@ const flash = computed(
         </template>
 
         <template #footer>
-            <p class="text-center">
-                Ainda não tem conta?
-                <Link
-                    :href="register.url()"
-                    class="rounded font-semibold text-brand-700 focus-ring hover:text-brand-600 dark:text-brand-300 dark:hover:text-brand-100"
-                    >Criar conta</Link
-                >
-            </p>
-            <p
-                class="mt-4 flex items-center justify-center gap-2 text-xs text-zinc-500 dark:text-zinc-400"
+            Ainda não tem conta?
+            <Link
+                :href="register.url()"
+                class="rounded font-semibold text-[var(--ui-ink)] focus-ring hover:underline hover:underline-offset-2"
+                >Abrir conta</Link
             >
-                <LockKeyhole class="size-3.5" aria-hidden="true" />
-                Sessão protegida e auditável
-            </p>
+            <span class="whitespace-nowrap text-[var(--ui-ink-3)]"
+                >· sem cartão para começar</span
+            >
         </template>
     </AuthLayout>
 </template>
