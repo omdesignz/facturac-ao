@@ -9,6 +9,7 @@ import {
     ChevronUp,
     Copy,
     Download,
+    FileMinus,
     FileText,
     ListFilter,
     LoaderCircle,
@@ -117,6 +118,8 @@ interface SelectedDocument extends RegisterDocument {
         steps: LifecycleStep[];
     };
     history: HistoryEvent[];
+    /** A credit note drafted from this document's lines; null when it could never have one. */
+    credit_note: { available: boolean; reason: string | null } | null;
 }
 
 interface FilterOptions {
@@ -790,6 +793,20 @@ usePaletteActions(() => {
                 },
             },
         );
+    }
+
+    if (document.credit_note?.available) {
+        const correctionUrl = createInvoice.url({
+            query: { corrigir: document.public_id },
+        });
+
+        actions.push({
+            key: 'credit-note',
+            label: 'Corrigir com nota de crédito',
+            hint: number,
+            icon: FileMinus,
+            run: () => router.visit(correctionUrl),
+        });
     }
 
     if (document.customer_public_id) {
@@ -2153,6 +2170,36 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                             <div
                                 class="flex flex-col border-t border-[var(--ui-line)] pbs-2"
                             >
+                                <Link
+                                    v-if="selected.credit_note?.available"
+                                    :href="
+                                        createInvoice.url({
+                                            query: {
+                                                corrigir: selected.public_id,
+                                            },
+                                        })
+                                    "
+                                    class="flex h-8 items-center gap-2 rounded-md text-[0.78125rem] text-[var(--ui-ink-2)] focus-ring hover:text-[var(--ui-ink)]"
+                                >
+                                    <FileMinus
+                                        class="size-3.5"
+                                        aria-hidden="true"
+                                    />
+                                    Corrigir com nota de crédito
+                                </Link>
+                                <p
+                                    v-else-if="selected.credit_note?.reason"
+                                    class="flex items-start gap-2 py-1.5 text-[0.78125rem] text-[var(--ui-ink-3)]"
+                                >
+                                    <FileMinus
+                                        class="mt-0.5 size-3.5 shrink-0"
+                                        aria-hidden="true"
+                                    />
+                                    <span
+                                        >Nota de crédito:
+                                        {{ selected.credit_note.reason }}</span
+                                    >
+                                </p>
                                 <Link
                                     v-if="selected.can_repeat"
                                     :href="

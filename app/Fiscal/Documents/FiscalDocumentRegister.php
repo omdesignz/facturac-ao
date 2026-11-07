@@ -17,7 +17,10 @@ use Inertia\ScrollMetadata;
 
 final class FiscalDocumentRegister
 {
-    public function __construct(private DocumentSnapshot $snapshot) {}
+    public function __construct(
+        private DocumentSnapshot $snapshot,
+        private CreditNoteEligibility $creditNotes,
+    ) {}
 
     /**
      * One document for the detail panel: the same row the list shows, its
@@ -49,6 +52,31 @@ final class FiscalDocumentRegister
             ...$this->present($document, $canPrepareDocuments),
             'snapshot' => $this->snapshot->describe($document, CarbonImmutable::now()),
             'history' => $this->withDeliveryNotes($document, $this->snapshot->history($document)),
+            'credit_note' => $this->creditNote($document, $canPrepareDocuments),
+        ];
+    }
+
+    /**
+     * Whether the panel offers a credit note drafted from this document's
+     * lines, and why not when it is the kind of document that could have one.
+     * Worked out for the opened document only: the AGT evidence it needs is
+     * too much to read for every row of the list.
+     *
+     * @return array{available: bool, reason: string|null}|null
+     */
+    private function creditNote(FiscalDocument $document, bool $canPrepareDocuments): ?array
+    {
+        if (! $canPrepareDocuments
+            || $document->document_no === null
+            || ! in_array($document->document_type, CreditNoteEligibility::CORRECTABLE, true)) {
+            return null;
+        }
+
+        $obstacle = $this->creditNotes->obstacle($document);
+
+        return [
+            'available' => $obstacle === null,
+            'reason' => $obstacle?->webMessage(),
         ];
     }
 

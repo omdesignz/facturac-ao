@@ -203,6 +203,36 @@ interface DraftDocument {
     };
 }
 
+/** A line of the corrected document, on the terms it was charged at. */
+interface CreditGuideLine {
+    line_number: number;
+    operation_type: string;
+    operation_date: string;
+    product_code: string;
+    product_description: string;
+    unit_of_measure: string;
+    unit_price: string;
+    discount_percentage: string;
+    tax_treatment: string;
+    quantity: string;
+    credited_quantity: string;
+    creditable_quantity: string;
+}
+
+/**
+ * A credit note drafted from the document it corrects. Its lines carry the
+ * original's terms; the person only lowers quantities or leaves lines out.
+ */
+interface CreditGuide {
+    source: {
+        public_id: string;
+        document_no: string;
+        document_type_label: string;
+        document_date: string;
+    };
+    lines: CreditGuideLine[];
+}
+
 interface FiscalSeries {
     public_id: string;
     series_code: string;
@@ -217,6 +247,7 @@ interface FiscalSeries {
 const props = defineProps<{
     recoveryScope: string;
     repeatSource?: { public_id: string; document_no: string };
+    creditGuide?: CreditGuide | null;
     company: Company;
     establishments: Establishment[];
     customers: Customer[];
@@ -559,6 +590,7 @@ const recovery = useDraftRecovery({
             props.document.public_id,
             props.document.document_type,
             props.repeatSource?.public_id,
+            props.creditGuide?.source.public_id,
         ),
     version: () => String(props.document.revision),
     data: () => {
@@ -581,6 +613,103 @@ const recovery = useDraftRecovery({
 });
 
 const issueDialogOpen = ref(false);
+
+/* ------------------------------------------------- guided credit note */
+
+const isGuidedCreditNote = computed(() => Boolean(props.creditGuide));
+
+/** The customer is the original's on a guided note, as on a saved customer. */
+const customerLocked = computed(
+    () => Boolean(selectedCustomer.value) || isGuidedCreditNote.value,
+);
+
+type CreditRowState = 'included' | 'left_out' | 'credited';
+
+const creditRows = computed(() =>
+    (props.creditGuide?.lines ?? []).map((guide) => {
+        const index = form.lines.findIndex(
+            (line) => line.reference_line_number === String(guide.line_number),
+        );
+        const creditable = parseScaled(guide.creditable_quantity, 4) ?? 0n;
+        const line = index === -1 ? undefined : form.lines[index];
+        const requested =
+            line === undefined ? null : parseScaled(line.quantity, 4);
+        const state: CreditRowState =
+            index !== -1
+                ? 'included'
+                : creditable > 0n
+                  ? 'left_out'
+                  : 'credited';
+
+        return {
+            guide,
+            index,
+            line,
+            state,
+            treatment:
+                props.taxTreatments.find(
+                    (option) => option.value === guide.tax_treatment,
+                )?.label ?? guide.tax_treatment,
+            tooMuch: requested !== null && requested > creditable,
+            gross: line === undefined ? 0n : calculateLine(line).gross,
+        };
+    }),
+);
+
+const creditedInFullCount = computed(
+    () => creditRows.value.filter((row) => row.state === 'credited').length,
+);
+
+function guideLine(guide: CreditGuideLine): EditableLine {
+    return editableLine(
+        {
+            reference_line_number: String(guide.line_number),
+            origin_transport_line_public_id: '',
+            operation_type: guide.operation_type,
+            operation_date: guide.operation_date,
+            product_code: guide.product_code,
+            product_description: guide.product_description,
+            quantity: guide.creditable_quantity,
+            unit_of_measure: guide.unit_of_measure,
+            unit_price: guide.unit_price,
+            discount_percentage: guide.discount_percentage,
+            tax_treatment: guide.tax_treatment,
+        },
+        form.document_date,
+    );
+}
+
+async function leaveOutCreditLine(index: number): Promise<void> {
+    if (form.lines.length === 1) {
+        return;
+    }
+
+    const [removed] = form.lines.splice(index, 1);
+
+    announce(
+        `${removed?.product_description ?? 'A linha'} fica fora da nota. ${lineCountLabel(form.lines.length)}.`,
+    );
+    await nextTick();
+    focusFirst(`restore-credit-line-${removed?.reference_line_number}`);
+}
+
+async function restoreCreditLine(guide: CreditGuideLine): Promise<void> {
+    const position = form.lines.filter(
+        (line) => Number(line.reference_line_number) < guide.line_number,
+    ).length;
+
+    form.lines.splice(position, 0, guideLine(guide));
+    announce(
+        `${guide.product_description} volta à nota. ${lineCountLabel(form.lines.length)}.`,
+    );
+    await nextTick();
+    focusFirst(`credit-quantity-${guide.line_number}`);
+}
+
+/** «1 000,00 Kz» from a canonical «1000». */
+function formatPrice(value: string): string {
+    return formatMoney(parseScaled(value, 2) ?? 0n);
+}
 
 /**
  * Most documents go out with the defaults, so these fields wait behind a line
@@ -1745,6 +1874,7 @@ function confirmIssue(): void {
                                             "
                                             v-model="form.document_type"
                                             :options="documentTypeOptions"
+                                            :disabled="isGuidedCreditNote"
                                     /></FormField>
 
                                     <FormField
@@ -1762,7 +1892,27 @@ function confirmIssue(): void {
                                             )
                                         "
                                         ><p
-                                            v-if="
+                                            v-if="creditGuide"
+                                            class="mt-2 flex h-9 items-center rounded-md bg-[var(--ui-well)] px-3 text-[0.8125rem] font-medium text-[var(--ui-ink)]"
+                                        >
+                                            {{ creditGuide.source.document_no }}
+                                            <span
+                                                class="ms-2 text-[var(--ui-ink-3)]"
+                                                >{{
+                                                    creditGuide.source
+                                                        .document_type_label
+                                                }}
+                                                de
+                                                {{
+                                                    shortIsoDate(
+                                                        creditGuide.source
+                                                            .document_date,
+                                                    )
+                                                }}</span
+                                            >
+                                        </p>
+                                        <p
+                                            v-else-if="
                                                 adjustableDocuments.length === 0
                                             "
                                             class="rounded-xl bg-amber-50 p-3 text-xs/5 text-amber-900 ring-1 ring-amber-200 dark:bg-amber-400/10 dark:text-amber-200 dark:ring-amber-400/20"
@@ -1924,6 +2074,7 @@ function confirmIssue(): void {
                                             "
                                             v-model="form.currency_code"
                                             :options="currencyOptions"
+                                            :disabled="isGuidedCreditNote"
                                     /></FormField>
 
                                     <FormField
@@ -2063,7 +2214,10 @@ function confirmIssue(): void {
                                         </div>
                                     </div>
                                     <button
-                                        v-if="selectedCustomer"
+                                        v-if="
+                                            selectedCustomer &&
+                                            !isGuidedCreditNote
+                                        "
                                         type="button"
                                         class="text-sm font-semibold text-brand-700 hover:text-brand-600 dark:text-brand-300 dark:hover:text-brand-200"
                                         @click="useManualCustomer"
@@ -2096,6 +2250,7 @@ function confirmIssue(): void {
                                             "
                                             v-model="form.customer_public_id"
                                             :options="customerOptions"
+                                            :disabled="isGuidedCreditNote"
                                             @change="selectCustomer"
                                     /></FormField>
 
@@ -2114,9 +2269,7 @@ function confirmIssue(): void {
                                                 describedBy('', 'customer.name')
                                             "
                                             v-model="form.customer.name"
-                                            :readonly="
-                                                Boolean(selectedCustomer)
-                                            "
+                                            :readonly="customerLocked"
                                             autocomplete="off"
                                             class="block form-input"
                                     /></FormField>
@@ -2155,9 +2308,7 @@ function confirmIssue(): void {
                                                 form.customer
                                                     .tax_identification_number
                                             "
-                                            :readonly="
-                                                Boolean(selectedCustomer)
-                                            "
+                                            :readonly="customerLocked"
                                             class="block form-input font-mono uppercase"
                                     /></FormField>
 
@@ -2185,9 +2336,7 @@ function confirmIssue(): void {
                                                 )
                                             "
                                             v-model="form.customer.country_code"
-                                            :readonly="
-                                                Boolean(selectedCustomer)
-                                            "
+                                            :readonly="customerLocked"
                                             maxlength="2"
                                             class="block form-input font-mono uppercase"
                                     /></FormField>
@@ -2214,9 +2363,7 @@ function confirmIssue(): void {
                                                 )
                                             "
                                             v-model="form.customer.address_line"
-                                            :readonly="
-                                                Boolean(selectedCustomer)
-                                            "
+                                            :readonly="customerLocked"
                                             autocomplete="off"
                                             class="block form-input"
                                     /></FormField>
@@ -2413,7 +2560,256 @@ function confirmIssue(): void {
                             :message="form.errors.lines"
                         />
 
-                        <section v-if="requiresLines" class="paper-block">
+                        <!--
+                    A note drafted from the document it corrects: the terms are
+                    the original's, so only the quantities are the person's.
+                -->
+                        <section
+                            v-if="creditGuide"
+                            class="paper-block"
+                            aria-labelledby="credit-lines-heading"
+                        >
+                            <div
+                                class="border-b border-[var(--ui-line)] px-5 py-5 sm:px-6"
+                            >
+                                <h2
+                                    id="credit-lines-heading"
+                                    class="text-sm font-semibold text-[var(--ui-ink)]"
+                                >
+                                    Linhas a creditar
+                                </h2>
+                                <p
+                                    class="mt-0.5 text-xs text-[var(--ui-ink-3)]"
+                                >
+                                    Cada linha vem de
+                                    {{ creditGuide.source.document_no }} com a
+                                    unidade, o preço, o desconto e o imposto
+                                    cobrados, e com o que falta creditar. Baixe
+                                    a quantidade ou retire a linha que não
+                                    devolve.
+                                    <template v-if="creditedInFullCount > 0">
+                                        {{
+                                            creditedInFullCount === 1
+                                                ? 'Uma linha já foi creditada por inteiro.'
+                                                : `${creditedInFullCount} linhas já foram creditadas por inteiro.`
+                                        }}
+                                    </template>
+                                </p>
+                            </div>
+
+                            <ul
+                                class="divide-y divide-[var(--ui-line)]"
+                                aria-label="Linhas do documento corrigido"
+                            >
+                                <li
+                                    v-for="row in creditRows"
+                                    :key="row.guide.line_number"
+                                    class="flex flex-wrap items-start gap-x-4 gap-y-3 px-5 py-4 sm:px-6"
+                                    :class="
+                                        row.state === 'included'
+                                            ? ''
+                                            : 'bg-[var(--ui-well)]/40'
+                                    "
+                                >
+                                    <div class="min-w-0 flex-1 basis-56">
+                                        <p
+                                            class="text-[0.8125rem] font-medium"
+                                            :class="
+                                                row.state === 'included'
+                                                    ? 'text-[var(--ui-ink)]'
+                                                    : 'text-[var(--ui-ink-3)]'
+                                            "
+                                        >
+                                            <span
+                                                class="me-1.5 numeric text-[var(--ui-ink-3)]"
+                                                >{{
+                                                    row.guide.line_number
+                                                }}</span
+                                            >{{ row.guide.product_description }}
+                                        </p>
+                                        <p
+                                            class="mt-0.5 text-xs text-[var(--ui-ink-3)]"
+                                        >
+                                            <span class="numeric">{{
+                                                formatPrice(
+                                                    row.guide.unit_price,
+                                                )
+                                            }}</span>
+                                            / {{ row.guide.unit_of_measure }}
+                                            <template
+                                                v-if="
+                                                    row.guide
+                                                        .discount_percentage !==
+                                                    '0'
+                                                "
+                                            >
+                                                · desconto
+                                                {{
+                                                    row.guide
+                                                        .discount_percentage
+                                                }}%
+                                            </template>
+                                            · {{ row.treatment }}
+                                        </p>
+                                        <p
+                                            class="mt-0.5 text-xs text-[var(--ui-ink-3)]"
+                                        >
+                                            Facturado
+                                            <span class="numeric">{{
+                                                row.guide.quantity
+                                            }}</span>
+                                            {{ row.guide.unit_of_measure }}
+                                            <template
+                                                v-if="
+                                                    row.guide
+                                                        .credited_quantity !==
+                                                    '0'
+                                                "
+                                            >
+                                                · já creditado
+                                                <span class="numeric">{{
+                                                    row.guide.credited_quantity
+                                                }}</span>
+                                            </template>
+                                        </p>
+                                    </div>
+
+                                    <template
+                                        v-if="
+                                            row.state === 'included' && row.line
+                                        "
+                                    >
+                                        <div class="w-32">
+                                            <label
+                                                :for="`credit-quantity-${row.guide.line_number}`"
+                                                class="sr-only"
+                                                >Quantidade a creditar de
+                                                {{
+                                                    row.guide
+                                                        .product_description
+                                                }}</label
+                                            >
+                                            <div class="relative">
+                                                <input
+                                                    :id="`credit-quantity-${row.guide.line_number}`"
+                                                    v-model="row.line.quantity"
+                                                    inputmode="decimal"
+                                                    autocomplete="off"
+                                                    class="block form-input pe-10 text-right numeric"
+                                                    :aria-invalid="
+                                                        row.tooMuch ||
+                                                        invalid(
+                                                            `lines.${row.index}`,
+                                                            `lines.${row.index}.quantity`,
+                                                        )
+                                                    "
+                                                    :aria-describedby="`credit-left-${row.guide.line_number}`"
+                                                />
+                                                <span
+                                                    class="pointer-events-none absolute inset-y-0 end-3 flex items-center text-xs text-[var(--ui-ink-3)]"
+                                                    aria-hidden="true"
+                                                    >{{
+                                                        row.guide
+                                                            .unit_of_measure
+                                                    }}</span
+                                                >
+                                            </div>
+                                            <p
+                                                :id="`credit-left-${row.guide.line_number}`"
+                                                class="mt-1 text-right text-xs"
+                                                :class="
+                                                    row.tooMuch
+                                                        ? 'font-medium text-[var(--ui-critical)]'
+                                                        : 'text-[var(--ui-ink-3)]'
+                                                "
+                                            >
+                                                {{
+                                                    row.tooMuch
+                                                        ? `Só pode creditar até ${row.guide.creditable_quantity}`
+                                                        : `Até ${row.guide.creditable_quantity}`
+                                                }}
+                                            </p>
+                                        </div>
+                                        <p
+                                            class="w-28 pt-2 text-right numeric text-[0.8125rem] font-medium text-[var(--ui-ink)]"
+                                        >
+                                            {{ formatMoney(row.gross) }}
+                                        </p>
+                                        <button
+                                            :id="`leave-out-credit-line-${row.guide.line_number}`"
+                                            type="button"
+                                            :disabled="form.lines.length === 1"
+                                            class="icon-button text-[var(--ui-ink-3)] focus-ring transition hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-25 dark:hover:bg-rose-400/10 dark:hover:text-rose-300"
+                                            :title="
+                                                form.lines.length === 1
+                                                    ? 'A nota precisa de pelo menos uma linha.'
+                                                    : undefined
+                                            "
+                                            @click="
+                                                leaveOutCreditLine(row.index)
+                                            "
+                                        >
+                                            <span class="sr-only"
+                                                >Retirar
+                                                {{
+                                                    row.guide
+                                                        .product_description
+                                                }}
+                                                da nota</span
+                                            >
+                                            <Trash2
+                                                class="size-4"
+                                                aria-hidden="true"
+                                            />
+                                        </button>
+                                        <FormError
+                                            class="basis-full"
+                                            :message="
+                                                errorFor(
+                                                    `lines.${row.index}.quantity`,
+                                                ) ??
+                                                errorFor(`lines.${row.index}`)
+                                            "
+                                        />
+                                    </template>
+
+                                    <template
+                                        v-else-if="row.state === 'left_out'"
+                                    >
+                                        <span
+                                            class="pt-2 text-xs text-[var(--ui-ink-3)]"
+                                            >Fica fora desta nota</span
+                                        >
+                                        <AppButton
+                                            :id="`restore-credit-line-${row.guide.line_number}`"
+                                            variant="outline"
+                                            size="sm"
+                                            @click="
+                                                restoreCreditLine(row.guide)
+                                            "
+                                        >
+                                            <Plus
+                                                class="size-3.5"
+                                                aria-hidden="true"
+                                            />
+                                            Repor
+                                        </AppButton>
+                                    </template>
+
+                                    <StatusBadge
+                                        v-else
+                                        class="mt-1.5"
+                                        label="Creditada por inteiro"
+                                        tone="neutral"
+                                    />
+                                </li>
+                            </ul>
+                        </section>
+
+                        <section
+                            v-if="requiresLines && !creditGuide"
+                            class="paper-block"
+                        >
                             <div
                                 class="flex items-center justify-between gap-4 border-b border-[var(--ui-line)] px-5 py-5 sm:px-6"
                             >
@@ -3625,7 +4021,10 @@ function confirmIssue(): void {
                     buyers — the State, large taxpayers, banks — keep tax back
                     and pay it to the AGT themselves.
                 -->
-                        <section v-if="requiresLines" class="paper-block">
+                        <section
+                            v-if="requiresLines && !creditGuide"
+                            class="paper-block"
+                        >
                             <div
                                 class="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--ui-line)] px-5 py-5 sm:px-6"
                             >
