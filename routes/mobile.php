@@ -32,6 +32,7 @@ use App\Http\Controllers\Api\Mobile\MobileSessionController;
 use App\Http\Controllers\Api\Mobile\MobileStockController;
 use App\Http\Controllers\Api\Mobile\MobileTillController;
 use App\Http\Controllers\Api\Mobile\MobileTodayController;
+use App\Http\Controllers\Api\Mobile\MobileTransportDocumentController;
 use App\Http\Middleware\EnsureMobileCompany;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Support\Facades\Route;
@@ -147,6 +148,16 @@ Route::name('mobile.v1.')->group(function (): void {
             Route::post('recurring/{profilePublicId}/run', [MobileRecurringController::class, 'run'])
                 ->middleware('throttle:10,1,mobile-recurring-run')
                 ->name('recurring.run');
+            Route::get('transport-documents/setup', [MobileTransportDocumentController::class, 'setup'])->name('transport-documents.setup');
+            Route::get('transport-documents', [MobileTransportDocumentController::class, 'index'])->name('transport-documents.index');
+            Route::post('transport-documents/preview', [MobileTransportDocumentController::class, 'preview'])
+                ->middleware('throttle:60,1,mobile-transport-preview')
+                ->name('transport-documents.preview');
+            Route::post('transport-documents', [MobileTransportDocumentController::class, 'store'])
+                ->middleware('throttle:10,1,mobile-transport-issue')
+                ->name('transport-documents.store');
+            Route::get('transport-documents/{transportDocumentPublicId}', [MobileTransportDocumentController::class, 'show'])
+                ->name('transport-documents.show');
             Route::get('till', [MobileTillController::class, 'show'])->name('till.show');
             Route::post('till/sessions', [MobileTillController::class, 'open'])
                 ->middleware('throttle:10,1,mobile-till-open')

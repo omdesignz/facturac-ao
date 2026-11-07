@@ -38,4 +38,19 @@ class TransportDocumentPrintController extends Controller
             'Content-Disposition' => 'inline; filename="'.$this->pdf->filename($transportDocument).'"',
         ]);
     }
+
+    /**
+     * The same PDF behind the signed link the phone shows as a QR. The route's
+     * signature is the only check: the person reading it has no account.
+     */
+    public function shared(TransportDocument $transportDocument): HttpResponse
+    {
+        abort_if($transportDocument->document_no === null, 404);
+
+        return response($this->pdf->render($transportDocument), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="'.$this->pdf->filename($transportDocument).'"',
+            'Cache-Control' => 'private, no-store',
+        ]);
+    }
 }
