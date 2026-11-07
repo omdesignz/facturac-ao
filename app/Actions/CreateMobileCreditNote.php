@@ -7,9 +7,9 @@ use App\Exceptions\FiscalFinalizationBlocked;
 use App\Fiscal\Agt\Support\CanonicalNumber;
 use App\Fiscal\Calculation\FiscalCalculator;
 use App\Fiscal\Documents\CreditNoteAllowance;
-use App\Fiscal\Documents\CurrentAgtState;
+use App\Fiscal\Documents\CreditNoteEligibility;
+use App\Fiscal\Documents\CreditNoteObstacle;
 use App\Fiscal\Pos\PosSeriesResolver;
-use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
 use App\Models\Customer;
 use App\Models\Establishment;
@@ -42,7 +42,7 @@ use Illuminate\Validation\ValidationException;
  */
 final readonly class CreateMobileCreditNote
 {
-    public const array CORRECTABLE = [FiscalDocumentType::Invoice, FiscalDocumentType::InvoiceReceipt];
+    public const array CORRECTABLE = CreditNoteEligibility::CORRECTABLE;
 
     public function __construct(
         private SaveFiscalDocumentDraft $saveDraft,
@@ -50,6 +50,7 @@ final readonly class CreateMobileCreditNote
         private PosSeriesResolver $series,
         private FiscalCalculator $calculator,
         private CreditNoteAllowance $allowance,
+        private CreditNoteEligibility $eligibility,
     ) {}
 
     /**
@@ -57,15 +58,13 @@ final readonly class CreateMobileCreditNote
      */
     public function refusal(FiscalDocument $source): ?string
     {
-        $legalEntity = $source->legalEntity;
-
-        return match (true) {
-            ! in_array($source->document_type, self::CORRECTABLE, true) => 'No telemóvel corrigem-se facturas e facturas-recibo. Use facturac.ao para este documento.',
-            $source->status === FiscalDocumentStatus::Invalid => 'A AGT devolveu este documento. Trate-o em facturac.ao.',
-            ! CurrentAgtState::acceptanceEvidenceSatisfied($source) => 'A AGT ainda não validou este documento. Poderá corrigi-lo quando estiver válido.',
-            $source->currency_code !== $legalEntity->currency_code || $source->withholdings()->exists() => 'Este documento tem moeda estrangeira ou retenções. Corrija-o em facturac.ao.',
-            array_sum(array_map(fn (array $line): int => $this->allowance->scaled($line['creditable_quantity']), $this->lines($source))) === 0 => 'Este documento já foi creditado por inteiro.',
-            default => null,
+        return match ($this->eligibility->obstacle($source)) {
+            CreditNoteObstacle::NotCorrectable => 'No telemóvel corrigem-se facturas e facturas-recibo. Use facturac.ao para este documento.',
+            CreditNoteObstacle::Returned => 'A AGT devolveu este documento. Trate-o em facturac.ao.',
+            CreditNoteObstacle::NotValidated => 'A AGT ainda não validou este documento. Poderá corrigi-lo quando estiver válido.',
+            CreditNoteObstacle::ForeignCurrencyOrWithholdings => 'Este documento tem moeda estrangeira ou retenções. Corrija-o em facturac.ao.',
+            CreditNoteObstacle::FullyCredited => 'Este documento já foi creditado por inteiro.',
+            null => null,
         };
     }
 

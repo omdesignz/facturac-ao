@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\PrepareCreditNoteCorrection;
 use App\Actions\PrepareRepeatInvoice;
 use App\Actions\ResolveCustomerPrices;
 use App\Actions\SaveFiscalDocumentDraft;
@@ -39,7 +40,7 @@ class FiscalDocumentController extends Controller
 {
     public function __construct(private ResolveCustomerPrices $resolvePrices) {}
 
-    public function create(Request $request, PrepareRepeatInvoice $repeat): Response|RedirectResponse
+    public function create(Request $request, PrepareRepeatInvoice $repeat, PrepareCreditNoteCorrection $correction): Response|RedirectResponse
     {
         $legalEntity = $this->legalEntity($request);
 
@@ -58,7 +59,14 @@ class FiscalDocumentController extends Controller
             $requestedType = FiscalDocumentType::Invoice;
         }
 
-        $request->validate(['repeat' => ['sometimes', 'nullable', 'string', 'max:26']]);
+        $request->validate([
+            'repeat' => ['sometimes', 'nullable', 'string', 'max:26'],
+            'corrigir' => ['sometimes', 'nullable', 'string', 'max:26'],
+        ]);
+
+        if ($request->filled('corrigir')) {
+            return $this->correctionDraft($legalEntity, (string) $request->query('corrigir'), $correction);
+        }
 
         if ($request->filled('repeat')) {
             try {
@@ -110,7 +118,7 @@ class FiscalDocumentController extends Controller
             ->with('success', 'Rascunho guardado. Nenhum número fiscal foi consumido.');
     }
 
-    public function edit(Request $request, FiscalDocument $fiscalDocument): Response
+    public function edit(Request $request, FiscalDocument $fiscalDocument, PrepareCreditNoteCorrection $correction): Response
     {
         $legalEntity = $this->legalEntity($request);
 
@@ -125,7 +133,57 @@ class FiscalDocumentController extends Controller
 
         $fiscalDocument->load(['customer', 'lines.taxes', 'lines.originTransportLine', 'settlements.settledDocument', 'withholdings']);
 
-        return Inertia::render('Invoices/Create', $this->pageProps($legalEntity, $fiscalDocument));
+        $props = $this->pageProps($legalEntity, $fiscalDocument);
+        $guided = $correction->forDraft($fiscalDocument);
+
+        if ($guided !== null) {
+            $props['creditGuide'] = $guided['guide'];
+            $props['document']['lines'] = $guided['lines'];
+        }
+
+        return Inertia::render('Invoices/Create', $props);
+    }
+
+    /**
+     * A credit note against an issued invoice, drafted from its own lines.
+     */
+    private function correctionDraft(LegalEntity $legalEntity, string $sourcePublicId, PrepareCreditNoteCorrection $correction): Response|RedirectResponse
+    {
+        try {
+            $seed = $correction->execute($legalEntity, $sourcePublicId);
+        } catch (ValidationException $exception) {
+            return redirect()->route('documents.index', ['documento' => $sourcePublicId])
+                ->with('error', collect($exception->errors())->flatten()->first());
+        }
+
+        $source = $seed['source'];
+        $customer = $seed['customer'];
+        $props = $this->pageProps($legalEntity, null, FiscalDocumentType::CreditNote);
+        $props['creditGuide'] = $seed['guide'];
+        $props['document'] = [
+            ...$props['document'],
+            'due_date' => null,
+            'currency_code' => $source->currency_code,
+            'establishment_public_id' => $seed['establishment']?->public_id
+                ?? $props['document']['establishment_public_id'],
+            'customer_public_id' => $customer?->public_id,
+            'customer' => $customer instanceof Customer ? [
+                'name' => $customer->name,
+                'tax_identification_number' => $customer->tax_identification_number ?? '',
+                'country_code' => $customer->country_code,
+                'address_line' => $customer->address_line ?? '',
+            ] : [
+                'name' => $source->customer_name,
+                'tax_identification_number' => $source->customer_tax_identification_number ?? '',
+                'country_code' => $source->customer_country_code,
+                'address_line' => $source->customer_address ?? '',
+            ],
+            'references_document_public_id' => $source->public_id,
+            'references_document_no' => $source->document_no,
+            'lines' => $seed['lines'],
+        ];
+
+        return Inertia::render('Invoices/Create', $props);
     }
 
     public function update(
@@ -217,6 +275,7 @@ class FiscalDocumentController extends Controller
 
         return [
             'recoveryScope' => $legalEntity->public_id,
+            'creditGuide' => null,
             'transportLines' => TransportDocumentLine::query()
                 ->where('workspace_id', $legalEntity->workspace_id)
                 ->where('legal_entity_id', $legalEntity->id)

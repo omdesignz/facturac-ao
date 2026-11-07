@@ -103,11 +103,25 @@ export function writeRecovery<T>(
     );
 }
 
-/** Repeating one source must never replace an unrelated unfinished invoice. */
+/**
+ * Repeating one source, or correcting it, must never replace an unrelated
+ * unfinished invoice.
+ */
 export function invoiceRecoveryDocument(
     publicId: string | null,
     type: string,
     repeatSourceId?: string,
+    correctedSourceId?: string,
 ): string {
-    return `invoice:${publicId ?? (repeatSourceId ? `repeat:${repeatSourceId}` : type)}`;
+    if (publicId !== null) {
+        return `invoice:${publicId}`;
+    }
+
+    if (repeatSourceId) {
+        return `invoice:repeat:${repeatSourceId}`;
+    }
+
+    return correctedSourceId
+        ? `invoice:correct:${correctedSourceId}`
+        : `invoice:${type}`;
 }

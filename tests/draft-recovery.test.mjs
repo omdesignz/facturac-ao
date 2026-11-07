@@ -182,3 +182,11 @@ test('repeat drafts preserve ordinary drafts and other sources and rekey after s
     assert.equal(readRecovery(saved, other), null);
     assert.equal(invoiceRecoveryDocument('new-document', 'FT', 'source-a'), 'invoice:new-document');
 });
+
+test('a credit note drafted from a document keeps its own recovery key', () => {
+    const blank = invoiceRecoveryDocument(null, 'NC');
+    const correcting = invoiceRecoveryDocument(null, 'NC', undefined, 'source-a');
+    const other = invoiceRecoveryDocument(null, 'NC', undefined, 'source-b');
+    assert.equal(new Set([blank, correcting, other]).size, 3);
+    assert.equal(invoiceRecoveryDocument('saved-note', 'NC', undefined, 'source-a'), 'invoice:saved-note');
+});
