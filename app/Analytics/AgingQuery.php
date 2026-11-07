@@ -182,6 +182,8 @@ class AgingQuery
                 'movement_minor' => $movement,
                 'balance_minor' => $balance,
                 'days_past_due' => $this->daysPastDue($document),
+                // What is still open on this one document, so "late" is only said of debt.
+                'outstanding_minor' => $this->receivables->isBillable($type) ? $this->receivables->outstandingMinor($document) : 0,
             ];
         }
 

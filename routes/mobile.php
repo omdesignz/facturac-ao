@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Mobile\MobileBusinessPdfController;
 use App\Http\Controllers\Api\Mobile\MobileCollectionsController;
 use App\Http\Controllers\Api\Mobile\MobileCompanySetupController;
 use App\Http\Controllers\Api\Mobile\MobileCreditNoteController;
@@ -99,6 +100,9 @@ Route::name('mobile.v1.')->group(function (): void {
                 ->middleware('throttle:20,1,mobile-customer')
                 ->name('customers.store');
             Route::get('customers/{customerPublicId}', MobileCustomerProfileController::class)->name('customers.show');
+            Route::get('customers/{customerPublicId}/statement.pdf', [MobileBusinessPdfController::class, 'statement'])
+                ->middleware('throttle:20,1,mobile-pdf')
+                ->name('customers.statement');
             Route::patch('customers/{customerPublicId}', MobileCustomerUpdateController::class)
                 ->middleware('throttle:30,1,mobile-customer-update')
                 ->name('customers.update');
@@ -122,6 +126,9 @@ Route::name('mobile.v1.')->group(function (): void {
                 ->middleware('throttle:20,1,mobile-quote')
                 ->name('quotes.store');
             Route::get('quotes/{quotePublicId}', [MobileQuoteController::class, 'show'])->name('quotes.show');
+            Route::get('quotes/{quotePublicId}/pdf', [MobileBusinessPdfController::class, 'quote'])
+                ->middleware('throttle:20,1,mobile-pdf')
+                ->name('quotes.pdf');
             Route::put('quotes/{quotePublicId}/status', [MobileQuoteController::class, 'status'])
                 ->middleware('throttle:20,1,mobile-quote-status')
                 ->name('quotes.status');

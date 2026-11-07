@@ -243,10 +243,8 @@ it('marks a quote sent without delivering anything, and a repeat is harmless', f
     $quote = phoneQuote($this, $company);
 
     $this->withToken($company['token'])->getJson(route('mobile.v1.quotes.show', $quote->public_id))
-        ->assertJsonPath('data.share_text', fn (string $text): bool => str_contains($text, $quote->reference)
-            && str_contains($text, '2 × ')
-            && str_contains($text, '228,00 Kz')
-            && str_contains($text, 'Este documento não serve de factura.'));
+        ->assertJsonPath('data.can_share_pdf', true)
+        ->assertJsonMissingPath('data.share_text');
 
     foreach ([1, 2] as $attempt) {
         $this->withToken($company['token'])->putJson(route('mobile.v1.quotes.status', $quote->public_id), ['status' => 'sent'])

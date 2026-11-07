@@ -70,7 +70,8 @@ final readonly class MobileQuotePresenter
             'can_send' => $canManage && $status === QuoteStatus::Draft,
             'can_decide' => $canManage && $status === QuoteStatus::Sent,
             'can_convert' => $canManage && $status->canConvert() && ! $invoice instanceof FiscalDocument,
-            'share_text' => $status->isClosed() ? null : $this->shareText($quote, $legalEntity),
+            // The quote goes to the customer as a PDF (`quotes/{id}/pdf`), while it is still open.
+            'can_share_pdf' => ! $status->isClosed(),
             'summary' => $this->quoteSummary($quote),
             'invoice' => $invoice instanceof FiscalDocument ? $this->invoice($invoice, $user, $legalEntity) : null,
         ];
@@ -137,44 +138,10 @@ final readonly class MobileQuotePresenter
         ];
     }
 
-    /**
-     * The quote as words, for whichever app the person sends it with.
-     */
-    private function shareText(Quote $quote, LegalEntity $legalEntity): string
-    {
-        $company = $legalEntity->trade_name ?: $legalEntity->legal_name;
-        $lines = $quote->lines->map(fn (QuoteLine $line): string => sprintf(
-            '%s × %s: %s',
-            $this->quantity($line->quantity_units, $line->quantity_scale),
-            $line->product_description,
-            $this->money($line->gross_amount_minor, $quote->currency_code),
-        ))->implode("\n");
-
-        return implode("\n", [
-            "Orçamento {$quote->reference} de {$company}",
-            "Para {$quote->customer_name}",
-            '',
-            $lines,
-            '',
-            'Total com IVA: '.$this->money($quote->gross_total_minor, $quote->currency_code),
-            'Válido até '.$quote->valid_until->format('d/m/Y'),
-            '',
-            'Este documento não serve de factura.',
-        ]);
-    }
-
     private function quantity(int $units, int $scale): string
     {
         $number = (string) CanonicalNumber::fromScaledInteger($units, $scale);
 
         return str_contains($number, '.') ? rtrim(rtrim($number, '0'), '.') : $number;
-    }
-
-    private function money(int $minor, string $currency): string
-    {
-        $whole = number_format(intdiv($minor, 100), 0, '', ' ');
-        $cents = str_pad((string) ($minor % 100), 2, '0', STR_PAD_LEFT);
-
-        return "{$whole},{$cents} ".($currency === 'AOA' ? 'Kz' : $currency);
     }
 }
