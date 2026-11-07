@@ -78,7 +78,7 @@ class MobileQuoteController
         return response()->json(['data' => $quotes->preview(
             $this->legalEntity($request),
             (string) $request->validated('customer_public_id'),
-            $request->invoiceLines(),
+            $request->quoteLines(),
         )]);
     }
 
@@ -92,7 +92,7 @@ class MobileQuoteController
             $quote = $quotes->execute($this->legalEntity($request), $this->user($request), [
                 'client_key' => (string) $request->validated('client_key'),
                 'customer_public_id' => (string) $request->validated('customer_public_id'),
-                'lines' => $request->invoiceLines(),
+                'lines' => $request->quoteLines(),
                 'valid_for_days' => (int) $request->validated('valid_for_days'),
                 'expected_total_minor' => (int) $request->validated('expected_total_minor'),
             ]);

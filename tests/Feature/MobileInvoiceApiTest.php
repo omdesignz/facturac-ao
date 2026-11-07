@@ -1,14 +1,18 @@
 <?php
 
+use App\Actions\CreateMobileInvoice;
 use App\Actions\SignInMobileDevice;
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
+use App\FiscalOperationType;
 use App\Jobs\SubmitAgtDocument;
+use App\Models\CatalogueItem;
 use App\Models\Customer;
 use App\Models\CustomerPrice;
 use App\Models\FiscalDocument;
 use App\Models\MobileInvoice;
 use App\WorkspaceRole;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
@@ -352,3 +356,115 @@ test('fractional invoice preview and saved draft retain all four decimal places'
     expect(FiscalDocument::count())->toBe(1);
     Queue::assertNothingPushed();
 });
+
+/**
+ * Two of the catalogue item at 10 % off (180,00 + 25,20 IVA) and a one-off
+ * repair at 50,00, not subject to IVA: 255,20 in all.
+ *
+ * @param  array<string, mixed>  $company
+ * @return list<array<string, mixed>>
+ */
+function phoneInvoiceMixedLines(array $company): array
+{
+    return [
+        ['catalogue_item_public_id' => $company['item']->public_id, 'quantity' => '2', 'discount_percentage' => '10'],
+        ['description' => 'Reparação do portão', 'quantity' => '1', 'unit_price_minor' => 5_000, 'tax_treatment' => 'NS_M02', 'service' => true],
+    ];
+}
+
+test('a line can carry a discount and a one-off line is priced by the person, in the order sent', function () {
+    $company = phoneInvoiceCompany();
+
+    $this->withToken($company['token'])
+        ->postJson(route('mobile.v1.invoices.preview'), [
+            'customer_public_id' => $company['customer']->public_id,
+            'lines' => phoneInvoiceMixedLines($company),
+        ])
+        ->assertOk()
+        ->assertJsonPath('data.lines.0.description', $company['item']->name)
+        ->assertJsonPath('data.lines.0.discount_percentage', '10')
+        ->assertJsonPath('data.lines.0.gross_minor', 20_520)
+        ->assertJsonPath('data.lines.1.description', 'Reparação do portão')
+        ->assertJsonPath('data.lines.1.tax_percentage', '0')
+        ->assertJsonPath('data.lines.1.gross_minor', 5_000)
+        ->assertJsonPath('data.gross_total_minor', 25_520);
+});
+
+test('the invoice keeps the discount, the one-off line and the note for the customer', function () {
+    $company = phoneInvoiceCompany();
+
+    $this->withToken($company['token'])
+        ->postJson(route('mobile.v1.invoices.store'), phoneInvoicePayload($company, [
+            'lines' => phoneInvoiceMixedLines($company),
+            'expected_total_minor' => 25_520,
+            'notes' => 'Entrega amanhã de manhã.',
+        ]))
+        ->assertCreated()
+        ->assertJsonPath('data.is_issued', true);
+
+    $document = FiscalDocument::query()->sole();
+    [$item, $repair] = $document->lines()->orderBy('line_number')->get()->all();
+
+    expect($document->notes)->toBe('Entrega amanhã de manhã.')
+        ->and($document->gross_total_minor)->toBe(25_520)
+        ->and($item->product_code)->toBe($company['item']->code)
+        ->and($item->discount_rate_basis_points)->toBe(1_000)
+        ->and($repair->product_description)->toBe('Reparação do portão')
+        ->and($repair->product_code)->toBe(CreateMobileInvoice::oneOffCode('reparação  do portão'))
+        ->and($repair->product_code)->toStartWith('AV-')
+        ->and($repair->operation_type)->toBe(FiscalOperationType::GeneralService)
+        ->and($repair->taxes()->sole()->tax_exemption_code)->toBe('M02')
+        ->and($repair->unit_of_measure)->toBe('UN');
+});
+
+test('a line is either an item or a priced description, never both or half of one', function (array $line) {
+    $company = phoneInvoiceCompany();
+
+    $this->withToken($company['token'])
+        ->postJson(route('mobile.v1.invoices.preview'), [
+            'customer_public_id' => $company['customer']->public_id,
+            'lines' => [$line],
+        ])
+        ->assertUnprocessable();
+})->with([
+    'both' => fn () => ['catalogue_item_public_id' => 'x', 'description' => 'Portão', 'quantity' => '1', 'unit_price_minor' => 100, 'tax_treatment' => 'IVA_NOR_14'],
+    'neither' => fn () => ['quantity' => '1'],
+    'no price' => fn () => ['description' => 'Portão', 'quantity' => '1', 'tax_treatment' => 'IVA_NOR_14'],
+    'no tax' => fn () => ['description' => 'Portão', 'quantity' => '1', 'unit_price_minor' => 100],
+    'an unsupported tax' => fn () => ['description' => 'Portão', 'quantity' => '1', 'unit_price_minor' => 100, 'tax_treatment' => 'IVA_NOR_7'],
+    'a discount over 100 %' => fn () => ['description' => 'Portão', 'quantity' => '1', 'unit_price_minor' => 100, 'tax_treatment' => 'IVA_NOR_14', 'discount_percentage' => '101'],
+]);
+
+test('someone who may not price items may not write a one-off line', function () {
+    $company = phoneInvoiceCompany();
+    Gate::policy(CatalogueItem::class, PhoneInvoiceRefusesItems::class);
+
+    $this->withToken($company['token'])
+        ->postJson(route('mobile.v1.invoices.store'), phoneInvoicePayload($company, [
+            'lines' => phoneInvoiceMixedLines($company),
+            'expected_total_minor' => 25_520,
+        ]))
+        ->assertForbidden()
+        ->assertJsonPath('error.code', 'ONE_OFF_LINE_NOT_ALLOWED');
+
+    expect(FiscalDocument::query()->count())->toBe(0);
+});
+
+test('a quote from the phone stays plain catalogue lines', function () {
+    $company = phoneInvoiceCompany();
+
+    $this->withToken($company['token'])
+        ->postJson(route('mobile.v1.quotes.preview'), [
+            'customer_public_id' => $company['customer']->public_id,
+            'lines' => [['catalogue_item_public_id' => $company['item']->public_id, 'quantity' => '2', 'discount_percentage' => '10']],
+        ])
+        ->assertUnprocessable();
+});
+
+final class PhoneInvoiceRefusesItems
+{
+    public function create(): bool
+    {
+        return false;
+    }
+}

@@ -19,6 +19,26 @@ class PreviewMobileQuoteRequest extends PreviewMobileInvoiceRequest
     }
 
     /**
+     * The quote's lines: always catalogue items, since a quote takes no
+     * discount and no one-off line.
+     *
+     * @return list<array{catalogue_item_public_id: string, quantity: string}>
+     */
+    public function quoteLines(): array
+    {
+        return array_values(array_map(fn (array $line): array => [
+            'catalogue_item_public_id' => (string) $line['catalogue_item_public_id'],
+            'quantity' => (string) $line['quantity'],
+        ], (array) $this->validated('lines')));
+    }
+
+    /** A quote stays plain catalogue lines, priced on the server. */
+    protected function linesMayCarryAdjustments(): bool
+    {
+        return false;
+    }
+
+    /**
      * @return array<string, string>
      */
     public function messages(): array

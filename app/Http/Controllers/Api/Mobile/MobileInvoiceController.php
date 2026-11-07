@@ -95,6 +95,10 @@ class MobileInvoiceController
     {
         Gate::authorize('create', FiscalDocument::class);
 
+        if ($request->hasOneOffLines() && Gate::denies('create', CatalogueItem::class)) {
+            return $this->oneOffRefused();
+        }
+
         return response()->json(['data' => $this->invoices->preview(
             $this->legalEntity($request),
             (string) $request->validated('customer_public_id'),
@@ -135,6 +139,11 @@ class MobileInvoiceController
             return $this->refusal('TWO_FACTOR_REQUIRED_TO_ISSUE', 'Active a autenticação em dois passos em facturac.ao para emitir.', Response::HTTP_FORBIDDEN);
         }
 
+        // A one-off line sets its own price: only someone who may price items may write one.
+        if ($request->hasOneOffLines() && Gate::denies('create', CatalogueItem::class)) {
+            return $this->oneOffRefused();
+        }
+
         $unconfirmed = $issue ? $this->issuer->refusal($user, $request->validated()) : null;
 
         if ($unconfirmed !== null) {
@@ -146,6 +155,7 @@ class MobileInvoiceController
                 'client_key' => (string) $request->validated('client_key'),
                 'customer_public_id' => (string) $request->validated('customer_public_id'),
                 'lines' => $request->invoiceLines(),
+                'notes' => $request->notes(),
                 'expected_total_minor' => (int) $request->validated('expected_total_minor'),
                 'issue' => $issue,
             ]);
@@ -158,6 +168,15 @@ class MobileInvoiceController
         return response()->json(
             ['data' => $receipt->for($invoice, $legalEntity)],
             $invoice->replayed ? Response::HTTP_OK : Response::HTTP_CREATED,
+        );
+    }
+
+    private function oneOffRefused(): JsonResponse
+    {
+        return $this->refusal(
+            'ONE_OFF_LINE_NOT_ALLOWED',
+            'A sua função nesta empresa não permite linhas avulsas. Escolha artigos do catálogo.',
+            Response::HTTP_FORBIDDEN,
         );
     }
 

@@ -112,6 +112,70 @@ class RecordStockMovement
     }
 
     /**
+     * Sets the balance to what was counted on the shelf, recording the
+     * difference as an acerto: positive when more was found, negative when less.
+     *
+     * The difference is worked out against the locked balance, so a sale that
+     * lands in between is never double counted, and repeating the same count
+     * finds nothing left to correct. Returns null when the count matched.
+     */
+    public function countTo(
+        CatalogueItem $item,
+        Establishment $establishment,
+        int $countedUnits,
+        ?User $actor = null,
+        ?string $reference = null,
+        ?string $note = null,
+    ): ?StockMovement {
+        app(SubscriptionAccess::class)->require($item->workspace_id, SubscriptionFeature::Inventory);
+
+        if ($countedUnits < 0) {
+            throw new InvalidArgumentException('A contagem não pode ser negativa.');
+        }
+
+        if (! $item->tracks_stock) {
+            throw BillingActionRefused::because("O artigo {$item->code} não controla inventário.");
+        }
+
+        if ($item->legal_entity_id !== $establishment->legal_entity_id) {
+            throw BillingActionRefused::because('O artigo e o estabelecimento pertencem a empresas diferentes.');
+        }
+
+        return DB::transaction(function () use ($item, $establishment, $countedUnits, $actor, $reference, $note): ?StockMovement {
+            $level = $this->lockedLevel($item, $establishment);
+            $balanceBefore = $level->quantity_units;
+            $difference = $countedUnits - $balanceBefore;
+
+            if ($difference === 0) {
+                return null;
+            }
+
+            $level->quantity_units = $countedUnits;
+            $level->last_movement_at = now();
+            $level->save();
+
+            $this->warnIfLow($item, $establishment, $balanceBefore, $countedUnits);
+
+            return StockMovement::query()->create([
+                'workspace_id' => $item->workspace_id,
+                'legal_entity_id' => $item->legal_entity_id,
+                'catalogue_item_id' => $item->id,
+                'establishment_id' => $establishment->id,
+                'type' => StockMovementType::Adjustment,
+                'quantity_units' => $difference,
+                'quantity_scale' => $level->quantity_scale,
+                'balance_after_units' => $countedUnits,
+                'unit_cost_micros' => $level->average_cost_micros,
+                'fiscal_document_id' => null,
+                'created_by_user_id' => $actor?->id,
+                'reference' => $reference,
+                'note' => $note,
+                'moved_at' => now(),
+            ]);
+        });
+    }
+
+    /**
      * Says something the first time a movement takes an article below its
      * reorder level.
      *

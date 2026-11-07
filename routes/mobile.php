@@ -30,6 +30,7 @@ use App\Http\Controllers\Api\Mobile\MobileRecurringController;
 use App\Http\Controllers\Api\Mobile\MobileReminderController;
 use App\Http\Controllers\Api\Mobile\MobileSessionController;
 use App\Http\Controllers\Api\Mobile\MobileStockController;
+use App\Http\Controllers\Api\Mobile\MobileStockCountController;
 use App\Http\Controllers\Api\Mobile\MobileTillController;
 use App\Http\Controllers\Api\Mobile\MobileTodayController;
 use App\Http\Controllers\Api\Mobile\MobileTransportDocumentController;
@@ -118,6 +119,13 @@ Route::name('mobile.v1.')->group(function (): void {
                 ->middleware('throttle:20,1,mobile-item')
                 ->name('items.store');
             Route::get('stock', MobileStockController::class)->name('stock.index');
+            Route::get('stock/counts/setup', [MobileStockCountController::class, 'setup'])->name('stock.counts.setup');
+            Route::post('stock/counts/preview', [MobileStockCountController::class, 'preview'])
+                ->middleware('throttle:60,1,mobile-stock-count-preview')
+                ->name('stock.counts.preview');
+            Route::post('stock/counts', [MobileStockCountController::class, 'store'])
+                ->middleware('throttle:10,1,mobile-stock-count')
+                ->name('stock.counts.store');
             Route::get('notifications', [MobileNotificationController::class, 'index'])->name('notifications.index');
             Route::get('notifications/unread', [MobileNotificationController::class, 'unread'])->name('notifications.unread');
             Route::post('notifications/read-all', [MobileNotificationController::class, 'readAll'])->name('notifications.read-all');

@@ -53,7 +53,7 @@ class MobileStockController
         ];
     }
 
-    private static function quantity(int $units, int $scale): string
+    public static function quantity(int $units, int $scale): string
     {
         $quantity = number_format($units / (10 ** $scale), $scale, ',', ' ');
 
