@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\Mobile\MobilePaymentController;
 use App\Http\Controllers\Api\Mobile\MobileProfileController;
 use App\Http\Controllers\Api\Mobile\MobilePushDeviceController;
 use App\Http\Controllers\Api\Mobile\MobileQuoteController;
+use App\Http\Controllers\Api\Mobile\MobileReceiptController;
 use App\Http\Controllers\Api\Mobile\MobileReminderController;
 use App\Http\Controllers\Api\Mobile\MobileSessionController;
 use App\Http\Controllers\Api\Mobile\MobileStockController;
@@ -74,6 +75,7 @@ Route::name('mobile.v1.')->group(function (): void {
             Route::get('collections', MobileCollectionsController::class)->name('collections');
             Route::get('documents', [MobileDocumentController::class, 'index'])->name('documents.index');
             Route::get('documents/{documentPublicId}', [MobileDocumentController::class, 'show'])->name('documents.show');
+            Route::get('documents/{documentPublicId}/receipt', MobileReceiptController::class)->name('documents.receipt');
             Route::put('documents/{documentPublicId}/live-activity', [MobileLiveActivityController::class, 'update'])
                 ->middleware('throttle:30,1,mobile-live-activity')
                 ->name('documents.live-activity');
