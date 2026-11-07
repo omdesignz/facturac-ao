@@ -24,6 +24,13 @@ Schedule::command('billing:generate-recurring-invoices')
     ->timezone('Africa/Luanda')
     ->withoutOverlapping();
 
+// The evening before, so whoever runs an avença can skip it this once or raise
+// it now; ignored, the morning run above goes ahead as always.
+Schedule::command('recurring:remind-due')
+    ->dailyAt('18:00')
+    ->timezone('Africa/Luanda')
+    ->withoutOverlapping();
+
 // Before the day's work starts, so the copy is of a quiet database.
 Schedule::command('backup:run')
     ->dailyAt('03:00')
@@ -35,6 +42,12 @@ Schedule::command('backup:run')
 Schedule::command('notifications:scan')
     ->dailyAt('07:00')
     ->timezone('Africa/Luanda')
+    ->withoutOverlapping();
+
+// Hourly, because each company closes on its own clock; the command only
+// speaks for those whose closing hour it is, once a day.
+Schedule::command('notifications:daily-close')
+    ->hourlyAt(0)
     ->withoutOverlapping();
 
 Schedule::command('reports:prune-exports')->hourly()->withoutOverlapping();

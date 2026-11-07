@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Mobile\MobileBusinessPdfController;
 use App\Http\Controllers\Api\Mobile\MobileCollectionsController;
 use App\Http\Controllers\Api\Mobile\MobileCompanySetupController;
 use App\Http\Controllers\Api\Mobile\MobileCreditNoteController;
@@ -24,6 +25,8 @@ use App\Http\Controllers\Api\Mobile\MobilePaymentController;
 use App\Http\Controllers\Api\Mobile\MobileProfileController;
 use App\Http\Controllers\Api\Mobile\MobilePushDeviceController;
 use App\Http\Controllers\Api\Mobile\MobileQuoteController;
+use App\Http\Controllers\Api\Mobile\MobileReceiptController;
+use App\Http\Controllers\Api\Mobile\MobileRecurringController;
 use App\Http\Controllers\Api\Mobile\MobileReminderController;
 use App\Http\Controllers\Api\Mobile\MobileSessionController;
 use App\Http\Controllers\Api\Mobile\MobileStockController;
@@ -74,6 +77,7 @@ Route::name('mobile.v1.')->group(function (): void {
             Route::get('collections', MobileCollectionsController::class)->name('collections');
             Route::get('documents', [MobileDocumentController::class, 'index'])->name('documents.index');
             Route::get('documents/{documentPublicId}', [MobileDocumentController::class, 'show'])->name('documents.show');
+            Route::get('documents/{documentPublicId}/receipt', MobileReceiptController::class)->name('documents.receipt');
             Route::put('documents/{documentPublicId}/live-activity', [MobileLiveActivityController::class, 'update'])
                 ->middleware('throttle:30,1,mobile-live-activity')
                 ->name('documents.live-activity');
@@ -97,6 +101,9 @@ Route::name('mobile.v1.')->group(function (): void {
                 ->middleware('throttle:20,1,mobile-customer')
                 ->name('customers.store');
             Route::get('customers/{customerPublicId}', MobileCustomerProfileController::class)->name('customers.show');
+            Route::get('customers/{customerPublicId}/statement.pdf', [MobileBusinessPdfController::class, 'statement'])
+                ->middleware('throttle:20,1,mobile-pdf')
+                ->name('customers.statement');
             Route::patch('customers/{customerPublicId}', MobileCustomerUpdateController::class)
                 ->middleware('throttle:30,1,mobile-customer-update')
                 ->name('customers.update');
@@ -120,6 +127,9 @@ Route::name('mobile.v1.')->group(function (): void {
                 ->middleware('throttle:20,1,mobile-quote')
                 ->name('quotes.store');
             Route::get('quotes/{quotePublicId}', [MobileQuoteController::class, 'show'])->name('quotes.show');
+            Route::get('quotes/{quotePublicId}/pdf', [MobileBusinessPdfController::class, 'quote'])
+                ->middleware('throttle:20,1,mobile-pdf')
+                ->name('quotes.pdf');
             Route::put('quotes/{quotePublicId}/status', [MobileQuoteController::class, 'status'])
                 ->middleware('throttle:20,1,mobile-quote-status')
                 ->name('quotes.status');
@@ -129,6 +139,14 @@ Route::name('mobile.v1.')->group(function (): void {
             Route::post('quotes/{quotePublicId}/invoice/issue', [MobileQuoteController::class, 'issue'])
                 ->middleware('throttle:10,1,mobile-quote-issue')
                 ->name('quotes.issue');
+            Route::get('recurring', [MobileRecurringController::class, 'index'])->name('recurring.index');
+            Route::get('recurring/{profilePublicId}', [MobileRecurringController::class, 'show'])->name('recurring.show');
+            Route::post('recurring/{profilePublicId}/skip', [MobileRecurringController::class, 'skip'])
+                ->middleware('throttle:20,1,mobile-recurring-skip')
+                ->name('recurring.skip');
+            Route::post('recurring/{profilePublicId}/run', [MobileRecurringController::class, 'run'])
+                ->middleware('throttle:10,1,mobile-recurring-run')
+                ->name('recurring.run');
             Route::get('till', [MobileTillController::class, 'show'])->name('till.show');
             Route::post('till/sessions', [MobileTillController::class, 'open'])
                 ->middleware('throttle:10,1,mobile-till-open')

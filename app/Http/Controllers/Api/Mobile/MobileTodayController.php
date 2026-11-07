@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Mobile;
 
+use App\Analytics\DailyCloseSummary;
 use App\Analytics\DashboardQuery;
 use App\Analytics\TodayDecisions;
 use App\Models\CatalogueItem;
@@ -16,6 +17,7 @@ class MobileTodayController
     public function __construct(
         private readonly DashboardQuery $dashboard,
         private readonly TodayDecisions $decisions,
+        private readonly DailyCloseSummary $close,
     ) {}
 
     public function __invoke(Request $request): JsonResponse
@@ -39,6 +41,8 @@ class MobileTodayController
             'sales_today' => [
                 'billed_minor' => $kpis['billed_today_minor'],
                 'issued_count' => $kpis['issued_today'],
+                // Money in today, as the daily close counts it, for the widget's day summary.
+                'received_minor' => $this->close->receivedOn($legalEntity, $now),
             ],
             'billing_trend' => $this->dashboard->billingTrend($legalEntity, $now),
             'debtors' => array_map(fn (array $customer): array => [
