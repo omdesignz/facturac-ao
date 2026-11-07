@@ -30,13 +30,9 @@ test('the screens that used a banner now use the shared page header', function (
     'Billing/Show',
     'Imports/Index',
     'Onboarding',
-    'Customers/Index',
     'Customers/Show',
-    'Catalogue/Index',
     'PriceLists/Index',
     'Stock/Index',
-    'Quotes/Index',
-    'TransportDocuments/Index',
     'Recurring/Index',
     'Pos/Registers/Index',
     'Pos/Sessions/Index',
@@ -46,10 +42,17 @@ test('the screens that used a banner now use the shared page header', function (
 
 test('the work surfaces open on a thin title bar and run edge to edge', function (string $page) {
     expect((string) file_get_contents(resource_path("js/pages/{$page}.vue")))
-        ->toMatch('/<header\s+class="(?=[^"]*h-\[3\.25rem\])(?=[^"]*border-b border-\[var\(--ui-line\)\])/')
+        ->toMatch('/<TitleBar\b|<header\s+class="(?=[^"]*h-\[3\.25rem\])(?=[^"]*border-b border-\[var\(--ui-line\)\])/')
         ->not->toContain('<PageHeader')
         ->not->toContain('page-shell');
-})->with(['Documents/Index', 'Debts/Index', 'Invoices/Create']);
+})->with(['Documents/Index', 'Debts/Index', 'Invoices/Create', 'Customers/Index', 'Catalogue/Index', 'Quotes/Index', 'TransportDocuments/Index']);
+
+test('the title bar is one thin row with the content edge to edge below it', function () {
+    expect((string) file_get_contents(resource_path('js/components/TitleBar.vue')))
+        ->toContain('md:h-[3.25rem]')
+        ->toContain('border-b border-[var(--ui-line)]')
+        ->toContain('<slot name="actions" />');
+});
 
 test('paragraph wrapping sits in the base layer, so truncate and nowrap still work on a paragraph', function () {
     $css = (string) file_get_contents(resource_path('css/app.css'));

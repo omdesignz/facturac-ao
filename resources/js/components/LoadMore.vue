@@ -19,7 +19,7 @@ defineProps<{
 
 <template>
     <div
-        class="mt-3 flex min-h-9 items-center justify-between gap-3 px-1 text-xs text-zinc-500 dark:text-zinc-400"
+        class="mt-3 flex min-h-9 items-center justify-between gap-3 px-1 text-xs text-[var(--ui-ink-3)] [.data-table-host_&]:px-4 sm:[.data-table-host_&]:px-6"
     >
         <p class="numeric">{{ shown }} de {{ total }}</p>
         <LoaderCircle

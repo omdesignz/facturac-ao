@@ -1876,6 +1876,25 @@ tbody tr {
     color: var(--color-zinc-400);
 }
 
+/* A table on a work surface lines its first and last columns up with the title bar. */
+.data-table-edge :is(th, td):first-child {
+    padding-inline-start: 1rem;
+}
+
+.data-table-edge :is(th, td):last-child {
+    padding-inline-end: 1rem;
+}
+
+@media (min-width: 40rem) {
+    .data-table-edge :is(th, td):first-child {
+        padding-inline-start: 1.5rem;
+    }
+
+    .data-table-edge :is(th, td):last-child {
+        padding-inline-end: 1.5rem;
+    }
+}
+
 :where(.data-table) tbody td {
     padding-block: 0.75rem;
 }

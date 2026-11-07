@@ -6,12 +6,17 @@ defineProps<{
     tableClass?: string;
     /** Lets `InfiniteScroll` find the rows it appends to. */
     bodyId?: string;
+    /** On a work surface: no card around it, its edges in line with the title bar. */
+    edge?: boolean;
 }>();
 </script>
 
 <template>
     <div class="overflow-x-auto overscroll-x-contain">
-        <table class="data-table w-full text-left text-sm" :class="tableClass">
+        <table
+            class="data-table w-full text-left text-sm"
+            :class="[tableClass, edge ? 'data-table-edge' : '']"
+        >
             <caption v-if="caption" class="sr-only">
                 {{
                     caption

@@ -6,10 +6,8 @@ import {
     Pencil,
     Phone,
     Plus,
-    Search,
     UserRoundX,
     Users,
-    X,
 } from '@lucide/vue';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import AppButton from '@/components/AppButton.vue';
@@ -18,13 +16,15 @@ import EmptyState from '@/components/EmptyState.vue';
 import FormError from '@/components/FormError.vue';
 import FormField from '@/components/FormField.vue';
 import LoadMore from '@/components/LoadMore.vue';
-import PageHeader from '@/components/PageHeader.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
+import SearchField from '@/components/SearchField.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
+import TitleBar from '@/components/TitleBar.vue';
 import ToggleSwitch from '@/components/ToggleSwitch.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { confirmAction } from '@/lib/confirm';
+import { initials } from '@/lib/initials';
 import { withRecordInactive } from '@/lib/optimistic';
 import { destroy, index, show, store, update } from '@/routes/customers';
 import { index as importsIndex } from '@/routes/imports';
@@ -82,7 +82,7 @@ const search = ref(props.filters.search);
 const dialogOpen = ref(false);
 const editing = ref<Customer | null>(null);
 
-const searchInput = ref<HTMLInputElement | null>(null);
+const searchInput = ref<InstanceType<typeof SearchField> | null>(null);
 const searching = ref(false);
 
 let searchTimer: ReturnType<typeof setTimeout> | undefined;
@@ -253,272 +253,243 @@ async function deactivate(customer: Customer): Promise<void> {
     <AppLayout>
         <Head title="Clientes" />
 
-        <div class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
-            <div class="page-shell space-y-6">
-                <PageHeader
-                    eyebrow="Cobrar"
-                    title="Clientes"
-                    description="Quem factura com mais frequência. Guarde uma vez e escolha na factura, sem voltar a escrever o NIF."
-                >
-                    <template #actions>
-                        <div
-                            class="relative w-full [--field-adorn-end:2.5rem] sm:w-72"
-                        >
-                            <label
-                                class="field-adorned [--field-adorn-start:2.5rem]"
-                            >
-                                <span class="sr-only">Procurar clientes</span>
-                                <Search
-                                    class="field-adornment-start size-4"
-                                    aria-hidden="true"
-                                />
-                                <input
-                                    ref="searchInput"
-                                    v-model="search"
-                                    type="search"
-                                    autocomplete="off"
-                                    spellcheck="false"
-                                    enterkeyhint="search"
-                                    placeholder="Nome, NIF ou email"
-                                    class="form-search"
-                                />
-                            </label>
-                            <button
-                                v-if="search"
-                                type="button"
-                                class="absolute top-1/2 right-0 icon-button -translate-y-1/2 rounded-full text-zinc-500 focus-ring transition hover:text-zinc-900 dark:hover:text-white"
-                                @click="clearSearch"
-                            >
-                                <span class="sr-only">Limpar procura</span>
-                                <X class="size-4" aria-hidden="true" />
-                            </button>
-                        </div>
+        <div
+            class="flex min-h-[calc(100dvh-4rem)] flex-col lg:min-h-[calc(100dvh-3rem)]"
+        >
+            <TitleBar section="Cobrar" title="Clientes">
+                <template #meta>
+                    <span
+                        class="ms-1 numeric text-xs text-[var(--ui-ink-3)]"
+                        aria-live="polite"
+                        >{{ customers.total }}</span
+                    >
+                </template>
+                <template #actions>
+                    <SearchField
+                        ref="searchInput"
+                        v-model="search"
+                        label="Procurar clientes"
+                        placeholder="Nome, NIF ou email"
+                    />
+                    <AppButton
+                        v-if="canManage"
+                        variant="gold"
+                        size="sm"
+                        class="h-[1.875rem] ps-2.5"
+                        @click="openCreate"
+                    >
+                        <Plus
+                            class="size-3.5"
+                            :stroke-width="2.2"
+                            aria-hidden="true"
+                        />
+                        Novo cliente
+                    </AppButton>
+                </template>
+            </TitleBar>
+
+            <EmptyState
+                v-if="customers.data.length === 0"
+                bare
+                class="flex-1 justify-center"
+                :icon="Users"
+                :role="filters.search ? 'status' : undefined"
+                :title="
+                    filters.search
+                        ? 'Nenhum cliente corresponde à procura'
+                        : 'Ainda não guardou nenhum cliente'
+                "
+                :description="
+                    filters.search
+                        ? 'Tente outro nome ou NIF.'
+                        : 'Guarde um cliente uma vez e escolha-o na factura, sem voltar a escrever o NIF. Também pode importar a sua lista a partir do Excel.'
+                "
+            >
+                <div class="flex flex-wrap items-center justify-center gap-2">
+                    <AppButton
+                        v-if="filters.search"
+                        variant="outline"
+                        size="sm"
+                        @click="clearSearch"
+                    >
+                        Limpar procura
+                    </AppButton>
+                    <template v-else>
                         <AppButton
-                            variant="gold"
                             v-if="canManage"
+                            variant="gold"
+                            size="sm"
                             @click="openCreate"
                         >
-                            <Plus class="size-4" aria-hidden="true" />
+                            <Plus class="size-3.5" aria-hidden="true" />
                             Novo cliente
                         </AppButton>
+                        <AppButton
+                            variant="outline"
+                            size="sm"
+                            :href="importsIndex.url()"
+                        >
+                            Importar
+                        </AppButton>
                     </template>
-                </PageHeader>
+                </div>
+            </EmptyState>
 
-                <div
-                    class="overflow-hidden rounded-xl bg-[var(--surface-raised)] shadow-[var(--ui-card-shadow)]"
+            <div
+                v-else
+                class="data-table-host relative overflow-x-auto overscroll-x-contain transition-opacity"
+                :aria-busy="searching"
+                :class="searching ? 'opacity-60' : ''"
+            >
+                <InfiniteScroll
+                    data="customers"
+                    items-element="#customers-rows"
+                    :buffer="400"
+                    :manual-after="4"
                 >
-                    <EmptyState
-                        v-if="customers.data.length === 0"
-                        bare
-                        :icon="Users"
-                        :role="filters.search ? 'status' : undefined"
-                        :title="
-                            filters.search
-                                ? 'Nenhum cliente corresponde à procura'
-                                : 'Ainda não guardou nenhum cliente'
-                        "
-                        :description="
-                            filters.search
-                                ? 'Tente outro nome ou NIF.'
-                                : 'Pode adicionar um agora ou importar a sua lista a partir do Excel.'
-                        "
-                    >
-                        <div
-                            class="flex flex-wrap items-center justify-center gap-2.5"
+                    <template #next="scroll"
+                        ><LoadMore
+                            :shown="customers.data.length"
+                            :total="customers.total"
+                            :loading="scroll.loading"
+                            :has-more="scroll.hasMore"
+                            :manual-mode="scroll.manualMode"
+                            :fetch="scroll.fetch"
+                    /></template>
+                    <DataTable body-id="customers-rows" edge
+                        ><template #head>
+                            <th>Cliente</th>
+                            <th class="hidden sm:table-cell">NIF</th>
+                            <th class="hidden lg:table-cell">Contacto</th>
+                            <th class="hidden md:table-cell">Estado</th>
+                            <th>
+                                <span class="sr-only">Acções</span>
+                            </th>
+                        </template>
+                        <tr
+                            v-for="customer in customers.data"
+                            :key="customer.public_id"
+                            class="group/row hover:bg-[var(--ui-wash)]"
                         >
-                            <AppButton
-                                variant="outline"
-                                v-if="filters.search"
-                                @click="clearSearch"
-                            >
-                                Limpar procura
-                            </AppButton>
-                            <template v-else>
-                                <AppButton
-                                    variant="gold"
-                                    v-if="canManage"
-                                    @click="openCreate"
-                                >
-                                    <Plus class="size-4" aria-hidden="true" />
-                                    Novo cliente
-                                </AppButton>
-                                <AppButton
-                                    variant="outline"
-                                    :href="importsIndex.url()"
-                                >
-                                    Importar
-                                </AppButton>
-                            </template>
-                        </div>
-                    </EmptyState>
-
-                    <div
-                        v-else
-                        class="relative overflow-x-auto overscroll-x-contain"
-                        :aria-busy="searching"
-                        :class="searching ? 'opacity-60' : ''"
-                    >
-                        <InfiniteScroll
-                            data="customers"
-                            items-element="#customers-rows"
-                            :buffer="400"
-                            :manual-after="4"
-                        >
-                            <template #next="scroll"
-                                ><LoadMore
-                                    :shown="customers.data.length"
-                                    :total="customers.total"
-                                    :loading="scroll.loading"
-                                    :has-more="scroll.hasMore"
-                                    :manual-mode="scroll.manualMode"
-                                    :fetch="scroll.fetch"
-                            /></template>
-                            <DataTable body-id="customers-rows"
-                                ><template #head>
-                                    <th>Cliente</th>
-                                    <th class="hidden sm:table-cell">NIF</th>
-                                    <th class="hidden lg:table-cell">
-                                        Contacto
-                                    </th>
-                                    <th class="hidden md:table-cell">Estado</th>
-                                    <th>
-                                        <span class="sr-only">Acções</span>
-                                    </th>
-                                </template>
-                                <tr
-                                    v-for="customer in customers.data"
-                                    :key="customer.public_id"
-                                    class="hover:bg-zinc-900/[0.025] dark:hover:bg-white/[0.03]"
-                                >
-                                    <td>
+                            <td>
+                                <span class="flex items-center gap-2.5">
+                                    <span
+                                        class="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--ui-well)] text-[0.65625rem] font-bold text-[var(--ui-ink-2)]"
+                                        aria-hidden="true"
+                                        >{{ initials(customer.name) }}</span
+                                    >
+                                    <span class="min-w-0">
                                         <Link
                                             data-nav-row
                                             :href="show.url(customer.public_id)"
-                                            class="rounded font-semibold [overflow-wrap:anywhere] text-zinc-900 underline-offset-4 focus-ring hover:underline dark:text-white"
+                                            class="rounded text-[0.8125rem] font-semibold [overflow-wrap:anywhere] text-[var(--ui-ink)] focus-ring hover:underline hover:decoration-[var(--ui-line-strong)] hover:underline-offset-2"
                                         >
                                             {{ customer.name }}
                                         </Link>
-                                        <p
-                                            class="mt-0.5 numeric text-xs text-zinc-500 sm:hidden dark:text-zinc-400"
+                                        <span
+                                            class="mt-px block numeric text-xs text-[var(--ui-ink-3)] sm:hidden"
                                         >
                                             {{
                                                 customer.tax_identification_number
                                             }}
-                                        </p>
-                                        <p
+                                        </span>
+                                        <span
                                             v-if="customer.address_line"
-                                            class="mt-0.5 max-w-[16rem] text-xs [overflow-wrap:anywhere] text-zinc-500 dark:text-zinc-400"
+                                            class="mt-px block max-w-[20rem] truncate text-xs text-[var(--ui-ink-3)]"
                                         >
                                             {{ customer.address_line }} ·
                                             {{ customer.country_code }}
-                                        </p>
-                                        <StatusBadge
-                                            class="mt-1.5 md:hidden"
-                                            :label="
-                                                customer.is_active
-                                                    ? 'Activo'
-                                                    : 'Inactivo'
-                                            "
-                                            :tone="
-                                                customer.is_active
-                                                    ? 'neutral'
-                                                    : 'draft'
-                                            "
-                                        />
-                                    </td>
-                                    <td
-                                        class="hidden numeric text-zinc-700 sm:table-cell dark:text-zinc-300"
-                                    >
-                                        {{ customer.tax_identification_number }}
-                                    </td>
-                                    <td
-                                        class="hidden text-zinc-600 lg:table-cell dark:text-zinc-400"
-                                    >
-                                        <span
-                                            v-if="customer.email"
-                                            class="flex items-center gap-1.5 text-xs"
-                                        >
-                                            <Mail
-                                                class="size-3.5 shrink-0"
-                                                aria-hidden="true"
-                                            />
-                                            {{ customer.email }}
                                         </span>
-                                        <span
-                                            v-if="customer.phone"
-                                            class="mt-1 flex items-center gap-1.5 text-xs"
+                                    </span>
+                                </span>
+                            </td>
+                            <td
+                                class="hidden numeric text-[0.8125rem] text-[var(--ui-ink-2)] sm:table-cell"
+                            >
+                                {{ customer.tax_identification_number }}
+                            </td>
+                            <td
+                                class="hidden text-xs text-[var(--ui-ink-2)] lg:table-cell"
+                            >
+                                <span
+                                    v-if="customer.email"
+                                    class="flex items-center gap-1.5"
+                                >
+                                    <Mail
+                                        class="size-3.5 shrink-0 text-[var(--ui-ink-3)]"
+                                        aria-hidden="true"
+                                    />
+                                    {{ customer.email }}
+                                </span>
+                                <span
+                                    v-if="customer.phone"
+                                    class="mt-1 flex items-center gap-1.5 numeric"
+                                >
+                                    <Phone
+                                        class="size-3.5 shrink-0 text-[var(--ui-ink-3)]"
+                                        aria-hidden="true"
+                                    />
+                                    {{ customer.phone }}
+                                </span>
+                                <span
+                                    v-if="!customer.email && !customer.phone"
+                                    class="text-[var(--ui-ink-3)]"
+                                    >—</span
+                                >
+                            </td>
+                            <td class="hidden md:table-cell">
+                                <StatusBadge
+                                    :label="
+                                        customer.is_active
+                                            ? 'Activo'
+                                            : 'Inactivo'
+                                    "
+                                    :tone="
+                                        customer.is_active ? 'neutral' : 'draft'
+                                    "
+                                />
+                            </td>
+                            <td class="text-right">
+                                <div
+                                    v-if="canManage"
+                                    data-row-actions
+                                    class="flex justify-end gap-0.5"
+                                >
+                                    <button
+                                        type="button"
+                                        class="grid size-7 place-items-center rounded-md text-[var(--ui-ink-3)] focus-ring hover:bg-[var(--ui-well)] hover:text-[var(--ui-ink)] pointer-coarse:size-11"
+                                        :title="`Editar ${customer.name}`"
+                                        @click="openEdit(customer)"
+                                    >
+                                        <span class="sr-only"
+                                            >Editar {{ customer.name }}</span
                                         >
-                                            <Phone
-                                                class="size-3.5 shrink-0"
-                                                aria-hidden="true"
-                                            />
-                                            {{ customer.phone }}
-                                        </span>
-                                        <span
-                                            v-if="
-                                                !customer.email &&
-                                                !customer.phone
-                                            "
-                                            class="text-xs text-zinc-500 dark:text-zinc-400"
-                                            >—</span
-                                        >
-                                    </td>
-                                    <td class="hidden md:table-cell">
-                                        <StatusBadge
-                                            :label="
-                                                customer.is_active
-                                                    ? 'Activo'
-                                                    : 'Inactivo'
-                                            "
-                                            :tone="
-                                                customer.is_active
-                                                    ? 'neutral'
-                                                    : 'draft'
-                                            "
+                                        <Pencil
+                                            class="size-3.5"
+                                            aria-hidden="true"
                                         />
-                                    </td>
-                                    <td class="text-right">
-                                        <div
-                                            v-if="canManage"
-                                            data-row-actions
-                                            class="flex justify-end gap-1"
+                                    </button>
+                                    <button
+                                        v-if="customer.is_active"
+                                        type="button"
+                                        class="grid size-7 place-items-center rounded-md text-[var(--ui-ink-3)] focus-ring hover:bg-[var(--ui-critical-wash)] hover:text-[var(--ui-critical)] pointer-coarse:size-11"
+                                        :title="`Desactivar ${customer.name}`"
+                                        @click="deactivate(customer)"
+                                    >
+                                        <span class="sr-only"
+                                            >Desactivar
+                                            {{ customer.name }}</span
                                         >
-                                            <button
-                                                type="button"
-                                                class="icon-button rounded-full text-zinc-500 focus-ring transition hover:bg-zinc-900/[0.06] hover:text-zinc-900 dark:hover:bg-white/10 dark:hover:text-white"
-                                                @click="openEdit(customer)"
-                                            >
-                                                <span class="sr-only"
-                                                    >Editar
-                                                    {{ customer.name }}</span
-                                                >
-                                                <Pencil
-                                                    class="size-4"
-                                                    aria-hidden="true"
-                                                />
-                                            </button>
-                                            <button
-                                                v-if="customer.is_active"
-                                                type="button"
-                                                class="icon-button rounded-full text-zinc-500 focus-ring transition hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-400/10 dark:hover:text-rose-400"
-                                                @click="deactivate(customer)"
-                                            >
-                                                <span class="sr-only"
-                                                    >Desactivar
-                                                    {{ customer.name }}</span
-                                                >
-                                                <UserRoundX
-                                                    class="size-4"
-                                                    aria-hidden="true"
-                                                />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </DataTable>
-                        </InfiniteScroll>
-                    </div>
-                </div>
+                                        <UserRoundX
+                                            class="size-3.5"
+                                            aria-hidden="true"
+                                        />
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </DataTable>
+                </InfiniteScroll>
             </div>
         </div>
 
