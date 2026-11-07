@@ -37,6 +37,12 @@ Schedule::command('notifications:scan')
     ->timezone('Africa/Luanda')
     ->withoutOverlapping();
 
+// Hourly, because each company closes on its own clock; the command only
+// speaks for those whose closing hour it is, once a day.
+Schedule::command('notifications:daily-close')
+    ->hourlyAt(0)
+    ->withoutOverlapping();
+
 Schedule::command('reports:prune-exports')->hourly()->withoutOverlapping();
 
 Schedule::command('sanctum:prune-expired --hours=24')
