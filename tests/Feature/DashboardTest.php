@@ -233,6 +233,37 @@ test('collections arrive after first paint, oldest debt first', function () {
         );
 });
 
+test('the daily billing for the last sixty days arrives after first paint, issued documents only', function () {
+    $fixture = dashboardFixture();
+
+    dashboardDocument($fixture, [
+        'document_date' => now()->toDateString(),
+        'gross_total_minor' => 50_000_000,
+    ]);
+    dashboardDocument($fixture, [
+        'document_date' => now()->subDays(3)->toDateString(),
+        'gross_total_minor' => 12_000_000,
+    ]);
+    dashboardDocument($fixture, [
+        'status' => 'draft',
+        'document_no' => null,
+        'document_date' => now()->toDateString(),
+        'gross_total_minor' => 99_000_000,
+    ]);
+
+    $this->actingAs($fixture['owner'])
+        ->get(route('dashboard'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->missing('trend')
+            ->loadDeferredProps(fn (Assert $reload) => $reload
+                ->has('trend', 60)
+                ->where('trend.59.date', now()->toDateString())
+                ->where('trend.59.billed_minor', 50_000_000)
+                ->where('trend.56.billed_minor', 12_000_000)
+            )
+        );
+});
+
 test('the dashboard names the one item that has run furthest below its reorder level', function () {
     $fixture = dashboardFixture();
 

@@ -1,12 +1,9 @@
 <script setup lang="ts">
-import { Mail } from '@lucide/vue';
-import { computed, onMounted, ref, watch } from 'vue';
+import { Mail, PackageMinus, ShieldAlert } from '@lucide/vue';
+import { computed, onMounted, ref } from 'vue';
+import type { Component } from 'vue';
 import AppButton from '@/components/AppButton.vue';
-
-import { fetchReminderDraft, toneLabel } from '@/lib/reminder-draft';
-import type { ReminderDraft } from '@/lib/reminder-draft';
 import type { Decision } from '@/lib/today-decisions';
-import { show as showReminder } from '@/routes/debts/reminder';
 
 const props = defineProps<{
     decisions: Decision[];
@@ -19,7 +16,7 @@ const emit = defineEmits<{
 }>();
 
 /**
- * What needs deciding today, one verb per card. "Mais tarde" puts a card away
+ * What needs deciding today, one verb per row. "Mais tarde" puts a row away
  * until tomorrow on this device; nothing about the document or the debt moves.
  */
 const storageKey = `facturac:hoje-later:${new Date().toISOString().slice(0, 10)}`;
@@ -45,7 +42,7 @@ function putAway(decision: Decision): void {
     try {
         window.localStorage.setItem(storageKey, JSON.stringify(later.value));
     } catch {
-        // Private windows refuse storage; the card is still put away for now.
+        // Private windows refuse storage; the row is still put away for now.
     }
 }
 
@@ -53,161 +50,129 @@ const visible = computed(() =>
     props.decisions.filter((decision) => !later.value.includes(decision.key)),
 );
 
-/** The words that would go out, read here so the card shows what "send" means. */
-const draft = ref<ReminderDraft | null>(null);
-
-const collection = computed(() =>
-    props.decisions.find((decision) => decision.key === 'collection'),
-);
-
 onMounted(() => {
     later.value = readLater();
 });
 
-/** The collections arrive after the page does, so the words are fetched when they do. */
-watch(
-    () => collection.value?.customer?.public_id,
-    async (publicId) => {
-        if (publicId === undefined) {
-            return;
-        }
-
-        try {
-            draft.value = await fetchReminderDraft(showReminder.url(publicId));
-        } catch {
-            // The card still works; the dialog prepares the words when opened.
-        }
+/** Each kind of decision keeps its own mark, so the eye sorts them before reading. */
+const marks: Record<Decision['key'], { icon: Component; tile: string }> = {
+    fiscal: {
+        icon: ShieldAlert,
+        tile: 'bg-[var(--ui-critical-wash)] text-[var(--ui-critical)]',
     },
-    { immediate: true },
-);
-
-const kickerClass: Record<Decision['key'], string> = {
-    fiscal: 'bg-[#fde7ea] text-[#9a1b30] dark:bg-rose-400/10 dark:text-rose-300',
-    collection:
-        'bg-[#fef3d6] text-[#7a4a00] dark:bg-accent-400/15 dark:text-accent-300',
-    stock: 'bg-zinc-900/[0.06] text-zinc-700 dark:bg-white/10 dark:text-zinc-300',
+    collection: {
+        icon: Mail,
+        tile: 'bg-[var(--ui-gold-wash)] text-[var(--ui-gold-ink)]',
+    },
+    stock: {
+        icon: PackageMinus,
+        tile: 'bg-[var(--ui-well)] text-[var(--ui-ink-2)]',
+    },
 };
 </script>
 
 <template>
     <section
-        v-if="decisions.length > 0"
         aria-labelledby="decisions-title"
-        class="min-w-0"
+        class="flex min-w-0 flex-col self-start rounded-xl bg-[var(--surface-raised)] shadow-[var(--ui-card-shadow)]"
     >
-        <h2
-            id="decisions-title"
-            class="flex items-center gap-2.5 text-[1.375rem] font-normal tracking-[-0.02em] text-zinc-950 dark:text-white"
-        >
-            Precisa de si
+        <div class="flex items-center gap-2 px-[1.125rem] pt-4 pb-2.5">
+            <h2
+                id="decisions-title"
+                class="flex-1 text-sm font-semibold text-[var(--ui-ink)]"
+            >
+                Precisa de si
+            </h2>
             <span
-                v-if="visible.length > 1"
-                class="grid h-6 min-w-6 place-items-center rounded-full bg-zinc-900/[0.07] px-1.5 text-xs font-semibold text-zinc-700 dark:bg-white/10 dark:text-zinc-200"
+                v-if="visible.length > 0"
+                class="grid h-5 min-w-5 place-items-center rounded-full bg-[var(--ui-gold-wash)] px-1.5 text-[0.71875rem] font-semibold text-[var(--ui-gold-ink)]"
                 >{{ visible.length }}</span
             >
-        </h2>
+        </div>
 
         <p
             v-if="visible.length === 0"
-            class="mt-4 rounded-3xl surface p-6 text-sm/6 text-zinc-500 dark:text-zinc-400"
+            class="border-t border-[var(--ui-line)] px-[1.125rem] py-5 text-[0.8125rem]/5 text-[var(--ui-ink-3)]"
         >
-            Nada mais para decidir hoje. O que pôs de lado volta amanhã.
+            Nada para decidir hoje. O que pôs de lado volta amanhã.
         </p>
 
-        <ul v-else role="list" class="mt-4 grid gap-3">
+        <ul v-else role="list">
             <li
-                v-for="decision in visible"
+                v-for="(decision, index) in visible"
                 :key="decision.key"
-                class="rounded-3xl surface p-5 sm:p-6"
+                class="flex gap-3 border-t border-[var(--ui-line)] px-[1.125rem] py-3"
             >
-                <div class="flex flex-col gap-4 md:flex-row md:justify-between">
-                    <div class="min-w-0">
-                        <span
-                            class="inline-flex h-6 items-center rounded-full px-2.5 text-xs font-semibold"
-                            :class="kickerClass[decision.key]"
-                            >{{ decision.kicker }}</span
-                        >
-                        <p
-                            class="mt-3 text-lg/7 font-medium tracking-[-0.01em] text-zinc-950 dark:text-white"
-                        >
-                            {{ decision.headline }}
-                            <span
-                                v-if="decision.amountMinor !== undefined"
-                                class="numeric"
-                                >{{ formatAmount(decision.amountMinor) }}
-                                {{ currencyLabel }}</span
-                            >
-                        </p>
-                        <p
-                            v-if="decision.detail"
-                            class="mt-1 max-w-xl text-sm/6 text-zinc-500 dark:text-zinc-400"
-                        >
-                            {{ decision.detail }}
-                        </p>
-                    </div>
-
-                    <div
-                        class="flex shrink-0 items-center gap-1.5 md:self-start"
+                <span
+                    :class="[
+                        'grid size-[1.875rem] shrink-0 place-items-center rounded-lg',
+                        marks[decision.key].tile,
+                    ]"
+                    aria-hidden="true"
+                >
+                    <component
+                        :is="marks[decision.key].icon"
+                        class="size-[0.9375rem]"
+                        :stroke-width="1.9"
+                    />
+                </span>
+                <div class="min-w-0 flex-1">
+                    <p
+                        class="text-[0.8125rem] font-semibold text-[var(--ui-ink)]"
                     >
+                        {{ decision.headline }}
+                        <span
+                            v-if="decision.amountMinor !== undefined"
+                            class="numeric"
+                            >{{ formatAmount(decision.amountMinor) }}
+                            {{ currencyLabel }}</span
+                        >
+                    </p>
+                    <p
+                        v-if="decision.detail"
+                        class="mt-0.5 text-xs/[1.45] text-[var(--ui-ink-2)] first-letter:uppercase"
+                    >
+                        {{ decision.detail }}
+                    </p>
+                    <div class="mt-2.5 flex items-center gap-1.5">
                         <AppButton
-                            variant="gold"
                             v-if="
                                 decision.kind === 'remind' && decision.customer
                             "
+                            :variant="index === 0 ? 'gold' : 'outline'"
+                            size="xs"
                             @click="emit('remind', decision.customer)"
                         >
                             {{ decision.action }}
                         </AppButton>
                         <AppButton
-                            variant="ink"
                             v-else-if="decision.href"
+                            :variant="index === 0 ? 'gold' : 'outline'"
+                            size="xs"
                             :href="decision.href"
                         >
                             {{ decision.action }}
                         </AppButton>
 
                         <AppButton
-                            variant="quiet"
                             v-if="decision.secondary.href"
+                            variant="quiet"
+                            size="xs"
+                            class="px-2"
                             :href="decision.secondary.href"
                         >
                             {{ decision.secondary.label }}
                         </AppButton>
                         <AppButton
-                            variant="quiet"
                             v-else
+                            variant="quiet"
+                            size="xs"
+                            class="px-2"
                             @click="putAway(decision)"
                         >
                             {{ decision.secondary.label }}
                         </AppButton>
                     </div>
-                </div>
-
-                <div
-                    v-if="
-                        decision.key === 'collection' &&
-                        draft !== null &&
-                        draft.body !== ''
-                    "
-                    class="mt-5 rounded-2xl bg-[#f5f5f7] p-4 dark:bg-white/[0.05]"
-                >
-                    <p
-                        class="flex flex-wrap items-center gap-x-1.5 text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
-                    >
-                        <Mail class="size-3" aria-hidden="true" />
-                        Lembrete preparado · {{ toneLabel(draft.tone) }}
-                        <template v-if="draft.to"
-                            >· para {{ draft.to }}</template
-                        >
-                    </p>
-                    <p
-                        class="mt-2 line-clamp-4 text-sm/6 whitespace-pre-line text-zinc-800 dark:text-zinc-200"
-                    >
-                        {{ draft.body }}
-                    </p>
-                    <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-                        Nada é enviado até confirmar.
-                    </p>
                 </div>
             </li>
         </ul>

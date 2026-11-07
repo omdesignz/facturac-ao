@@ -22,6 +22,15 @@ import { logout } from '@/routes';
 import { index as helpIndex } from '@/routes/help';
 import { account as accountSettings, security } from '@/routes/settings';
 
+/**
+ * Where the menu sits: the phone's top bar, the foot of the desktop sidebar,
+ * or the foot of its compact rail. The menu opens away from the edge it is on.
+ */
+const props = withDefaults(
+    defineProps<{ placement?: 'header' | 'sidebar' | 'rail' }>(),
+    { placement: 'header' },
+);
+
 const page = usePage();
 const appearance = ref<Appearance>('system');
 
@@ -66,6 +75,43 @@ onMounted(() => {
 <template>
     <Menu as="div" class="relative">
         <MenuButton
+            v-if="props.placement === 'sidebar'"
+            class="flex h-11 w-full items-center gap-2.5 rounded-lg px-2 text-start focus-ring transition-colors hover:bg-zinc-900/[0.04] dark:hover:bg-white/[0.04]"
+        >
+            <span
+                class="grid size-[1.625rem] shrink-0 place-items-center rounded-full bg-accent-100 text-[0.65625rem] font-bold text-[#8a5a00] dark:bg-accent-400/15 dark:text-accent-400"
+                aria-hidden="true"
+                >{{ userInitials }}</span
+            >
+            <span class="min-w-0 flex-1">
+                <span
+                    class="block truncate text-[0.78125rem] leading-tight font-semibold text-zinc-950 dark:text-white"
+                    >{{ currentUser?.name }}</span
+                >
+                <span
+                    class="block truncate text-[0.71875rem] leading-tight text-zinc-500 dark:text-zinc-400"
+                    >{{ currentUser?.email }}</span
+                >
+            </span>
+            <span class="sr-only">Abrir menu da conta</span>
+            <ChevronDown
+                class="size-3.5 shrink-0 rotate-180 text-zinc-400"
+                aria-hidden="true"
+            />
+        </MenuButton>
+        <MenuButton
+            v-else-if="props.placement === 'rail'"
+            class="grid size-9 place-items-center rounded-full focus-ring"
+        >
+            <span
+                class="grid size-7 place-items-center rounded-full bg-accent-100 text-[0.65625rem] font-bold text-[#8a5a00] dark:bg-accent-400/15 dark:text-accent-400"
+                aria-hidden="true"
+                >{{ userInitials }}</span
+            >
+            <span class="sr-only">Abrir menu da conta</span>
+        </MenuButton>
+        <MenuButton
+            v-else
             class="flex items-center gap-2.5 rounded-full p-1 text-left focus-ring transition hover:bg-zinc-900/[0.05] 2xl:pr-3 dark:hover:bg-white/10"
         >
             <span
@@ -98,7 +144,14 @@ onMounted(() => {
             leave-to-class="scale-95 opacity-0"
         >
             <MenuItems
-                class="absolute right-0 z-20 mt-2.5 w-64 origin-top-right menu-panel p-1.5"
+                :class="[
+                    'absolute z-50 w-64 menu-panel p-1.5',
+                    props.placement === 'sidebar'
+                        ? 'start-0 bottom-full mb-1.5 origin-bottom-left'
+                        : props.placement === 'rail'
+                          ? 'start-full bottom-0 ms-2 origin-bottom-left'
+                          : 'right-0 mt-2.5 origin-top-right',
+                ]"
             >
                 <div class="px-3 pt-2 pb-3">
                     <p class="truncate text-sm font-semibold">

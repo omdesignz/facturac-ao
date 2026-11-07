@@ -7,11 +7,12 @@
 
 @theme inline {
     /*
-     * The UI speaks in one sans. The display face below is for the public
+     * The UI speaks in one sans, Inter, the same face as the iPhone app, so a
+     * figure reads the same on both. The display face below is for the public
      * pages' headlines only, never for the product itself.
      */
     --font-sans:
-        -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Hanken Grotesk',
+        'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text',
         ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
         'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
     --font-mono:
@@ -57,8 +58,8 @@
     --color-accent-950: #451c03;
 
     /* Fluid type: page titles, stat values and the public pages' headlines. */
-    --text-page-title: clamp(1.75rem, 1.58rem + 0.85vw, 2.125rem);
-    --text-stat: clamp(1.375rem, 1.1rem + 1.2vw, 1.75rem);
+    --text-page-title: clamp(1.375rem, 1.3rem + 0.35vw, 1.625rem);
+    --text-stat: clamp(1.375rem, 1.2rem + 0.8vw, 1.75rem);
     --text-hero: clamp(2.85rem, 1.87rem + 4.92vw, 5.25rem);
     --text-hero--line-height: 0.98;
     --text-hero--letter-spacing: -0.035em;
@@ -107,7 +108,10 @@
 :root {
     color-scheme: light;
     --fiscal-grid: color-mix(in srgb, var(--color-accent-400) 10%, transparent);
-    --surface-page: #ffffff;
+    /* Warm paper by day, near-black at night: the iPhone app's own ground. */
+    --surface-page: #f7f7f5;
+    --surface-raised: #ffffff;
+    --surface-side: #f1f1ee;
 
     /* Durations for hand-written CSS; Tailwind's own come from duration-*. */
     --duration-instant: 75ms;
@@ -119,7 +123,9 @@
 .dark {
     color-scheme: dark;
     --fiscal-grid: color-mix(in srgb, var(--color-accent-400) 9%, transparent);
-    --surface-page: #000000;
+    --surface-page: #09090a;
+    --surface-raised: #111113;
+    --surface-side: #0c0c0e;
 }
 
 html {
@@ -163,7 +169,7 @@ body {
     min-width: 320px;
     font-optical-sizing: auto;
     /*
-     * Hanken Grotesk ships 400–700 and Plex Mono 400–600. Disabling synthesis
+     * Inter is served at 400–700 and Plex Mono at 400–600. Disabling synthesis
      * makes any request for a weight we do not ship fail loudly rather than
      * being faked by the browser.
      */
@@ -234,21 +240,19 @@ input[type='search']::-webkit-search-decoration {
 }
 
 @utility display {
-    font-weight: 300;
-    letter-spacing: -0.028em;
+    font-weight: 650;
+    letter-spacing: -0.025em;
 }
 
 /**
- * Uppercase label for a value or a small group ("TOTAL", "ENTREGA AGT"). Kept
- * quiet — medium weight, light tracking — so it names what follows without
- * competing with it.
+ * The small label over a value or a group ("Total", "Entrega AGT"). Sentence
+ * case and quiet, so it names what follows without competing with it.
  */
 @utility eyebrow {
     font-size: 0.75rem;
     line-height: 1.2;
     font-weight: 500;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
+    letter-spacing: 0;
 }
 
 /**
@@ -315,7 +319,7 @@ input[type='search']::-webkit-search-decoration {
  * skipped for disabled controls, and only exists when motion is welcome.
  */
 @media (prefers-reduced-motion: no-preference) {
-    :is(button, a, [role='button']):is(.rounded-full, .icon-button):not(
+    :is(button, a, [role='button']):is(.rounded-full, .icon-button, .btn):not(
             :disabled,
             [aria-disabled='true']
         ):active {
@@ -1664,37 +1668,89 @@ label:has(> :is(.form-checkbox, .form-radio):not(:disabled)) {
  * dot as the one flourish on anything that says "chosen".
  */
 :root {
-    --ui-halo: rgb(249 178 51 / 0.38);
+    --ui-halo: rgb(249 178 51 / 0.34);
     --ui-halo-invalid: rgb(225 29 72 / 0.16);
-    --ui-hairline: rgb(0 0 0 / 0.09);
+    --ui-hairline: #e7e7e3;
+    --ui-line: #ecece8;
+    --ui-line-strong: #d9d9d4;
     --ui-card-shadow:
-        0 0 0 0.5px var(--ui-hairline), 0 1px 2px rgb(0 0 0 / 0.04),
-        0 14px 34px -18px rgb(0 0 0 / 0.16);
-    --ui-wash: #f5f5f7;
+        0 0 0 1px var(--ui-hairline), 0 1px 2px rgb(16 16 16 / 0.04),
+        0 4px 16px rgb(16 16 16 / 0.03);
+    --ui-control-shadow:
+        0 0 0 1px var(--ui-line-strong), 0 1px 2px rgb(16 16 16 / 0.05);
+    --ui-pop-shadow:
+        0 0 0 1px var(--ui-hairline), 0 12px 32px rgb(16 16 16 / 0.12);
+    --ui-wash: #f2f2ef;
+    --ui-well: #f0f0ec;
+    --ui-head: #fafaf8;
+    --ui-pop: #ffffff;
+    --ui-ink: #161616;
+    --ui-ink-2: #5c5c63;
+    --ui-ink-3: #717178;
+    --ui-gold-ink: #8a5a00;
+    --ui-gold-wash: #fef3dc;
+    --ui-positive: #0a7a43;
+    --ui-positive-wash: #e3f4ea;
+    --ui-critical: #b4123f;
+    --ui-critical-wash: #fce7ec;
+    --ui-warning: #b4521a;
+    --ui-chart-bar: #e0e0da;
+    --ui-chart-grid: rgb(16 16 16 / 0.05);
+    --ui-chart-column: rgb(16 16 16 / 0.035);
 }
 
 .dark {
-    --ui-halo: rgb(249 178 51 / 0.32);
+    --ui-halo: rgb(249 178 51 / 0.3);
     --ui-halo-invalid: rgb(251 113 133 / 0.2);
-    --ui-hairline: rgb(255 255 255 / 0.14);
-    --ui-card-shadow: 0 0 0 0.5px var(--ui-hairline);
-    --ui-wash: rgb(255 255 255 / 0.08);
+    --ui-hairline: #1f1f23;
+    --ui-line: #1c1c20;
+    --ui-line-strong: #2b2b31;
+    --ui-card-shadow:
+        inset 0 1px 0 rgb(255 255 255 / 0.035), 0 0 0 1px var(--ui-hairline);
+    --ui-control-shadow:
+        inset 0 1px 0 rgb(255 255 255 / 0.05), 0 0 0 1px var(--ui-line-strong);
+    --ui-pop-shadow:
+        0 0 0 1px var(--ui-line-strong), 0 16px 40px rgb(0 0 0 / 0.55);
+    --ui-wash: rgb(255 255 255 / 0.04);
+    --ui-well: #17171a;
+    --ui-head: #0e0e10;
+    --ui-pop: #1a1a1e;
+    --ui-ink: #ededef;
+    --ui-ink-2: #a1a1a8;
+    --ui-ink-3: #85858d;
+    --ui-gold-ink: #f9b233;
+    --ui-gold-wash: rgb(249 178 51 / 0.12);
+    --ui-positive: #5fd39a;
+    --ui-positive-wash: rgb(95 211 154 / 0.12);
+    --ui-critical: #ff8fa8;
+    --ui-critical-wash: rgb(255 143 168 / 0.12);
+    --ui-warning: #f49a5c;
+    --ui-chart-bar: #2c2c33;
+    --ui-chart-grid: rgb(255 255 255 / 0.045);
+    --ui-chart-column: rgb(255 255 255 / 0.04);
 }
 
+/*
+ * Inter's open digits and single-storey a, as in the iPhone app; figures are
+ * tabular everywhere so columns of money line up without asking.
+ */
 body {
-    letter-spacing: -0.011em;
+    letter-spacing: -0.006em;
+    font-feature-settings:
+        'cv11' 1,
+        'ss01' 1;
     -webkit-font-smoothing: antialiased;
 }
 
-/* Cards: 24px, a hairline and a whisper of shadow. */
+/* Cards: 12px, a crisp hairline and a whisper of depth. */
 .surface {
-    border-radius: 1.5rem;
+    border-radius: 0.75rem;
     box-shadow: var(--ui-card-shadow);
     --tw-ring-shadow: 0 0 #0000;
 }
 
 .dark .surface {
-    background-color: #1c1c1e;
+    background-color: var(--surface-raised);
 }
 
 /* Fields: ink on focus, with a soft gold halo for the keyboard. */
@@ -1784,12 +1840,10 @@ tbody tr {
 }
 
 .data-table thead th {
-    padding-block: 0.75rem;
+    padding-block: 0.625rem;
     font-size: 0.75rem;
     line-height: 1.2;
     font-weight: 500;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
     color: var(--color-zinc-500);
 }
 
@@ -1827,13 +1881,13 @@ tbody tr {
  * it sits on white with a hairline, and its header row takes a faint tint.
  */
 [class*='bg-zinc-900/[0.04]']:has(table) {
-    background-color: #fff;
+    background-color: var(--surface-raised);
     box-shadow: var(--ui-card-shadow);
 }
 
 .dark [class*='bg-zinc-900/[0.04]']:has(table),
 .dark [class*='dark:bg-white/[0.04]']:has(table) {
-    background-color: #1c1c1e;
+    background-color: var(--surface-raised);
 }
 
 .surface thead th,
@@ -1843,7 +1897,7 @@ tbody tr {
 
 .dark .dialog-panel,
 .dark .menu-panel {
-    background-color: #1c1c1e;
+    background-color: #161619;
 }
 
 /*
@@ -1993,8 +2047,7 @@ summary:focus-visible {
     padding-inline: calc(30 * var(--u)) calc(24 * var(--u));
     padding-block-start: calc(6 * var(--u));
     font-family:
-        -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Hanken Grotesk',
-        sans-serif;
+        -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', sans-serif;
     font-size: calc(16 * var(--u));
     line-height: 1;
     font-weight: 600;
@@ -2099,7 +2152,7 @@ summary:focus-visible {
     block-size: calc(40 * var(--u));
     padding-inline: calc(26 * var(--u)) calc(22 * var(--u));
     padding-block-start: calc(2 * var(--u));
-    font-family: Roboto, 'Hanken Grotesk', ui-sans-serif, sans-serif;
+    font-family: Roboto, 'Inter', ui-sans-serif, sans-serif;
     font-size: calc(14 * var(--u));
     font-weight: 500;
 }

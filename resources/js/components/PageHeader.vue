@@ -22,12 +22,12 @@ defineProps<{
         >
             <div class="max-w-3xl min-w-0">
                 <p
-                    class="text-xs font-medium tracking-[0.07em] text-zinc-500 uppercase dark:text-zinc-400"
+                    class="text-[0.8125rem] font-medium text-zinc-500 dark:text-zinc-400"
                 >
                     {{ eyebrow }}
                 </p>
                 <h1
-                    class="mt-2.5 text-page-title leading-[1.08] font-light tracking-[-0.028em] text-balance text-zinc-950 dark:text-white"
+                    class="mt-1 text-page-title leading-[1.15] font-[650] tracking-[-0.025em] text-balance text-zinc-950 dark:text-white"
                 >
                     {{ title }}
                 </h1>

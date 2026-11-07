@@ -21,6 +21,7 @@ import {
     watch,
 } from 'vue';
 import AppHeader from '@/components/AppHeader.vue';
+import AppSidebar from '@/components/AppSidebar.vue';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import ConnectionNotice from '@/components/ConnectionNotice.vue';
 import CookieConsent from '@/components/CookieConsent.vue';
@@ -31,6 +32,7 @@ import SidebarNavigation from '@/components/SidebarNavigation.vue';
 import SubscriptionNotice from '@/components/SubscriptionNotice.vue';
 import TermsReacceptanceNotice from '@/components/TermsReacceptanceNotice.vue';
 import { isFocusedPath } from '@/lib/mobile-tab-bar';
+import { sidebarCompact } from '@/lib/sidebar';
 
 const sidebarOpen = ref(false);
 
@@ -103,7 +105,9 @@ onBeforeUnmount(() => stopListening?.());
 </script>
 
 <template>
-    <div class="min-h-dvh bg-white text-zinc-950 dark:bg-black dark:text-white">
+    <div
+        class="min-h-dvh bg-[var(--surface-page)] text-zinc-950 dark:text-white"
+    >
         <a
             href="#conteudo"
             class="sr-only focus-ring focus:not-sr-only focus:fixed focus:inset-s-3 focus:inset-bs-3 focus:z-[100] focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold dark:focus:bg-zinc-900"
@@ -165,7 +169,16 @@ onBeforeUnmount(() => stopListening?.());
         <MobileTabBar @more="sidebarOpen = true" />
         <KeyboardShortcuts />
         <ConnectionNotice />
-        <div>
+
+        <!-- The desktop's navigation; the phone has the tab bar and the drawer. -->
+        <div
+            v-if="isDesktop"
+            class="fixed inset-s-0 inset-bs-[var(--impersonation-bar,0px)] inset-be-0 z-30"
+        >
+            <AppSidebar />
+        </div>
+
+        <div :class="isDesktop ? (sidebarCompact ? 'ps-14' : 'ps-60') : ''">
             <AppHeader />
 
             <TermsReacceptanceNotice />
@@ -176,7 +189,7 @@ onBeforeUnmount(() => stopListening?.());
                 ref="main"
                 tabindex="-1"
                 :class="[
-                    'min-h-[calc(100dvh-4rem)] page-enter focus:outline-hidden',
+                    'min-h-[calc(100dvh-4rem)] page-enter focus:outline-hidden lg:min-h-[calc(100dvh-3rem)]',
                     tabBarShown
                         ? 'max-lg:pb-[calc(5rem+env(safe-area-inset-bottom))]'
                         : '',

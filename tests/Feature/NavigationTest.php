@@ -41,10 +41,10 @@ test('every page stays reachable from the navigation', function (string $href) {
     expect($navigation)->toContain("href: {$href}");
 })->with('navigable pages');
 
-test('the top bar and the mobile menu read the same navigation', function () {
-    foreach (['AppTopNav.vue', 'SidebarNavigation.vue'] as $component) {
+test('the desktop sidebar and the mobile menu read the same navigation', function () {
+    foreach (['AppSidebar.vue', 'SidebarNavigation.vue'] as $component) {
         expect((string) file_get_contents(resource_path("js/components/{$component}")))
-            ->toContain("import { useNavigation } from '@/lib/navigation';");
+            ->toMatch("/import \\{[^}]*\\buseNavigation\\b[^}]*\\} from '@\\/lib\\/navigation';/");
     }
 });
 

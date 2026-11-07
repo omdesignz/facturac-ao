@@ -91,6 +91,15 @@ interface ResultGroup {
     results: Result[];
 }
 
+/**
+ * How the way in looks: the field in the phone's top bar, a field across the
+ * desktop sidebar, or an icon on its compact rail. The palette is the same.
+ */
+const props = withDefaults(
+    defineProps<{ trigger?: 'bar' | 'sidebar' | 'rail' }>(),
+    { trigger: 'bar' },
+);
+
 const MIN_QUERY_LENGTH = 2;
 const DEBOUNCE_MS = 160;
 
@@ -469,8 +478,57 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div class="flex min-w-0 flex-1 items-center max-xl:justify-end">
+    <div
+        :class="
+            props.trigger === 'bar'
+                ? 'flex min-w-0 flex-1 items-center max-xl:justify-end'
+                : 'flex shrink-0'
+        "
+    >
         <button
+            v-if="props.trigger === 'sidebar'"
+            type="button"
+            class="flex h-8 w-full items-center gap-2 rounded-lg bg-[var(--surface-raised)] ps-2.5 pe-2 text-start text-[0.8125rem] font-medium text-zinc-500 shadow-[var(--ui-control-shadow)] focus-ring transition-colors hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+            aria-haspopup="dialog"
+            :aria-keyshortcuts="isApplePlatform ? 'Meta+K' : 'Control+K'"
+            @click="openPalette"
+        >
+            <Search
+                class="size-[0.9375rem] shrink-0"
+                :stroke-width="1.9"
+                aria-hidden="true"
+            />
+            <span class="min-w-0 flex-1 truncate">Procurar</span>
+            <kbd
+                class="font-sans text-[0.6875rem] font-medium text-zinc-400 dark:text-zinc-500"
+                aria-hidden="true"
+                >{{ shortcutKeys.join('') }}</kbd
+            >
+        </button>
+        <button
+            v-else-if="props.trigger === 'rail'"
+            type="button"
+            class="group/item relative grid size-9 place-items-center rounded-lg bg-[var(--surface-raised)] text-zinc-500 shadow-[var(--ui-control-shadow)] focus-ring transition-colors hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+            aria-haspopup="dialog"
+            :aria-keyshortcuts="isApplePlatform ? 'Meta+K' : 'Control+K'"
+            @click="openPalette"
+        >
+            <Search
+                class="size-[1.0625rem]"
+                :stroke-width="1.8"
+                aria-hidden="true"
+            />
+            <span class="sr-only">Procurar</span>
+            <span
+                class="pointer-events-none absolute start-full top-1/2 z-50 ms-3 flex -translate-y-1/2 items-center gap-2 rounded-md bg-white px-2.5 py-1.5 text-xs font-medium whitespace-nowrap text-zinc-900 opacity-0 shadow-[var(--ui-pop-shadow)] transition-opacity duration-100 group-hover/item:opacity-100 group-hover/item:delay-150 group-focus-visible/item:opacity-100 dark:bg-[#1a1a1e] dark:text-zinc-100"
+                aria-hidden="true"
+                >Procurar<span class="text-zinc-400">{{
+                    shortcutKeys.join('')
+                }}</span></span
+            >
+        </button>
+        <button
+            v-else
             type="button"
             class="group flex h-10 w-full max-w-md min-w-0 items-center gap-3 rounded-full bg-zinc-900/[0.04] pr-2 pl-3.5 text-left text-sm text-zinc-500 focus-ring transition hover:bg-zinc-900/[0.07] hover:text-zinc-700 max-xl:size-10 max-xl:w-10 max-xl:shrink-0 max-xl:justify-center max-xl:px-0 xl:min-w-44 dark:bg-white/[0.06] dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-zinc-200"
             aria-haspopup="dialog"

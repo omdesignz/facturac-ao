@@ -74,7 +74,11 @@ class DashboardController extends Controller
             // Ageing walks every open invoice, so it arrives after first paint.
             'canRemindCustomers' => Gate::allows('create', Customer::class),
             'collections' => Inertia::defer(fn (): ?array => $legalEntity instanceof LegalEntity
-                ? $this->dashboard->collections($legalEntity)
+                ? $this->dashboard->collections($legalEntity, 5)
+                : null),
+            // Sixty days, so the last thirty can be compared with the thirty before.
+            'trend' => Inertia::defer(fn (): ?array => $legalEntity instanceof LegalEntity
+                ? $this->dashboard->billingTrend($legalEntity, $now, 60)
                 : null),
         ]);
     }

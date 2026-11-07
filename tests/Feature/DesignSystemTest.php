@@ -50,12 +50,13 @@ test('the dashboard and the debts page colour debt age the same way', function (
         ->toContain("import { agingBucketColours, agingShare } from '@/lib/aging';");
 })->with(['Dashboard', 'Debts/Index']);
 
-test('headings are set light and labels stay quiet', function () {
+test('headings are set firm and tight, and labels stay quiet in sentence case', function () {
     $css = (string) file_get_contents(resource_path('css/app.css'));
 
     expect($css)
-        ->toMatch('/@utility display \{\s*font-weight: 300;/')
-        ->toMatch('/@utility eyebrow \{[^}]*font-weight: 500;[^}]*letter-spacing: 0\.07em;/s');
+        ->toMatch('/@utility display \{\s*font-weight: 650;\s*letter-spacing: -0\.025em;/')
+        ->toMatch('/@utility eyebrow \{[^}]*font-weight: 500;[^}]*letter-spacing: 0;/s')
+        ->not->toMatch('/@utility eyebrow \{[^}]*uppercase/s');
 });
 
 test('the sign-in screens show the brand, not a dark slab or an endorsement', function () {
@@ -129,13 +130,15 @@ test('secondary buttons are outline pills, not rounded boxes', function () {
     }
 });
 
-test('the product speaks SF Pro on Apple devices and Hanken Grotesk everywhere else, and the logo never depends on either', function () {
+test('the product speaks Inter, as the iPhone app does, and the logo never depends on it', function () {
     $styles = (string) file_get_contents(resource_path('css/app.css'));
     $vite = (string) file_get_contents(base_path('vite.config.ts'));
 
-    expect($styles)->toMatch("/--font-sans:\s+-apple-system,[^;]*'SF Pro Text', 'Hanken Grotesk'/")
+    expect($styles)->toMatch("/--font-sans:\s+'Inter', -apple-system,/")
+        ->toContain("'cv11' 1,")
+        ->not->toContain('Hanken Grotesk')
         ->not->toContain('IBM Plex Sans')
-        ->and($vite)->toContain("bunny('Hanken Grotesk'")
+        ->and($vite)->toContain("bunny('Inter'")
         ->and((string) file_get_contents(resource_path('js/components/BrandWordmark.vue')))
         ->toContain('<path');
 });
@@ -144,12 +147,14 @@ test('the top bar is one quiet row of shared menus', function () {
     $layout = (string) file_get_contents(resource_path('js/layouts/AppLayout.vue'));
     $header = (string) file_get_contents(resource_path('js/components/AppHeader.vue'));
 
+    // On a desktop the account and the company live in the sidebar; the bar
+    // keeps only what announces itself: the work timer and notifications.
     expect($layout)->toContain('<AppHeader')
         ->not->toContain('<header')
         ->and($header)->toContain('<NotificationsMenu />')
-        ->toContain('<AccountMenu />');
+        ->toContain('<AccountMenu v-if="!isDesktop" />');
 
-    foreach (['NotificationsMenu.vue', 'AccountMenu.vue', 'AppTopNav.vue', 'WorkspaceSwitcher.vue'] as $component) {
+    foreach (['NotificationsMenu.vue', 'AccountMenu.vue', 'AppSidebar.vue', 'WorkspaceSwitcher.vue'] as $component) {
         expect((string) file_get_contents(resource_path("js/components/{$component}")))
             ->toContain('menu-panel');
     }
@@ -308,8 +313,9 @@ test('the phone gets a tab bar of four words and one gold action, and a header t
         ->not->toContain('Abrir navegação');
 });
 
-test('the desktop navigation is five words along the top, and a company chip', function () {
-    $nav = (string) file_get_contents(resource_path('js/components/AppTopNav.vue'));
+test('the desktop navigation is a sidebar that folds to a rail of icons', function () {
+    $sidebar = (string) file_get_contents(resource_path('js/components/AppSidebar.vue'));
+    $state = (string) file_get_contents(resource_path('js/lib/sidebar.ts'));
     $map = (string) file_get_contents(resource_path('js/lib/top-navigation.ts'));
     $header = (string) file_get_contents(resource_path('js/components/AppHeader.vue'));
     $layout = (string) file_get_contents(resource_path('js/layouts/AppLayout.vue'));
@@ -318,15 +324,23 @@ test('the desktop navigation is five words along the top, and a company chip', f
         expect($map)->toContain("{$word}'");
     }
 
-    expect($nav)->toContain('hidden items-center')
-        ->toContain('aria-current')
+    // The company, search, the AGT and the account move into the sidebar, so
+    // the bar above a page stays almost empty.
+    expect($sidebar)->toContain('aria-current')
         ->toContain('Nova factura')
-        ->and($header)->toContain('<AppTopNav />')
-        ->toContain('<WorkspaceSwitcher />')
-        ->and($layout)->not->toContain('AppRail')
-        ->not->toContain('lg:pl-[4.5rem]');
+        ->toContain('switchWorkspace')
+        ->toContain('RAIL_PLACES')
+        ->toContain('<GlobalSearch')
+        ->toContain('<AccountMenu')
+        ->and($state)->toContain("'vap-sidebar'")
+        ->toContain("event.key === '\\\\'")
+        ->and($layout)->toContain('<AppSidebar />')
+        ->toContain("sidebarCompact ? 'ps-14' : 'ps-60'")
+        ->and($header)->not->toContain('AppTopNav')
+        ->toContain('<GlobalSearch v-if="!isDesktop" />');
 
-    expect(file_exists(resource_path('js/components/AppRail.vue')))->toBeFalse();
+    expect(file_exists(resource_path('js/components/AppTopNav.vue')))->toBeFalse()
+        ->and(file_exists(resource_path('js/components/AppRail.vue')))->toBeFalse();
 });
 
 test('every working screen shares one width, so the ground never shifts between pages', function () {
