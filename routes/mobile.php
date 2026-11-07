@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\Mobile\MobileProfileController;
 use App\Http\Controllers\Api\Mobile\MobilePushDeviceController;
 use App\Http\Controllers\Api\Mobile\MobileQuoteController;
 use App\Http\Controllers\Api\Mobile\MobileReceiptController;
+use App\Http\Controllers\Api\Mobile\MobileRecurringController;
 use App\Http\Controllers\Api\Mobile\MobileReminderController;
 use App\Http\Controllers\Api\Mobile\MobileSessionController;
 use App\Http\Controllers\Api\Mobile\MobileStockController;
@@ -138,6 +139,14 @@ Route::name('mobile.v1.')->group(function (): void {
             Route::post('quotes/{quotePublicId}/invoice/issue', [MobileQuoteController::class, 'issue'])
                 ->middleware('throttle:10,1,mobile-quote-issue')
                 ->name('quotes.issue');
+            Route::get('recurring', [MobileRecurringController::class, 'index'])->name('recurring.index');
+            Route::get('recurring/{profilePublicId}', [MobileRecurringController::class, 'show'])->name('recurring.show');
+            Route::post('recurring/{profilePublicId}/skip', [MobileRecurringController::class, 'skip'])
+                ->middleware('throttle:20,1,mobile-recurring-skip')
+                ->name('recurring.skip');
+            Route::post('recurring/{profilePublicId}/run', [MobileRecurringController::class, 'run'])
+                ->middleware('throttle:10,1,mobile-recurring-run')
+                ->name('recurring.run');
             Route::get('till', [MobileTillController::class, 'show'])->name('till.show');
             Route::post('till/sessions', [MobileTillController::class, 'open'])
                 ->middleware('throttle:10,1,mobile-till-open')

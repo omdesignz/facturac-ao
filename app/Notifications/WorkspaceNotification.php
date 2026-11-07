@@ -5,6 +5,7 @@ namespace App\Notifications;
 use App\Models\User;
 use App\Models\Workspace;
 use App\NotificationTopic;
+use App\WorkspaceRole;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
@@ -139,7 +140,14 @@ abstract class WorkspaceNotification extends Notification implements ShouldQueue
     public function sendToWorkspace(Workspace $workspace, ?User $except = null): void
     {
         $recipients = $workspace->users()->get()
-            ->reject(fn (User $user): bool => $except !== null && $user->is($except));
+            ->reject(fn (User $user): bool => $except !== null && $user->is($except))
+            // A topic meant for some roles only never reaches the others.
+            ->filter(function (User $user): bool {
+                $role = $user->pivot?->getAttribute('role');
+                $role = $role instanceof WorkspaceRole ? $role : WorkspaceRole::tryFrom((string) $role);
+
+                return $role === null || $this->topic()->isFor($role);
+            });
 
         if ($recipients->isNotEmpty()) {
             NotificationFacade::send($recipients, $this);

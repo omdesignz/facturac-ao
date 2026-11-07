@@ -20,6 +20,7 @@ enum NotificationTopic: string
     case InvoiceOverdue = 'invoice_overdue';
     case QuoteAccepted = 'quote_accepted';
     case QuoteExpiring = 'quote_expiring';
+    case RecurringDue = 'recurring_due';
     case RecurringGenerated = 'recurring_generated';
     case StockLow = 'stock_low';
     case CreditLimitExceeded = 'credit_limit_exceeded';
@@ -38,6 +39,7 @@ enum NotificationTopic: string
             self::InvoiceOverdue => 'Facturas vencidas',
             self::QuoteAccepted => 'Orçamentos aceites',
             self::QuoteExpiring => 'Orçamentos a expirar',
+            self::RecurringDue => 'Avenças de amanhã',
             self::RecurringGenerated => 'Avenças geradas',
             self::StockLow => 'Inventário no mínimo',
             self::CreditLimitExceeded => 'Clientes acima do limite',
@@ -58,6 +60,7 @@ enum NotificationTopic: string
             self::InvoiceOverdue => 'No dia seguinte ao vencimento de uma factura por pagar.',
             self::QuoteAccepted => 'Quando um orçamento passa a aceite e pode virar factura.',
             self::QuoteExpiring => 'Três dias antes de um orçamento perder a validade.',
+            self::RecurringDue => 'Na véspera, o que uma avença vai gerar, para saltar desta vez ou gerar já.',
             self::RecurringGenerated => 'Quando uma avença cria o documento do período.',
             self::StockLow => 'Quando um artigo desce ao nível de reposição.',
             self::CreditLimitExceeded => 'Quando a dívida de um cliente passa o limite acordado.',
@@ -80,11 +83,17 @@ enum NotificationTopic: string
 
     /**
      * Who may receive it. The day's figures are the whole company's money, so
-     * the daily close goes only to those who run the company.
+     * the daily close goes only to those who run the company; an avença's eve
+     * goes to those who may act on it.
      */
     public function isFor(WorkspaceRole $role): bool
     {
-        return $this !== self::DailyClose || $role->canManageWorkspace();
+        return match ($this) {
+            self::DailyClose => $role->canManageWorkspace(),
+            // Only those who may run an avença can be asked to skip or run one.
+            self::RecurringDue => $role !== WorkspaceRole::Viewer,
+            default => true,
+        };
     }
 
     /**
@@ -121,6 +130,7 @@ enum NotificationTopic: string
                 self::PaymentReceived,
                 self::InvoiceOverdue,
                 self::QuoteAccepted,
+                self::RecurringDue,
                 self::CreditLimitExceeded,
                 self::SupportAccess => true,
                 default => false,
