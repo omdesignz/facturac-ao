@@ -261,7 +261,7 @@ function openChapter(id: string | null): void {
             <!-- ======================================================== home -->
             <div v-if="active === null" class="page-shell">
                 <header
-                    class="grid gap-10 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-end lg:gap-16"
+                    class="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-end lg:gap-16"
                 >
                     <div class="min-w-0">
                         <p class="text-[0.8125rem] text-[var(--ui-ink-3)]">
@@ -270,12 +270,9 @@ function openChapter(id: string | null): void {
                         <h1
                             ref="heading"
                             tabindex="-1"
-                            class="mt-3 font-display text-section text-balance text-zinc-950 focus:outline-none dark:text-white"
+                            class="mt-3 text-page-title font-[650] text-balance text-[var(--ui-ink)] focus:outline-hidden"
                         >
-                            Mais confiança. Em cada passo<span
-                                class="brand-dot"
-                                aria-hidden="true"
-                            />
+                            Guia de utilização
                         </h1>
                         <p
                             class="mt-4 max-w-xl text-base/7 text-pretty text-zinc-600 dark:text-zinc-400"
@@ -336,7 +333,7 @@ function openChapter(id: string | null): void {
                         </h2>
                         <p class="mt-3 flex items-baseline gap-2">
                             <span
-                                class="font-display numeric text-5xl leading-none tracking-[-0.03em]"
+                                class="numeric text-stat leading-none font-[650] tracking-[-0.03em]"
                                 >{{ progress.completed.length }}</span
                             >
                             <span
@@ -361,7 +358,7 @@ function openChapter(id: string | null): void {
                         <button
                             v-if="nextUnread"
                             type="button"
-                            class="mt-5 flex w-full items-center justify-between gap-3 rounded-full bg-brand-950 py-3 ps-5 pe-4 text-start text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 dark:bg-white dark:text-brand-950 dark:hover:bg-zinc-200"
+                            class="mt-5 flex w-full min-w-0 items-center justify-between gap-3 rounded-lg bg-[var(--ui-ink)] py-3 ps-5 pe-4 text-start text-sm font-semibold text-[var(--surface-raised)] focus-ring hover:opacity-90"
                             @click="openChapter(nextUnread.id)"
                         >
                             <span class="min-w-0 truncate">

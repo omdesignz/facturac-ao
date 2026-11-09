@@ -24,6 +24,7 @@ import ToggleSwitch from '@/components/ToggleSwitch.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { confirmAction } from '@/lib/confirm';
 import { localIsoDate } from '@/lib/dates';
+import { plural } from '@/lib/plural';
 import { currencyLabel } from '@/lib/pos-ui';
 import {
     destroy as destroyProfile,
@@ -381,7 +382,13 @@ const dueCount = computed(
                                 <dd
                                     class="numeric text-zinc-700 dark:text-zinc-300"
                                 >
-                                    {{ profile.generated_count }} documento(s)
+                                    {{
+                                        plural(
+                                            profile.generated_count,
+                                            'documento',
+                                            'documentos',
+                                        )
+                                    }}
                                 </dd>
                             </div>
                         </dl>

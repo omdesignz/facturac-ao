@@ -83,24 +83,23 @@ test('api routes still receive JSON rather than the HTML error page', function (
 });
 
 /**
- * What each status prints as its stamp, the real word a screen reader hears
- * instead, and where its primary pill goes. The destinations are the ones the
+ * Where each status sends its primary recovery action. The destinations are the ones the
  * page can name without a session or the database; 402 is the exception by
  * design, because its whole point is the billing screen.
  *
- * @return array<int, array{stamp: string, word: string, primary: string}>
+ * @return array<int, array{primary: string}>
  */
 function errorPageExpectations(): array
 {
     return [
-        401 => ['stamp' => 'autenticac<span class="dot"></span>ao', 'word' => 'Autenticação', 'primary' => '/login'],
-        402 => ['stamp' => 'subscric<span class="dot"></span>ao', 'word' => 'Subscrição', 'primary' => '/settings/billing'],
-        403 => ['stamp' => 'autorizac<span class="dot"></span>ao', 'word' => 'Autorização', 'primary' => '/'],
-        404 => ['stamp' => 'direcc<span class="dot"></span>ao', 'word' => 'Direcção', 'primary' => '/'],
-        419 => ['stamp' => 'expirac<span class="dot"></span>ao', 'word' => 'Expiração', 'primary' => ''],
-        429 => ['stamp' => 'moderac<span class="dot"></span>ao', 'word' => 'Moderação', 'primary' => ''],
-        500 => ['stamp' => 'interrupc<span class="dot"></span>ao', 'word' => 'Interrupção', 'primary' => ''],
-        503 => ['stamp' => 'manutenc<span class="dot"></span>ao', 'word' => 'Manutenção', 'primary' => ''],
+        401 => ['primary' => '/login'],
+        402 => ['primary' => '/settings/billing'],
+        403 => ['primary' => '/'],
+        404 => ['primary' => '/'],
+        419 => ['primary' => ''],
+        429 => ['primary' => ''],
+        500 => ['primary' => ''],
+        503 => ['primary' => ''],
     ];
 }
 
@@ -109,17 +108,12 @@ function renderErrorPage(int $status, ?HttpException $exception = null): string
     return view("errors.{$status}", $exception === null ? [] : ['exception' => $exception])->render();
 }
 
-test('each status sets its own stamp with the gold full stop and says the real word once', function (int $status) {
-    $expected = errorPageExpectations()[$status];
+test('error pages lead with the status and one recovery heading', function (int $status) {
     $html = renderErrorPage($status);
 
-    // The decorative split is hidden from assistive technology; the proper
-    // spelling is the only thing it reads.
-    expect($html)->toContain('<span aria-hidden="true">'.$expected['stamp'].'</span>')
-        ->and($html)->toContain('<span class="sr-only">'.$expected['word'].'</span>')
-        ->and(substr_count($html, 'class="sr-only"'))->toBe(1)
-        ->and($html)->toContain('background: var(--gold)')
-        ->and($html)->toContain('white-space: nowrap');
+    expect($html)->toContain('<p class="status">Erro '.$status)
+        ->and($html)->not->toContain('class="stamp"')
+        ->and($html)->not->toContain('class="sr-only"');
 })->with('statuses');
 
 test('each status has exactly one h1 and one main landmark', function (int $status) {
@@ -172,20 +166,20 @@ test('error pages never query the database', function (int $status) {
     expect(DB::getQueryLog())->toBe([]);
 })->with('statuses');
 
-test('actions are pills, not rounded rectangles', function (int $status) {
+test('error actions use the application control shape with a usable touch target', function (int $status) {
     $html = renderErrorPage($status);
 
     expect(preg_match('/\.pill \{[^}]*\}/s', $html, $pill))->toBe(1)
-        ->and($pill[0])->toContain('border-radius: 9999px')
-        ->and($pill[0])->toContain('min-block-size: 2.75rem')
-        ->and($html)->not->toContain('border-radius: 0.75rem');
+        ->and($pill[0])->toContain('border-radius: 0.5rem')
+        ->and($pill[0])->toContain('min-block-size: 2.75rem');
 })->with('statuses');
 
 test('the type uses the same stacks as the app', function () {
     $html = renderErrorPage(404);
 
-    expect($html)->toContain("'Hanken Grotesk'")
-        ->and($html)->toContain("'Century Gothic'")
+    expect($html)->toContain("'Inter'")
+        ->and($html)->toContain("'SF Pro Text'")
+        ->and($html)->not->toContain("'Century Gothic'")
         ->and($html)->toContain("'IBM Plex Mono'");
 });
 

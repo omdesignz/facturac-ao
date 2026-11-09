@@ -16,6 +16,7 @@ import {
     assistantFailure,
     assistantFailureCode,
     acceptsResponse,
+    assistantTimestamp,
 } from '../resources/js/lib/assistant.ts';
 
 const server = await createServer({
@@ -145,8 +146,9 @@ test('monthly financial cards retain all eight native buckets without cross-curr
     );
 
     for (const currency of currencies) {
+        const unit = currency === 'AOA' ? 'Kz' : currency;
         assert.equal(
-            lines.filter((line) => line.endsWith(` ${currency}`)).length,
+            lines.filter((line) => line.endsWith(` ${unit}`)).length,
             9,
         );
     }
@@ -308,15 +310,15 @@ test('detail lines list active currencies only and name the idle ones', () => {
             bucket('EUR'),
         ]),
     );
-    assert.equal(lines[0], 'Facturação registada · 2026-10');
+    assert.equal(lines[0], 'Facturação registada · outubro de 2026');
     assert.equal(
         lines[1],
         'Valores nas moedas originais; não representam receitas, cobranças ou dívida.',
     );
     assert.equal(lines[2], 'Consulta: time');
-    assert.equal(lines.filter((line) => line.endsWith(' AOA')).length, 9);
+    assert.equal(lines.filter((line) => line.endsWith(' Kz')).length, 9);
     assert.equal(lines.filter((line) => line.endsWith(' BRL')).length, 0);
-    assert.ok(lines.includes(`Facturado bruto: 235${NBSP}500,00 AOA`));
+    assert.ok(lines.includes(`Facturado bruto: 235${NBSP}500,00 Kz`));
     assert.equal(lines.length, 3 + 10 + 1);
     assert.equal(lines.at(-1), 'Sem movimento noutras moedas: BRL, CNY, EUR.');
     assert.deepEqual(assistantLines(billing([])).length, 3);
@@ -618,4 +620,22 @@ test('page cancels a question without an error, keeps the generation guard and s
     assert.ok(source.includes('@keydown.ctrl.enter.prevent'));
     assert.ok(!source.includes('@keydown.enter.prevent="submit'));
     assert.ok(source.includes('if (generation === submitted)'));
+});
+
+test('answer timestamps read in Luanda time, and anything else is shown as it came', () => {
+    assert.equal(
+        assistantTimestamp('2026-11-09T08:00:00+00:00'),
+        '09/11/2026 · 09:00',
+    );
+    assert.equal(assistantTimestamp('time'), 'time');
+    assert.equal(
+        assistantLines(
+            result('getMonthlyRecordedBilling', {
+                period: { month: '2026-10' },
+                as_of: '2026-11-09T08:00:00+00:00',
+                currencies: [],
+            }),
+        )[2],
+        'Consulta: 09/11/2026 · 09:00',
+    );
 });

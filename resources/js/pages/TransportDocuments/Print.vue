@@ -82,12 +82,36 @@ const moneyFormatter = new Intl.NumberFormat('pt-AO', {
     maximumFractionDigits: 2,
 });
 
+/** dd/mm/aaaa from the stored calendar day, so no timezone can move it. */
 function formatDate(value: string): string {
-    return value.split('T')[0];
+    const [year, month, day] = value.slice(0, 10).split('-');
+
+    return `${day}/${month}/${year}`;
 }
 
+/** dd/mm/aaaa · hh:mm, the wall-clock time the guide was written with. */
 function formatDateTime(value: string | null): string {
-    return value ? value.replace('T', ' ').slice(0, 16) : '—';
+    return value
+        ? `${formatDate(value)} · ${value.replace('T', ' ').slice(11, 16)}`
+        : '—';
+}
+
+const quantityFormatter = new Intl.NumberFormat('pt-AO', {
+    maximumFractionDigits: 3,
+});
+
+/** "20", "1,5": never "20.000", which a reader here takes for twenty thousand. */
+function formatQuantity(value: string): string {
+    const amount = Number(value);
+
+    return Number.isFinite(amount) ? quantityFormatter.format(amount) : value;
+}
+
+/** "28 000,00", like every other amount on the page. */
+function formatPrice(value: string): string {
+    const amount = Number(value);
+
+    return Number.isFinite(amount) ? moneyFormatter.format(amount) : value;
 }
 
 function money(minor: number): string {
@@ -180,7 +204,9 @@ function printDocument(): void {
                 </div>
             </header>
 
-            <section class="doc-keep mt-6 grid grid-cols-2 gap-8 text-xs/5">
+            <section
+                class="doc-keep mt-6 grid grid-cols-1 gap-6 text-xs/5 sm:grid-cols-2 sm:gap-8"
+            >
                 <div>
                     <p class="eyebrow text-zinc-500">
                         {{ document.party_label }}
@@ -200,7 +226,9 @@ function printDocument(): void {
                         · {{ document.recipient.country_code }}
                     </p>
                 </div>
-                <dl class="grid grid-cols-2 gap-x-4 gap-y-1.5 self-start">
+                <dl
+                    class="grid grid-cols-2 gap-x-4 gap-y-1.5 self-start max-sm:grid-cols-[auto_minmax(0,1fr)]"
+                >
                     <dt class="text-zinc-500">Data</dt>
                     <dd class="text-right numeric">
                         {{ formatDate(document.movement_date) }}
@@ -297,64 +325,70 @@ function printDocument(): void {
                 </div>
             </section>
 
-            <table class="mt-7 w-full text-left text-xs">
-                <thead>
-                    <tr class="border-y border-zinc-300 bg-zinc-50">
-                        <th class="py-2 pr-2 font-semibold">#</th>
-                        <th class="px-2 py-2 font-semibold">Código</th>
-                        <th class="px-2 py-2 font-semibold">Mercadoria</th>
-                        <th class="px-2 py-2 text-right font-semibold">
-                            Quantidade
-                        </th>
-                        <th class="px-2 py-2 text-right font-semibold">
-                            Preço unit.
-                        </th>
-                        <th class="py-2 pl-2 text-right font-semibold">
-                            Valor
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr
-                        v-for="line in document.lines"
-                        :key="line.line_number"
-                        class="border-b border-zinc-200 align-top"
-                    >
-                        <td class="py-2 pr-2 numeric text-zinc-500">
-                            {{ line.line_number }}
-                        </td>
-                        <td class="px-2 py-2 numeric">
-                            {{ line.product_code }}
-                        </td>
-                        <td class="px-2 py-2 font-medium">
-                            {{ line.product_description }}
-                            <div
-                                v-for="reference in line.order_references"
-                                :key="reference.document_no"
-                                class="text-xs text-zinc-500"
+            <!-- On a phone the lines scroll sideways inside the sheet; on paper nothing changes. -->
+            <div
+                class="mt-7 overflow-x-auto overscroll-x-contain print:overflow-visible"
+            >
+                <table class="w-full text-left text-xs">
+                    <thead>
+                        <tr class="border-y border-zinc-300 bg-zinc-50">
+                            <th class="py-2 pr-2 font-semibold">#</th>
+                            <th class="px-2 py-2 font-semibold">Código</th>
+                            <th class="px-2 py-2 font-semibold">Mercadoria</th>
+                            <th class="px-2 py-2 text-right font-semibold">
+                                Quantidade
+                            </th>
+                            <th class="px-2 py-2 text-right font-semibold">
+                                Preço unit.
+                            </th>
+                            <th class="py-2 pl-2 text-right font-semibold">
+                                Valor
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr
+                            v-for="line in document.lines"
+                            :key="line.line_number"
+                            class="border-b border-zinc-200 align-top"
+                        >
+                            <td class="py-2 pr-2 numeric text-zinc-500">
+                                {{ line.line_number }}
+                            </td>
+                            <td class="px-2 py-2 numeric">
+                                {{ line.product_code }}
+                            </td>
+                            <td class="px-2 py-2 font-medium">
+                                {{ line.product_description }}
+                                <div
+                                    v-for="reference in line.order_references"
+                                    :key="reference.document_no"
+                                    class="text-xs text-zinc-500"
+                                >
+                                    Origem: {{ reference.document_no }} ·
+                                    {{ reference.document_date }}
+                                </div>
+                            </td>
+                            <td
+                                class="px-2 py-2 text-right numeric whitespace-nowrap"
                             >
-                                Origem: {{ reference.document_no }} ·
-                                {{ reference.document_date }}
-                            </div>
-                        </td>
-                        <td
-                            class="px-2 py-2 text-right numeric whitespace-nowrap"
-                        >
-                            {{ line.quantity }} {{ line.unit_of_measure }}
-                        </td>
-                        <td
-                            class="px-2 py-2 text-right numeric whitespace-nowrap"
-                        >
-                            {{ line.unit_price }}
-                        </td>
-                        <td
-                            class="py-2 pl-2 text-right numeric font-medium whitespace-nowrap"
-                        >
-                            {{ money(line.net_amount_minor) }}
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+                                {{ formatQuantity(line.quantity) }}
+                                {{ line.unit_of_measure }}
+                            </td>
+                            <td
+                                class="px-2 py-2 text-right numeric whitespace-nowrap"
+                            >
+                                {{ formatPrice(line.unit_price) }}
+                            </td>
+                            <td
+                                class="py-2 pl-2 text-right numeric font-medium whitespace-nowrap"
+                            >
+                                {{ money(line.net_amount_minor) }}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
             <div class="doc-keep mt-5 flex justify-end">
                 <dl class="w-72 border-t-2 border-zinc-900 pt-2 text-sm">

@@ -197,6 +197,39 @@ class ReceivablesQuery
     }
 
     /**
+     * Mutually exclusive balance states for the supplied issued sales query.
+     * A zero balance includes payments, credits and AGT-returned documents;
+     * it must therefore be described as "sem saldo", never simply "paid".
+     *
+     * @param  Builder<FiscalDocument>  $query
+     * @return array{cleared: int, current: int, overdue: int}
+     */
+    public function balanceCounts(Builder $query): array
+    {
+        $outstanding = $this->outstandingExpression();
+        $row = $this->aggregateOver($query)
+            ->selectRaw(
+                "COALESCE(SUM(CASE WHEN ({$outstanding}) <= 0 THEN 1 ELSE 0 END), 0) AS cleared",
+                self::owableTypes(),
+            )
+            ->selectRaw(
+                "COALESCE(SUM(CASE WHEN ({$outstanding}) > 0 AND (d.due_date IS NULL OR d.due_date >= ?) THEN 1 ELSE 0 END), 0) AS current_count",
+                [...self::owableTypes(), $this->today()],
+            )
+            ->selectRaw(
+                "COALESCE(SUM(CASE WHEN ({$outstanding}) > 0 AND d.due_date < ? THEN 1 ELSE 0 END), 0) AS overdue",
+                [...self::owableTypes(), $this->today()],
+            )
+            ->first();
+
+        return [
+            'cleared' => (int) ($row->cleared ?? 0),
+            'current' => (int) ($row->current_count ?? 0),
+            'overdue' => (int) ($row->overdue ?? 0),
+        ];
+    }
+
+    /**
      * Billed value per calendar day, for the trend charts.
      *
      * Grouped by the raw date rather than by a formatted month, because the date

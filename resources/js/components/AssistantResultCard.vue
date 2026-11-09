@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { assistantHeadline, assistantLines } from '@/lib/assistant';
+import {
+    assistantHeadline,
+    assistantLines,
+    assistantTimestamp,
+} from '@/lib/assistant';
 import type { AssistantContext, AssistantResult } from '@/lib/assistant';
 /**
  * `context` is still passed by the page, which shows it once under
@@ -59,7 +63,7 @@ const headline = computed(() => assistantHeadline(props.result));
         </ul>
         <p class="mt-4 text-xs break-all text-zinc-500 dark:text-zinc-400">
             Fonte: {{ result.tool }} · {{ result.result_id }} ·
-            {{ result.read_at }}
+            {{ assistantTimestamp(result.read_at) }}
         </p>
     </article>
 </template>

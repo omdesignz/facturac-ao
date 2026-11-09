@@ -20,6 +20,7 @@ import { computed, ref } from 'vue';
 import AppButton from '@/components/AppButton.vue';
 import ChartBars from '@/components/charts/ChartBars.vue';
 import ChartFrame from '@/components/charts/ChartFrame.vue';
+import ChartLegend from '@/components/charts/ChartLegend.vue';
 import ChartTrend from '@/components/charts/ChartTrend.vue';
 import CollectionFollowUpForm from '@/components/CollectionFollowUpForm.vue';
 import DataTable from '@/components/DataTable.vue';
@@ -30,8 +31,10 @@ import PageStat from '@/components/PageStat.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { axisAmount } from '@/lib/chart-axis';
 import type { CollectionFollowUp } from '@/lib/collection-follow-ups';
 import { confirmAction } from '@/lib/confirm';
+import { plural } from '@/lib/plural';
 import { currencyLabel } from '@/lib/pos-ui';
 import { index as customersIndex } from '@/routes/customers';
 import {
@@ -217,6 +220,20 @@ const collectionRate = computed(() => {
         : Math.round((props.summary.paid_minor / billed) * 100);
 });
 
+/** The comparison is only named when it was drawn: a new customer has no last year. */
+const trendLegend = computed(() => [
+    { label: 'Este ano', color: 'var(--viz-primary)' },
+    ...(props.trend.some((point) => point.comparison > 0)
+        ? [
+              {
+                  label: 'Ano anterior',
+                  color: 'var(--viz-comparison)',
+                  muted: true,
+              },
+          ]
+        : []),
+]);
+
 const trendRows = computed(() =>
     props.trend.map((point) => [
         point.label,
@@ -353,6 +370,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                     <template #stats>
                         <PageStat
                             label="Facturado"
+                            :unit="currencyLabel(props.currencyCode)"
                             :value="wholeAmount(summary.billed_minor)"
                             :detail="
                                 summary.document_count === 1
@@ -362,6 +380,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                         />
                         <PageStat
                             label="Recebido"
+                            :unit="currencyLabel(props.currencyCode)"
                             :value="wholeAmount(summary.paid_minor)"
                             :detail="
                                 collectionRate === null
@@ -371,6 +390,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                         />
                         <PageStat
                             label="Em dívida"
+                            :unit="currencyLabel(props.currencyCode)"
                             :value="wholeAmount(summary.outstanding_minor)"
                             :detail="
                                 summary.credited_minor > 0
@@ -380,6 +400,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                         />
                         <PageStat
                             label="Vencido"
+                            :unit="currencyLabel(props.currencyCode)"
                             :value="wholeAmount(summary.overdue_minor)"
                             :detail="
                                 summary.overdue_count === 1
@@ -390,7 +411,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                             <span
                                 :class="
                                     summary.overdue_minor > 0
-                                        ? 'text-rose-600 dark:text-rose-400'
+                                        ? 'text-[var(--ui-critical)]'
                                         : ''
                                 "
                                 >{{ wholeAmount(summary.overdue_minor) }}</span
@@ -538,38 +559,24 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
 
                 <ChartFrame
                     title="Facturação mensal"
-                    subtitle="Últimos 12 meses, contra os mesmos meses do ano anterior."
+                    :subtitle="
+                        trendLegend.length > 1
+                            ? 'Últimos 12 meses, contra os mesmos meses do ano anterior.'
+                            : 'Últimos 12 meses.'
+                    "
                     :columns="['Mês', 'Este ano', 'Ano anterior']"
                     :rows="trendRows"
                     :empty="summary.document_count === 0"
                     empty-message="Ainda não emitiu documentos a este cliente."
                 >
                     <template #legend>
-                        <div
-                            class="flex items-center gap-4 text-xs text-zinc-500 dark:text-zinc-400"
-                        >
-                            <span class="inline-flex items-center gap-1.5">
-                                <span
-                                    class="h-0.5 w-4 rounded-full"
-                                    style="background: var(--viz-primary)"
-                                    aria-hidden="true"
-                                />
-                                Este ano
-                            </span>
-                            <span class="inline-flex items-center gap-1.5">
-                                <span
-                                    class="h-0.5 w-4 rounded-full"
-                                    style="background: var(--viz-comparison)"
-                                    aria-hidden="true"
-                                />
-                                Ano anterior
-                            </span>
-                        </div>
+                        <ChartLegend :items="trendLegend" />
                     </template>
 
                     <ChartTrend
                         :points="trend"
                         :format="money"
+                        :tick-format="axisAmount"
                         series-label="Este ano"
                         comparison-label="Ano anterior"
                     />
@@ -836,11 +843,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                     :columns="['Tipo', 'Quantidade', 'Valor']"
                     :rows="mixRows"
                 >
-                    <ChartBars
-                        :bars="typeMix"
-                        :format="compactMoney"
-                        categorical
-                    />
+                    <ChartBars :bars="typeMix" :format="compactMoney" shares />
                 </ChartFrame>
 
                 <section
@@ -872,7 +875,13 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                 aria-hidden="true"
                             />
                             Paga em média em
-                            {{ summary.average_days_to_settle }} dia(s)
+                            {{
+                                plural(
+                                    summary.average_days_to_settle,
+                                    'dia',
+                                    'dias',
+                                )
+                            }}
                         </p>
                     </header>
 

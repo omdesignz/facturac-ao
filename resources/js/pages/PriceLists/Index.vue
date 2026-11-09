@@ -20,6 +20,7 @@ import RecordDialog from '@/components/RecordDialog.vue';
 import ToggleSwitch from '@/components/ToggleSwitch.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { confirmAction } from '@/lib/confirm';
+import { plural } from '@/lib/plural';
 import { currencyLabel } from '@/lib/pos-ui';
 import {
     index as priceListsIndex,
@@ -232,7 +233,10 @@ async function removeList(): Promise<void> {
 
     const confirmed = await confirmAction({
         title: `Remover a tabela “${props.selected.name}”?`,
-        message: `Os ${props.selected.customers.length} cliente(s) nela voltam ao preço do catálogo.`,
+        message:
+            props.selected.customers.length === 1
+                ? 'O cliente nela volta ao preço do catálogo.'
+                : `Os ${plural(props.selected.customers.length, 'cliente', 'clientes')} nela voltam ao preço do catálogo.`,
         confirmLabel: 'Remover tabela',
     });
 
@@ -333,12 +337,16 @@ function toggleDefault(): void {
                             <span
                                 class="mt-1 flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400"
                             >
-                                <span class="numeric"
-                                    >{{ list.item_count }} artigo(s)</span
-                                >
-                                <span class="numeric"
-                                    >{{ list.customer_count }} cliente(s)</span
-                                >
+                                <span class="numeric">{{
+                                    plural(list.item_count, 'artigo', 'artigos')
+                                }}</span>
+                                <span class="numeric">{{
+                                    plural(
+                                        list.customer_count,
+                                        'cliente',
+                                        'clientes',
+                                    )
+                                }}</span>
                             </span>
                             <span
                                 v-if="!list.is_active"
@@ -377,8 +385,14 @@ function toggleDefault(): void {
                                                 class="size-3.5"
                                                 aria-hidden="true"
                                             />
-                                            {{ selected.customers.length }}
-                                            cliente(s) nesta tabela
+                                            {{
+                                                plural(
+                                                    selected.customers.length,
+                                                    'cliente',
+                                                    'clientes',
+                                                )
+                                            }}
+                                            nesta tabela
                                         </span>
                                         <span class="numeric"
                                             >{{ pricedCount }} de

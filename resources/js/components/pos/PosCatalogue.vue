@@ -357,7 +357,7 @@ defineExpose({ focusSearch, announce });
         <h2 id="pos-catalogue-heading" class="sr-only">Artigos</h2>
 
         <div
-            class="sticky inset-bs-[calc(4rem+var(--impersonation-bar,0px))] z-10 -mt-2 bg-stone-50 pt-2 pb-3 dark:bg-zinc-950"
+            class="sticky inset-bs-[calc(4rem+var(--impersonation-bar,0px))] z-10 -mt-2 bg-[var(--surface-page)] pt-2 pb-3"
         >
             <div class="relative">
                 <label for="pos-search" class="sr-only">
@@ -378,7 +378,7 @@ defineExpose({ focusSearch, announce });
                     enterkeyhint="search"
                     placeholder="Nome, código ou código de barras…"
                     aria-keyshortcuts="/ F2"
-                    class="h-12 w-full [appearance:none] rounded-full bg-zinc-900/[0.045] ps-11 pe-20 text-base text-zinc-950 outline-hidden placeholder:text-zinc-500 focus:bg-white focus:ring-2 focus:ring-brand-950 dark:bg-white/[0.06] dark:text-white dark:placeholder:text-zinc-400 dark:focus:bg-zinc-900 dark:focus:ring-zinc-200 [&::-webkit-search-cancel-button]:hidden"
+                    class="h-12 w-full [appearance:none] rounded-xl bg-[var(--surface-raised)] ps-11 pe-20 text-base text-zinc-950 shadow-[var(--ui-control-shadow)] outline-hidden placeholder:text-zinc-500 focus:bg-white focus:ring-2 focus:ring-brand-950 dark:bg-white/[0.06] dark:text-white dark:placeholder:text-zinc-400 dark:focus:bg-zinc-900 dark:focus:ring-zinc-200 [&::-webkit-search-cancel-button]:hidden"
                     @keydown="onSearchKeydown"
                 />
                 <div
@@ -393,7 +393,7 @@ defineExpose({ focusSearch, announce });
                     <button
                         v-if="query !== ''"
                         type="button"
-                        class="icon-button rounded-full text-zinc-500 focus-ring hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
+                        class="icon-button rounded-lg text-zinc-500 focus-ring hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
                         @click="
                             clearQuery();
                             focusSearch();
@@ -424,7 +424,7 @@ defineExpose({ focusSearch, announce });
                     :key="option.value"
                     type="button"
                     :aria-pressed="kind === option.value"
-                    class="inline-flex h-[2.125rem] items-center rounded-full px-3.5 text-[0.8125rem] font-medium focus-ring transition pointer-coarse:h-11"
+                    class="inline-flex h-[2.125rem] items-center rounded-lg px-3.5 text-[0.8125rem] font-medium focus-ring transition pointer-coarse:h-11"
                     :class="
                         kind === option.value
                             ? 'bg-brand-950 text-white dark:bg-zinc-100 dark:text-brand-950'
@@ -482,7 +482,7 @@ defineExpose({ focusSearch, announce });
                     :data-highlighted="
                         highlightedId === item.public_id ? 'true' : undefined
                     "
-                    class="relative flex min-h-[7.25rem] min-w-0 flex-1 flex-col rounded-lg bg-[var(--ui-wash)] p-3 text-start focus-ring hover:bg-zinc-900/[0.07] data-[highlighted=true]:bg-white data-[highlighted=true]:ring-2 data-[highlighted=true]:ring-brand-950 motion-safe:transition-[scale] motion-safe:duration-100 motion-safe:active:scale-[0.98] dark:hover:bg-white/[0.08] dark:data-[highlighted=true]:bg-white/[0.1] dark:data-[highlighted=true]:ring-zinc-200"
+                    class="relative flex min-h-[7.25rem] min-w-0 flex-1 flex-col rounded-xl bg-[var(--surface-raised)] p-3 text-start shadow-[var(--ui-card-shadow)] focus-ring hover:bg-zinc-900/[0.07] data-[highlighted=true]:bg-white data-[highlighted=true]:ring-2 data-[highlighted=true]:ring-brand-950 motion-safe:transition-[scale] motion-safe:duration-100 motion-safe:active:scale-[0.98] dark:hover:bg-white/[0.08] dark:data-[highlighted=true]:bg-white/[0.1] dark:data-[highlighted=true]:ring-zinc-200"
                     @click="onTileClick(item, $event)"
                 >
                     <span
@@ -522,7 +522,7 @@ defineExpose({ focusSearch, announce });
                 </button>
                 <span
                     v-if="quantities[item.public_id] !== undefined"
-                    class="pointer-events-none absolute -inset-e-1.5 -inset-bs-1.5 grid h-6 min-w-6 place-items-center rounded-full bg-brand-950 px-1.5 numeric text-xs font-semibold text-white ring-2 ring-stone-50 dark:bg-zinc-100 dark:text-brand-950 dark:ring-zinc-950"
+                    class="pointer-events-none absolute -inset-e-1.5 -inset-bs-1.5 grid h-6 min-w-6 place-items-center rounded-lg bg-brand-950 px-1.5 numeric text-xs font-semibold text-white ring-2 ring-stone-50 dark:bg-zinc-100 dark:text-brand-950 dark:ring-zinc-950"
                     aria-hidden="true"
                     >{{
                         formatQuantity(quantities[item.public_id] ?? '')

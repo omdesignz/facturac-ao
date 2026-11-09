@@ -22,21 +22,25 @@ export function useWorkSession(
     const anchoredRemaining = ref(settings()?.remaining_seconds ?? 0);
     const signingOut = ref(false);
     const renewing = ref(false);
+    const failure = ref('');
+    let expiryHandled = false;
 
     // Every Inertia response carries a fresh server reading; re-anchor to it so
     // the two never drift apart over a long session.
-    watch(
-        () => settings()?.remaining_seconds,
-        (remaining) => {
-            if (typeof remaining === 'number') {
-                anchoredRemaining.value = remaining;
-                anchoredAt.value = Date.now();
-            }
-        },
-    );
+    watch(settings, (value) => {
+        const remaining = value?.remaining_seconds;
+
+        if (typeof remaining === 'number') {
+            anchoredRemaining.value = remaining;
+            anchoredAt.value = Date.now();
+        }
+    });
 
     const remainingSeconds = computed(() => {
-        const elapsed = Math.floor((clock.value - anchoredAt.value) / 1000);
+        const elapsed = Math.max(
+            0,
+            Math.floor((clock.value - anchoredAt.value) / 1000),
+        );
 
         return Math.max(0, anchoredRemaining.value - elapsed);
     });
@@ -48,8 +52,8 @@ export function useWorkSession(
     const warningVisible = computed(
         () =>
             enabled.value &&
-            !signingOut.value &&
-            remainingSeconds.value <= warningSeconds.value,
+            (remainingSeconds.value <= warningSeconds.value ||
+                failure.value !== ''),
     );
 
     const elapsedFraction = computed(() => {
@@ -60,44 +64,80 @@ export function useWorkSession(
         return 1 - remainingSeconds.value / totalSeconds.value;
     });
 
-    function signOut(): void {
-        if (signingOut.value) {
+    function requestSessionChange(action: 'renew' | 'signOut'): void {
+        if (signingOut.value || renewing.value) {
             return;
         }
 
-        signingOut.value = true;
-        router.post(logoutUrl, {});
-    }
-
-    /** Only an explicit choice starts a new block; working does not extend it. */
-    function renew(): void {
-        if (renewing.value) {
-            return;
-        }
-
-        renewing.value = true;
+        const busy = action === 'renew' ? renewing : signingOut;
+        const failed = () => {
+            failure.value =
+                action === 'renew'
+                    ? 'Não foi possível confirmar a nova sessão. Tente novamente. O prazo anterior continua em vigor.'
+                    : 'Não foi possível confirmar a saída. Verifique a ligação e tente terminar a sessão novamente.';
+        };
+        failure.value = '';
         router.post(
-            renewUrl,
+            action === 'renew' ? renewUrl : logoutUrl,
             {},
             {
                 preserveScroll: true,
                 preserveState: true,
+                onStart: () => {
+                    busy.value = true;
+
+                    if (action === 'signOut' && remainingSeconds.value <= 0) {
+                        expiryHandled = true;
+                    }
+                },
+                onError: failed,
+                onCancel: failed,
+                onNetworkError: () => {
+                    failed();
+
+                    return false;
+                },
+                onHttpException: () => {
+                    failed();
+
+                    return false;
+                },
                 // No local guess at the new window: the redirect lands on a
                 // page whose shared prop already reports it, and the watcher
                 // above re-anchors the countdown to that.
                 onFinish: () => {
-                    renewing.value = false;
+                    busy.value = false;
                 },
             },
         );
     }
 
+    function signOut(): void {
+        requestSessionChange('signOut');
+    }
+
+    /** Only an explicit choice starts a new block; working does not extend it. */
+    function renew(): void {
+        requestSessionChange('renew');
+    }
+
     // Immediate, so a page that loads with nothing left signs out instead of
     // sitting on a dead 0:00 — a plain watcher only reacts to a change.
     const stop = watch(
-        remainingSeconds,
-        (value) => {
-            if (enabled.value && value <= 0) {
+        [remainingSeconds, enabled, renewing, signingOut],
+        ([seconds, isEnabled, isRenewing, isSigningOut]) => {
+            if (seconds > 0) {
+                expiryHandled = false;
+            }
+
+            if (
+                isEnabled &&
+                seconds <= 0 &&
+                !isRenewing &&
+                !isSigningOut &&
+                !expiryHandled
+            ) {
+                expiryHandled = true;
                 signOut();
             }
         },
@@ -114,6 +154,7 @@ export function useWorkSession(
         warningVisible,
         signingOut,
         renewing,
+        failure,
         renew,
         signOut,
     };

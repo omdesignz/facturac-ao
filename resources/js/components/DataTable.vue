@@ -6,13 +6,20 @@ defineProps<{
     tableClass?: string;
     /** Lets `InfiniteScroll` find the rows it appends to. */
     bodyId?: string;
-    /** On a work surface: no card around it, its edges in line with the title bar. */
+    /** The register's inset surface, sharing the heading's outer gutters. */
     edge?: boolean;
 }>();
 </script>
 
 <template>
-    <div class="overflow-x-auto overscroll-x-contain">
+    <div
+        class="overflow-x-auto overscroll-x-contain"
+        :class="
+            edge
+                ? 'mx-4 my-4 rounded-xl bg-[var(--surface-raised)] shadow-[var(--ui-card-shadow)] sm:mx-6'
+                : ''
+        "
+    >
         <table
             class="data-table w-full text-left text-sm"
             :class="[tableClass, edge ? 'data-table-edge' : '']"

@@ -21,6 +21,7 @@ import StatusBadge from '@/components/StatusBadge.vue';
 import ToggleSwitch from '@/components/ToggleSwitch.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { confirmAction } from '@/lib/confirm';
+import { plural } from '@/lib/plural';
 import { show as agtConnection } from '@/routes/agt/connection';
 import {
     destroy as destroyEstablishment,
@@ -317,19 +318,21 @@ const withoutSeries = computed(() =>
                                                 class="size-3.5"
                                                 aria-hidden="true"
                                             />
-                                            <span class="numeric"
-                                                >{{
-                                                    establishment.series_count
-                                                }}
-                                                série(s)</span
-                                            >
+                                            <span class="numeric">{{
+                                                plural(
+                                                    establishment.series_count,
+                                                    'série',
+                                                    'séries',
+                                                )
+                                            }}</span>
                                         </span>
-                                        <span class="numeric"
-                                            >{{
-                                                establishment.document_count
-                                            }}
-                                            documento(s)</span
-                                        >
+                                        <span class="numeric">{{
+                                            plural(
+                                                establishment.document_count,
+                                                'documento',
+                                                'documentos',
+                                            )
+                                        }}</span>
                                         <span
                                             v-if="establishment.stock_count > 0"
                                             class="inline-flex items-center gap-1.5"
@@ -340,9 +343,13 @@ const withoutSeries = computed(() =>
                                             />
                                             <span class="numeric"
                                                 >{{
-                                                    establishment.stock_count
+                                                    plural(
+                                                        establishment.stock_count,
+                                                        'artigo',
+                                                        'artigos',
+                                                    )
                                                 }}
-                                                artigo(s) em stock</span
+                                                em stock</span
                                             >
                                         </span>
                                     </p>

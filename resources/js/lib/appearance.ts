@@ -1,3 +1,5 @@
+import { onBeforeUnmount, onMounted, ref } from 'vue';
+
 export type Appearance = 'light' | 'dark' | 'system';
 
 const storageKey = 'vap-appearance';
@@ -33,6 +35,27 @@ export function applyAppearance(appearance: Appearance): void {
 
     root.classList.toggle('dark', isDark);
     root.dataset.appearance = appearance;
+    window.dispatchEvent(new Event('appearance-changed'));
+}
+
+/** Keep every visible theme control in step, including the account menu. */
+export function useAppearance() {
+    const appearance = ref<Appearance>('system');
+    const sync = (): void => {
+        appearance.value = getStoredAppearance();
+    };
+
+    onMounted(() => {
+        sync();
+        window.addEventListener('appearance-changed', sync);
+        window.addEventListener('storage', sync);
+    });
+    onBeforeUnmount(() => {
+        window.removeEventListener('appearance-changed', sync);
+        window.removeEventListener('storage', sync);
+    });
+
+    return { appearance, changeAppearance: storeAppearance };
 }
 
 export function storeAppearance(appearance: Appearance): void {

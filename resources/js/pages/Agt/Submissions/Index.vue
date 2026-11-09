@@ -216,9 +216,7 @@ function abbreviate(value: string | null): string {
     <AppLayout>
         <Head title="Monitor AGT" />
 
-        <div
-            class="flex min-h-[calc(100dvh-4rem)] flex-col lg:min-h-[calc(100dvh-3rem)]"
-        >
+        <div class="flex min-h-[calc(100dvh-4rem)] flex-col">
             <TitleBar section="Fiscal" title="Monitor AGT">
                 <template #actions>
                     <Form
@@ -251,7 +249,7 @@ function abbreviate(value: string | null): string {
             </TitleBar>
 
             <dl
-                class="grid grid-cols-2 gap-y-4 border-b border-[var(--ui-line)] px-4 py-4 sm:flex sm:flex-wrap sm:px-6"
+                class="mx-4 mb-4 grid grid-cols-2 gap-y-4 rounded-xl bg-[var(--surface-raised)] px-4 py-4 shadow-[var(--ui-card-shadow)] sm:mx-6 sm:flex sm:flex-wrap sm:px-6"
             >
                 <PageStat label="Validadas pela AGT" :value="summary.valid" />
                 <PageStat
@@ -337,7 +335,7 @@ function abbreviate(value: string | null): string {
                                         <th scope="col">Documento</th>
                                         <th
                                             scope="col"
-                                            class="hidden md:table-cell"
+                                            class="hidden md:table-cell xl:max-2xl:hidden"
                                         >
                                             Cliente
                                         </th>
@@ -368,8 +366,14 @@ function abbreviate(value: string | null): string {
                                             >
                                                 {{ submission.document_no }}
                                             </p>
+                                            <!-- Beside the open inspector the customer moves under the number, so the state and total keep their room. -->
                                             <p
-                                                class="mt-1 text-xs whitespace-nowrap text-zinc-500 dark:text-zinc-400"
+                                                class="mt-1 hidden max-w-[11rem] truncate text-xs text-[var(--ui-ink-2)] xl:max-2xl:block"
+                                            >
+                                                {{ submission.customer_name }}
+                                            </p>
+                                            <p
+                                                class="mt-1 text-xs whitespace-nowrap text-[var(--ui-ink-3)]"
                                             >
                                                 {{
                                                     formatDate(
@@ -379,13 +383,13 @@ function abbreviate(value: string | null): string {
                                             </p>
                                         </td>
                                         <td
-                                            class="hidden max-w-56 text-sm text-zinc-600 md:table-cell dark:text-zinc-300"
+                                            class="hidden max-w-56 text-sm text-[var(--ui-ink-2)] md:table-cell xl:max-2xl:hidden"
                                         >
                                             <span class="block truncate">
                                                 {{ submission.customer_name }}
                                             </span>
                                         </td>
-                                        <td class="max-w-[12.5rem]">
+                                        <td class="min-w-[16.5rem]">
                                             <StatusBadge
                                                 :label="submission.status_label"
                                                 :tone="
@@ -447,19 +451,19 @@ function abbreviate(value: string | null): string {
 
                 <aside
                     v-if="selected"
-                    class="space-y-4 border-[var(--ui-line)] p-4 max-xl:border-t sm:p-6 xl:sticky xl:inset-bs-12 xl:max-h-[calc(100dvh-3rem)] xl:w-[25rem] xl:shrink-0 xl:overflow-y-auto xl:border-s xl:p-5"
+                    class="space-y-4 border-[var(--ui-line)] p-4 max-xl:border-t sm:p-6 xl:sticky xl:inset-bs-16 xl:max-h-[calc(100dvh-4rem)] xl:w-[25rem] xl:shrink-0 xl:overflow-y-auto xl:border-s xl:p-5"
                 >
                     <section
                         class="overflow-hidden rounded-xl bg-[var(--surface-raised)] text-[var(--ui-ink)] shadow-[var(--ui-card-shadow)]"
                     >
                         <div class="border-b border-[var(--ui-line)] p-5">
-                            <div class="flex items-start justify-between gap-4">
-                                <div>
+                            <div class="flex flex-col items-start gap-2">
+                                <div class="min-w-0">
                                     <p class="text-xs text-[var(--ui-ink-3)]">
                                         Entrega seleccionada
                                     </p>
                                     <h2
-                                        class="mt-1 numeric text-2xl font-semibold tracking-tight"
+                                        class="mt-1 numeric text-xl font-semibold tracking-tight [overflow-wrap:anywhere]"
                                     >
                                         {{ selected.document_no }}
                                     </h2>

@@ -11,13 +11,8 @@ import {
     Sun,
     UserCog,
 } from '@lucide/vue';
-import { computed, onMounted, ref } from 'vue';
-import {
-    applyAppearance,
-    getStoredAppearance,
-    storeAppearance,
-} from '@/lib/appearance';
-import type { Appearance } from '@/lib/appearance';
+import { computed } from 'vue';
+import { useAppearance } from '@/lib/appearance';
 import { logout } from '@/routes';
 import { index as helpIndex } from '@/routes/help';
 import { account as accountSettings, security } from '@/routes/settings';
@@ -32,7 +27,7 @@ const props = withDefaults(
 );
 
 const page = usePage();
-const appearance = ref<Appearance>('system');
+const { appearance, changeAppearance } = useAppearance();
 
 const currentUser = computed(() => page.props.auth.user);
 const currentWorkspace = computed(() => page.props.currentWorkspace);
@@ -60,16 +55,6 @@ const links = [
     { label: 'A sua conta', href: accountSettings.url(), icon: UserCog },
     { label: 'Ajuda e reclamações', href: helpIndex.url(), icon: LifeBuoy },
 ];
-
-function changeAppearance(value: Appearance): void {
-    appearance.value = value;
-    storeAppearance(value);
-}
-
-onMounted(() => {
-    appearance.value = getStoredAppearance();
-    applyAppearance(appearance.value);
-});
 </script>
 
 <template>

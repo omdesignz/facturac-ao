@@ -246,6 +246,16 @@ input[type='search']::-webkit-search-decoration {
     max-width: 100rem;
 }
 
+/* Working screens share the existing page-title scale; public and printed
+   documents keep their own typography outside the application shell. */
+[data-app-shell] h1 {
+    font-family: var(--font-sans);
+    font-size: var(--text-page-title);
+    line-height: 1.2;
+    font-weight: 650;
+    letter-spacing: -0.025em;
+}
+
 /**
  * A part of the document on the invoice editor's paper: a hairline above it
  * instead of a card around it, so the page reads as one sheet.

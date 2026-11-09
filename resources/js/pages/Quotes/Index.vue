@@ -101,9 +101,7 @@ function decodeEntities(label: string): string {
     <AppLayout>
         <Head title="Orçamentos" />
 
-        <div
-            class="flex min-h-[calc(100dvh-4rem)] flex-col lg:min-h-[calc(100dvh-3rem)]"
-        >
+        <div class="flex min-h-[calc(100dvh-4rem)] flex-col">
             <div class="px-4 empty:hidden sm:px-6"><FlashBanner /></div>
 
             <TitleBar section="Vender" title="Orçamentos">
@@ -169,9 +167,9 @@ function decodeEntities(label: string): string {
                     <DataTable edge
                         ><template #head>
                             <th>Referência</th>
-                            <th>Cliente</th>
-                            <th>Validade</th>
-                            <th>Estado</th>
+                            <th class="max-sm:hidden">Cliente</th>
+                            <th class="max-sm:hidden">Validade</th>
+                            <th class="max-sm:hidden">Estado</th>
                             <th class="text-right">Total</th>
                         </template>
                         <tr
@@ -197,12 +195,43 @@ function decodeEntities(label: string): string {
                                         'rascunho'
                                     }}
                                 </p>
+                                <!-- Phone: the customer, validity and state under the reference. -->
+                                <p
+                                    class="mt-0.5 truncate text-xs text-[var(--ui-ink-2)] sm:hidden"
+                                >
+                                    {{ quote.customer_name }}
+                                </p>
+                                <p
+                                    class="mt-1 flex items-center gap-2 text-xs sm:hidden"
+                                >
+                                    <StatusBadge
+                                        :tone="
+                                            statusTone[quote.status] ??
+                                            'neutral'
+                                        "
+                                        :label="quote.status_label"
+                                    />
+                                    <span
+                                        class="numeric"
+                                        :class="
+                                            quote.has_lapsed
+                                                ? 'text-[var(--ui-warning)]'
+                                                : 'text-[var(--ui-ink-3)]'
+                                        "
+                                        >até
+                                        {{
+                                            formatDate(quote.valid_until)
+                                        }}</span
+                                    >
+                                </p>
                             </td>
-                            <td class="text-[0.8125rem] text-[var(--ui-ink)]">
+                            <td
+                                class="text-[0.8125rem] text-[var(--ui-ink)] max-sm:hidden"
+                            >
                                 {{ quote.customer_name }}
                             </td>
                             <td
-                                class="numeric text-[0.8125rem] whitespace-nowrap"
+                                class="numeric text-[0.8125rem] whitespace-nowrap max-sm:hidden"
                                 :class="
                                     quote.has_lapsed
                                         ? 'text-[var(--ui-warning)]'
@@ -211,7 +240,7 @@ function decodeEntities(label: string): string {
                             >
                                 {{ formatDate(quote.valid_until) }}
                             </td>
-                            <td>
+                            <td class="max-sm:hidden">
                                 <StatusBadge
                                     :tone="
                                         statusTone[quote.status] ?? 'neutral'

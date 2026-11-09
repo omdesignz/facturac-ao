@@ -12,10 +12,13 @@ import {
 import { computed, ref } from 'vue';
 import ChartBars from '@/components/charts/ChartBars.vue';
 import ChartFrame from '@/components/charts/ChartFrame.vue';
+import ChartLegend from '@/components/charts/ChartLegend.vue';
 import ChartTrend from '@/components/charts/ChartTrend.vue';
 import StatTile from '@/components/charts/StatTile.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { axisAmount } from '@/lib/chart-axis';
+import { plural } from '@/lib/plural';
 import { currencyLabel } from '@/lib/pos-ui';
 import type { SelectOption } from '@/types/select';
 
@@ -106,6 +109,20 @@ function duration(seconds: number | null): string {
     return minutes < 90 ? `${minutes} min` : `${Math.round(minutes / 60)} h`;
 }
 
+/** The comparison is only named when it was drawn: a period with nothing before it has no second line. */
+const trendLegend = computed(() => [
+    { label: props.period.label, color: 'var(--viz-primary)' },
+    ...(props.trend.some((point) => point.comparison > 0)
+        ? [
+              {
+                  label: props.period.comparison_label,
+                  color: 'var(--viz-comparison)',
+                  muted: true,
+              },
+          ]
+        : []),
+]);
+
 const trendRows = computed(() =>
     props.trend.map((point) => [
         point.label,
@@ -193,7 +210,7 @@ const submissionHealth = computed(() => [
                     </div>
                 </header>
 
-                <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <section class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
                     <StatTile
                         label="Facturado"
                         :value="money(summary.billed_minor)"
@@ -207,7 +224,7 @@ const submissionHealth = computed(() => [
                         :current="summary.paid_minor"
                         :previous="previousSummary.paid_minor"
                         :comparison-label="period.comparison_label"
-                        tone="good"
+                        :tone="summary.paid_minor > 0 ? 'good' : 'neutral'"
                     />
                     <StatTile
                         label="IVA liquidado"
@@ -225,7 +242,7 @@ const submissionHealth = computed(() => [
                     />
                 </section>
 
-                <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <section class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
                     <StatTile
                         label="Em dívida"
                         :value="money(summary.outstanding_minor)"
@@ -249,7 +266,13 @@ const submissionHealth = computed(() => [
                         :tone="
                             summary.overdue_minor > 0 ? 'critical' : 'neutral'
                         "
-                        :detail="`${summary.overdue_count} documento(s)`"
+                        :detail="
+                            plural(
+                                summary.overdue_count,
+                                'documento',
+                                'documentos',
+                            )
+                        "
                     />
                     <StatTile
                         label="Notas de crédito"
@@ -281,31 +304,13 @@ const submissionHealth = computed(() => [
                     empty-message="Nenhum documento emitido neste período."
                 >
                     <template #legend>
-                        <div
-                            class="flex items-center gap-4 text-xs text-zinc-500 dark:text-zinc-400"
-                        >
-                            <span class="inline-flex items-center gap-1.5">
-                                <span
-                                    class="h-0.5 w-4 rounded-full"
-                                    style="background: var(--viz-primary)"
-                                    aria-hidden="true"
-                                />
-                                {{ period.label }}
-                            </span>
-                            <span class="inline-flex items-center gap-1.5">
-                                <span
-                                    class="h-0.5 w-4 rounded-full"
-                                    style="background: var(--viz-comparison)"
-                                    aria-hidden="true"
-                                />
-                                {{ period.comparison_label }}
-                            </span>
-                        </div>
+                        <ChartLegend :items="trendLegend" />
                     </template>
 
                     <ChartTrend
                         :points="trend"
                         :format="money"
+                        :tick-format="axisAmount"
                         :series-label="period.label"
                         :comparison-label="period.comparison_label"
                     />
@@ -335,22 +340,18 @@ const submissionHealth = computed(() => [
                         <ChartBars
                             :bars="typeMix"
                             :format="compactMoney"
-                            categorical
+                            shares
                         />
                     </ChartFrame>
                 </div>
 
                 <section class="viz overflow-hidden rounded-2xl surface">
-                    <header
-                        class="border-b border-zinc-100 p-5 dark:border-white/10"
-                    >
-                        <h2
-                            class="text-sm font-semibold text-zinc-950 dark:text-white"
-                        >
+                    <header class="px-5 pt-5">
+                        <h2 class="text-sm font-semibold text-[var(--ui-ink)]">
                             Operação
                         </h2>
                         <p
-                            class="mt-1 text-sm/6 text-zinc-500 dark:text-zinc-400"
+                            class="mt-0.5 text-[0.8125rem]/5 text-[var(--ui-ink-3)]"
                         >
                             Se os documentos estão a chegar à AGT, quanto tempo
                             demoram, e o que ficou por fechar.
@@ -387,14 +388,11 @@ const submissionHealth = computed(() => [
                                     {{ entry.value }}
                                 </p>
                                 <div
-                                    class="col-span-2 h-2 w-full overflow-hidden rounded-full"
-                                    :style="{
-                                        background:
-                                            'color-mix(in srgb, var(--viz-grid) 60%, transparent)',
-                                    }"
+                                    class="col-span-2 h-1.5 w-full overflow-clip rounded-[2px] bg-[var(--ui-chart-bar)]/60"
+                                    aria-hidden="true"
                                 >
                                     <div
-                                        class="h-full rounded-full transition-[width] duration-500 ease-out"
+                                        class="h-full rounded-s-[1px] rounded-e-full transition-[width] duration-300 ease-out motion-reduce:transition-none"
                                         :style="{
                                             width: `${(entry.value / Math.max(1, operations.submissions_total)) * 100}%`,
                                             background: entry.colour,

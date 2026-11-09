@@ -9,7 +9,6 @@ import {
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import {
     Check,
-    ChevronRight,
     CircleAlert,
     FilePenLine,
     ListChecks,
@@ -475,7 +474,7 @@ const catalogueOptions = computed<ListboxOption[]>(() => [
         return {
             value: item.public_id,
             label: item.name,
-            hint: `${item.code} · ${agreed ?? item.unit_price} ${props.company.currency_code}${agreed ? ' (acordado)' : ''}`,
+            hint: `${item.code} · ${formatMoney(parseScaled(agreed ?? item.unit_price, 2) ?? 0n, props.company.currency_code)}${agreed ? ' (acordado)' : ''}`,
         };
     }),
 ]);
@@ -506,6 +505,17 @@ function applyCatalogueItem(line: EditableLine, publicId: string): void {
                 treatment.percentage === item.tax_percentage &&
                 treatment.type === item.tax_type,
         )?.value ?? line.tax_treatment;
+
+    const index = form.lines.indexOf(line);
+
+    if (index !== -1) {
+        form.clearErrors(
+            `lines.${index}.product_code`,
+            `lines.${index}.product_description`,
+            `lines.${index}.unit_of_measure`,
+            `lines.${index}.unit_price`,
+        );
+    }
 }
 
 const operationTypeOptions = computed<ListboxOption[]>(() =>
@@ -622,6 +632,118 @@ const isGuidedCreditNote = computed(() => Boolean(props.creditGuide));
 const customerLocked = computed(
     () => Boolean(selectedCustomer.value) || isGuidedCreditNote.value,
 );
+const customerDetailsOpen = ref(false);
+const lineDetailsOpen = ref<Record<string, boolean>>({});
+
+/**
+ * The line grid on paper wide enough for it: number, description, quantity,
+ * price, discount, total and remove on one row, with the line's fiscal detail
+ * on a quieter row beneath. One template, so the heading, every line and the
+ * total share their columns.
+ */
+const lineGrid =
+    'grid grid-cols-[1.25rem_minmax(0,1fr)_3.25rem_7.25rem_3.5rem_6.75rem_2rem] gap-x-2 @min-[46rem]/invoice-lines:grid-cols-[1.25rem_minmax(0,1fr)_4.5rem_7.5rem_4.25rem_7.25rem_2rem]';
+
+/**
+ * The fiscal row under a line's figures: catalogue, code, unit, operation and
+ * tax always on one row, the selects sharing what is left.
+ */
+const lineDetailGrid = computed(() => {
+    const catalogue = props.catalogueItems.length > 0;
+    const dated = requiresLineOperationDate.value;
+
+    return {
+        grid: true,
+        'grid-cols-[minmax(0,1.1fr)_5.5rem_3.25rem_minmax(0,1.2fr)_minmax(0,1.3fr)]':
+            catalogue && !dated,
+        'grid-cols-[minmax(0,1.1fr)_5.5rem_3.25rem_minmax(0,1.2fr)_minmax(0,1.3fr)_8.5rem]':
+            catalogue && dated,
+        'grid-cols-[5.5rem_3.25rem_minmax(0,1.2fr)_minmax(0,1.3fr)]':
+            !catalogue && !dated,
+        'grid-cols-[5.5rem_3.25rem_minmax(0,1.2fr)_minmax(0,1.3fr)_8.5rem]':
+            !catalogue && dated,
+    };
+});
+
+/** Every field of a line that the server can reject, in reading order. */
+const LINE_ERROR_PATHS = [
+    '',
+    'product_description',
+    'quantity',
+    'unit_price',
+    'discount_percentage',
+    'product_code',
+    'unit_of_measure',
+    'operation_type',
+    'tax',
+    'tax.percentage',
+    'tax.exemption_code',
+    'operation_date',
+] as const;
+
+function linePath(index: number, field: string): string {
+    return field === '' ? `lines.${index}` : `lines.${index}.${field}`;
+}
+
+function lineHasError(index: number): boolean {
+    return LINE_ERROR_PATHS.some(
+        (field) => errorFor(linePath(index, field)) !== undefined,
+    );
+}
+const withholdingsOpen = ref(form.withholdings.length > 0);
+const notesOpen = ref(form.notes.trim() !== '');
+
+watch(
+    () => form.withholdings.length,
+    (count) => {
+        if (count > 0) {
+            withholdingsOpen.value = true;
+        }
+    },
+);
+
+watch(
+    () => form.notes,
+    (notes) => {
+        if (notes.trim() !== '') {
+            notesOpen.value = true;
+        }
+    },
+);
+
+/** Reveal optional fields before moving focus to their validation errors. */
+function revealFormProblems(): void {
+    const paths = Object.keys(form.errors);
+
+    if (paths.some((path) => path.startsWith('customer.'))) {
+        customerDetailsOpen.value = true;
+    }
+
+    if (
+        paths.some(
+            (path) =>
+                path === 'withholdings' || path.startsWith('withholdings.'),
+        )
+    ) {
+        withholdingsOpen.value = true;
+    }
+
+    if (paths.includes('notes')) {
+        notesOpen.value = true;
+    }
+
+    form.lines.forEach((line, index) => {
+        if (
+            paths.some(
+                (path) =>
+                    path === `lines.${index}` ||
+                    path.startsWith(`lines.${index}.`),
+            )
+        ) {
+            lineDetailsOpen.value[line.key] = true;
+        }
+    });
+}
 
 type CreditRowState = 'included' | 'left_out' | 'credited';
 
@@ -983,6 +1105,54 @@ function parseScaled(value: string, scale: number): bigint | null {
     return BigInt(match[1]) * 10n ** BigInt(scale) + BigInt(fraction || '0');
 }
 
+/**
+ * "9 800,50", "9800,50" or "9800.50" as the server reads it, "9800.50". Text
+ * that is not a number is passed through so the server can say what is wrong.
+ */
+function canonicalDecimal(value: string): string {
+    const compact = value.replace(/[\s\u00a0\u202f]/g, '').replace(',', '.');
+
+    return /^\d+(?:\.\d+)?$/.test(compact) ? compact : value;
+}
+
+const priceFormatter = new Intl.NumberFormat('pt-AO', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+});
+
+/** A price as an Angolan reader writes it, "9 800,00", like every total. */
+function displayPrice(value: string): string {
+    const minor = parseScaled(canonicalDecimal(value), 2);
+
+    return minor === null ? value : priceFormatter.format(Number(minor) / 100);
+}
+
+/**
+ * While a price field has focus it shows exactly what is being typed; the
+ * line keeps the server's form underneath, so totals update as you type.
+ */
+const priceDrafts = ref<Record<string, string>>({});
+
+function priceValue(line: EditableLine): string {
+    return priceDrafts.value[line.key] ?? displayPrice(line.unit_price);
+}
+
+function startPriceEdit(line: EditableLine, event: FocusEvent): void {
+    priceDrafts.value[line.key] = displayPrice(line.unit_price);
+    (event.target as HTMLInputElement).select();
+}
+
+function editPrice(line: EditableLine, event: Event): void {
+    const typed = (event.target as HTMLInputElement).value;
+
+    priceDrafts.value[line.key] = typed;
+    line.unit_price = canonicalDecimal(typed);
+}
+
+function endPriceEdit(line: EditableLine): void {
+    delete priceDrafts.value[line.key];
+}
+
 function roundHalfUp(numerator: bigint, denominator: bigint): bigint {
     return (numerator + denominator / 2n) / denominator;
 }
@@ -1107,12 +1277,14 @@ const decimalSeparator =
         .formatToParts(1.1)
         .find((part) => part.type === 'decimal')?.value ?? ',';
 
-function formatMoney(minorUnits: bigint): string {
+function formatMoney(minorUnits: bigint, currencyCode = 'AOA'): string {
     const whole = minorUnits / 100n;
     const fraction = (minorUnits % 100n).toString().padStart(2, '0');
 
     // A non-breaking space keeps «Kz» on the same line as its figure.
-    return `${integerFormatter.format(whole)}${decimalSeparator}${fraction}\u00A0Kz`;
+    const currency = currencyCode === 'AOA' ? 'Kz' : currencyCode;
+
+    return `${integerFormatter.format(whole)}${decimalSeparator}${fraction}\u00A0${currency}`;
 }
 
 function errorFor(path: string): string | undefined {
@@ -1121,6 +1293,15 @@ function errorFor(path: string): string | undefined {
 
 function selectCustomer(): void {
     const customer = selectedCustomer.value;
+    customerDetailsOpen.value = false;
+
+    form.clearErrors(
+        'customer_public_id',
+        'customer.name',
+        'customer.tax_identification_number',
+        'customer.country_code',
+        'customer.address_line',
+    );
 
     if (customer === undefined) {
         form.customer = {
@@ -1240,8 +1421,8 @@ function useManualCustomer(): void {
 }
 
 /**
- * The ids a line's first field can have: the card layout (below `xl`) and the
- * table each render their own copy, and only one of them is on screen.
+ * The card and table layouts each render their own copy. The available line
+ * editor width decides which one is on screen.
  */
 function firstFieldIds(key: string): string[] {
     return [
@@ -1406,6 +1587,7 @@ const errorBanner = ref<HTMLElement | null>(null);
  * both exist in the DOM, one of them hidden), else the error banner.
  */
 async function showFirstProblem(): Promise<void> {
+    revealFormProblems();
     await nextTick();
 
     const invalid = Array.from(
@@ -1544,10 +1726,12 @@ function submit(): void {
                           : null,
                       product_code: line.product_code,
                       product_description: line.product_description,
-                      quantity: line.quantity,
+                      quantity: canonicalDecimal(line.quantity),
                       unit_of_measure: line.unit_of_measure,
-                      unit_price: line.unit_price,
-                      discount_percentage: line.discount_percentage,
+                      unit_price: canonicalDecimal(line.unit_price),
+                      discount_percentage: canonicalDecimal(
+                          line.discount_percentage,
+                      ),
                       tax: {
                           type: treatment?.type ?? 'IVA',
                           code: treatment?.code ?? 'NOR',
@@ -1653,7 +1837,7 @@ function confirmIssue(): void {
 
         <form
             :inert="recovery.pending.value !== null"
-            class="flex min-h-[calc(100dvh-4rem)] flex-col lg:min-h-[calc(100dvh-3rem)]"
+            class="flex min-h-[calc(100dvh-4rem)] flex-col"
             @submit.prevent="submit"
         >
             <p
@@ -1667,15 +1851,8 @@ function confirmIssue(): void {
 
             <!-- ------------------------------------------------ title bar -->
             <header
-                class="sticky inset-bs-16 z-20 flex min-h-[3.25rem] flex-wrap items-center gap-x-2 gap-y-1.5 border-b border-[var(--ui-line)] bg-[var(--surface-page)] px-4 py-2 sm:px-6 lg:inset-bs-12"
+                class="sticky inset-bs-16 z-20 flex min-h-[3.25rem] flex-wrap items-center gap-x-2 gap-y-1.5 border-b border-[var(--ui-line)] bg-[var(--surface-page)] px-4 py-2 sm:px-6 lg:inset-bs-16"
             >
-                <span class="text-[0.8125rem] text-[var(--ui-ink-3)]"
-                    >Vender</span
-                >
-                <ChevronRight
-                    class="size-3.5 text-[var(--ui-ink-3)]"
-                    aria-hidden="true"
-                />
                 <h1 class="text-[0.8125rem] font-semibold text-[var(--ui-ink)]">
                     {{
                         document.public_id === null
@@ -1699,37 +1876,50 @@ function confirmIssue(): void {
                 <span class="text-xs text-[var(--ui-ink-3)] max-md:hidden"
                     >Guardar não atribui número nem envia nada à AGT.</span
                 >
-                <AppButton
-                    variant="outline"
-                    size="sm"
-                    type="submit"
-                    :aria-busy="form.processing"
-                    :disabled="form.processing || establishments.length === 0"
+                <div
+                    class="flex basis-full flex-wrap items-center justify-between gap-3 md:basis-auto"
                 >
-                    <LoaderCircle
-                        v-if="form.processing"
-                        class="size-3.5 animate-spin"
-                        aria-hidden="true"
-                    />
-                    <Save v-else class="size-3.5" aria-hidden="true" />
-                    Guardar rascunho
-                </AppButton>
+                    <span
+                        class="numeric text-sm font-semibold text-[var(--ui-ink)] xl:hidden"
+                        aria-label="Total do rascunho"
+                        >{{
+                            formatMoney(totals.gross, form.currency_code)
+                        }}</span
+                    >
+                    <AppButton
+                        variant="outline"
+                        size="sm"
+                        type="submit"
+                        :aria-busy="form.processing"
+                        :disabled="
+                            form.processing || establishments.length === 0
+                        "
+                    >
+                        <LoaderCircle
+                            v-if="form.processing"
+                            class="size-3.5 animate-spin"
+                            aria-hidden="true"
+                        />
+                        <Save v-else class="size-3.5" aria-hidden="true" />
+                        Guardar rascunho
+                    </AppButton>
+                </div>
             </header>
 
-            <div class="flex flex-1 flex-col 2xl:flex-row 2xl:items-start">
+            <div class="flex flex-1 flex-col xl:flex-row xl:items-start">
                 <!-- The document, on paper, on the desk. -->
                 <div
-                    class="min-w-0 self-stretch bg-[var(--ui-desk)] px-2 pt-4 sm:px-8 sm:pt-8 2xl:flex-1 2xl:pb-8"
+                    class="min-w-0 self-stretch bg-[var(--ui-desk)] px-2 pt-4 sm:px-8 sm:pt-8 xl:flex-1 xl:pb-8"
                 >
                     <div
-                        class="mx-auto flex max-w-[60rem] flex-col rounded-md bg-[var(--surface-raised)] pb-6 shadow-[var(--ui-paper-shadow)]"
+                        class="mx-auto flex max-w-[60rem] flex-col rounded-xl bg-[var(--surface-raised)] pb-6 shadow-[var(--ui-paper-shadow)]"
                     >
                         <div
                             class="flex flex-wrap items-start justify-between gap-6 px-5 pt-8 pb-6 sm:px-6 sm:pt-9"
                         >
                             <div class="flex items-center gap-3">
                                 <span
-                                    class="grid size-10 shrink-0 place-items-center rounded-[9px] bg-[#161616] dark:shadow-[inset_0_0_0_1px_rgb(255_255_255/0.1)]"
+                                    class="grid size-10 shrink-0 place-items-center rounded-lg bg-[var(--ui-ink)] dark:shadow-[inset_0_0_0_1px_rgb(255_255_255/0.1)]"
                                     aria-hidden="true"
                                 >
                                     <span
@@ -1816,9 +2006,7 @@ function confirmIssue(): void {
 
                         <div
                             class="grid"
-                            :class="
-                                showDocumentDetails ? '2xl:grid-cols-2' : ''
-                            "
+                            :class="showDocumentDetails ? 'xl:grid-cols-2' : ''"
                         >
                             <section class="paper-block">
                                 <div
@@ -2254,119 +2442,190 @@ function confirmIssue(): void {
                                             @change="selectCustomer"
                                     /></FormField>
 
-                                    <FormField
-                                        class="sm:col-span-4 @4xl:col-span-5"
-                                        for="customer-name"
-                                        label="Nome ou denominação"
-                                        :error="errorFor('customer.name')"
-                                        :error-id="errorId('customer.name')"
-                                        ><input
-                                            id="customer-name"
-                                            :aria-invalid="
-                                                invalid('customer.name')
+                                    <div
+                                        v-if="customerLocked"
+                                        class="flex flex-wrap items-start justify-between gap-3 sm:col-span-6 @4xl:col-span-8"
+                                    >
+                                        <div class="min-w-0 text-sm">
+                                            <p
+                                                class="font-semibold text-[var(--ui-ink)]"
+                                            >
+                                                {{ form.customer.name }}
+                                            </p>
+                                            <p
+                                                class="mt-1 text-xs text-[var(--ui-ink-2)]"
+                                            >
+                                                NIF
+                                                {{
+                                                    form.customer
+                                                        .tax_identification_number
+                                                }}
+                                                ·
+                                                {{ form.customer.country_code }}
+                                            </p>
+                                            <p
+                                                v-if="
+                                                    form.customer.address_line
+                                                "
+                                                class="mt-1 text-xs break-words text-[var(--ui-ink-2)]"
+                                            >
+                                                {{ form.customer.address_line }}
+                                            </p>
+                                        </div>
+                                        <AppButton
+                                            variant="quiet"
+                                            size="sm"
+                                            :aria-expanded="customerDetailsOpen"
+                                            aria-controls="customer-snapshot-fields"
+                                            @click="
+                                                customerDetailsOpen =
+                                                    !customerDetailsOpen
                                             "
-                                            :aria-describedby="
-                                                describedBy('', 'customer.name')
-                                            "
-                                            v-model="form.customer.name"
-                                            :readonly="customerLocked"
-                                            autocomplete="off"
-                                            class="block form-input"
-                                    /></FormField>
+                                            >{{
+                                                customerDetailsOpen
+                                                    ? 'Ocultar dados'
+                                                    : 'Ver dados do cliente'
+                                            }}</AppButton
+                                        >
+                                    </div>
 
-                                    <FormField
-                                        class="sm:col-span-2 @4xl:col-span-3"
-                                        for="customer-nif"
-                                        label="NIF"
-                                        :error="
-                                            errorFor(
-                                                'customer.tax_identification_number',
-                                            )
+                                    <div
+                                        id="customer-snapshot-fields"
+                                        v-show="
+                                            !customerLocked ||
+                                            customerDetailsOpen
                                         "
-                                        :error-id="
-                                            errorId(
-                                                'customer.tax_identification_number',
-                                            )
-                                        "
-                                        ><input
-                                            id="customer-nif"
-                                            autocomplete="off"
-                                            autocapitalize="characters"
-                                            spellcheck="false"
-                                            :aria-invalid="
-                                                invalid(
+                                        class="contents"
+                                    >
+                                        <FormField
+                                            class="sm:col-span-4 @4xl:col-span-5"
+                                            for="customer-name"
+                                            label="Nome ou denominação"
+                                            :error="errorFor('customer.name')"
+                                            :error-id="errorId('customer.name')"
+                                            ><input
+                                                id="customer-name"
+                                                :aria-invalid="
+                                                    invalid('customer.name')
+                                                "
+                                                :aria-describedby="
+                                                    describedBy(
+                                                        '',
+                                                        'customer.name',
+                                                    )
+                                                "
+                                                v-model="form.customer.name"
+                                                :readonly="customerLocked"
+                                                autocomplete="off"
+                                                class="block form-input"
+                                        /></FormField>
+
+                                        <FormField
+                                            class="sm:col-span-2 @4xl:col-span-3"
+                                            for="customer-nif"
+                                            label="NIF"
+                                            :error="
+                                                errorFor(
                                                     'customer.tax_identification_number',
                                                 )
                                             "
-                                            :aria-describedby="
-                                                describedBy(
-                                                    '',
+                                            :error-id="
+                                                errorId(
                                                     'customer.tax_identification_number',
                                                 )
                                             "
-                                            v-model="
-                                                form.customer
-                                                    .tax_identification_number
-                                            "
-                                            :readonly="customerLocked"
-                                            class="block form-input font-mono uppercase"
-                                    /></FormField>
+                                            ><input
+                                                id="customer-nif"
+                                                autocomplete="off"
+                                                autocapitalize="characters"
+                                                spellcheck="false"
+                                                :aria-invalid="
+                                                    invalid(
+                                                        'customer.tax_identification_number',
+                                                    )
+                                                "
+                                                :aria-describedby="
+                                                    describedBy(
+                                                        '',
+                                                        'customer.tax_identification_number',
+                                                    )
+                                                "
+                                                v-model="
+                                                    form.customer
+                                                        .tax_identification_number
+                                                "
+                                                :readonly="customerLocked"
+                                                class="block form-input font-mono uppercase"
+                                        /></FormField>
 
-                                    <FormField
-                                        class="sm:col-span-2 @4xl:col-span-2"
-                                        for="customer-country"
-                                        label="País"
-                                        :error="
-                                            errorFor('customer.country_code')
-                                        "
-                                        :error-id="
-                                            errorId('customer.country_code')
-                                        "
-                                        ><input
-                                            id="customer-country"
-                                            autocomplete="off"
-                                            autocapitalize="characters"
-                                            :aria-invalid="
-                                                invalid('customer.country_code')
-                                            "
-                                            :aria-describedby="
-                                                describedBy(
-                                                    '',
+                                        <FormField
+                                            class="sm:col-span-2 @4xl:col-span-2"
+                                            for="customer-country"
+                                            label="País"
+                                            :error="
+                                                errorFor(
                                                     'customer.country_code',
                                                 )
                                             "
-                                            v-model="form.customer.country_code"
-                                            :readonly="customerLocked"
-                                            maxlength="2"
-                                            class="block form-input font-mono uppercase"
-                                    /></FormField>
-
-                                    <FormField
-                                        class="sm:col-span-4 @4xl:col-span-10"
-                                        for="customer-address"
-                                        label="Morada"
-                                        :error="
-                                            errorFor('customer.address_line')
-                                        "
-                                        :error-id="
-                                            errorId('customer.address_line')
-                                        "
-                                        ><input
-                                            id="customer-address"
-                                            :aria-invalid="
-                                                invalid('customer.address_line')
+                                            :error-id="
+                                                errorId('customer.country_code')
                                             "
-                                            :aria-describedby="
-                                                describedBy(
-                                                    '',
+                                            ><input
+                                                id="customer-country"
+                                                autocomplete="off"
+                                                autocapitalize="characters"
+                                                :aria-invalid="
+                                                    invalid(
+                                                        'customer.country_code',
+                                                    )
+                                                "
+                                                :aria-describedby="
+                                                    describedBy(
+                                                        '',
+                                                        'customer.country_code',
+                                                    )
+                                                "
+                                                v-model="
+                                                    form.customer.country_code
+                                                "
+                                                :readonly="customerLocked"
+                                                maxlength="2"
+                                                class="block form-input font-mono uppercase"
+                                        /></FormField>
+
+                                        <FormField
+                                            class="sm:col-span-4 @4xl:col-span-10"
+                                            for="customer-address"
+                                            label="Morada"
+                                            :error="
+                                                errorFor(
                                                     'customer.address_line',
                                                 )
                                             "
-                                            v-model="form.customer.address_line"
-                                            :readonly="customerLocked"
-                                            autocomplete="off"
-                                            class="block form-input"
-                                    /></FormField>
+                                            :error-id="
+                                                errorId('customer.address_line')
+                                            "
+                                            ><input
+                                                id="customer-address"
+                                                :aria-invalid="
+                                                    invalid(
+                                                        'customer.address_line',
+                                                    )
+                                                "
+                                                :aria-describedby="
+                                                    describedBy(
+                                                        '',
+                                                        'customer.address_line',
+                                                    )
+                                                "
+                                                v-model="
+                                                    form.customer.address_line
+                                                "
+                                                :readonly="customerLocked"
+                                                autocomplete="off"
+                                                class="block form-input"
+                                        /></FormField>
+                                    </div>
                                 </div>
                             </section>
                         </div>
@@ -2808,7 +3067,7 @@ function confirmIssue(): void {
 
                         <section
                             v-if="requiresLines && !creditGuide"
-                            class="paper-block"
+                            class="@container/invoice-lines paper-block"
                         >
                             <div
                                 class="flex items-center justify-between gap-4 border-b border-[var(--ui-line)] px-5 py-5 sm:px-6"
@@ -2904,7 +3163,7 @@ function confirmIssue(): void {
                             >
 
                             <div
-                                class="divide-y divide-zinc-100 xl:hidden dark:divide-white/10"
+                                class="divide-y divide-[var(--ui-line)] @min-[36rem]/invoice-lines:hidden"
                             >
                                 <article
                                     v-for="(line, index) in form.lines"
@@ -2956,139 +3215,171 @@ function confirmIssue(): void {
                                             "
                                     /></FormField>
 
-                                    <div
-                                        class="grid grid-cols-1 gap-4 sm:grid-cols-3"
+                                    <AppButton
+                                        v-if="
+                                            line.catalogue_public_id &&
+                                            !requiresLineOperationDate
+                                        "
+                                        variant="quiet"
+                                        size="sm"
+                                        :aria-expanded="
+                                            Boolean(lineDetailsOpen[line.key])
+                                        "
+                                        :aria-controls="`mobile-line-details-${line.key}`"
+                                        @click="
+                                            lineDetailsOpen[line.key] =
+                                                !lineDetailsOpen[line.key]
+                                        "
+                                        >{{
+                                            lineDetailsOpen[line.key]
+                                                ? 'Ocultar descrição e operação'
+                                                : 'Ver descrição e operação'
+                                        }}</AppButton
                                     >
+
+                                    <div
+                                        :id="`mobile-line-details-${line.key}`"
+                                        v-show="
+                                            !line.catalogue_public_id ||
+                                            requiresLineOperationDate ||
+                                            lineDetailsOpen[line.key]
+                                        "
+                                        class="space-y-5"
+                                    >
+                                        <div
+                                            class="grid grid-cols-1 gap-4 sm:grid-cols-3"
+                                        >
+                                            <FormField
+                                                class="sm:col-span-1"
+                                                :for="`mobile-code-${line.key}`"
+                                                label="Código"
+                                                :error="
+                                                    errorFor(
+                                                        `lines.${index}.product_code`,
+                                                    )
+                                                "
+                                                :error-id="
+                                                    errorId(
+                                                        `lines.${index}.product_code`,
+                                                        'm-',
+                                                    )
+                                                "
+                                                ><input
+                                                    :id="`mobile-code-${line.key}`"
+                                                    :aria-invalid="
+                                                        invalid(
+                                                            `lines.${index}.product_code`,
+                                                        )
+                                                    "
+                                                    :aria-describedby="
+                                                        describedBy(
+                                                            'm-',
+                                                            `lines.${index}.product_code`,
+                                                        )
+                                                    "
+                                                    v-model="line.product_code"
+                                                    class="block form-input font-mono"
+                                            /></FormField>
+                                            <FormField
+                                                class="sm:col-span-2"
+                                                :for="`mobile-description-${line.key}`"
+                                                label="Descrição"
+                                                :error="
+                                                    errorFor(
+                                                        `lines.${index}.product_description`,
+                                                    )
+                                                "
+                                                :error-id="
+                                                    errorId(
+                                                        `lines.${index}.product_description`,
+                                                        'm-',
+                                                    )
+                                                "
+                                                ><input
+                                                    :id="`mobile-description-${line.key}`"
+                                                    :aria-invalid="
+                                                        invalid(
+                                                            `lines.${index}.product_description`,
+                                                        )
+                                                    "
+                                                    :aria-describedby="
+                                                        describedBy(
+                                                            'm-',
+                                                            `lines.${index}.product_description`,
+                                                        )
+                                                    "
+                                                    v-model="
+                                                        line.product_description
+                                                    "
+                                                    class="block form-input"
+                                            /></FormField>
+                                        </div>
+
                                         <FormField
-                                            class="sm:col-span-1"
-                                            :for="`mobile-code-${line.key}`"
-                                            label="Código"
+                                            :for="`mobile-operation-${line.key}`"
+                                            label="Tipo de operação"
                                             :error="
                                                 errorFor(
-                                                    `lines.${index}.product_code`,
+                                                    `lines.${index}.operation_type`,
                                                 )
                                             "
                                             :error-id="
                                                 errorId(
-                                                    `lines.${index}.product_code`,
+                                                    `lines.${index}.operation_type`,
                                                     'm-',
                                                 )
                                             "
-                                            ><input
-                                                :id="`mobile-code-${line.key}`"
-                                                :aria-invalid="
+                                            ><SelectInput
+                                                :id="`mobile-operation-${line.key}`"
+                                                :invalid="
                                                     invalid(
-                                                        `lines.${index}.product_code`,
+                                                        `lines.${index}.operation_type`,
                                                     )
                                                 "
-                                                :aria-describedby="
+                                                :describedby="
                                                     describedBy(
                                                         'm-',
-                                                        `lines.${index}.product_code`,
+                                                        `lines.${index}.operation_type`,
                                                     )
                                                 "
-                                                v-model="line.product_code"
-                                                class="block form-input font-mono"
+                                                v-model="line.operation_type"
+                                                :options="operationTypeOptions"
                                         /></FormField>
+
                                         <FormField
-                                            class="sm:col-span-2"
-                                            :for="`mobile-description-${line.key}`"
-                                            label="Descrição"
+                                            v-if="requiresLineOperationDate"
+                                            :for="`mobile-operation-date-${line.key}`"
+                                            label="Data da operação"
                                             :error="
                                                 errorFor(
-                                                    `lines.${index}.product_description`,
+                                                    `lines.${index}.operation_date`,
                                                 )
                                             "
                                             :error-id="
                                                 errorId(
-                                                    `lines.${index}.product_description`,
+                                                    `lines.${index}.operation_date`,
                                                     'm-',
                                                 )
                                             "
-                                            ><input
-                                                :id="`mobile-description-${line.key}`"
-                                                :aria-invalid="
+                                            ><DateInput
+                                                :id="`mobile-operation-date-${line.key}`"
+                                                :invalid="
                                                     invalid(
-                                                        `lines.${index}.product_description`,
+                                                        `lines.${index}.operation_date`,
                                                     )
                                                 "
-                                                :aria-describedby="
+                                                :describedby="
                                                     describedBy(
                                                         'm-',
-                                                        `lines.${index}.product_description`,
+                                                        `lines.${index}.operation_date`,
                                                     )
                                                 "
-                                                v-model="
-                                                    line.product_description
-                                                "
-                                                class="block form-input"
+                                                v-model="line.operation_date"
+                                                :clearable="false"
+                                                :max-date="form.document_date"
+                                                :aria-label="`Data da operação da linha ${index + 1}`"
                                         /></FormField>
                                     </div>
-
-                                    <FormField
-                                        :for="`mobile-operation-${line.key}`"
-                                        label="Tipo de operação"
-                                        :error="
-                                            errorFor(
-                                                `lines.${index}.operation_type`,
-                                            )
-                                        "
-                                        :error-id="
-                                            errorId(
-                                                `lines.${index}.operation_type`,
-                                                'm-',
-                                            )
-                                        "
-                                        ><SelectInput
-                                            :id="`mobile-operation-${line.key}`"
-                                            :invalid="
-                                                invalid(
-                                                    `lines.${index}.operation_type`,
-                                                )
-                                            "
-                                            :describedby="
-                                                describedBy(
-                                                    'm-',
-                                                    `lines.${index}.operation_type`,
-                                                )
-                                            "
-                                            v-model="line.operation_type"
-                                            :options="operationTypeOptions"
-                                    /></FormField>
-
-                                    <FormField
-                                        v-if="requiresLineOperationDate"
-                                        :for="`mobile-operation-date-${line.key}`"
-                                        label="Data da operação"
-                                        :error="
-                                            errorFor(
-                                                `lines.${index}.operation_date`,
-                                            )
-                                        "
-                                        :error-id="
-                                            errorId(
-                                                `lines.${index}.operation_date`,
-                                                'm-',
-                                            )
-                                        "
-                                        ><DateInput
-                                            :id="`mobile-operation-date-${line.key}`"
-                                            :invalid="
-                                                invalid(
-                                                    `lines.${index}.operation_date`,
-                                                )
-                                            "
-                                            :describedby="
-                                                describedBy(
-                                                    'm-',
-                                                    `lines.${index}.operation_date`,
-                                                )
-                                            "
-                                            v-model="line.operation_date"
-                                            :clearable="false"
-                                            :max-date="form.document_date"
-                                            :aria-label="`Data da operação da linha ${index + 1}`"
-                                    /></FormField>
 
                                     <div class="grid grid-cols-2 gap-4">
                                         <FormField
@@ -3183,7 +3474,17 @@ function confirmIssue(): void {
                                                             `lines.${index}.unit_price`,
                                                         )
                                                     "
-                                                    v-model="line.unit_price"
+                                                    :value="priceValue(line)"
+                                                    @focus="
+                                                        startPriceEdit(
+                                                            line,
+                                                            $event,
+                                                        )
+                                                    "
+                                                    @input="
+                                                        editPrice(line, $event)
+                                                    "
+                                                    @blur="endPriceEdit(line)"
                                                     type="text"
                                                     inputmode="decimal"
                                                     class="block form-input form-input-sm text-right numeric text-sm"
@@ -3366,535 +3667,326 @@ function confirmIssue(): void {
                                 </article>
                             </div>
 
-                            <div class="hidden overflow-x-auto xl:block">
-                                <table
-                                    class="w-full min-w-[58rem] divide-y divide-zinc-200 dark:divide-white/10"
+                            <div
+                                class="hidden @min-[36rem]/invoice-lines:block"
+                            >
+                                <div
+                                    :class="[
+                                        lineGrid,
+                                        'h-9 items-center border-b border-[var(--ui-line)] bg-[var(--ui-head)] ps-5 pe-4 text-xs font-medium text-[var(--ui-ink-3)] sm:ps-6',
+                                    ]"
+                                    aria-hidden="true"
                                 >
-                                    <thead
-                                        class="bg-stone-50 dark:bg-white/[0.03]"
+                                    <span class="text-end">#</span>
+                                    <span>Artigo ou serviço</span>
+                                    <span class="text-end">Qtd.</span>
+                                    <span class="text-end">Preço unitário</span>
+                                    <span class="text-end">Desc.</span>
+                                    <span class="text-end">Total</span>
+                                    <span />
+                                </div>
+
+                                <div
+                                    v-for="(line, index) in form.lines"
+                                    :key="line.key"
+                                    role="group"
+                                    :aria-label="`Linha ${index + 1}`"
+                                    :class="[
+                                        lineGrid,
+                                        'group/line border-b border-[var(--ui-line)] py-3 ps-5 pe-4 transition-colors focus-within:bg-[var(--ui-wash)] hover:bg-[var(--ui-wash)] sm:ps-6',
+                                    ]"
+                                >
+                                    <!-- The figures a reader checks: what, how many, at what price, for how much. -->
+                                    <span
+                                        class="flex h-8 items-center justify-end numeric text-xs text-[var(--ui-ink-3)]"
+                                        aria-hidden="true"
+                                        >{{ index + 1 }}</span
                                     >
-                                        <tr>
-                                            <th
-                                                class="min-w-[16rem] py-3 pr-3 pl-5 text-left eyebrow text-zinc-500 sm:pl-6"
-                                            >
-                                                Artigo ou serviço
-                                            </th>
-                                            <th
-                                                class="w-24 px-3 py-3 text-left eyebrow text-zinc-500"
-                                            >
-                                                Quantidade
-                                            </th>
-                                            <th
-                                                class="w-36 px-3 py-3 text-left eyebrow text-zinc-500"
-                                            >
-                                                Preço unitário
-                                            </th>
-                                            <th
-                                                class="w-28 px-3 py-3 text-left eyebrow text-zinc-500"
-                                            >
-                                                Desconto
-                                            </th>
-                                            <th
-                                                class="w-52 px-3 py-3 text-left eyebrow text-zinc-500"
-                                            >
-                                                Imposto
-                                            </th>
-                                            <th
-                                                class="w-32 px-3 py-3 text-right eyebrow text-zinc-500"
-                                            >
-                                                Total
-                                            </th>
-                                            <th
-                                                class="w-14 py-3 pr-5 pl-3 sm:pr-6"
-                                            >
-                                                <span class="sr-only"
-                                                    >Acções</span
-                                                >
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody
-                                        class="divide-y divide-zinc-100 dark:divide-white/10"
-                                    >
-                                        <tr
-                                            v-for="(line, index) in form.lines"
-                                            :key="line.key"
-                                            class="align-top"
+                                    <div class="min-w-0">
+                                        <label
+                                            :for="`description-${line.key}`"
+                                            class="sr-only"
+                                            >Descrição da linha
+                                            {{ index + 1 }}</label
                                         >
-                                            <td class="py-4 pr-3 pl-5 sm:pl-6">
-                                                <SelectInput
-                                                    v-if="
-                                                        catalogueItems.length >
-                                                        0
-                                                    "
-                                                    v-model="
-                                                        line.catalogue_public_id
-                                                    "
-                                                    class="mb-2"
-                                                    size="sm"
-                                                    placeholder="Escolher do catálogo…"
-                                                    :id="`catalogue-${line.key}`"
-                                                    :aria-label="`Artigo do catálogo para a linha ${index + 1}`"
-                                                    :options="catalogueOptions"
-                                                    @change="
-                                                        applyCatalogueItem(
-                                                            line,
-                                                            $event,
-                                                        )
-                                                    "
-                                                />
-                                                <div
-                                                    class="grid grid-cols-[7.5rem_minmax(0,1fr)] gap-2"
-                                                >
-                                                    <div>
-                                                        <label
-                                                            :for="`code-${line.key}`"
-                                                            class="sr-only"
-                                                            >Código</label
-                                                        >
-                                                        <input
-                                                            :id="`code-${line.key}`"
-                                                            :aria-invalid="
-                                                                invalid(
-                                                                    `lines.${index}`,
-                                                                    `lines.${index}.product_code`,
-                                                                )
-                                                            "
-                                                            :aria-describedby="
-                                                                describedBy(
-                                                                    '',
-                                                                    `lines.${index}`,
-                                                                    `lines.${index}.product_code`,
-                                                                )
-                                                            "
-                                                            v-model="
-                                                                line.product_code
-                                                            "
-                                                            placeholder="Código"
-                                                            class="block form-input form-input-sm font-mono"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label
-                                                            :for="`description-${line.key}`"
-                                                            class="sr-only"
-                                                            >Descrição</label
-                                                        >
-                                                        <input
-                                                            :id="`description-${line.key}`"
-                                                            :aria-invalid="
-                                                                invalid(
-                                                                    `lines.${index}.product_description`,
-                                                                )
-                                                            "
-                                                            :aria-describedby="
-                                                                describedBy(
-                                                                    '',
-                                                                    `lines.${index}.product_description`,
-                                                                )
-                                                            "
-                                                            v-model="
-                                                                line.product_description
-                                                            "
-                                                            placeholder="Descrição do artigo ou serviço"
-                                                            class="block form-input form-input-sm text-sm"
-                                                        />
-                                                    </div>
-                                                </div>
-                                                <SelectInput
-                                                    v-model="
-                                                        line.operation_type
-                                                    "
-                                                    class="mt-2"
-                                                    size="sm"
-                                                    :aria-label="`Tipo de operação da linha ${index + 1}`"
-                                                    :invalid="
-                                                        invalid(
-                                                            `lines.${index}.operation_type`,
-                                                        )
-                                                    "
-                                                    :describedby="
-                                                        describedBy(
-                                                            '',
-                                                            `lines.${index}.operation_type`,
-                                                        )
-                                                    "
-                                                    :options="
-                                                        operationTypeOptions
-                                                    "
-                                                />
-                                                <div
-                                                    v-if="
-                                                        requiresLineOperationDate
-                                                    "
-                                                    class="mt-2"
-                                                >
-                                                    <label
-                                                        :for="`operation-date-${line.key}`"
-                                                        class="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400"
-                                                    >
-                                                        Data da operação
-                                                    </label>
-                                                    <DateInput
-                                                        :id="`operation-date-${line.key}`"
-                                                        :invalid="
-                                                            invalid(
-                                                                `lines.${index}.operation_date`,
-                                                            )
-                                                        "
-                                                        :describedby="
-                                                            describedBy(
-                                                                '',
-                                                                `lines.${index}.operation_date`,
-                                                            )
-                                                        "
-                                                        v-model="
-                                                            line.operation_date
-                                                        "
-                                                        :clearable="false"
-                                                        :max-date="
-                                                            form.document_date
-                                                        "
-                                                        :aria-label="`Data da operação da linha ${index + 1}`"
-                                                    />
-                                                </div>
-                                                <FormError
-                                                    :id="
-                                                        errorId(
-                                                            `lines.${index}`,
-                                                        )
-                                                    "
-                                                    :message="
-                                                        errorFor(
-                                                            `lines.${index}`,
-                                                        )
-                                                    "
-                                                />
-                                                <FormError
-                                                    :id="
-                                                        errorId(
-                                                            `lines.${index}.product_code`,
-                                                        )
-                                                    "
-                                                    :message="
-                                                        errorFor(
-                                                            `lines.${index}.product_code`,
-                                                        )
-                                                    "
-                                                />
-                                                <FormError
-                                                    :id="
-                                                        errorId(
-                                                            `lines.${index}.product_description`,
-                                                        )
-                                                    "
-                                                    :message="
-                                                        errorFor(
-                                                            `lines.${index}.product_description`,
-                                                        )
-                                                    "
-                                                />
-                                                <FormError
-                                                    :id="
-                                                        errorId(
-                                                            `lines.${index}.operation_type`,
-                                                        )
-                                                    "
-                                                    :message="
-                                                        errorFor(
-                                                            `lines.${index}.operation_type`,
-                                                        )
-                                                    "
-                                                />
-                                                <FormError
-                                                    :id="
-                                                        errorId(
-                                                            `lines.${index}.operation_date`,
-                                                        )
-                                                    "
-                                                    :message="
-                                                        errorFor(
-                                                            `lines.${index}.operation_date`,
-                                                        )
-                                                    "
-                                                />
-                                            </td>
-                                            <td class="px-3 py-4">
-                                                <input
-                                                    v-model="line.quantity"
-                                                    type="text"
-                                                    inputmode="decimal"
-                                                    :aria-label="`Quantidade da linha ${index + 1}`"
-                                                    :aria-invalid="
-                                                        invalid(
-                                                            `lines.${index}.quantity`,
-                                                        )
-                                                    "
-                                                    :aria-describedby="
-                                                        describedBy(
-                                                            '',
-                                                            `lines.${index}.quantity`,
-                                                        )
-                                                    "
-                                                    class="block form-input form-input-sm text-right numeric text-sm"
-                                                />
-                                                <input
-                                                    v-model="
-                                                        line.unit_of_measure
-                                                    "
-                                                    :aria-label="`Unidade da linha ${index + 1}`"
-                                                    :aria-invalid="
-                                                        invalid(
-                                                            `lines.${index}.unit_of_measure`,
-                                                        )
-                                                    "
-                                                    :aria-describedby="
-                                                        describedBy(
-                                                            '',
-                                                            `lines.${index}.unit_of_measure`,
-                                                        )
-                                                    "
-                                                    placeholder="un"
-                                                    class="mt-2 block form-input form-input-sm"
-                                                />
-                                                <FormError
-                                                    :id="
-                                                        errorId(
-                                                            `lines.${index}.quantity`,
-                                                        )
-                                                    "
-                                                    :message="
-                                                        errorFor(
-                                                            `lines.${index}.quantity`,
-                                                        )
-                                                    "
-                                                />
-                                                <FormError
-                                                    :id="
-                                                        errorId(
-                                                            `lines.${index}.unit_of_measure`,
-                                                        )
-                                                    "
-                                                    :message="
-                                                        errorFor(
-                                                            `lines.${index}.unit_of_measure`,
-                                                        )
-                                                    "
-                                                />
-                                            </td>
-                                            <td class="px-3 py-4">
-                                                <div
-                                                    class="field-adorned [--field-adorn-end:2rem]"
-                                                >
-                                                    <input
-                                                        v-model="
-                                                            line.unit_price
-                                                        "
-                                                        type="text"
-                                                        inputmode="decimal"
-                                                        :aria-label="`Preço unitário da linha ${index + 1}`"
-                                                        :aria-invalid="
-                                                            invalid(
-                                                                `lines.${index}.unit_price`,
-                                                            )
-                                                        "
-                                                        :aria-describedby="
-                                                            describedBy(
-                                                                '',
-                                                                `lines.${index}.unit_price`,
-                                                            )
-                                                        "
-                                                        class="block form-input form-input-sm text-right numeric text-sm"
-                                                    />
-                                                    <span
-                                                        class="field-adornment-end"
-                                                        >Kz</span
-                                                    >
-                                                </div>
-                                                <FormError
-                                                    :id="
-                                                        errorId(
-                                                            `lines.${index}.unit_price`,
-                                                        )
-                                                    "
-                                                    :message="
-                                                        errorFor(
-                                                            `lines.${index}.unit_price`,
-                                                        )
-                                                    "
-                                                />
-                                            </td>
-                                            <td class="px-3 py-4">
-                                                <div
-                                                    class="field-adorned [--field-adorn-end:1.75rem]"
-                                                >
-                                                    <input
-                                                        v-model="
-                                                            line.discount_percentage
-                                                        "
-                                                        type="text"
-                                                        inputmode="decimal"
-                                                        :aria-label="`Desconto da linha ${index + 1}`"
-                                                        :aria-invalid="
-                                                            invalid(
-                                                                `lines.${index}.discount_percentage`,
-                                                            )
-                                                        "
-                                                        :aria-describedby="
-                                                            describedBy(
-                                                                '',
-                                                                `lines.${index}.discount_percentage`,
-                                                            )
-                                                        "
-                                                        class="block form-input form-input-sm text-right numeric text-sm"
-                                                    />
-                                                    <span
-                                                        class="field-adornment-end"
-                                                        >%</span
-                                                    >
-                                                </div>
-                                                <FormError
-                                                    :id="
-                                                        errorId(
-                                                            `lines.${index}.discount_percentage`,
-                                                        )
-                                                    "
-                                                    :message="
-                                                        errorFor(
-                                                            `lines.${index}.discount_percentage`,
-                                                        )
-                                                    "
-                                                />
-                                            </td>
-                                            <td class="px-3 py-4">
-                                                <SelectInput
-                                                    v-model="line.tax_treatment"
-                                                    size="sm"
-                                                    :aria-label="`Tratamento fiscal da linha ${index + 1}`"
-                                                    :invalid="
-                                                        invalid(
-                                                            `lines.${index}.tax`,
-                                                            `lines.${index}.tax.percentage`,
-                                                            `lines.${index}.tax.exemption_code`,
-                                                        )
-                                                    "
-                                                    :describedby="
-                                                        describedBy(
-                                                            '',
-                                                            `lines.${index}.tax`,
-                                                            `lines.${index}.tax.percentage`,
-                                                            `lines.${index}.tax.exemption_code`,
-                                                        )
-                                                    "
-                                                    :options="
-                                                        taxTreatmentOptions
-                                                    "
-                                                />
-                                                <FormError
-                                                    :id="
-                                                        errorId(
-                                                            `lines.${index}.tax`,
-                                                        )
-                                                    "
-                                                    :message="
-                                                        errorFor(
-                                                            `lines.${index}.tax`,
-                                                        )
-                                                    "
-                                                />
-                                                <FormError
-                                                    :id="
-                                                        errorId(
-                                                            `lines.${index}.tax.percentage`,
-                                                        )
-                                                    "
-                                                    :message="
-                                                        errorFor(
-                                                            `lines.${index}.tax.percentage`,
-                                                        )
-                                                    "
-                                                />
-                                                <FormError
-                                                    :id="
-                                                        errorId(
-                                                            `lines.${index}.tax.exemption_code`,
-                                                        )
-                                                    "
-                                                    :message="
-                                                        errorFor(
-                                                            `lines.${index}.tax.exemption_code`,
-                                                        )
-                                                    "
-                                                />
-                                            </td>
-                                            <td class="px-3 py-4 text-right">
-                                                <p
-                                                    class="numeric text-sm font-semibold whitespace-nowrap text-zinc-950 dark:text-white"
-                                                >
-                                                    {{
-                                                        formatMoney(
-                                                            lineCalculations[
-                                                                index
-                                                            ]?.gross ?? 0n,
-                                                        )
-                                                    }}
-                                                </p>
-                                                <p
-                                                    class="mt-1 numeric text-xs whitespace-nowrap text-zinc-500 dark:text-zinc-400"
-                                                >
-                                                    IVA
-                                                    {{
-                                                        formatMoney(
-                                                            lineCalculations[
-                                                                index
-                                                            ]?.tax ?? 0n,
-                                                        )
-                                                    }}
-                                                </p>
-                                            </td>
-                                            <td
-                                                class="py-4 pr-5 pl-3 text-right sm:pr-6"
-                                            >
-                                                <button
-                                                    :id="`remove-line-${line.key}`"
-                                                    type="button"
-                                                    :disabled="
-                                                        form.lines.length === 1
-                                                    "
-                                                    class="icon-button text-zinc-400 focus-ring transition hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-25 dark:hover:bg-rose-400/10 dark:hover:text-rose-300"
-                                                    @click="removeLine(index)"
-                                                >
-                                                    <span class="sr-only"
-                                                        >Remover linha
-                                                        {{ index + 1 }}</span
-                                                    >
-                                                    <Trash2
-                                                        class="size-4"
-                                                        aria-hidden="true"
-                                                    />
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                    <tfoot
-                                        class="bg-stone-50 dark:bg-white/[0.03]"
+                                        <input
+                                            :id="`description-${line.key}`"
+                                            v-model="line.product_description"
+                                            :aria-invalid="
+                                                invalid(
+                                                    `lines.${index}.product_description`,
+                                                )
+                                            "
+                                            :aria-describedby="
+                                                describedBy(
+                                                    '',
+                                                    `lines.${index}`,
+                                                    `lines.${index}.product_description`,
+                                                )
+                                            "
+                                            placeholder="Descrição do artigo ou serviço"
+                                            autocomplete="off"
+                                            class="block form-input form-input-sm text-sm font-medium"
+                                        />
+                                    </div>
+                                    <input
+                                        v-model="line.quantity"
+                                        type="text"
+                                        inputmode="decimal"
+                                        :aria-label="`Quantidade da linha ${index + 1}`"
+                                        :aria-invalid="
+                                            invalid(`lines.${index}.quantity`)
+                                        "
+                                        :aria-describedby="
+                                            describedBy(
+                                                '',
+                                                `lines.${index}.quantity`,
+                                            )
+                                        "
+                                        class="block form-input form-input-sm text-right numeric text-sm"
+                                    />
+                                    <div
+                                        class="field-adorned [--field-adorn-end:2rem]"
                                     >
-                                        <tr>
-                                            <th
-                                                colspan="5"
-                                                class="px-5 py-3 text-right text-sm font-semibold text-zinc-700 sm:px-6 dark:text-zinc-300"
-                                            >
-                                                Total do documento
-                                            </th>
-                                            <td
-                                                class="px-3 py-3 text-right numeric text-sm font-bold whitespace-nowrap text-zinc-950 dark:text-white"
-                                            >
-                                                {{ formatMoney(totals.gross) }}
-                                            </td>
-                                            <td />
-                                        </tr>
-                                    </tfoot>
-                                </table>
+                                        <input
+                                            :value="priceValue(line)"
+                                            @focus="
+                                                startPriceEdit(line, $event)
+                                            "
+                                            @input="editPrice(line, $event)"
+                                            @blur="endPriceEdit(line)"
+                                            type="text"
+                                            inputmode="decimal"
+                                            :aria-label="`Preço unitário da linha ${index + 1}`"
+                                            :aria-invalid="
+                                                invalid(
+                                                    `lines.${index}.unit_price`,
+                                                )
+                                            "
+                                            :aria-describedby="
+                                                describedBy(
+                                                    '',
+                                                    `lines.${index}.unit_price`,
+                                                )
+                                            "
+                                            class="block form-input form-input-sm text-right numeric text-sm"
+                                        />
+                                        <span class="field-adornment-end"
+                                            >Kz</span
+                                        >
+                                    </div>
+                                    <div
+                                        class="field-adorned [--field-adorn-end:1.5rem]"
+                                    >
+                                        <input
+                                            v-model="line.discount_percentage"
+                                            type="text"
+                                            inputmode="decimal"
+                                            :aria-label="`Desconto da linha ${index + 1}`"
+                                            :aria-invalid="
+                                                invalid(
+                                                    `lines.${index}.discount_percentage`,
+                                                )
+                                            "
+                                            :aria-describedby="
+                                                describedBy(
+                                                    '',
+                                                    `lines.${index}.discount_percentage`,
+                                                )
+                                            "
+                                            class="block form-input form-input-sm text-right numeric text-sm"
+                                        />
+                                        <span class="field-adornment-end"
+                                            >%</span
+                                        >
+                                    </div>
+                                    <div
+                                        class="flex h-8 min-w-0 flex-col items-end justify-center text-end leading-tight"
+                                    >
+                                        <span
+                                            class="numeric text-sm font-semibold whitespace-nowrap text-[var(--ui-ink)]"
+                                            >{{
+                                                formatMoney(
+                                                    lineCalculations[index]
+                                                        ?.gross ?? 0n,
+                                                )
+                                            }}</span
+                                        >
+                                        <span
+                                            class="numeric text-[0.6875rem] whitespace-nowrap text-[var(--ui-ink-3)]"
+                                            >IVA
+                                            {{
+                                                formatMoney(
+                                                    lineCalculations[index]
+                                                        ?.tax ?? 0n,
+                                                )
+                                            }}</span
+                                        >
+                                    </div>
+                                    <button
+                                        :id="`remove-line-${line.key}`"
+                                        type="button"
+                                        :disabled="form.lines.length === 1"
+                                        class="grid size-8 place-items-center rounded-md text-[var(--ui-ink-3)] opacity-0 focus-ring transition group-focus-within/line:opacity-100 group-hover/line:opacity-100 hover:bg-[var(--ui-critical-wash)] hover:text-[var(--ui-critical)] focus-visible:opacity-100 disabled:cursor-not-allowed disabled:opacity-0! pointer-coarse:opacity-100"
+                                        @click="removeLine(index)"
+                                    >
+                                        <span class="sr-only"
+                                            >Remover linha {{ index + 1 }}</span
+                                        >
+                                        <Trash2
+                                            class="size-4"
+                                            aria-hidden="true"
+                                        />
+                                    </button>
+
+                                    <!-- What the AGT needs about the line, quieter, under the figures it governs. -->
+                                    <div
+                                        :class="[
+                                            lineDetailGrid,
+                                            'col-start-2 col-end-8 mt-2 items-center gap-2',
+                                        ]"
+                                    >
+                                        <SelectInput
+                                            v-if="catalogueItems.length > 0"
+                                            :id="`catalogue-${line.key}`"
+                                            v-model="line.catalogue_public_id"
+                                            class="min-w-0"
+                                            size="sm"
+                                            placeholder="Do catálogo…"
+                                            :aria-label="`Artigo do catálogo para a linha ${index + 1}`"
+                                            :options="catalogueOptions"
+                                            @change="
+                                                applyCatalogueItem(line, $event)
+                                            "
+                                        />
+                                        <input
+                                            :id="`code-${line.key}`"
+                                            v-model="line.product_code"
+                                            :aria-label="`Código da linha ${index + 1}`"
+                                            :aria-invalid="
+                                                invalid(
+                                                    `lines.${index}.product_code`,
+                                                )
+                                            "
+                                            :aria-describedby="
+                                                describedBy(
+                                                    '',
+                                                    `lines.${index}.product_code`,
+                                                )
+                                            "
+                                            placeholder="Código"
+                                            autocomplete="off"
+                                            class="block form-input form-input-sm font-mono text-xs"
+                                        />
+                                        <input
+                                            v-model="line.unit_of_measure"
+                                            :aria-label="`Unidade da linha ${index + 1}`"
+                                            :aria-invalid="
+                                                invalid(
+                                                    `lines.${index}.unit_of_measure`,
+                                                )
+                                            "
+                                            :aria-describedby="
+                                                describedBy(
+                                                    '',
+                                                    `lines.${index}.unit_of_measure`,
+                                                )
+                                            "
+                                            placeholder="un"
+                                            class="block form-input form-input-sm text-xs"
+                                        />
+                                        <SelectInput
+                                            v-model="line.operation_type"
+                                            class="min-w-0"
+                                            size="sm"
+                                            :aria-label="`Tipo de operação da linha ${index + 1}`"
+                                            :invalid="
+                                                invalid(
+                                                    `lines.${index}.operation_type`,
+                                                )
+                                            "
+                                            :describedby="
+                                                describedBy(
+                                                    '',
+                                                    `lines.${index}.operation_type`,
+                                                )
+                                            "
+                                            :options="operationTypeOptions"
+                                        />
+                                        <SelectInput
+                                            v-model="line.tax_treatment"
+                                            class="min-w-0"
+                                            size="sm"
+                                            :aria-label="`Tratamento fiscal da linha ${index + 1}`"
+                                            :invalid="
+                                                invalid(
+                                                    `lines.${index}.tax`,
+                                                    `lines.${index}.tax.percentage`,
+                                                    `lines.${index}.tax.exemption_code`,
+                                                )
+                                            "
+                                            :describedby="
+                                                describedBy(
+                                                    '',
+                                                    `lines.${index}.tax`,
+                                                    `lines.${index}.tax.percentage`,
+                                                    `lines.${index}.tax.exemption_code`,
+                                                )
+                                            "
+                                            :options="taxTreatmentOptions"
+                                        />
+                                        <DateInput
+                                            v-if="requiresLineOperationDate"
+                                            :id="`operation-date-${line.key}`"
+                                            v-model="line.operation_date"
+                                            class="min-w-0"
+                                            :invalid="
+                                                invalid(
+                                                    `lines.${index}.operation_date`,
+                                                )
+                                            "
+                                            :describedby="
+                                                describedBy(
+                                                    '',
+                                                    `lines.${index}.operation_date`,
+                                                )
+                                            "
+                                            :clearable="false"
+                                            :max-date="form.document_date"
+                                            :aria-label="`Data da operação da linha ${index + 1}`"
+                                        />
+                                    </div>
+
+                                    <div
+                                        v-if="lineHasError(index)"
+                                        class="col-start-2 col-end-8 mt-1"
+                                    >
+                                        <FormError
+                                            v-for="path in LINE_ERROR_PATHS"
+                                            :key="path"
+                                            :id="errorId(linePath(index, path))"
+                                            :message="
+                                                errorFor(linePath(index, path))
+                                            "
+                                        />
+                                    </div>
+                                </div>
+
+                                <div
+                                    :class="[
+                                        lineGrid,
+                                        'items-center bg-[var(--ui-head)] py-3 ps-5 pe-4 sm:ps-6',
+                                    ]"
+                                >
+                                    <span
+                                        class="col-start-2 col-end-6 text-end text-sm font-semibold text-[var(--ui-ink-2)]"
+                                        >Total do documento</span
+                                    >
+                                    <span
+                                        class="text-end numeric text-sm font-bold whitespace-nowrap text-[var(--ui-ink)]"
+                                        >{{ formatMoney(totals.gross) }}</span
+                                    >
+                                </div>
                             </div>
 
                             <div
@@ -4021,21 +4113,38 @@ function confirmIssue(): void {
                     buyers — the State, large taxpayers, banks — keep tax back
                     and pay it to the AGT themselves.
                 -->
-                        <section
+                        <details
                             v-if="requiresLines && !creditGuide"
+                            aria-labelledby="withholding-title"
+                            :open="withholdingsOpen"
+                            @toggle="
+                                withholdingsOpen = (
+                                    $event.target as HTMLDetailsElement
+                                ).open
+                            "
                             class="paper-block"
                         >
+                            <summary
+                                class="cursor-pointer px-5 py-4 text-sm font-semibold text-[var(--ui-ink)] sm:px-6"
+                            >
+                                <h2 id="withholding-title" class="inline">
+                                    Retenção na fonte e cativação
+                                </h2>
+                                <span
+                                    class="ms-2 text-xs font-normal text-[var(--ui-ink-3)]"
+                                    >{{
+                                        form.withholdings.length === 0
+                                            ? 'Não aplicada'
+                                            : `${form.withholdings.length} aplicada${form.withholdings.length === 1 ? '' : 's'}`
+                                    }}</span
+                                >
+                            </summary>
                             <div
-                                class="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--ui-line)] px-5 py-5 sm:px-6"
+                                class="flex flex-wrap items-center justify-between gap-4 border-t border-b border-[var(--ui-line)] px-5 py-4 sm:px-6"
                             >
                                 <div>
-                                    <h2
-                                        class="text-sm font-semibold text-[var(--ui-ink)]"
-                                    >
-                                        Retenção na fonte e cativação
-                                    </h2>
                                     <p
-                                        class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400"
+                                        class="text-xs text-zinc-500 dark:text-zinc-400"
                                     >
                                         Imposto que o adquirente retém e entrega
                                         directamente à AGT. Informativo: não
@@ -4194,45 +4303,68 @@ function confirmIssue(): void {
                                 :id="errorId('withholdings')"
                                 :message="form.errors.withholdings"
                             />
-                        </section>
+                        </details>
 
-                        <section class="px-5 pt-6 paper-block sm:px-6">
-                            <label
-                                for="notes"
-                                class="block text-sm font-semibold text-zinc-950 dark:text-white"
+                        <details
+                            class="paper-block"
+                            aria-labelledby="notes-title"
+                            :open="notesOpen"
+                            @toggle="
+                                notesOpen = (
+                                    $event.target as HTMLDetailsElement
+                                ).open
+                            "
+                        >
+                            <summary
+                                class="cursor-pointer px-5 py-4 text-sm font-semibold text-[var(--ui-ink)] sm:px-6"
                             >
-                                Observações
+                                <h2 id="notes-title" class="inline">
+                                    Observações
+                                </h2>
                                 <span
-                                    class="font-normal text-zinc-500 dark:text-zinc-400"
-                                    >(opcional)</span
+                                    class="ms-2 text-xs font-normal text-[var(--ui-ink-3)]"
+                                    >{{
+                                        form.notes.trim()
+                                            ? 'Adicionadas'
+                                            : 'Opcional'
+                                    }}</span
                                 >
-                            </label>
-                            <textarea
-                                id="notes"
-                                :aria-invalid="invalid('notes')"
-                                :aria-describedby="describedBy('', 'notes')"
-                                v-model="form.notes"
-                                rows="3"
-                                placeholder="Instruções de entrega ou referência interna…"
-                                class="mt-2 block form-input [--form-resize:vertical]"
-                            />
-                            <FormError
-                                :id="errorId('notes')"
-                                :message="form.errors.notes"
-                            />
-                        </section>
+                            </summary>
+                            <div class="px-5 pb-5 sm:px-6">
+                                <label for="notes" class="sr-only">
+                                    Observações
+                                    <span
+                                        class="font-normal text-zinc-500 dark:text-zinc-400"
+                                        >(opcional)</span
+                                    >
+                                </label>
+                                <textarea
+                                    id="notes"
+                                    :aria-invalid="invalid('notes')"
+                                    :aria-describedby="describedBy('', 'notes')"
+                                    v-model="form.notes"
+                                    rows="3"
+                                    placeholder="Instruções de entrega ou referência interna…"
+                                    class="mt-2 block form-input [--form-resize:vertical]"
+                                />
+                                <FormError
+                                    :id="errorId('notes')"
+                                    :message="form.errors.notes"
+                                />
+                            </div>
+                        </details>
                     </div>
                 </div>
 
                 <aside
-                    class="flex-1 bg-[var(--ui-desk)] px-2 pt-4 pb-8 sm:px-8 2xl:sticky 2xl:inset-bs-[6.25rem] 2xl:h-[calc(100dvh-6.25rem)] 2xl:w-[22.5rem] 2xl:flex-none 2xl:shrink-0 2xl:overflow-y-auto 2xl:overscroll-contain 2xl:bg-transparent 2xl:p-0 2xl:shadow-[inset_1px_0_0_var(--ui-line)]"
+                    class="flex-1 bg-[var(--ui-desk)] px-2 pt-4 pb-8 sm:px-8 xl:sticky xl:inset-bs-[7.25rem] xl:h-[calc(100dvh-7.25rem)] xl:w-[19rem] xl:flex-none xl:shrink-0 xl:overflow-y-auto xl:overscroll-contain xl:bg-transparent xl:p-0 xl:shadow-[inset_1px_0_0_var(--ui-line)]"
                     aria-label="Totais e emissão"
                 >
                     <div
-                        class="mx-auto flex max-w-[60rem] flex-col rounded-md bg-[var(--surface-raised)] shadow-[var(--ui-paper-shadow)] sm:flex-row 2xl:h-full 2xl:max-w-none 2xl:flex-col 2xl:rounded-none 2xl:bg-transparent 2xl:shadow-none"
+                        class="mx-auto flex max-w-[60rem] flex-col rounded-xl bg-[var(--surface-raised)] shadow-[var(--ui-paper-shadow)] sm:flex-row xl:h-full xl:max-w-none xl:flex-col xl:rounded-none xl:bg-transparent xl:shadow-none"
                     >
                         <section
-                            class="flex flex-1 flex-col gap-2 px-5 py-5 sm:border-e sm:border-[var(--ui-line)] 2xl:flex-none 2xl:border-e-0 2xl:border-b"
+                            class="flex flex-1 flex-col gap-2 px-5 py-5 sm:border-e sm:border-[var(--ui-line)] xl:flex-none xl:border-e-0 xl:border-b"
                             aria-labelledby="totals-title"
                         >
                             <h2
@@ -4347,10 +4479,10 @@ function confirmIssue(): void {
                             </p>
                         </section>
 
-                        <span class="hidden flex-1 2xl:block" />
+                        <span class="hidden flex-1 xl:block" />
 
                         <section
-                            class="flex flex-1 flex-col gap-3 border-t border-[var(--ui-line)] px-5 py-5 sm:border-t-0 2xl:flex-none 2xl:border-t"
+                            class="flex flex-1 flex-col gap-3 border-t border-[var(--ui-line)] px-5 py-5 sm:border-t-0 xl:flex-none xl:border-t"
                             aria-labelledby="issue-title"
                         >
                             <div>

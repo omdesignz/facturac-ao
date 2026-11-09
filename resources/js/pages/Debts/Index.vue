@@ -2,7 +2,6 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import {
     ChevronDown,
-    ChevronRight,
     CircleCheck,
     LoaderCircle,
     Mail,
@@ -385,8 +384,8 @@ const hasOldDebt = computed(() =>
 
 const gridColumns = computed(() =>
     hasOldDebt.value
-        ? 'md:grid-cols-[2.75rem_minmax(11rem,1fr)_6.5rem_9.5rem] lg:grid-cols-[2.75rem_minmax(12rem,1fr)_5.5rem_5.5rem_5.5rem_5.5rem_6.5rem_9.5rem]'
-        : 'md:grid-cols-[2.75rem_minmax(11rem,1fr)_6.5rem_9.5rem] lg:grid-cols-[2.75rem_minmax(12rem,1fr)_5.75rem_5.75rem_5.75rem_6.75rem_9.5rem]',
+        ? 'md:grid-cols-[2.75rem_minmax(11rem,1fr)_6.5rem_9.5rem] lg:grid-cols-[2.75rem_minmax(12rem,1fr)_5.5rem_5.5rem_5.5rem_5.5rem_6.5rem_9.5rem] xl:grid-cols-[2.75rem_minmax(11rem,1fr)_6.5rem_9.5rem] min-[100rem]:grid-cols-[2.75rem_minmax(12rem,1fr)_5.5rem_5.5rem_5.5rem_5.5rem_6.5rem_9.5rem]'
+        : 'md:grid-cols-[2.75rem_minmax(11rem,1fr)_6.5rem_9.5rem] lg:grid-cols-[2.75rem_minmax(12rem,1fr)_5.75rem_5.75rem_5.75rem_6.75rem_9.5rem] xl:grid-cols-[2.75rem_minmax(11rem,1fr)_6.5rem_9.5rem] min-[100rem]:grid-cols-[2.75rem_minmax(12rem,1fr)_5.75rem_5.75rem_5.75rem_6.75rem_9.5rem]',
 );
 
 /** With nothing due today, the team's follow-ups fold to one line until asked for. */
@@ -426,22 +425,13 @@ function whatsAppLink(entry: {
 <template>
     <AppLayout>
         <Head title="Quem me deve" />
-        <div
-            class="flex min-h-[calc(100dvh-4rem)] flex-col lg:min-h-[calc(100dvh-3rem)]"
-        >
+        <div class="flex min-h-[calc(100dvh-4rem)] flex-col">
             <div class="px-4 empty:hidden sm:px-6"><FlashBanner /></div>
 
             <!-- ------------------------------------------------ title bar -->
             <header
-                class="flex h-[3.25rem] items-center gap-2 border-b border-[var(--ui-line)] px-4 sm:px-6"
+                class="flex flex-wrap items-center gap-2 px-4 pt-6 pb-5 sm:px-6"
             >
-                <span class="text-[0.8125rem] text-[var(--ui-ink-3)]"
-                    >Cobrar</span
-                >
-                <ChevronRight
-                    class="size-3.5 text-[var(--ui-ink-3)]"
-                    aria-hidden="true"
-                />
                 <h1 class="text-[0.8125rem] font-semibold text-[var(--ui-ink)]">
                     Quem me deve
                 </h1>
@@ -449,7 +439,7 @@ function whatsAppLink(entry: {
 
             <!-- --------------------------------------------- the figures -->
             <div
-                class="flex flex-wrap items-stretch border-b border-[var(--ui-line)]"
+                class="mx-4 mb-4 flex flex-wrap items-stretch rounded-xl bg-[var(--surface-raised)] shadow-[var(--ui-card-shadow)] sm:mx-6"
             >
                 <div
                     class="flex flex-[1_1_12.5rem] flex-col gap-1.5 border-[var(--ui-line)] px-4 py-[1.125rem] max-sm:border-b sm:border-e sm:px-6"
@@ -617,8 +607,14 @@ function whatsAppLink(entry: {
                 </p>
             </div>
 
-            <div v-else class="flex flex-1 flex-col items-stretch xl:flex-row">
-                <section aria-labelledby="debtors-title" class="min-w-0 flex-1">
+            <div
+                v-else
+                class="flex flex-1 flex-col items-stretch gap-4 p-4 sm:p-6 xl:flex-row"
+            >
+                <section
+                    aria-labelledby="debtors-title"
+                    class="min-w-0 flex-1 rounded-xl bg-[var(--surface-raised)] shadow-[var(--ui-card-shadow)]"
+                >
                     <h2 id="debtors-title" class="sr-only">
                         Clientes com saldo em aberto
                     </h2>
@@ -647,10 +643,18 @@ function whatsAppLink(entry: {
                     >
                         <span />
                         <span class="px-2 text-start">Cliente</span>
-                        <span class="px-2 max-lg:hidden">A vencer</span>
-                        <span class="px-2 max-lg:hidden">1–30</span>
-                        <span class="px-2 max-lg:hidden">31–60</span>
-                        <span v-if="hasOldDebt" class="px-2 max-lg:hidden"
+                        <span class="px-2 max-lg:hidden xl:max-[100rem]:hidden"
+                            >A vencer</span
+                        >
+                        <span class="px-2 max-lg:hidden xl:max-[100rem]:hidden"
+                            >1–30</span
+                        >
+                        <span class="px-2 max-lg:hidden xl:max-[100rem]:hidden"
+                            >31–60</span
+                        >
+                        <span
+                            v-if="hasOldDebt"
+                            class="px-2 max-lg:hidden xl:max-[100rem]:hidden"
                             >Mais de 60</span
                         >
                         <span class="px-2">Total</span>
@@ -789,7 +793,7 @@ function whatsAppLink(entry: {
                                     </span>
 
                                     <span
-                                        class="px-2 text-end numeric text-[var(--ui-ink-2)] max-lg:hidden"
+                                        class="px-2 text-end numeric text-[var(--ui-ink-2)] max-lg:hidden xl:max-[100rem]:hidden"
                                         >{{
                                             bucketCell(row, 'current')
                                                 ? wholeAmount(
@@ -802,7 +806,7 @@ function whatsAppLink(entry: {
                                         }}</span
                                     >
                                     <span
-                                        class="px-2 text-end numeric max-lg:hidden"
+                                        class="px-2 text-end numeric max-lg:hidden xl:max-[100rem]:hidden"
                                         :class="
                                             bucketCell(row, 'd1_30')
                                                 ? 'font-[550] text-[var(--ui-gold-ink)]'
@@ -817,7 +821,7 @@ function whatsAppLink(entry: {
                                         }}</span
                                     >
                                     <span
-                                        class="px-2 text-end numeric max-lg:hidden"
+                                        class="px-2 text-end numeric max-lg:hidden xl:max-[100rem]:hidden"
                                         :class="
                                             bucketCell(row, 'd31_60')
                                                 ? 'font-[550] text-[var(--ui-warning)]'
@@ -833,7 +837,7 @@ function whatsAppLink(entry: {
                                     >
                                     <span
                                         v-if="hasOldDebt"
-                                        class="px-2 text-end numeric max-lg:hidden"
+                                        class="px-2 text-end numeric max-lg:hidden xl:max-[100rem]:hidden"
                                         :class="
                                             bucketCell(
                                                 row,
@@ -950,7 +954,7 @@ function whatsAppLink(entry: {
                 <!-- ------------------------------------------ the composer -->
                 <aside
                     aria-labelledby="prepared-title"
-                    class="flex flex-col border-[var(--ui-line)] max-xl:border-t xl:sticky xl:inset-bs-12 xl:h-[calc(100dvh-3rem)] xl:w-[22.5rem] xl:shrink-0 xl:border-s"
+                    class="flex flex-col rounded-xl bg-[var(--surface-raised)] shadow-[var(--ui-card-shadow)] xl:sticky xl:inset-bs-20 xl:max-h-[calc(100dvh-6rem)] xl:w-[22.5rem] xl:shrink-0"
                 >
                     <div class="flex flex-col gap-3 px-5 pt-4">
                         <div class="flex items-center gap-2">

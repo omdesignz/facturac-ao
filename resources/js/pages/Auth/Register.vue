@@ -130,7 +130,7 @@ onMounted(() => {
             </div>
 
             <AppButton
-                variant="gold"
+                variant="ink"
                 size="lg"
                 type="submit"
                 :disabled="processing"

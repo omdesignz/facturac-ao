@@ -16,6 +16,7 @@ import {
     Timer,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import AccountSettingsNav from '@/components/AccountSettingsNav.vue';
 import AppButton from '@/components/AppButton.vue';
 import DataTable from '@/components/DataTable.vue';
 import FormError from '@/components/FormError.vue';
@@ -230,6 +231,7 @@ watch(
 
         <div class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
             <div class="page-shell space-y-8">
+                <AccountSettingsNav />
                 <header>
                     <div class="flex flex-wrap items-center gap-2">
                         <StatusBadge

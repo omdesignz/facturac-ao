@@ -38,7 +38,7 @@ watch(
         <Head title="Autenticação de dois factores" />
 
         <div
-            class="mb-6 flex gap-3 rounded-xl bg-brand-50 p-4 text-sm/6 text-brand-900 ring-1 ring-brand-200 dark:bg-brand-400/10 dark:text-brand-200 dark:ring-brand-400/20"
+            class="mb-6 flex gap-3 rounded-xl bg-[var(--ui-wash)] p-4 text-sm/6 text-[var(--ui-ink-2)]"
         >
             <KeyRound
                 v-if="useRecoveryCode"
@@ -78,7 +78,7 @@ watch(
                     autocapitalize="characters"
                     spellcheck="false"
                     required
-                    autofocus
+                    data-auth-autofocus
                     :aria-invalid="errors.recovery_code ? 'true' : undefined"
                     :aria-describedby="
                         errors.recovery_code ? 'recovery-code-error' : undefined
@@ -103,7 +103,7 @@ watch(
                     spellcheck="false"
                     maxlength="6"
                     required
-                    autofocus
+                    data-auth-autofocus
                     :aria-invalid="errors.code ? 'true' : undefined"
                     :aria-describedby="errors.code ? 'code-error' : undefined"
                     class="block form-input py-3 ps-[calc(0.75rem+0.45em)] pe-3 text-center font-mono text-2xl tracking-[0.45em]"

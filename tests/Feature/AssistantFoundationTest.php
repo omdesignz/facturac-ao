@@ -32,7 +32,8 @@ beforeEach(function () {
     expect(app()->environment())->toBe('testing');
     expect(DB::getDriverName() === 'pgsql' ? str_starts_with(DB::connection()->getDatabaseName(), 'facturac_test_') : DB::connection()->getDatabaseName() === ':memory:')->toBeTrue();
     $this->artisan('migrate:fresh', ['--force' => true])->assertExitCode(0);
-    config(['assistant.enabled' => true]);
+    // These HTTP boundary tests must never send fixtures to a running dev SSR server.
+    config(['assistant.enabled' => true, 'inertia.ssr.enabled' => false]);
     Http::preventStrayRequests();
     Queue::fake();
     Notification::fake();

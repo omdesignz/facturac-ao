@@ -136,7 +136,7 @@ const flash = computed(
                 variant="outline"
                 size="lg"
                 :disabled="passkeyPending"
-                class="relative h-[2.625rem] w-full rounded-[9px] text-sm font-[550]"
+                class="relative h-[2.625rem] w-full rounded-lg text-sm font-[550]"
                 @click="signInWithPasskey"
             >
                 <LoaderCircle
@@ -267,11 +267,11 @@ const flash = computed(
             </label>
 
             <AppButton
-                variant="gold"
+                variant="ink"
                 size="lg"
                 type="submit"
                 :disabled="processing"
-                class="mt-3 h-[2.625rem] w-full rounded-[9px] text-sm shadow-[inset_0_1px_0_rgb(255_255_255/0.42),0_0_0_1px_#db9520,0_1px_2px_rgb(0_0_0/0.12),0_6px_16px_rgb(249_178_51/0.22)] dark:shadow-[inset_0_1px_0_rgb(255_255_255/0.42),0_0_0_1px_#db9520,0_1px_2px_rgb(0_0_0/0.12),0_6px_16px_rgb(249_178_51/0.12)]"
+                class="mt-3 h-[2.625rem] w-full text-sm"
             >
                 <LoaderCircle
                     v-if="processing"
@@ -313,7 +313,7 @@ const flash = computed(
                 size="lg"
                 external
                 :href="googleRedirect.url()"
-                class="h-[2.625rem] w-full rounded-[9px] text-sm font-[550]"
+                class="h-[2.625rem] w-full rounded-lg text-sm font-[550]"
             >
                 <GoogleMark />
                 Continuar com Google

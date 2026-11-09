@@ -4,6 +4,7 @@ import { Check, Link2, Printer } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import { printDocument } from '@/lib/print';
+import { formatRate } from '@/lib/rate';
 
 interface PrintLine {
     order_references: { document_no: string; document_date: string }[];
@@ -83,6 +84,17 @@ const moneyFormatter = new Intl.NumberFormat('pt-AO', {
 
 function money(minor: number): string {
     return moneyFormatter.format(minor / 100);
+}
+
+const quantityFormatter = new Intl.NumberFormat('pt-AO', {
+    maximumFractionDigits: 4,
+});
+
+/** "1", "2,5": never "1.0000", which a reader here takes for a thousand. */
+function formatQuantity(value: string): string {
+    const amount = Number(value);
+
+    return Number.isFinite(amount) ? quantityFormatter.format(amount) : value;
 }
 
 const dateFormatter = new Intl.DateTimeFormat('pt-PT', { dateStyle: 'long' });
@@ -191,7 +203,7 @@ async function copyShareLink(): Promise<void> {
             </header>
 
             <section
-                class="doc-keep mt-8 grid grid-cols-2 gap-8 border-t border-zinc-200 pt-6 text-xs/5"
+                class="doc-keep mt-8 grid grid-cols-1 gap-6 border-t border-zinc-200 pt-6 text-xs/5 sm:grid-cols-2 sm:gap-8"
             >
                 <div>
                     <p class="eyebrow text-zinc-500">Cliente</p>
@@ -209,7 +221,9 @@ async function copyShareLink(): Promise<void> {
                     </p>
                 </div>
 
-                <dl class="grid grid-cols-2 gap-x-4 gap-y-1.5 self-start">
+                <dl
+                    class="grid grid-cols-2 gap-x-4 gap-y-1.5 self-start max-sm:grid-cols-[auto_minmax(0,1fr)]"
+                >
                     <dt class="text-zinc-500">Data</dt>
                     <dd class="text-right numeric">
                         {{ formatDate(document.document_date) }}
@@ -233,85 +247,99 @@ async function copyShareLink(): Promise<void> {
                 </dl>
             </section>
 
-            <table class="mt-8 w-full text-left text-xs">
-                <thead>
-                    <tr class="border-y border-zinc-300 bg-zinc-50">
-                        <th class="py-2 pr-3 font-semibold">Descrição</th>
-                        <th class="px-2 py-2 text-right font-semibold">Qtd.</th>
-                        <th class="px-2 py-2 text-right font-semibold">
-                            Preço
-                        </th>
-                        <th class="px-2 py-2 text-right font-semibold">
-                            Desc.
-                        </th>
-                        <th class="px-2 py-2 text-right font-semibold">IVA</th>
-                        <th class="py-2 pl-2 text-right font-semibold">
-                            Total
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr
-                        v-for="line in document.lines"
-                        :key="line.line_number"
-                        class="border-b border-zinc-200 align-top"
-                    >
-                        <td class="py-2 pr-3">
-                            <p class="font-medium">
-                                {{ line.product_description }}
-                            </p>
-                            <p
-                                v-for="reference in line.order_references"
-                                :key="reference.document_no"
-                                class="text-xs text-zinc-500"
+            <!-- On a phone the lines scroll sideways inside the sheet; on paper nothing changes. -->
+            <div
+                class="mt-8 overflow-x-auto overscroll-x-contain print:overflow-visible"
+            >
+                <table class="w-full text-left text-xs">
+                    <thead>
+                        <tr class="border-y border-zinc-300 bg-zinc-50">
+                            <th class="py-2 pr-3 font-semibold">Descrição</th>
+                            <th class="px-2 py-2 text-right font-semibold">
+                                Qtd.
+                            </th>
+                            <th class="px-2 py-2 text-right font-semibold">
+                                Preço
+                            </th>
+                            <th class="px-2 py-2 text-right font-semibold">
+                                Desc.
+                            </th>
+                            <th class="px-2 py-2 text-right font-semibold">
+                                IVA
+                            </th>
+                            <th class="py-2 pl-2 text-right font-semibold">
+                                Total
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr
+                            v-for="line in document.lines"
+                            :key="line.line_number"
+                            class="border-b border-zinc-200 align-top"
+                        >
+                            <td class="py-2 pr-3">
+                                <p class="font-medium">
+                                    {{ line.product_description }}
+                                </p>
+                                <p
+                                    v-for="reference in line.order_references"
+                                    :key="reference.document_no"
+                                    class="text-xs text-zinc-500"
+                                >
+                                    Origem: {{ reference.document_no }} ·
+                                    {{ reference.document_date }}
+                                </p>
+                                <p
+                                    v-if="line.product_code"
+                                    class="numeric text-zinc-500"
+                                >
+                                    {{ line.product_code }}
+                                </p>
+                                <p
+                                    v-if="line.operation_date"
+                                    class="text-zinc-500"
+                                >
+                                    Operação ·
+                                    {{ formatDate(line.operation_date) }}
+                                </p>
+                                <p
+                                    v-if="line.tax_exemption_code"
+                                    class="text-zinc-500"
+                                >
+                                    Isento · {{ line.tax_exemption_code }}
+                                </p>
+                            </td>
+                            <td
+                                class="px-2 py-2 text-right numeric whitespace-nowrap"
                             >
-                                Origem: {{ reference.document_no }} ·
-                                {{ reference.document_date }}
-                            </p>
-                            <p
-                                v-if="line.product_code"
-                                class="numeric text-zinc-500"
+                                {{ formatQuantity(line.quantity) }}
+                                {{ line.unit_of_measure }}
+                            </td>
+                            <td
+                                class="px-2 py-2 text-right numeric whitespace-nowrap"
                             >
-                                {{ line.product_code }}
-                            </p>
-                            <p v-if="line.operation_date" class="text-zinc-500">
-                                Operação · {{ formatDate(line.operation_date) }}
-                            </p>
-                            <p
-                                v-if="line.tax_exemption_code"
-                                class="text-zinc-500"
+                                {{ money(line.unit_price_minor) }}
+                            </td>
+                            <td
+                                class="px-2 py-2 text-right numeric whitespace-nowrap"
                             >
-                                Isento · {{ line.tax_exemption_code }}
-                            </p>
-                        </td>
-                        <td
-                            class="px-2 py-2 text-right numeric whitespace-nowrap"
-                        >
-                            {{ line.quantity }} {{ line.unit_of_measure }}
-                        </td>
-                        <td
-                            class="px-2 py-2 text-right numeric whitespace-nowrap"
-                        >
-                            {{ money(line.unit_price_minor) }}
-                        </td>
-                        <td
-                            class="px-2 py-2 text-right numeric whitespace-nowrap"
-                        >
-                            {{ line.discount_rate }}%
-                        </td>
-                        <td
-                            class="px-2 py-2 text-right numeric whitespace-nowrap"
-                        >
-                            {{ line.tax_rate }}%
-                        </td>
-                        <td
-                            class="py-2 pl-2 text-right numeric font-medium whitespace-nowrap"
-                        >
-                            {{ money(line.gross_amount_minor) }}
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+                                {{ formatRate(line.discount_rate) }}%
+                            </td>
+                            <td
+                                class="px-2 py-2 text-right numeric whitespace-nowrap"
+                            >
+                                {{ formatRate(line.tax_rate) }}%
+                            </td>
+                            <td
+                                class="py-2 pl-2 text-right numeric font-medium whitespace-nowrap"
+                            >
+                                {{ money(line.gross_amount_minor) }}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
             <section class="doc-keep mt-6 flex justify-between gap-8">
                 <table
@@ -339,7 +367,7 @@ async function copyShareLink(): Promise<void> {
                             class="border-b border-zinc-200"
                         >
                             <td class="py-1.5 pr-4 numeric">
-                                {{ row.rate }}%
+                                {{ formatRate(row.rate) }}%
                                 <span
                                     v-if="row.exemption_code"
                                     class="text-zinc-500"

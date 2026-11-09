@@ -4,6 +4,7 @@ namespace App\Fiscal\Documents;
 
 use App\Actions\PrepareRepeatInvoice;
 use App\Analytics\DocumentSnapshot;
+use App\Analytics\ReceivablesQuery;
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
 use App\Models\AgtSubmission;
@@ -20,6 +21,7 @@ final class FiscalDocumentRegister
     public function __construct(
         private DocumentSnapshot $snapshot,
         private CreditNoteEligibility $creditNotes,
+        private ReceivablesQuery $receivables,
     ) {}
 
     /**
@@ -33,7 +35,7 @@ final class FiscalDocumentRegister
      */
     public function selected(LegalEntity $legalEntity, string $publicId, bool $canPrepareDocuments): ?array
     {
-        $document = FiscalDocument::query()
+        $document = $this->receivables->withBalances(FiscalDocument::query())
             ->where('workspace_id', $legalEntity->workspace_id)
             ->where('legal_entity_id', $legalEntity->id)
             ->where('public_id', $publicId)
@@ -246,6 +248,7 @@ final class FiscalDocumentRegister
             ]);
 
         $this->applyFilters($query, $legalEntity, $filters);
+        $this->receivables->withBalances($query);
 
         return $query
             ->latest('document_date')
@@ -388,6 +391,7 @@ final class FiscalDocumentRegister
             ],
             'gross_total_minor' => $document->gross_total_minor,
             'currency_code' => $document->currency_code,
+            'balance' => $this->balance($document),
             'status' => $document->status->value,
             'status_label' => $document->status->label(),
             'workflow_status' => $workflowStatus,
@@ -430,5 +434,25 @@ final class FiscalDocumentRegister
         }
 
         return 'invoice';
+    }
+
+    /** @return array{outstanding_minor: int, label: string, tone: string}|null */
+    private function balance(FiscalDocument $document): ?array
+    {
+        if ($document->status === FiscalDocumentStatus::Draft
+            || ! in_array($document->document_type->value, ReceivablesQuery::billableTypes(), true)) {
+            return null;
+        }
+
+        $outstanding = $this->receivables->outstandingMinor($document);
+        $overdue = $outstanding > 0
+            && $document->due_date !== null
+            && $document->due_date->startOfDay()->isBefore(CarbonImmutable::today());
+
+        return [
+            'outstanding_minor' => $outstanding,
+            'label' => $outstanding <= 0 ? 'Sem saldo' : ($overdue ? 'Em atraso' : 'Por receber'),
+            'tone' => $overdue ? 'danger' : 'neutral',
+        ];
     }
 }

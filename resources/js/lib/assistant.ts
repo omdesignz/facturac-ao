@@ -130,6 +130,42 @@ function monthLabel(month: string): string {
     return match ? `${monthNames[Number(match[2]) - 1]} de ${match[1]}` : month;
 }
 
+const timestampFormatter = new Intl.DateTimeFormat('pt-AO', {
+    timeZone: 'Africa/Luanda',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+});
+
+/**
+ * "09/11/2026 · 09:00", Luanda time, for a stored ISO timestamp. Anything
+ * else is shown as it came, so nothing is ever guessed.
+ */
+export function assistantTimestamp(value: unknown): string {
+    const text = String(value);
+    const date = new Date(text);
+
+    if (!/^\d{4}-\d{2}-\d{2}T/.test(text) || Number.isNaN(date.getTime())) {
+        return text;
+    }
+
+    const parts = Object.fromEntries(
+        timestampFormatter
+            .formatToParts(date)
+            .map((part) => [part.type, part.value]),
+    );
+
+    return `${parts.day}/${parts.month}/${parts.year} · ${parts.hour}:${parts.minute}`;
+}
+
+/** The currency as the reader says it: Kz for kwanzas, the code otherwise. */
+function currencyUnit(code: unknown): string {
+    return code === 'AOA' ? 'Kz' : String(code);
+}
+
 function countLabel(count: number, one: string, many: string): string {
     return `${count} ${count === 1 ? one : many}`;
 }
@@ -154,7 +190,7 @@ export function assistantHeadline(result: AssistantResult): string[] {
 
     return active.map((bucket) => {
         const code = String(bucket.currency_code);
-        const unit = code === 'AOA' ? 'Kz' : code;
+        const unit = currencyUnit(code);
         const documents = Number(bucket.billed_document_count);
         const credits = Number(bucket.credit_note_count);
         const creditLabel = countLabel(
@@ -207,17 +243,17 @@ export function assistantLines(result: AssistantResult): string[] {
                 `Sincronização: ${data.synchronization} · Observação: ${data.freshness}`,
                 explanations[String(data.explanation_code)] ??
                     'Estado não comprovado.',
-                `Consulta: ${data.as_of}`,
-                `Observado: ${data.observed_at ?? 'Indisponível'}`,
-                `Última sincronização comprovada: ${data.last_successful_sync_at ?? 'Indisponível'}`,
+                `Consulta: ${assistantTimestamp(data.as_of)}`,
+                `Observado: ${data.observed_at ? assistantTimestamp(data.observed_at) : 'Indisponível'}`,
+                `Última sincronização comprovada: ${data.last_successful_sync_at ? assistantTimestamp(data.last_successful_sync_at) : 'Indisponível'}`,
                 'Esta consulta não autoriza emissão ou liquidação fiscal.',
             ];
         case 'getMonthlyRecordedBilling': {
             const buckets = billingBuckets(data);
             const lines = [
-                `Facturação registada · ${(data.period as { month: string }).month}`,
+                `Facturação registada · ${monthLabel(String((data.period as { month: string }).month))}`,
                 billingCaveat,
-                `Consulta: ${data.as_of}`,
+                `Consulta: ${assistantTimestamp(data.as_of)}`,
             ];
 
             for (const bucket of buckets.filter(isActiveBucket)) {
@@ -227,7 +263,7 @@ export function assistantLines(result: AssistantResult): string[] {
 
                 for (const [key, label] of Object.entries(metricLabels)) {
                     lines.push(
-                        `${label}: ${groupAssistantMoney(String(bucket[key]))} ${bucket.currency_code}`,
+                        `${label}: ${groupAssistantMoney(String(bucket[key]))} ${currencyUnit(bucket.currency_code)}`,
                     );
                 }
             }

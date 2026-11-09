@@ -10,10 +10,6 @@
 
     A status view fills these sections:
       status      the eyebrow, "Erro 404 · Não encontrado"
-      stamp       the brand device, "direcc.ao": the full stop becomes the gold dot
-      word        the real spelling of the stamp, "Direcção", read once by screen readers
-      stampwidth  the stamp's width in em in the widest face (Century Gothic), so
-                  the size can be fitted to the column
       title       the h1, also the document title
       message     the sentence under it
       actions     the pills, built with the .pill classes below
@@ -107,7 +103,6 @@
         $supportHref = 'mailto:'.$supportEmail.'?subject='.rawurlencode($subject).($body !== '' ? '&body='.rawurlencode($body) : '');
     }
 
-    [$stampLead, $stampTail] = array_pad(explode('.', trim(View::yieldContent('stamp')), 2), 2, '');
 @endphp
 <!DOCTYPE html>
 <html lang="pt-AO">
@@ -116,47 +111,46 @@
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
         <meta name="robots" content="noindex, nofollow">
         <meta name="color-scheme" content="light dark">
-        <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-        <meta name="theme-color" content="#09090b" media="(prefers-color-scheme: dark)">
+        <meta name="theme-color" content="#f7f7f5" media="(prefers-color-scheme: light)">
+        <meta name="theme-color" content="#09090a" media="(prefers-color-scheme: dark)">
         @if (View::hasSection('refresh') && $retrySeconds !== null)
             <meta http-equiv="refresh" content="{{ max(5, $retrySeconds) }}">
         @endif
         <link rel="icon" href="/favicon.svg" type="image/svg+xml">
         <title>@yield('title') — facturac.ao</title>
         <style>
-            /* The app's own tokens: page ground, zinc ink, brand grey, gold. */
+            /* Offline-safe mirrors of app.css tokens: no asset build is required. */
             :root {
                 color-scheme: light;
-                --ground: #ffffff;
-                --ink: #18181b;
-                --muted: #52525b;
-                --rule: rgba(24, 24, 27, 0.12);
-                --well: rgba(24, 24, 27, 0.04);
-                --mark: #575756;
+                --ground: #f7f7f5;
+                --ink: #161616;
+                --muted: #5c5c63;
+                --rule: #e7e7e3;
+                --well: #f2f2ef;
+                --mark: #161616;
                 --gold: #f9b233;
-                --gold-ink: #91410e;
-                --pill: #171716;
+                --gold-ink: #8a5a00;
+                --pill: #161616;
                 --pill-hover: #333332;
                 --pill-ink: #fff;
-                --focus: #575756;
-                --sans: 'Hanken Grotesk', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-                --display: 'Century Gothic', 'CenturyGothic', 'Didact Gothic', ui-sans-serif, system-ui, sans-serif;
+                --focus: #161616;
+                --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', ui-sans-serif, system-ui, sans-serif;
                 --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
             }
 
             @media (prefers-color-scheme: dark) {
                 :root:not([data-theme='light']) {
                     color-scheme: dark;
-                    --ground: #09090b;
-                    --ink: #f4f4f5;
-                    --muted: #a1a1aa;
-                    --rule: rgba(255, 255, 255, 0.14);
-                    --well: rgba(255, 255, 255, 0.04);
-                    --mark: #e4e4e7;
+                    --ground: #09090a;
+                    --ink: #ededef;
+                    --muted: #a1a1a8;
+                    --rule: #1f1f23;
+                    --well: #1c1c20;
+                    --mark: #ededef;
                     --gold-ink: #fbc94d;
-                    --pill: #f4f4f5;
+                    --pill: #ededef;
                     --pill-hover: #fff;
-                    --pill-ink: #171716;
+                    --pill-ink: #161616;
                     --focus: #d9d9d5;
                 }
             }
@@ -164,16 +158,16 @@
             /* Set by the inline script below from the app's own preference. */
             :root[data-theme='dark'] {
                 color-scheme: dark;
-                --ground: #09090b;
-                --ink: #f4f4f5;
-                --muted: #a1a1aa;
-                --rule: rgba(255, 255, 255, 0.14);
-                --well: rgba(255, 255, 255, 0.04);
-                --mark: #e4e4e7;
+                --ground: #09090a;
+                --ink: #ededef;
+                --muted: #a1a1a8;
+                --rule: #1f1f23;
+                --well: #1c1c20;
+                --mark: #ededef;
                 --gold-ink: #fbc94d;
-                --pill: #f4f4f5;
+                --pill: #ededef;
                 --pill-hover: #fff;
-                --pill-ink: #171716;
+                --pill-ink: #161616;
                 --focus: #d9d9d5;
             }
 
@@ -193,7 +187,7 @@
                 display: grid;
                 justify-items: center;
                 align-items: center;
-                padding-block: max(1.5rem, env(safe-area-inset-top)) max(1.5rem, env(safe-area-inset-bottom));
+                padding-block: max(7rem, env(safe-area-inset-top)) max(1.5rem, env(safe-area-inset-bottom));
                 padding-inline: max(1.25rem, env(safe-area-inset-left)) max(1.25rem, env(safe-area-inset-right));
                 background: var(--ground);
                 color: var(--ink);
@@ -204,7 +198,7 @@
 
             main {
                 inline-size: 100%;
-                max-inline-size: 36rem;
+                max-inline-size: 46rem;
                 min-inline-size: 0;
                 container-type: inline-size;
             }
@@ -213,6 +207,9 @@
                 display: inline-flex;
                 align-items: center;
                 min-block-size: 2.75rem;
+                position: absolute;
+                inset-block-start: max(1.5rem, env(safe-area-inset-top));
+                inset-inline-start: max(1.25rem, env(safe-area-inset-left));
                 color: var(--mark);
                 border-radius: 0.5rem;
             }
@@ -220,62 +217,21 @@
             .mark { display: block; inline-size: auto; block-size: 1.5rem; }
 
             .status {
-                margin: 2.5rem 0 0;
+                margin-block: 0 1.5rem;
                 font-family: var(--mono);
                 font-size: 0.75rem;
                 line-height: 1.4;
                 font-weight: 500;
                 letter-spacing: 0.08em;
                 text-transform: uppercase;
-                color: var(--gold-ink);
-            }
-
-            /*
-             * The brand device: "-ção" written "c.ao" with a gold full stop,
-             * set large like the landing page's stamps. Sized from the column
-             * so the widest word still fits at 320px; nowrap, so it never
-             * breaks, and the fit is what keeps it from overflowing.
-             */
-            .stamp {
-                --w: {{ (float) trim(View::yieldContent('stampwidth')) ?: 7 }};
-                margin: 0.5rem 0 0;
-                font-family: var(--display);
-                font-weight: 400;
-                font-size: min(6.5rem, calc((100vw - 2.5rem) / var(--w)));
-                font-size: min(6.5rem, calc(100cqi / var(--w)));
-                line-height: 0.9;
-                letter-spacing: -0.04em;
-                white-space: nowrap;
-                color: var(--ink);
-            }
-
-            .dot {
-                display: inline-block;
-                inline-size: 0.19em;
-                block-size: 0.19em;
-                margin-inline: 0.065em 0.05em;
-                border-radius: 9999px;
-                background: var(--gold);
-                vertical-align: baseline;
-            }
-
-            .sr-only {
-                position: absolute;
-                inline-size: 1px;
-                block-size: 1px;
-                margin: -1px;
-                padding: 0;
-                overflow: hidden;
-                clip-path: inset(50%);
-                white-space: nowrap;
-                border: 0;
+                color: var(--muted);
             }
 
             h1 {
-                margin: 1.5rem 0 0;
-                font-family: var(--display);
-                font-weight: 400;
-                font-size: clamp(1.5rem, 1.25rem + 1.2vw, 2rem);
+                margin-block: 0;
+                font-family: var(--sans);
+                font-weight: 650;
+                font-size: 1.625rem;
                 line-height: 1.2;
                 letter-spacing: -0.02em;
                 text-wrap: balance;
@@ -301,7 +257,7 @@
             .ref {
                 margin: 1.5rem 0 0;
                 padding: 0.875rem 1rem;
-                border-radius: 1rem;
+                border-radius: 0.75rem;
                 background: var(--well);
                 font-size: 0.75rem;
             }
@@ -326,7 +282,7 @@
             .ref dd:last-child { margin-block-end: 0; }
 
             .actions {
-                margin-top: 2rem;
+                margin-block-start: 2rem;
                 display: flex;
                 flex-wrap: wrap;
                 align-items: center;
@@ -339,7 +295,7 @@
                 justify-content: center;
                 min-block-size: 2.75rem;
                 padding-inline: 1.25rem;
-                border-radius: 9999px;
+                border-radius: 0.5rem;
                 font-family: var(--sans);
                 font-size: 0.9375rem;
                 font-weight: 600;
@@ -348,6 +304,7 @@
                 text-decoration: none;
                 white-space: nowrap;
                 touch-action: manipulation;
+                cursor: pointer;
             }
 
             .pill--ink { background: var(--pill); color: var(--pill-ink); }
@@ -374,7 +331,8 @@
 
             a:focus-visible {
                 outline: 2px solid var(--focus);
-                outline-offset: 2px;
+                outline-offset: 3px;
+                box-shadow: 0 0 0 5px color-mix(in oklch, var(--gold) 20%, transparent);
             }
 
             .pill:active { transform: scale(0.97); }
@@ -396,8 +354,8 @@
 
             .foot {
                 margin: 3rem 0 0;
-                padding-top: 1.25rem;
-                border-top: 1px solid var(--rule);
+                padding-block-start: 1.25rem;
+                border-block-start: 1px solid var(--rule);
                 font-size: 0.75rem;
                 color: var(--muted);
             }
@@ -429,7 +387,6 @@
             </a>
 
             <p class="status">@yield('status')</p>
-            <p class="stamp"><span aria-hidden="true">{{ $stampLead }}<span class="dot"></span>{{ $stampTail }}</span><span class="sr-only">@yield('word')</span></p>
             <h1>@yield('title')</h1>
             <p class="lede">@yield('message')</p>
 

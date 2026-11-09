@@ -57,7 +57,7 @@ class HandleInertiaRequests extends Middleware
             'workSession' => fn (): ?array => $this->workSessionProps($request),
             'impersonation' => fn (): ?array => $this->impersonationProps($request),
             'legal' => fn (): array => $this->legalProps($request),
-            'subscriptionAccess' => fn (): ?array => ($workspace = $request->attributes->get('currentWorkspace')) instanceof Workspace ? app(SubscriptionAccess::class)->status($workspace->id) : null,
+            'subscriptionAccess' => fn (): ?array => ($workspace = $this->currentWorkspace($request)) instanceof Workspace ? app(SubscriptionAccess::class)->status($workspace->id) : null,
             'currentWorkspace' => fn (): ?array => $this->currentWorkspaceProps($request),
             'assistant' => fn (): ?array => $this->assistantProps($request),
             'notifications' => fn (): ?array => $this->notificationProps($request),
@@ -284,7 +284,7 @@ class HandleInertiaRequests extends Middleware
             return null;
         }
 
-        $workspace = $request->attributes->get('currentWorkspace');
+        $workspace = $this->currentWorkspace($request);
         $workspaceId = $workspace instanceof Workspace ? $workspace->id : null;
 
         return [
@@ -331,6 +331,45 @@ class HandleInertiaRequests extends Middleware
     }
 
     /**
+     * The company the shell shows. Help does not require a company, so it never
+     * ran EnsureCurrentWorkspace; it still shows the one the person is working
+     * in, read-only, without redirecting or switching it. Only help opts in:
+     * the assistant works on the company named in its address and must not
+     * be handed another one here.
+     */
+    private function currentWorkspace(Request $request): ?Workspace
+    {
+        $workspace = $request->attributes->get('currentWorkspace');
+
+        if ($workspace instanceof Workspace || $request->attributes->has('inertia.workspace_resolved')) {
+            return $workspace instanceof Workspace ? $workspace : null;
+        }
+
+        $request->attributes->set('inertia.workspace_resolved', true);
+        $user = $request->user();
+
+        if (! $request->routeIs('help.*') || ! $user instanceof User || $user->current_workspace_id === null) {
+            return null;
+        }
+
+        $membership = WorkspaceMembership::query()
+            ->with('workspace')
+            ->where('user_id', $user->id)
+            ->where('workspace_id', $user->current_workspace_id)
+            ->where('is_active', true)
+            ->first();
+
+        if ($membership === null) {
+            return null;
+        }
+
+        $request->attributes->set('currentWorkspace', $membership->workspace);
+        $request->attributes->set('currentWorkspaceMembership', $membership);
+
+        return $membership->workspace;
+    }
+
+    /**
      * Resolved once per request: the assistant entry reads the same company
      * the header does, and neither should pay for the lookup twice.
      *
@@ -352,7 +391,7 @@ class HandleInertiaRequests extends Middleware
      */
     private function resolveCurrentWorkspaceProps(Request $request): ?array
     {
-        $workspace = $request->attributes->get('currentWorkspace');
+        $workspace = $this->currentWorkspace($request);
         $membership = $request->attributes->get('currentWorkspaceMembership');
 
         if (! $workspace instanceof Workspace || ! $membership instanceof WorkspaceMembership) {

@@ -61,6 +61,9 @@ class DashboardController extends Controller
             'now' => $now->toIso8601String(),
             'currencyCode' => $legalEntity->currency_code ?? 'AOA',
             'kpis' => $kpis,
+            'documentOverview' => $legalEntity instanceof LegalEntity
+                ? $this->dashboard->documentOverview($legalEntity, $now)
+                : null,
             'focus' => $legalEntity instanceof LegalEntity
                 ? $this->dashboard->focus($legalEntity, $now)
                 : null,

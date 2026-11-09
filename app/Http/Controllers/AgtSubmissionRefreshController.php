@@ -51,7 +51,7 @@ class AgtSubmissionRefreshController extends Controller
             'success',
             $scheduled === 0
                 ? 'Não existem pedidos AGT pendentes de validação.'
-                : $scheduled.' pedido(s) colocado(s) na fila de actualização.',
+                : ($scheduled === 1 ? '1 pedido colocado' : $scheduled.' pedidos colocados').' na fila de actualização.',
         );
     }
 }

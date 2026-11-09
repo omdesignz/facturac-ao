@@ -273,7 +273,9 @@ const paymentLines = computed(() => cart.salePayloadLines());
         class="px-4 py-6 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-6 lg:px-8 lg:pb-8"
     >
         <div class="mx-auto max-w-[120rem] space-y-4">
-            <h1 class="sr-only">Ponto de venda</h1>
+            <h1 class="text-page-title font-[650] text-[var(--ui-ink)]">
+                Ponto de venda
+            </h1>
             <FlashBanner />
 
             <div class="flex flex-wrap items-center gap-x-4 gap-y-2">

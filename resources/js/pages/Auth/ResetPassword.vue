@@ -58,7 +58,7 @@ defineProps<{
                     type="password"
                     autocomplete="new-password"
                     required
-                    autofocus
+                    data-auth-autofocus
                     :aria-invalid="errors.password ? 'true' : undefined"
                     :aria-describedby="
                         errors.password ? 'password-error' : undefined

@@ -3,6 +3,7 @@ import { Link, usePage } from '@inertiajs/vue3';
 import { Ellipsis, Files, HandCoins, House, Plus } from '@lucide/vue';
 import { computed } from 'vue';
 import { isFocusedPath } from '@/lib/mobile-tab-bar';
+import { useCanPrepareDocuments } from '@/lib/navigation';
 import { dashboard } from '@/routes';
 import { index as debtsIndex } from '@/routes/debts';
 import { index as documentsIndex } from '@/routes/documents';
@@ -17,6 +18,7 @@ defineEmits<{ more: [] }>();
  * where the thumb already is.
  */
 const page = usePage();
+const canPrepareDocuments = useCanPrepareDocuments();
 const path = computed(() => new URL(page.url, 'http://localhost').pathname);
 
 const visible = computed(() => !isFocusedPath(path.value));
@@ -65,10 +67,13 @@ function tabClass(href: string): string {
                 </Link>
             </li>
 
-            <li class="flex flex-1 items-center justify-center">
+            <li
+                v-if="canPrepareDocuments"
+                class="flex flex-1 items-center justify-center"
+            >
                 <Link
                     :href="invoiceCreate.url()"
-                    class="grid size-12 place-items-center rounded-full bg-accent-400 text-brand-950 shadow-[inset_0_-1px_0_rgb(0_0_0/0.1),0_4px_14px_-4px_rgb(150_95_0/0.5)] focus-ring transition hover:bg-accent-300"
+                    class="grid size-12 place-items-center rounded-lg bg-[var(--ui-ink)] text-[var(--surface-raised)] focus-ring hover:opacity-90"
                 >
                     <Plus
                         class="size-6"

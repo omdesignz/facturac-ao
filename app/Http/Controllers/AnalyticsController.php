@@ -139,7 +139,7 @@ class AnalyticsController extends Controller
             fn (array $row): array => [
                 'label' => $row['name'],
                 'value' => $row['total_minor'],
-                'detail' => $row['document_count'].' documento(s)',
+                'detail' => $row['document_count'].((int) $row['document_count'] === 1 ? ' documento' : ' documentos'),
             ],
             $this->receivables->topCustomers($query),
         );

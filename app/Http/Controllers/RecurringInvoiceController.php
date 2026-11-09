@@ -137,7 +137,7 @@ class RecurringInvoiceController extends Controller
             'success',
             $result['generated'] === 0
                 ? 'Nenhuma avença estava por gerar.'
-                : "{$result['generated']} documento(s) gerado(s).",
+                : ($result['generated'] === 1 ? '1 documento gerado.' : "{$result['generated']} documentos gerados."),
         );
     }
 

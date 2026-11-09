@@ -1,9 +1,6 @@
 @extends('errors.layout')
 
 @section('status', 'Erro 419 · Página expirada')
-@section('stamp', 'expirac.ao')
-@section('word', 'Expiração')
-@section('stampwidth', '5.2')
 @section('title', 'Esta página esteve aberta demasiado tempo')
 @section('message', 'Por segurança, a página deixa de aceitar acções passado algum tempo. O que já estava guardado mantém-se, mas a última acção não foi concluída. Recarregue a página e repita-a.')
 

@@ -253,9 +253,7 @@ async function deactivate(customer: Customer): Promise<void> {
     <AppLayout>
         <Head title="Clientes" />
 
-        <div
-            class="flex min-h-[calc(100dvh-4rem)] flex-col lg:min-h-[calc(100dvh-3rem)]"
-        >
+        <div class="flex min-h-[calc(100dvh-4rem)] flex-col">
             <TitleBar section="Cobrar" title="Clientes">
                 <template #meta>
                     <span

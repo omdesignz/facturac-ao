@@ -203,7 +203,7 @@ function inspectPeriod(): void {
                 </section>
 
                 <section
-                    class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] gap-3"
+                    class="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fit,minmax(10rem,1fr))]"
                     aria-label="Conteúdo do ficheiro"
                 >
                     <article
@@ -213,16 +213,16 @@ function inspectPeriod(): void {
                     >
                         <component
                             :is="card.icon"
-                            class="size-5 text-brand-600 dark:text-brand-300"
+                            class="size-5 text-[var(--ui-ink-3)]"
                             aria-hidden="true"
                         />
                         <p
-                            class="mt-4 numeric text-2xl font-semibold text-zinc-950 dark:text-white"
+                            class="mt-3 numeric text-2xl font-semibold text-[var(--ui-ink)] sm:mt-4"
                         >
                             {{ card.value }}
                         </p>
                         <p
-                            class="mt-1 text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                            class="mt-1 text-[0.8125rem] font-medium text-[var(--ui-ink-2)]"
                         >
                             {{ card.label }}
                         </p>

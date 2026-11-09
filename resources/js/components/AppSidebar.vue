@@ -23,7 +23,6 @@ import {
 import { computed, onBeforeUnmount, onMounted } from 'vue';
 import type { Component } from 'vue';
 import AccountMenu from '@/components/AccountMenu.vue';
-import GlobalSearch from '@/components/GlobalSearch.vue';
 import { useCanPrepareDocuments, useNavigation } from '@/lib/navigation';
 import type { NavigationItem } from '@/lib/navigation';
 import {
@@ -38,8 +37,8 @@ import { update as switchWorkspace } from '@/routes/workspace/current';
 
 /**
  * The desktop's navigation: the full list, or a 56px rail of icons that keeps
- * every place one click away (⌘\ switches between them). The groups are the
- * top bar's five words, read from the same map as the phone's menu.
+ * every place reachable (⌘\ switches between them). Daily work is pinned;
+ * the full map remains available under Mais opções and in the phone's menu.
  */
 interface SidebarEntry {
     key: string;
@@ -70,18 +69,17 @@ const isComposing = computed(() =>
  * The rail keeps the places used every day; the rest wait under Mais, so the
  * rail never runs off the bottom of a laptop screen.
  */
-const RAIL_PLACES = new Set([
+const PRIMARY_PLACES = [
     '/dashboard',
     'new-invoice',
     '/ponto-de-venda',
-    '/orcamentos',
     '/dividas',
-    '/customers',
     '/documentos',
+    '/customers',
     '/catalogue',
-    '/agt/submissions',
-    '/saft',
-]);
+    '/analises',
+];
+const FISCAL_PLACES = ['/agt/submissions', '/saft'];
 
 function entry(item: NavigationItem): SidebarEntry {
     return {
@@ -119,35 +117,22 @@ const sections = computed(() => {
     });
 });
 
-const mainSections = computed(() =>
-    sections.value
-        .filter((section) => section.key !== 'more')
-        .map((section) =>
-            sidebarCompact.value
-                ? {
-                      ...section,
-                      entries: section.entries.filter((item) =>
-                          RAIL_PLACES.has(item.key),
-                      ),
-                  }
-                : section,
-        ),
-);
+const mainSections = computed(() => {
+    const all = sections.value.flatMap((section) => section.entries);
+    const ordered = (keys: string[]) =>
+        keys.flatMap((key) => all.filter((item) => item.key === key));
+
+    return [
+        { key: 'primary', label: '', entries: ordered(PRIMARY_PLACES) },
+        { key: 'fiscal', label: 'Fiscal', entries: ordered(FISCAL_PLACES) },
+    ];
+});
 const moreEntries = computed(() => {
-    const rest =
-        sections.value.find((section) => section.key === 'more')?.entries ?? [];
+    const pinned = new Set([...PRIMARY_PLACES, ...FISCAL_PLACES]);
 
-    if (!sidebarCompact.value) {
-        return rest;
-    }
-
-    const folded = sections.value
-        .filter((section) => section.key !== 'more')
-        .flatMap((section) =>
-            section.entries.filter((item) => !RAIL_PLACES.has(item.key)),
-        );
-
-    return [...folded, ...rest];
+    return sections.value
+        .flatMap((section) => section.entries)
+        .filter((item) => !pinned.has(item.key));
 });
 const moreIsActive = computed(() =>
     moreEntries.value.some((item) => item.active),
@@ -193,7 +178,7 @@ onMounted(() => window.addEventListener('keydown', handleKeydown));
 onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown));
 
 const itemBase =
-    'group/item relative flex items-center rounded-[7px] text-[0.8125rem] focus-ring transition-colors';
+    'group/item relative flex items-center rounded-lg text-sm focus-ring transition-colors';
 const itemActive =
     'bg-white font-semibold text-zinc-950 shadow-[0_0_0_1px_var(--ui-hairline),0_1px_2px_rgb(16_16_16/0.05)] dark:bg-[#18181b] dark:text-white dark:shadow-[inset_0_1px_0_rgb(255_255_255/0.05),0_0_0_1px_#27272c]';
 const itemIdle =
@@ -205,7 +190,7 @@ const tooltip =
 <template>
     <aside
         :class="[
-            'flex h-full flex-col bg-[var(--surface-side)] shadow-[inset_-1px_0_0_var(--ui-hairline)]',
+            'flex h-full flex-col rounded-xl bg-[var(--surface-side)] shadow-[var(--ui-card-shadow)]',
             sidebarCompact
                 ? 'w-14 items-center px-0 py-3'
                 : 'w-60 px-2.5 pt-3 pb-2.5',
@@ -338,11 +323,6 @@ const tooltip =
             </button>
         </div>
 
-        <GlobalSearch
-            :trigger="sidebarCompact ? 'rail' : 'sidebar'"
-            :class="sidebarCompact ? 'mt-2' : 'mt-2'"
-        />
-
         <nav
             aria-label="Navegação principal"
             :class="[
@@ -386,7 +366,7 @@ const tooltip =
                         item.active ? itemActive : itemIdle,
                         sidebarCompact
                             ? 'size-9 justify-center'
-                            : 'h-8 gap-2.5 px-2',
+                            : 'h-10 gap-2.5 px-3',
                     ]"
                 >
                     <component
@@ -420,9 +400,9 @@ const tooltip =
                     class="flex flex-col gap-px pt-3.5"
                 >
                     <DisclosureButton
-                        class="flex h-6 items-center gap-1 rounded-md px-2 text-[0.71875rem] font-semibold text-zinc-500 focus-ring transition-colors hover:text-zinc-800 dark:hover:text-zinc-200"
+                        class="flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-medium text-zinc-500 focus-ring transition-colors hover:text-zinc-800 dark:hover:text-zinc-200"
                     >
-                        Mais
+                        Mais opções
                         <ChevronDown
                             :class="[
                                 'size-3 transition-transform',
@@ -441,7 +421,7 @@ const tooltip =
                             :class="[
                                 itemBase,
                                 item.active ? itemActive : itemIdle,
-                                'h-8 gap-2.5 px-2',
+                                'h-10 gap-2.5 px-3',
                             ]"
                         >
                             <component
@@ -530,13 +510,13 @@ const tooltip =
             <Link
                 v-if="!sidebarCompact"
                 :href="agtConnection.url()"
-                class="mt-3 flex shrink-0 items-center gap-2 rounded-[10px] bg-[var(--surface-raised)] px-2.5 py-2 text-[0.78125rem] font-semibold text-zinc-900 shadow-[var(--ui-card-shadow)] focus-ring transition-colors hover:bg-[var(--ui-wash)] dark:text-zinc-100"
+                class="mt-3 flex shrink-0 items-center gap-2 rounded-xl bg-[var(--surface-raised)] px-2.5 py-2 text-[0.78125rem] font-semibold text-zinc-900 shadow-[var(--ui-card-shadow)] focus-ring transition-colors hover:bg-[var(--ui-wash)] dark:text-zinc-100"
             >
                 <span
                     :class="[
                         'size-2 rounded-full',
                         agt.verified
-                            ? 'bg-emerald-600 shadow-[0_0_0_3px_rgb(16_185_129/0.16)] dark:bg-emerald-400'
+                            ? 'bg-[var(--ui-positive)] shadow-[0_0_0_3px_var(--ui-positive-wash)]'
                             : 'bg-accent-400 shadow-[0_0_0_3px_rgb(249_178_51/0.2)]',
                     ]"
                     aria-hidden="true"

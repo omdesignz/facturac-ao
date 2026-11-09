@@ -7,13 +7,15 @@ import {
     TransitionRoot,
 } from '@headlessui/vue';
 import { X } from '@lucide/vue';
+import { watch } from 'vue';
+import { restoreDialogFocus } from '@/lib/focus';
 
 /**
  * Modal shell for the create/edit forms on the register pages. The forms are
  * short enough that a dialog beats a dedicated route — the list stays in view
  * behind it, which is the context you want when editing a record.
  */
-defineProps<{
+const props = defineProps<{
     open: boolean;
     title: string;
     description?: string;
@@ -21,15 +23,32 @@ defineProps<{
     eyebrow?: string;
 }>();
 
-defineEmits<{ close: []; afterLeave: [] }>();
+const emit = defineEmits<{ close: []; afterLeave: [] }>();
+let origin: HTMLElement | null = null;
+
+watch(
+    () => props.open,
+    (open) => {
+        if (open && typeof document !== 'undefined') {
+            origin =
+                document.activeElement instanceof HTMLElement
+                    ? document.activeElement
+                    : null;
+        }
+    },
+    { flush: 'sync' },
+);
+
+function afterLeave(): void {
+    const previous = origin;
+    origin = null;
+    emit('afterLeave');
+    void restoreDialogFocus(previous);
+}
 </script>
 
 <template>
-    <TransitionRoot
-        as="template"
-        :show="open"
-        @after-leave="$emit('afterLeave')"
-    >
+    <TransitionRoot as="template" :show="open" @after-leave="afterLeave">
         <Dialog class="relative z-50" @close="$emit('close')">
             <TransitionChild
                 as="template"
@@ -86,7 +105,7 @@ defineEmits<{ close: []; afterLeave: [] }>();
                                  the first field, not on its own close button. -->
                             <button
                                 type="button"
-                                class="absolute top-5 right-5 icon-button rounded-full text-zinc-400 focus-ring transition hover:bg-zinc-900/[0.05] hover:text-zinc-800 sm:top-6 sm:right-6 dark:hover:bg-white/10 dark:hover:text-white"
+                                class="absolute top-5 right-5 icon-button rounded-lg text-zinc-400 focus-ring transition hover:bg-zinc-900/[0.05] hover:text-zinc-800 sm:top-6 sm:right-6 dark:hover:bg-white/10 dark:hover:text-white"
                                 @click="$emit('close')"
                             >
                                 <span class="sr-only">Fechar</span>

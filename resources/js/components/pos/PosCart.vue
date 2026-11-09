@@ -343,7 +343,7 @@ defineExpose({ revealLine });
                             >
                             <span
                                 v-if="hasDiscount(line)"
-                                class="rounded-full bg-zinc-900/[0.07] px-1.5 text-xs font-semibold text-zinc-800 dark:bg-white/10 dark:text-zinc-200"
+                                class="rounded-lg bg-zinc-900/[0.07] px-1.5 text-xs font-semibold text-zinc-800 dark:bg-white/10 dark:text-zinc-200"
                                 >−{{
                                     line.discountPercentage.replace('.', ',')
                                 }}%</span
@@ -366,13 +366,13 @@ defineExpose({ revealLine });
 
                 <div class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
                     <div
-                        class="flex items-center rounded-full bg-white ring-1 ring-zinc-900/10 ring-inset dark:bg-transparent dark:ring-white/15"
+                        class="flex items-center rounded-lg bg-white ring-1 ring-zinc-900/10 ring-inset dark:bg-transparent dark:ring-white/15"
                         role="group"
                         :aria-label="`Quantidade de ${line.name}`"
                     >
                         <button
                             type="button"
-                            class="icon-button rounded-full text-zinc-700 focus-ring hover:bg-zinc-900/[0.06] dark:text-zinc-300 dark:hover:bg-white/10"
+                            class="icon-button rounded-lg text-zinc-700 focus-ring hover:bg-zinc-900/[0.06] dark:text-zinc-300 dark:hover:bg-white/10"
                             @click="stepLine(line, -1)"
                         >
                             <span class="sr-only">
@@ -409,7 +409,7 @@ defineExpose({ revealLine });
                         />
                         <button
                             type="button"
-                            class="icon-button rounded-full text-zinc-700 focus-ring hover:bg-zinc-900/[0.06] dark:text-zinc-300 dark:hover:bg-white/10"
+                            class="icon-button rounded-lg text-zinc-700 focus-ring hover:bg-zinc-900/[0.06] dark:text-zinc-300 dark:hover:bg-white/10"
                             @click="stepLine(line, 1)"
                         >
                             <span class="sr-only">Mais um {{ line.name }}</span>
@@ -456,7 +456,7 @@ defineExpose({ revealLine });
                                         ? `pos-discount-error-${line.itemId}`
                                         : undefined
                                 "
-                                class="h-10 w-20 rounded-full bg-white ps-3 pe-7 text-end numeric text-sm text-zinc-950 ring-1 ring-zinc-900/10 outline-hidden ring-inset focus:ring-2 focus:ring-brand-950 dark:bg-transparent dark:text-white dark:ring-white/15 dark:focus:ring-zinc-200 pointer-coarse:h-11"
+                                class="h-10 w-20 rounded-lg bg-white ps-3 pe-7 text-end numeric text-sm text-zinc-950 ring-1 ring-zinc-900/10 outline-hidden ring-inset focus:ring-2 focus:ring-brand-950 dark:bg-transparent dark:text-white dark:ring-white/15 dark:focus:ring-zinc-200 pointer-coarse:h-11"
                                 @focus="selectAll"
                                 @change="commitDiscount(line, $event)"
                                 @keydown="leaveDiscount(line, $event)"
@@ -471,7 +471,7 @@ defineExpose({ revealLine });
 
                     <button
                         type="button"
-                        class="ms-auto icon-button rounded-full text-zinc-500 focus-ring hover:bg-rose-50 hover:text-rose-700 dark:text-zinc-400 dark:hover:bg-rose-400/10 dark:hover:text-rose-300"
+                        class="ms-auto icon-button rounded-lg text-zinc-500 focus-ring hover:bg-rose-50 hover:text-rose-700 dark:text-zinc-400 dark:hover:bg-rose-400/10 dark:hover:text-rose-300"
                         @click="removeLine(line)"
                     >
                         <span class="sr-only">Remover {{ line.name }}</span>

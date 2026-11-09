@@ -195,9 +195,7 @@ async function deactivate(item: CatalogueItem): Promise<void> {
     <AppLayout>
         <Head title="Artigos e serviços" />
 
-        <div
-            class="flex min-h-[calc(100dvh-4rem)] flex-col lg:min-h-[calc(100dvh-3rem)]"
-        >
+        <div class="flex min-h-[calc(100dvh-4rem)] flex-col">
             <TitleBar section="Registos" title="Artigos e serviços">
                 <template #meta>
                     <span class="ms-1 numeric text-xs text-[var(--ui-ink-3)]">{{
@@ -298,7 +296,7 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                             <th class="hidden sm:table-cell">Tipo</th>
                             <th class="text-right">Preço</th>
                             <th class="hidden text-right md:table-cell">IVA</th>
-                            <th>Estado</th>
+                            <th class="hidden sm:table-cell">Estado</th>
                             <th>
                                 <span class="sr-only">Acções</span>
                             </th>
@@ -310,7 +308,7 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                         >
                             <td>
                                 <p
-                                    class="text-[0.8125rem] font-semibold text-[var(--ui-ink)]"
+                                    class="text-[0.8125rem] font-semibold [overflow-wrap:anywhere] text-[var(--ui-ink)]"
                                 >
                                     {{ item.name }}
                                 </p>
@@ -319,6 +317,14 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                                 >
                                     {{ item.code }} ·
                                     {{ item.unit_of_measure }}
+                                    <span class="sm:hidden">
+                                        ·
+                                        {{
+                                            item.is_active
+                                                ? 'Activo'
+                                                : 'Inactivo'
+                                        }}</span
+                                    >
                                 </p>
                                 <p
                                     v-if="item.barcode"
@@ -337,7 +343,7 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                                 {{ item.type_label }}
                             </td>
                             <td
-                                class="text-right numeric text-[0.8125rem] font-semibold text-[var(--ui-ink)]"
+                                class="text-right numeric text-[0.8125rem] font-semibold whitespace-nowrap text-[var(--ui-ink)]"
                             >
                                 {{ formatMoney(item.unit_price_minor) }}
                                 <span
@@ -354,7 +360,7 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                             >
                                 {{ Number(item.tax_percentage) }}%
                             </td>
-                            <td>
+                            <td class="hidden sm:table-cell">
                                 <StatusBadge
                                     :label="
                                         item.is_active ? 'Activo' : 'Inactivo'
@@ -366,7 +372,7 @@ async function deactivate(item: CatalogueItem): Promise<void> {
                                 <div
                                     v-if="canManage"
                                     data-row-actions
-                                    class="flex justify-end gap-0.5"
+                                    class="flex flex-col items-end justify-end gap-0.5 sm:flex-row"
                                 >
                                     <button
                                         data-nav-row

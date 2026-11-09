@@ -59,7 +59,7 @@ class SessionController extends Controller
             'success',
             $ended === 0
                 ? 'Não havia outras sessões activas.'
-                : "{$ended} sessão(ões) terminada(s). Continua com sessão iniciada neste dispositivo.",
+                : ($ended === 1 ? '1 sessão terminada' : "{$ended} sessões terminadas").'. Continua com sessão iniciada neste dispositivo.',
         );
     }
 

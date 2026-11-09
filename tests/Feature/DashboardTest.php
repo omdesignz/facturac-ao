@@ -84,6 +84,44 @@ test('a configured company with nothing issued gets zeros and no focus document'
             ->where('focus', null)
             ->where('review.attention_count', 0)
             ->where('review.overdue_count', 0)
+            ->where('documentOverview.issued', 0)
+            ->where('documentOverview.total', 0)
+        );
+});
+
+test('the monthly document overview uses current balances and isolates company currency and dates', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-11-07 12:00:00', 'Africa/Luanda'));
+    $fixture = dashboardFixture();
+
+    dashboardDocument($fixture, ['document_type' => FiscalDocumentType::InvoiceReceipt]);
+    dashboardDocument($fixture, ['due_date' => now()->addMonth()->toDateString()]);
+    dashboardDocument($fixture, ['due_date' => null]);
+    dashboardDocument($fixture, ['document_date' => '2026-11-01', 'due_date' => null]);
+    dashboardDocument($fixture, ['due_date' => now()->subDay()->toDateString()]);
+    $credited = dashboardDocument($fixture);
+    dashboardDocument($fixture, [
+        'document_type' => FiscalDocumentType::CreditNote,
+        'references_document_id' => $credited->id,
+    ]);
+    dashboardDocument($fixture, ['document_type' => FiscalDocumentType::Receipt]);
+    dashboardDocument($fixture, ['currency_code' => 'USD']);
+    dashboardDocument($fixture, ['document_date' => '2026-10-31']);
+    dashboardDocument($fixture, ['document_date' => '2026-11-08']);
+    dashboardDocument($fixture, ['status' => FiscalDocumentStatus::Draft, 'document_no' => null]);
+    dashboardDocument($fixture, ['status' => FiscalDocumentStatus::Draft, 'document_type' => FiscalDocumentType::CreditNote, 'document_no' => null]);
+    dashboardDocument(dashboardFixture());
+
+    $this->actingAs($fixture['owner'])
+        ->get(route('dashboard'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('documentOverview.from', '2026-11-01')
+            ->where('documentOverview.to', '2026-11-07')
+            ->where('documentOverview.cleared', 2)
+            ->where('documentOverview.current', 3)
+            ->where('documentOverview.overdue', 1)
+            ->where('documentOverview.drafts', 1)
+            ->where('documentOverview.issued', 6)
+            ->where('documentOverview.total', 7)
         );
 });
 

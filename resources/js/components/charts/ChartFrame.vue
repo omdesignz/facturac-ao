@@ -26,15 +26,15 @@ const showTable = ref(false);
 <template>
     <section class="viz overflow-clip rounded-2xl surface">
         <header
-            class="flex flex-wrap items-start justify-between gap-3 border-b border-zinc-100 p-5 dark:border-white/10"
+            class="flex flex-wrap items-start justify-between gap-x-4 gap-y-3 px-5 pt-5"
         >
             <div class="min-w-0">
-                <h2 class="text-sm font-semibold text-zinc-950 dark:text-white">
+                <h2 class="text-sm font-semibold text-[var(--ui-ink)]">
                     {{ title }}
                 </h2>
                 <p
                     v-if="subtitle"
-                    class="mt-1 text-sm/6 text-zinc-500 dark:text-zinc-400"
+                    class="mt-0.5 text-[0.8125rem]/5 text-[var(--ui-ink-3)]"
                 >
                     {{ subtitle }}
                 </p>
@@ -47,7 +47,7 @@ const showTable = ref(false);
                     v-if="!empty"
                     type="button"
                     :aria-pressed="showTable"
-                    class="icon-button text-zinc-400 focus-ring hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-white/5 dark:hover:text-white"
+                    class="icon-button text-[var(--ui-ink-3)] focus-ring hover:bg-[var(--ui-well)] hover:text-[var(--ui-ink)] aria-pressed:bg-[var(--ui-well)] aria-pressed:text-[var(--ui-ink)]"
                     :title="showTable ? 'Ver gráfico' : 'Ver tabela'"
                     @click="showTable = !showTable"
                 >
@@ -61,17 +61,20 @@ const showTable = ref(false);
 
         <div
             v-if="empty"
-            class="px-5 py-14 text-center text-sm/6 text-zinc-500 dark:text-zinc-400"
+            class="mx-5 my-5 rounded-lg bg-[var(--ui-wash)] px-5 py-12 text-center text-sm/6 text-[var(--ui-ink-3)]"
         >
             {{ emptyMessage ?? 'Sem dados para este período.' }}
         </div>
 
-        <div v-else-if="showTable" class="overflow-x-auto">
+        <div
+            v-else-if="showTable"
+            class="mt-4 overflow-x-auto border-t border-[var(--ui-line)]"
+        >
             <table
                 class="min-w-full text-left text-sm"
                 :aria-label="`${title}, em tabela`"
             >
-                <thead class="border-b border-zinc-100 dark:border-white/10">
+                <thead class="border-b border-[var(--ui-line)]">
                     <tr>
                         <th
                             v-for="(column, index) in columns"
@@ -79,22 +82,22 @@ const showTable = ref(false);
                             scope="col"
                             :class="[
                                 index === 0 ? 'text-left' : 'text-right',
-                                'px-5 py-3 eyebrow text-zinc-500',
+                                'px-5 py-3 eyebrow text-[var(--ui-ink-3)]',
                             ]"
                         >
                             {{ column }}
                         </th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-zinc-100 dark:divide-white/10">
+                <tbody class="divide-y divide-[var(--ui-line)]">
                     <tr v-for="(row, rowIndex) in rows" :key="rowIndex">
                         <td
                             v-for="(cell, cellIndex) in row"
                             :key="cellIndex"
                             :class="[
                                 cellIndex === 0
-                                    ? 'text-left text-zinc-700 dark:text-zinc-300'
-                                    : 'text-right numeric text-zinc-950 dark:text-white',
+                                    ? 'text-left text-[var(--ui-ink-2)]'
+                                    : 'text-right numeric text-[var(--ui-ink)]',
                                 'px-5 py-2.5',
                             ]"
                         >
@@ -105,7 +108,7 @@ const showTable = ref(false);
             </table>
         </div>
 
-        <div v-else class="p-5">
+        <div v-else class="px-5 pt-5 pb-4">
             <slot />
         </div>
     </section>

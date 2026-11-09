@@ -16,10 +16,10 @@ const small = 'h-8 rounded-lg px-3 text-[0.8125rem] pointer-coarse:h-11';
 const extraSmall = 'h-[1.625rem] px-2.5 rounded-md text-xs pointer-coarse:h-11';
 const large = 'h-10 rounded-lg px-4 text-sm pointer-coarse:h-11';
 
-const gold =
-    'bg-accent-400 font-semibold text-[#1a1407] shadow-[inset_0_1px_0_rgb(255_255_255/0.4),0_0_0_1px_#db9520,0_1px_2px_rgb(0_0_0/0.15)] hover:bg-[#fbbd4b]';
 const ink =
-    'bg-brand-950 font-semibold text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.12)] hover:bg-brand-800 dark:bg-zinc-100 dark:text-brand-950 dark:shadow-none dark:hover:bg-white';
+    'bg-[var(--ui-ink)] font-semibold text-[var(--surface-raised)] shadow-[inset_0_1px_0_rgb(255_255_255/0.12)] hover:bg-[color-mix(in_oklch,var(--ui-ink)_90%,var(--surface-raised))] dark:shadow-none';
+/** Existing create/charge callers share the selected design's ink emphasis. */
+const gold = ink;
 const outline =
     'bg-[var(--surface-raised)] font-medium text-zinc-900 shadow-[var(--ui-control-shadow)] hover:bg-[var(--ui-wash)] dark:text-zinc-100 dark:hover:bg-[#18181b]';
 const quiet =
@@ -37,9 +37,9 @@ const sizes: Record<ButtonSize, string> = {
 };
 
 /**
- * Gold is create, charge or send, and the only gold on a screen. Ink is an
- * irreversible confirmation or a primary action elsewhere, outline everything
- * secondary, quiet a text button under a primary action.
+ * Ink carries the primary action. The gold variant remains a compatibility
+ * name for create/charge callers; the gold colour is reserved for focus,
+ * selection and data. Outline is secondary, quiet is a text action.
  */
 export function buttonClass(
     variant: ButtonVariant = 'outline',

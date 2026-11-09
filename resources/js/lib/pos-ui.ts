@@ -16,8 +16,8 @@ export const fieldClass = 'form-input';
 
 /** The wells every surface is made of. */
 export const wellSection =
-    'rounded-3xl bg-zinc-900/[0.04] dark:bg-white/[0.04]';
-export const wellItem = 'rounded-2xl bg-zinc-900/[0.04] dark:bg-white/[0.04]';
+    'rounded-xl bg-[var(--surface-raised)] shadow-[var(--ui-card-shadow)]';
+export const wellItem = 'rounded-xl bg-[var(--ui-wash)]';
 
 /** The key-cap recipe of the header's shortcut hint. */
 export const keyCap =
@@ -33,9 +33,10 @@ const clockFormatter = new Intl.DateTimeFormat('pt-AO', {
     hour12: false,
 });
 
+/** dd/mm/aaaa, like every other date in the app, whatever the browser's locale data. */
 const dayFormatter = new Intl.DateTimeFormat('pt-AO', {
-    day: 'numeric',
-    month: 'short',
+    day: '2-digit',
+    month: '2-digit',
     year: 'numeric',
 });
 
@@ -44,7 +45,7 @@ export function formatClock(iso: string | null): string {
     return iso === null ? '—' : clockFormatter.format(new Date(iso));
 }
 
-/** «10 de out. de 2026 · 09:12». */
+/** «10/10/2026 · 09:12». */
 export function formatDayAndClock(iso: string | null): string {
     return iso === null
         ? '—'

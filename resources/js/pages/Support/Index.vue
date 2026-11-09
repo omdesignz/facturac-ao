@@ -18,6 +18,7 @@ import DataTable from '@/components/DataTable.vue';
 import FormField from '@/components/FormField.vue';
 import RecordDialog from '@/components/RecordDialog.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { plural } from '@/lib/plural';
 import { store as startImpersonation } from '@/routes/support/impersonation';
 
 interface SupportUser {
@@ -390,7 +391,13 @@ const endedByLabel: Record<string, string> = {
                                             class="size-3.5"
                                             aria-hidden="true"
                                         />
-                                        {{ session.blocked }} bloqueada(s)
+                                        {{
+                                            plural(
+                                                session.blocked,
+                                                'bloqueada',
+                                                'bloqueadas',
+                                            )
+                                        }}
                                     </p>
                                 </td>
                             </tr>

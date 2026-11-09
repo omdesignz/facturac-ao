@@ -431,3 +431,26 @@ test('customers cannot change the platform settings', function () {
         ->put(route('support.settings.update'), PlatformSetting::values())
         ->assertNotFound();
 });
+
+test('the help pages keep the company the person is working in on screen', function () {
+    $user = User::factory()->withWorkspace()->create();
+    $workspace = $user->fresh()->currentWorkspace;
+
+    $this->actingAs($user)
+        ->get(route('help.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('currentWorkspace.name', $workspace->name));
+
+    expect($user->fresh()->current_workspace_id)->toBe($workspace->id);
+});
+
+test('the help pages still open for someone with no company yet', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get(route('help.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('currentWorkspace', null));
+});

@@ -10,7 +10,9 @@ import {
     TriangleAlert,
 } from '@lucide/vue';
 import { ref } from 'vue';
+import AccountSettingsNav from '@/components/AccountSettingsNav.vue';
 import AppButton from '@/components/AppButton.vue';
+import AppearancePicker from '@/components/AppearancePicker.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { confirmAction } from '@/lib/confirm';
@@ -140,6 +142,7 @@ async function deleteAccount(): Promise<void> {
 
         <div class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
             <div class="max-w-3xl space-y-6">
+                <AccountSettingsNav />
                 <FlashBanner />
 
                 <header>
@@ -163,6 +166,20 @@ async function deleteAccount(): Promise<void> {
                         >.
                     </p>
                 </header>
+
+                <section
+                    aria-labelledby="appearance-title"
+                    class="rounded-xl bg-[var(--surface-raised)] p-6 shadow-[var(--ui-card-shadow)]"
+                >
+                    <h2 id="appearance-title" class="text-base font-semibold">
+                        Aparência
+                    </h2>
+                    <p class="mt-1 mb-5 text-sm/6 text-[var(--ui-ink-2)]">
+                        Escolha o tema neste navegador. Sistema acompanha a
+                        aparência do dispositivo.
+                    </p>
+                    <AppearancePicker />
+                </section>
 
                 <section class="overflow-hidden rounded-2xl surface">
                     <div

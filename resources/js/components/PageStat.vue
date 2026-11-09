@@ -10,8 +10,10 @@ withDefaults(
         detail?: string;
         /** Long text values ("Ainda não verificada") read better smaller. */
         compact?: boolean;
+        /** The currency or unit after the figure, set small, e.g. "Kz". */
+        unit?: string;
     }>(),
-    { detail: undefined, compact: false },
+    { detail: undefined, compact: false, unit: undefined },
 );
 </script>
 
@@ -30,7 +32,12 @@ withDefaults(
                 'mt-2 numeric break-words text-[var(--ui-ink)]',
             ]"
         >
-            <slot>{{ value }}</slot>
+            <slot>{{ value }}</slot
+            ><span
+                v-if="unit"
+                class="ms-1 text-[0.8125rem] font-medium tracking-normal text-[var(--ui-ink-3)]"
+                >{{ unit }}</span
+            >
         </dd>
         <dd v-if="detail" class="mt-1.5 text-xs text-[var(--ui-ink-3)]">
             {{ detail }}

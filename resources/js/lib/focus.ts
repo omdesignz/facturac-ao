@@ -27,3 +27,31 @@ export async function focusFirstInvalid(
 
     return true;
 }
+
+/** Restore a closed dialog's keyboard origin without taking focus from new work. */
+export async function restoreDialogFocus(
+    origin: HTMLElement | null,
+): Promise<boolean> {
+    await nextTick();
+
+    if (
+        typeof document === 'undefined' ||
+        !origin?.isConnected ||
+        origin === document.body
+    ) {
+        return false;
+    }
+
+    const active = document.activeElement;
+
+    if (
+        (active !== null && active !== document.body && active.isConnected) ||
+        document.querySelector('[role="dialog"]') !== null
+    ) {
+        return false;
+    }
+
+    origin.focus({ preventScroll: true });
+
+    return true;
+}

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
@@ -82,8 +83,19 @@ final class AssistantBoundary
             401 => 'unauthenticated', 403 => 'forbidden', 404 => 'not_found', 405 => 'method_not_allowed', 409 => 'interaction_conflict',
             419 => 'session_expired', 422 => 'invalid_input', 429 => 'rate_limited', default => 'unavailable',
         };
-        $response = response()->json(['error' => ['code' => $code, 'message' => 'Não foi possível concluir o pedido.'], 'request_id' => Context::get('request_id')], $status,
-            $error instanceof HttpExceptionInterface ? array_intersect_key($error->getHeaders(), array_flip(['Allow', 'Retry-After'])) : []);
+        $headers = $error instanceof HttpExceptionInterface ? array_intersect_key($error->getHeaders(), array_flip(['Allow', 'Retry-After'])) : [];
+        $browserPage = $request->isMethod('GET') && ! $request->expectsJson()
+            && in_array($status, [401, 403, 404, 419, 429, 503], true);
+        if ($browserPage) {
+            $response = $request->headers->has('X-Inertia')
+                ? Inertia::location($request->url())
+                : response()->view('errors.'.$status, [
+                    'exception' => $error,
+                    'assistantUnavailable' => $status === 503,
+                ], $status, $headers);
+        } else {
+            $response = response()->json(['error' => ['code' => $code, 'message' => 'Não foi possível concluir o pedido.'], 'request_id' => Context::get('request_id')], $status, $headers);
+        }
         foreach ($request->attributes->get('assistant_response_cookies', []) as $cookie) {
             $response->headers->setCookie($cookie);
         }

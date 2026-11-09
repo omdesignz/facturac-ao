@@ -22,7 +22,7 @@ const status = computed(() => (page.props.flash as { status?: string }).status);
 
         <div
             v-if="status"
-            class="mb-6 flex gap-3 rounded-xl bg-emerald-50 p-4 text-sm/6 text-emerald-800 ring-1 ring-emerald-200 dark:bg-emerald-400/10 dark:text-emerald-300 dark:ring-emerald-400/20"
+            class="mb-6 flex gap-3 rounded-xl bg-[var(--ui-positive-wash)] p-4 text-sm/6 text-[var(--ui-positive)]"
             role="status"
         >
             <MailCheck class="mt-0.5 size-5 shrink-0" aria-hidden="true" />
@@ -51,7 +51,7 @@ const status = computed(() => (page.props.flash as { status?: string }).status);
                     autocapitalize="none"
                     spellcheck="false"
                     required
-                    autofocus
+                    data-auth-autofocus
                     :aria-invalid="errors.email ? 'true' : undefined"
                     :aria-describedby="errors.email ? 'email-error' : undefined"
                     class="block form-input"

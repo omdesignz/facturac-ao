@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { Check, ChevronDown, Menu, RotateCcw, X } from '@lucide/vue';
+import {
+    ArrowRight,
+    Check,
+    ChevronDown,
+    Menu,
+    RotateCcw,
+    X,
+} from '@lucide/vue';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import PeriodSwitch from '@/components/billing/PeriodSwitch.vue';
 import BrandWordmark from '@/components/BrandWordmark.vue';

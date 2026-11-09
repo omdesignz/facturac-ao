@@ -33,7 +33,7 @@ withDefaults(
 /**
  * One chip for every status in the app.
  *
- * A single shape (22px, a 6px corner, 12/550) on a soft wash of its colour, so
+ * A single shape (22px, a 5px corner, 12/550) on a soft wash of its colour, so
  * a column of statuses reads as quiet text until something is wrong. The
  * colour always arrives with a word and a mark, so nobody has to know the
  * palette: green and a tick for done, gold and a clock for something the
@@ -68,7 +68,7 @@ const marks: Partial<Record<StatusTone, Component>> = {
         :class="[
             styles[tone],
             marks[tone] ? 'ps-1.5 pe-2' : 'px-2',
-            'inline-flex h-[1.375rem] max-w-full min-w-0 items-center gap-[0.3125rem] rounded-md text-xs font-[550] whitespace-nowrap',
+            'inline-flex h-[1.375rem] max-w-full min-w-0 items-center gap-[0.3125rem] rounded-[5px] text-xs font-[550] whitespace-nowrap',
         ]"
     >
         <component

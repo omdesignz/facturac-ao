@@ -23,6 +23,8 @@ const {
     elapsedFraction,
     warningVisible,
     renewing,
+    signingOut,
+    failure,
     renew,
     signOut,
 } = useWorkSession(
@@ -113,9 +115,9 @@ const label = computed(
             <span class="sr-only">{{ label }}</span>
         </span>
 
+        <!-- Not closable by click-away or Escape: continuing has to be an
+             explicit choice, since nothing else can extend the block. -->
         <TransitionRoot as="template" :show="warningVisible">
-            <!-- Not closable by click-away or Escape: continuing has to be an
-                 explicit choice, since nothing else can extend the block. -->
             <Dialog
                 class="relative z-[60]"
                 :static="true"
@@ -180,24 +182,37 @@ const label = computed(
                                 <p class="sr-only" role="status">
                                     {{ announcement }}
                                 </p>
+                                <p
+                                    v-if="failure"
+                                    role="alert"
+                                    class="mt-4 text-sm text-rose-600 dark:text-rose-400"
+                                >
+                                    {{ failure }}
+                                </p>
 
                                 <div
                                     class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-center"
                                 >
                                     <AppButton
                                         variant="outline"
+                                        :disabled="renewing || signingOut"
+                                        :aria-busy="signingOut"
                                         @click="signOut"
                                     >
                                         <LogOut
                                             class="size-4"
                                             aria-hidden="true"
                                         />
-                                        Terminar agora
+                                        {{
+                                            signingOut
+                                                ? 'A terminar…'
+                                                : 'Terminar agora'
+                                        }}
                                     </AppButton>
                                     <button
                                         ref="renewButton"
                                         type="button"
-                                        :disabled="renewing"
+                                        :disabled="renewing || signingOut"
                                         :aria-busy="renewing"
                                         class="relative"
                                         :class="buttonInk"

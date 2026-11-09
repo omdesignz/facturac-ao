@@ -106,7 +106,8 @@ onBeforeUnmount(() => stopListening?.());
 
 <template>
     <div
-        class="min-h-dvh bg-[var(--surface-page)] text-zinc-950 dark:text-white"
+        data-app-shell
+        class="min-h-dvh bg-[var(--surface-page)] text-[var(--ui-ink)]"
     >
         <a
             href="#conteudo"
@@ -173,12 +174,20 @@ onBeforeUnmount(() => stopListening?.());
         <!-- The desktop's navigation; the phone has the tab bar and the drawer. -->
         <div
             v-if="isDesktop"
-            class="fixed inset-s-0 inset-bs-[var(--impersonation-bar,0px)] inset-be-0 z-30"
+            class="fixed inset-s-4 inset-bs-[calc(var(--impersonation-bar,0px)+1rem)] inset-be-4 z-30"
         >
             <AppSidebar />
         </div>
 
-        <div :class="isDesktop ? (sidebarCompact ? 'ps-14' : 'ps-60') : ''">
+        <div
+            :class="
+                isDesktop
+                    ? sidebarCompact
+                        ? 'ps-[5.5rem] pe-4'
+                        : 'ps-[17rem] pe-4'
+                    : ''
+            "
+        >
             <AppHeader />
 
             <TermsReacceptanceNotice />
@@ -189,7 +198,7 @@ onBeforeUnmount(() => stopListening?.());
                 ref="main"
                 tabindex="-1"
                 :class="[
-                    'min-h-[calc(100dvh-4rem)] page-enter focus:outline-hidden lg:min-h-[calc(100dvh-3rem)]',
+                    'min-h-[calc(100dvh-4rem)] page-enter focus:outline-hidden',
                     tabBarShown
                         ? 'max-lg:pb-[calc(5rem+env(safe-area-inset-bottom))]'
                         : '',

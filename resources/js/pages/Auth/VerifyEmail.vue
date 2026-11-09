@@ -25,7 +25,7 @@ const linkWasSent = computed(
 
         <div
             v-if="linkWasSent"
-            class="mb-6 flex gap-3 rounded-xl bg-emerald-50 p-4 text-sm/6 text-emerald-800 ring-1 ring-emerald-200 dark:bg-emerald-400/10 dark:text-emerald-300 dark:ring-emerald-400/20"
+            class="mb-6 flex gap-3 rounded-xl bg-[var(--ui-positive-wash)] p-4 text-sm/6 text-[var(--ui-positive)]"
             role="status"
         >
             <CheckCircle2 class="mt-0.5 size-5 shrink-0" aria-hidden="true" />

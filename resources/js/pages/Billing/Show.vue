@@ -25,6 +25,7 @@ import {
     X,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import AccountSettingsNav from '@/components/AccountSettingsNav.vue';
 import AppButton from '@/components/AppButton.vue';
 import PeriodSwitch from '@/components/billing/PeriodSwitch.vue';
 import DataTable from '@/components/DataTable.vue';
@@ -34,6 +35,7 @@ import PageHeader from '@/components/PageHeader.vue';
 import PageStat from '@/components/PageStat.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { buttonClass } from '@/lib/button';
 import {
     formatMinor,
     formatMinorWhole,
@@ -163,6 +165,30 @@ const canStartCheckout = computed(
         props.gateway.available &&
         props.activePayment === null,
 );
+
+/**
+ * Why the plan buttons are off, said once beside them, so a disabled button
+ * never looks like a broken one.
+ */
+const checkoutBlockedReason = computed((): string | null => {
+    if (canStartCheckout.value) {
+        return null;
+    }
+
+    if (!props.canManage) {
+        return 'Só o dono ou um administrador pode mudar o plano.';
+    }
+
+    if (props.activePayment !== null) {
+        return 'Conclua primeiro o pagamento em curso.';
+    }
+
+    if (!mfaEnabled.value) {
+        return 'Para escolher um plano, active primeiro a verificação em dois passos.';
+    }
+
+    return 'Os pagamentos estão indisponíveis de momento. Tente mais tarde.';
+});
 
 /*
  * Packages: one card each, priced for the payment period chosen in the switch.
@@ -364,6 +390,7 @@ function submitCheckout(): void {
 
         <div class="px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
             <div class="page-shell space-y-8">
+                <AccountSettingsNav />
                 <FlashBanner />
                 <PageHeader
                     eyebrow="Configuração · Plano e cobrança"
@@ -749,6 +776,23 @@ function submitCheckout(): void {
                             Os preços são administrados na plataforma. O valor
                             apresentado é o total da assinatura.
                         </p>
+                        <p
+                            v-if="checkoutBlockedReason"
+                            class="mt-3 inline-flex items-center gap-1.5 text-[0.8125rem] font-medium text-[var(--ui-ink-2)]"
+                        >
+                            <LockKeyhole class="size-3.5" aria-hidden="true" />
+                            {{ checkoutBlockedReason }}
+                            <Link
+                                v-if="
+                                    canManage &&
+                                    !mfaEnabled &&
+                                    activePayment === null
+                                "
+                                :href="security.url()"
+                                class="underline underline-offset-2 hover:text-[var(--ui-ink)]"
+                                >Activar</Link
+                            >
+                        </p>
                     </div>
 
                     <template v-if="packages.length > 0">
@@ -768,21 +812,19 @@ function submitCheckout(): void {
                         </p>
 
                         <div
-                            class="mx-auto mt-8 grid max-w-7xl grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),26rem))] items-stretch justify-center gap-5"
+                            class="mx-auto mt-8 grid max-w-7xl grid-cols-1 items-stretch gap-5 md:grid-cols-[repeat(auto-fit,minmax(15rem,1fr))]"
                         >
                             <article
                                 v-for="card in packageCards"
                                 :key="card.offer.public_id"
                                 :aria-labelledby="`package-${card.offer.public_id}`"
                                 :class="[
-                                    card.isCurrentPlan
-                                        ? 'bg-brand-950 text-white shadow-2xl dark:bg-brand-900'
-                                        : 'bg-white text-zinc-950 shadow-sm dark:bg-zinc-900 dark:text-white',
+                                    'bg-[var(--surface-raised)] text-[var(--ui-ink)] shadow-[var(--ui-card-shadow)]',
                                     card.offer.is_featured
                                         ? 'ring-[1.5px] ring-accent-400'
                                         : card.isCurrentPlan
-                                          ? 'ring-1 ring-brand-950 dark:ring-brand-700'
-                                          : 'ring-1 ring-zinc-900/10 dark:ring-white/10',
+                                          ? 'ring-2 ring-[var(--ui-ink)]'
+                                          : 'ring-1 ring-[var(--ui-line)]',
                                     'relative flex rounded-xl p-7 sm:p-8',
                                 ]"
                             >
@@ -790,9 +832,7 @@ function submitCheckout(): void {
                                 <p
                                     v-if="card.offer.is_featured"
                                     :class="[
-                                        card.isCurrentPlan
-                                            ? 'bg-brand-950 text-accent-300 dark:bg-brand-900'
-                                            : 'bg-white text-zinc-800 dark:bg-zinc-900 dark:text-accent-300',
+                                        'bg-white text-zinc-800 dark:bg-zinc-900 dark:text-accent-300',
                                         'absolute start-7 -top-3 rounded-full px-2.5 py-0.5 text-xs font-semibold ring-[1.5px] ring-accent-400 sm:start-8',
                                     ]"
                                 >
@@ -806,9 +846,7 @@ function submitCheckout(): void {
                                             <h3
                                                 :id="`package-${card.offer.public_id}`"
                                                 :class="[
-                                                    card.isCurrentPlan
-                                                        ? 'text-accent-400'
-                                                        : 'text-brand-700 dark:text-brand-300',
+                                                    'text-brand-700 dark:text-brand-300',
                                                     'text-base font-semibold [overflow-wrap:anywhere]',
                                                 ]"
                                             >
@@ -850,9 +888,7 @@ function submitCheckout(): void {
                                                 </span>
                                                 <span
                                                     :class="[
-                                                        card.isCurrentPlan
-                                                            ? 'text-brand-100/70'
-                                                            : 'text-zinc-500 dark:text-zinc-400',
+                                                        'text-zinc-500 dark:text-zinc-400',
                                                         'text-sm font-medium',
                                                     ]"
                                                 >
@@ -866,9 +902,7 @@ function submitCheckout(): void {
                                             </p>
                                             <p
                                                 :class="[
-                                                    card.isCurrentPlan
-                                                        ? 'text-brand-100/70'
-                                                        : 'text-zinc-500 dark:text-zinc-400',
+                                                    'text-zinc-500 dark:text-zinc-400',
                                                     'mt-1 text-sm/5',
                                                 ]"
                                             >
@@ -876,9 +910,7 @@ function submitCheckout(): void {
                                             </p>
                                             <p
                                                 :class="[
-                                                    card.isCurrentPlan
-                                                        ? 'text-brand-100/70'
-                                                        : 'text-zinc-600 dark:text-zinc-300',
+                                                    'text-zinc-600 dark:text-zinc-300',
                                                     'mt-2 min-h-10 numeric text-sm/5',
                                                 ]"
                                             >
@@ -918,9 +950,7 @@ function submitCheckout(): void {
                                             v-else
                                             :id="`package-${card.offer.public_id}-unavailable`"
                                             :class="[
-                                                card.isCurrentPlan
-                                                    ? 'text-brand-100/70'
-                                                    : 'text-zinc-600 dark:text-zinc-300',
+                                                'text-zinc-600 dark:text-zinc-300',
                                                 'text-sm/6 font-medium',
                                             ]"
                                         >
@@ -930,9 +960,7 @@ function submitCheckout(): void {
 
                                     <p
                                         :class="[
-                                            card.isCurrentPlan
-                                                ? 'text-brand-100/70'
-                                                : 'text-zinc-600 dark:text-zinc-300',
+                                            'text-zinc-600 dark:text-zinc-300',
                                             'mt-3 text-sm/6 [overflow-wrap:anywhere]',
                                         ]"
                                     >
@@ -944,9 +972,7 @@ function submitCheckout(): void {
                                     <ul
                                         role="list"
                                         :class="[
-                                            card.isCurrentPlan
-                                                ? 'text-brand-50/85'
-                                                : 'text-zinc-600 dark:text-zinc-300',
+                                            'text-zinc-600 dark:text-zinc-300',
                                             'mt-6 flex-1 space-y-3 text-sm/6',
                                         ]"
                                     >
@@ -958,9 +984,7 @@ function submitCheckout(): void {
                                         >
                                             <CheckCircle2
                                                 :class="[
-                                                    card.isCurrentPlan
-                                                        ? 'text-accent-400'
-                                                        : 'text-emerald-600 dark:text-emerald-400',
+                                                    'text-emerald-600 dark:text-emerald-400',
                                                     'mt-0.5 size-5 shrink-0',
                                                 ]"
                                                 aria-hidden="true"
@@ -974,9 +998,7 @@ function submitCheckout(): void {
                                     <p
                                         v-if="card.offer.trial_days > 0"
                                         :class="[
-                                            card.isCurrentPlan
-                                                ? 'text-brand-100/70'
-                                                : 'text-zinc-600 dark:text-zinc-300',
+                                            'text-zinc-600 dark:text-zinc-300',
                                             'mt-6 text-sm/6 font-medium',
                                         ]"
                                     >
@@ -996,10 +1018,13 @@ function submitCheckout(): void {
                                         :aria-disabled="card.plan === null"
                                         :disabled="!canStartCheckout"
                                         :class="[
-                                            card.isCurrentPlan
-                                                ? 'bg-accent-400 text-brand-950 hover:bg-accent-300 focus-visible:outline-amber-300'
-                                                : 'bg-brand-950 text-white hover:bg-brand-800 focus-visible:outline-brand-600 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white',
-                                            'mt-8 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full px-[1.125rem] text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-45 aria-disabled:cursor-not-allowed aria-disabled:opacity-45',
+                                            buttonClass(
+                                                card.isCurrentPlan
+                                                    ? 'outline'
+                                                    : 'ink',
+                                                'lg',
+                                            ),
+                                            'mt-8 w-full',
                                         ]"
                                         @click="chooseCardPlan(card)"
                                     >
@@ -1023,9 +1048,9 @@ function submitCheckout(): void {
                             :key="plan.public_id"
                             :class="[
                                 isCurrentPlan(plan)
-                                    ? 'bg-brand-950 text-white shadow-2xl ring-brand-950 dark:bg-brand-900 dark:ring-brand-700'
-                                    : 'bg-white text-zinc-950 shadow-sm ring-zinc-900/10 dark:bg-zinc-900 dark:text-white dark:ring-white/10',
-                                'relative flex rounded-xl p-7 ring-1 sm:p-8',
+                                    ? 'ring-2 ring-[var(--ui-ink)]'
+                                    : 'ring-1 ring-[var(--ui-line)]',
+                                'relative flex rounded-xl bg-[var(--surface-raised)] p-7 text-[var(--ui-ink)] shadow-[var(--ui-card-shadow)] sm:p-8',
                             ]"
                         >
                             <div class="flex w-full flex-col">
@@ -1035,9 +1060,7 @@ function submitCheckout(): void {
                                     <h3
                                         :id="`plan-${plan.code}`"
                                         :class="[
-                                            isCurrentPlan(plan)
-                                                ? 'text-accent-400'
-                                                : 'text-brand-700 dark:text-brand-300',
+                                            'text-brand-700 dark:text-brand-300',
                                             'text-base font-semibold',
                                         ]"
                                     >
@@ -1062,9 +1085,7 @@ function submitCheckout(): void {
                                     </span>
                                     <span
                                         :class="[
-                                            isCurrentPlan(plan)
-                                                ? 'text-brand-100/60'
-                                                : 'text-zinc-500 dark:text-zinc-400',
+                                            'text-zinc-500 dark:text-zinc-400',
                                             'text-sm',
                                         ]"
                                     >
@@ -1074,9 +1095,7 @@ function submitCheckout(): void {
                                 </p>
                                 <p
                                     :class="[
-                                        isCurrentPlan(plan)
-                                            ? 'text-brand-100/70'
-                                            : 'text-zinc-600 dark:text-zinc-300',
+                                        'text-zinc-600 dark:text-zinc-300',
                                         'mt-5 min-h-12 text-sm/6',
                                     ]"
                                 >
@@ -1088,9 +1107,7 @@ function submitCheckout(): void {
                                 <ul
                                     role="list"
                                     :class="[
-                                        isCurrentPlan(plan)
-                                            ? 'text-brand-50/85'
-                                            : 'text-zinc-600 dark:text-zinc-300',
+                                        'text-zinc-600 dark:text-zinc-300',
                                         'mt-7 flex-1 space-y-3 text-sm/6',
                                     ]"
                                 >
@@ -1101,9 +1118,7 @@ function submitCheckout(): void {
                                     >
                                         <CheckCircle2
                                             :class="[
-                                                isCurrentPlan(plan)
-                                                    ? 'text-accent-400'
-                                                    : 'text-emerald-600 dark:text-emerald-400',
+                                                'text-emerald-600 dark:text-emerald-400',
                                                 'mt-0.5 size-5 shrink-0',
                                             ]"
                                             aria-hidden="true"
@@ -1116,10 +1131,13 @@ function submitCheckout(): void {
                                     :aria-describedby="`plan-${plan.code}`"
                                     :disabled="!canStartCheckout"
                                     :class="[
-                                        isCurrentPlan(plan)
-                                            ? 'bg-accent-400 text-brand-950 hover:bg-accent-300 focus-visible:outline-amber-300'
-                                            : 'bg-brand-950 text-white hover:bg-brand-800 focus-visible:outline-brand-600 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white',
-                                        'mt-8 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full px-[1.125rem] text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-45',
+                                        buttonClass(
+                                            isCurrentPlan(plan)
+                                                ? 'outline'
+                                                : 'ink',
+                                            'lg',
+                                        ),
+                                        'mt-8 w-full',
                                     ]"
                                     @click="openCheckout(plan)"
                                 >

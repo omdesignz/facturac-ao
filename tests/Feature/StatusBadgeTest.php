@@ -10,7 +10,7 @@ test('the status chip is one shape and every tone has a colour', function () {
 
     expect($badge)
         ->toContain('h-[1.375rem]')
-        ->toContain('rounded-md')
+        ->toContain('rounded-[5px]')
         // The colour arrives with a word and a mark, never alone.
         ->toContain('{{ label }}</span>')
         ->toContain('const marks:');

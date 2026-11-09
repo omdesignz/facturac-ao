@@ -115,6 +115,43 @@ class DashboardQuery
     }
 
     /**
+     * Sales documents dated in the current month, with their current balance.
+     * Receipts and credit notes remain in the register but are not counted as
+     * another sale. All aggregation remains scoped to the company currency.
+     *
+     * @return array{from: string, to: string, cleared: int, current: int, overdue: int, drafts: int, issued: int, total: int}
+     */
+    public function documentOverview(LegalEntity $legalEntity, CarbonImmutable $now): array
+    {
+        $from = $now->startOfMonth()->toDateString();
+        $to = $now->toDateString();
+        $range = [$from, $now->endOfDay()];
+        $counts = $this->receivables->balanceCounts(
+            $this->receivables->forLegalEntity($legalEntity)
+                ->whereIn('document_type', ReceivablesQuery::billableTypes())
+                ->whereBetween('document_date', $range),
+        );
+        $drafts = FiscalDocument::query()
+            ->where('workspace_id', $legalEntity->workspace_id)
+            ->where('legal_entity_id', $legalEntity->id)
+            ->where('currency_code', $legalEntity->currency_code)
+            ->whereIn('document_type', ReceivablesQuery::billableTypes())
+            ->where('status', FiscalDocumentStatus::Draft)
+            ->whereBetween('document_date', $range)
+            ->count();
+        $issued = array_sum($counts);
+
+        return [
+            'from' => $from,
+            'to' => $to,
+            ...$counts,
+            'drafts' => $drafts,
+            'issued' => $issued,
+            'total' => $issued + $drafts,
+        ];
+    }
+
+    /**
      * What was billed on each of the last days, oldest first, with quiet days
      * at zero so a chart spaces them truthfully.
      *

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onClickOutside, useElementSize } from '@vueuse/core';
-import { computed, ref, watch } from 'vue';
+import { computed, ref, useId, watch } from 'vue';
+import { axisNumber, niceTicks } from '@/lib/chart-axis';
 
 export interface TrendPoint {
     label: string;
@@ -13,26 +14,40 @@ const props = withDefaults(
         points: TrendPoint[];
         /** Formats a value for the tooltip and the end label. */
         format: (value: number) => string;
+        /** Formats a gridline value; amounts in cents pass `axisAmount`. */
+        tickFormat?: (value: number) => string;
         seriesLabel: string;
         comparisonLabel?: string;
         height?: number;
+        highlightLast?: boolean;
+        area?: boolean;
     }>(),
-    { height: 220, comparisonLabel: undefined },
+    {
+        height: 220,
+        comparisonLabel: undefined,
+        tickFormat: axisNumber,
+        highlightLast: false,
+        area: true,
+    },
 );
 
-const PADDING = { top: 16, right: 16, bottom: 26, left: 8 };
+const PADDING = { top: 14, right: 20, bottom: 28 };
 
 /** What the chart is drawn at until the container has been measured. */
 const FALLBACK_WIDTH = 720;
 
 /** Room one x-axis label needs, so the stride can follow the real width. */
-const LABEL_SLOT = 56;
+const LABEL_SLOT = 60;
+
+/** Roughly one 11px digit, to size the tick gutter from its longest label. */
+const TICK_CHAR = 6.4;
 
 /** The tooltip's own minimum width (`min-w-40`), used before it is measured. */
 const TOOLTIP_MIN = 160;
 
 const box = ref<HTMLElement | null>(null);
 const tooltip = ref<HTMLElement | null>(null);
+const fillId = `trend-fill-${useId()}`;
 
 /**
  * The viewBox follows the container's real pixel width, so a phone gets a
@@ -54,36 +69,46 @@ const hasComparison = computed(
 );
 
 const plotHeight = computed(() => props.height - PADDING.top - PADDING.bottom);
-const plotWidth = computed(() => WIDTH.value - PADDING.left - PADDING.right);
 
 /**
- * The scale starts at zero and is rounded up to a clean number, so the axis
- * ticks land on values a reader recognises and the shape of the line cannot be
- * exaggerated by a cropped baseline.
+ * Gridlines on round values from zero: four bands when there is height for
+ * them, three on a short chart, so they never crowd the line they frame.
  */
-const maxValue = computed(() => {
-    const values = props.points.flatMap((point) => [
-        point.value,
-        point.comparison ?? 0,
-    ]);
-    const peak = Math.max(0, ...values);
+const ticks = computed(() => {
+    const peak = Math.max(
+        0,
+        ...props.points.flatMap((point) => [
+            point.value,
+            hasComparison.value ? (point.comparison ?? 0) : 0,
+        ]),
+    );
 
-    if (peak === 0) {
-        return 1;
-    }
-
-    const magnitude = 10 ** Math.floor(Math.log10(peak));
-    const step = magnitude / 2;
-
-    return Math.ceil(peak / step) * step;
+    return niceTicks(peak, plotHeight.value >= 150 ? 4 : 3);
 });
+
+const maxValue = computed(() => ticks.value[ticks.value.length - 1] || 1);
+
+const tickLabels = computed(() =>
+    ticks.value.map((value) => props.tickFormat(value)),
+);
+
+/** The gutter is as wide as the longest tick, so the plot keeps every pixel it can. */
+const left = computed(
+    () =>
+        Math.ceil(
+            Math.max(...tickLabels.value.map((label) => label.length), 1) *
+                TICK_CHAR,
+        ) + 12,
+);
+
+const plotWidth = computed(() => WIDTH.value - left.value - PADDING.right);
 
 function x(index: number): number {
     if (props.points.length <= 1) {
-        return PADDING.left + plotWidth.value / 2;
+        return left.value + plotWidth.value / 2;
     }
 
-    return PADDING.left + (index / (props.points.length - 1)) * plotWidth.value;
+    return left.value + (index / (props.points.length - 1)) * plotWidth.value;
 }
 
 function y(value: number): number {
@@ -94,7 +119,7 @@ function path(pick: (point: TrendPoint) => number): string {
     return props.points
         .map(
             (point, index) =>
-                `${index === 0 ? 'M' : 'L'}${x(index)},${y(pick(point))}`,
+                `${index === 0 ? 'M' : 'L'}${x(index).toFixed(1)},${y(pick(point)).toFixed(1)}`,
         )
         .join(' ');
 }
@@ -112,16 +137,13 @@ const areaPath = computed(() => {
     return `${linePath.value} L${x(props.points.length - 1)},${baseline} L${x(0)},${baseline} Z`;
 });
 
-/** Three gridlines plus the baseline: enough to read against, quiet enough to ignore. */
-const gridValues = computed(() =>
-    [0, 0.5, 1].map((share) => share * maxValue.value),
-);
-
 const hoverIndex = ref<number | null>(null);
 
 const hovered = computed(() =>
     hoverIndex.value === null ? null : props.points[hoverIndex.value],
 );
+
+const lastIndex = computed(() => props.points.length - 1);
 
 /**
  * The svg's left edge, read once per interaction instead of on every move:
@@ -176,6 +198,25 @@ function leavePointer(event: PointerEvent): void {
     }
 }
 
+/** The keyboard reads the same points the pointer does, one arrow at a time. */
+function step(event: KeyboardEvent): void {
+    const moves: Record<string, number> = {
+        ArrowLeft: -1,
+        ArrowRight: 1,
+        Home: -Infinity,
+        End: Infinity,
+    };
+    const move = moves[event.key];
+
+    if (move === undefined || props.points.length === 0) {
+        return;
+    }
+
+    event.preventDefault();
+    const from = hoverIndex.value ?? lastIndex.value;
+    hoverIndex.value = Math.min(lastIndex.value, Math.max(0, from + move));
+}
+
 onClickOutside(box, clearHover);
 
 /**
@@ -205,9 +246,42 @@ const tooltipStyle = computed(() => {
 /** Only every nth tick is drawn when the axis would otherwise collide. */
 const labelStride = computed(() =>
     Math.ceil(
-        props.points.length / Math.max(2, Math.floor(WIDTH.value / LABEL_SLOT)),
+        props.points.length /
+            Math.max(2, Math.floor(plotWidth.value / LABEL_SLOT)),
     ),
 );
+
+/**
+ * Labels run on the stride from the start; the last point is always named,
+ * and the one before it gives way if the two would touch.
+ */
+function showsLabel(index: number): boolean {
+    if (index === lastIndex.value) {
+        return true;
+    }
+
+    return (
+        index % labelStride.value === 0 &&
+        lastIndex.value - index >= Math.max(1, labelStride.value * 0.75)
+    );
+}
+
+const endLabel = computed(() => {
+    const point = props.points[lastIndex.value];
+
+    if (point === undefined) {
+        return null;
+    }
+
+    const top = y(point.value);
+
+    // Above the dot when there is room, beneath it when the line is at the top.
+    return {
+        x: x(lastIndex.value) - 8,
+        y: top - 10 < PADDING.top + 4 ? top + 18 : top - 10,
+        text: props.format(point.value),
+    };
+});
 
 const summary = computed(() => {
     const first = props.points[0];
@@ -221,7 +295,7 @@ const summary = computed(() => {
         point.value > best.value ? point : best,
     );
 
-    return `${props.seriesLabel} ao longo do tempo: ${first.label}, ${props.format(first.value)}; ${last.label}, ${props.format(last.value)}; máximo ${props.format(peak.value)} em ${peak.label}. Ver tabela para todos os valores.`;
+    return `${props.seriesLabel} ao longo do tempo: ${first.label}, ${props.format(first.value)}; ${last.label}, ${props.format(last.value)}; máximo ${props.format(peak.value)} em ${peak.label}. Setas para percorrer; ver tabela para todos os valores.`;
 });
 </script>
 
@@ -229,40 +303,72 @@ const summary = computed(() => {
     <div ref="box" class="relative w-full min-w-0">
         <svg
             :viewBox="`0 0 ${WIDTH} ${height}`"
-            class="block w-full touch-pan-y"
+            class="block w-full touch-pan-y rounded-md outline-offset-4 focus-visible:outline-2 focus-visible:outline-accent-400"
             :style="{ height: `${height}px` }"
             role="img"
+            tabindex="0"
             :aria-label="summary"
             @pointerdown="startPointer"
             @pointermove="trackPointer"
             @pointerleave="leavePointer"
             @pointercancel="clearHover"
+            @keydown="step"
+            @blur="clearHover"
         >
-            <!-- Solid hairlines, one step off the surface: present to read
-                 against, never competing with the data. -->
-            <line
-                v-for="value in gridValues"
-                :key="value"
-                :x1="PADDING.left"
-                :x2="WIDTH - PADDING.right"
-                :y1="y(value)"
-                :y2="y(value)"
-                stroke="var(--viz-grid)"
-                stroke-width="1"
-            />
+            <defs>
+                <linearGradient :id="fillId" x1="0" y1="0" x2="0" y2="1">
+                    <stop
+                        offset="0"
+                        stop-color="var(--viz-primary)"
+                        stop-opacity="0.12"
+                    />
+                    <stop
+                        offset="1"
+                        stop-color="var(--viz-primary)"
+                        stop-opacity="0"
+                    />
+                </linearGradient>
+            </defs>
+
+            <!-- Solid hairlines one step off the surface, the baseline one
+                 step firmer: there to read against, never competing. -->
+            <g aria-hidden="true">
+                <template v-for="(value, index) in ticks" :key="value">
+                    <line
+                        :x1="left"
+                        :x2="WIDTH - PADDING.right"
+                        :y1="y(value)"
+                        :y2="y(value)"
+                        :stroke="
+                            value === 0 ? 'var(--viz-axis)' : 'var(--viz-grid)'
+                        "
+                        stroke-width="1"
+                        shape-rendering="crispEdges"
+                    />
+                    <text
+                        :x="left - 10"
+                        :y="y(value)"
+                        dy="0.32em"
+                        text-anchor="end"
+                        class="text-[11px] tabular-nums"
+                        fill="var(--viz-ink-muted)"
+                    >
+                        {{ tickLabels[index] }}
+                    </text>
+                </template>
+            </g>
 
             <path
                 v-if="hasComparison"
                 :d="comparisonPath"
                 fill="none"
                 stroke="var(--viz-comparison)"
-                stroke-width="2"
-                stroke-dasharray="5 4"
+                stroke-width="1.5"
                 stroke-linejoin="round"
                 stroke-linecap="round"
             />
 
-            <path :d="areaPath" fill="var(--viz-primary)" opacity="0.1" />
+            <path v-if="area" :d="areaPath" :fill="`url(#${fillId})`" />
             <path
                 :d="linePath"
                 fill="none"
@@ -272,6 +378,29 @@ const summary = computed(() => {
                 stroke-linecap="round"
             />
 
+            <template v-if="highlightLast && endLabel && hoverIndex === null">
+                <circle
+                    :cx="x(lastIndex)"
+                    :cy="y(points[lastIndex].value)"
+                    r="4.5"
+                    fill="var(--color-accent-400)"
+                    stroke="var(--viz-surface)"
+                    stroke-width="2"
+                />
+                <text
+                    :x="endLabel.x"
+                    :y="endLabel.y"
+                    text-anchor="end"
+                    class="text-xs font-semibold tabular-nums"
+                    fill="var(--ui-ink)"
+                    stroke="var(--viz-surface)"
+                    stroke-width="4"
+                    paint-order="stroke"
+                >
+                    {{ endLabel.text }}
+                </text>
+            </template>
+
             <template v-if="hoverIndex !== null">
                 <line
                     :x1="x(hoverIndex)"
@@ -280,6 +409,7 @@ const summary = computed(() => {
                     :y2="PADDING.top + plotHeight"
                     stroke="var(--viz-axis)"
                     stroke-width="1"
+                    shape-rendering="crispEdges"
                 />
                 <circle
                     v-if="hasComparison"
@@ -293,62 +423,67 @@ const summary = computed(() => {
                 <circle
                     :cx="x(hoverIndex)"
                     :cy="y(points[hoverIndex].value)"
-                    r="4"
+                    r="4.5"
                     fill="var(--viz-primary)"
                     stroke="var(--viz-surface)"
                     stroke-width="2"
                 />
             </template>
 
-            <text
-                v-for="(point, index) in points"
-                :key="point.label"
-                :x="x(index)"
-                :y="height - 8"
-                text-anchor="middle"
-                class="text-[11px] tabular-nums"
-                fill="var(--viz-ink-muted)"
-            >
-                {{ index % labelStride === 0 ? point.label : '' }}
-            </text>
+            <g aria-hidden="true">
+                <template v-for="(point, index) in points" :key="point.label">
+                    <text
+                        v-if="showsLabel(index)"
+                        :x="x(index)"
+                        :y="height - 8"
+                        text-anchor="middle"
+                        class="text-[11px] tabular-nums"
+                        :fill="
+                            index === hoverIndex
+                                ? 'var(--ui-ink)'
+                                : 'var(--viz-ink-muted)'
+                        "
+                    >
+                        {{ point.label }}
+                    </text>
+                </template>
+            </g>
         </svg>
 
         <div
             v-if="hovered"
             ref="tooltip"
-            class="pointer-events-none absolute top-0 z-10 w-max max-w-full min-w-40 rounded-xl bg-white p-3 text-xs shadow-lg ring-1 ring-zinc-900/10 dark:bg-zinc-800 dark:ring-white/10"
+            class="pointer-events-none absolute top-0 z-10 flex w-max max-w-full min-w-40 flex-col gap-1 rounded-lg bg-[var(--ui-pop)] px-3 py-2.5 text-xs shadow-[var(--ui-pop-shadow)]"
             :style="tooltipStyle"
+            aria-live="polite"
         >
-            <p class="font-semibold text-zinc-950 dark:text-white">
+            <p class="text-[var(--ui-ink-3)] first-letter:uppercase">
                 {{ hovered.label }}
             </p>
-            <p class="mt-1.5 flex items-center gap-2">
+            <p class="flex items-center gap-2">
                 <span
-                    class="size-2 shrink-0 rounded-full"
+                    class="h-0.5 w-3 shrink-0 rounded-full"
                     style="background: var(--viz-primary)"
                     aria-hidden="true"
                 />
-                <span class="text-zinc-500 dark:text-zinc-400">{{
-                    seriesLabel
-                }}</span>
+                <span class="text-[var(--ui-ink-2)]">{{ seriesLabel }}</span>
                 <span
-                    class="ms-auto numeric font-medium text-zinc-950 dark:text-white"
+                    class="ms-auto ps-3 numeric font-semibold text-[var(--ui-ink)]"
                     >{{ format(hovered.value) }}</span
                 >
             </p>
-            <p v-if="hasComparison" class="mt-1 flex items-center gap-2">
+            <p v-if="hasComparison" class="flex items-center gap-2">
                 <span
-                    class="size-2 shrink-0 rounded-full"
+                    class="h-0.5 w-3 shrink-0 rounded-full"
                     style="background: var(--viz-comparison)"
                     aria-hidden="true"
                 />
-                <span class="text-zinc-500 dark:text-zinc-400">{{
+                <span class="text-[var(--ui-ink-2)]">{{
                     comparisonLabel
                 }}</span>
-                <span
-                    class="ms-auto numeric font-medium text-zinc-950 dark:text-white"
-                    >{{ format(hovered.comparison ?? 0) }}</span
-                >
+                <span class="ms-auto ps-3 numeric text-[var(--ui-ink-2)]">{{
+                    format(hovered.comparison ?? 0)
+                }}</span>
             </p>
         </div>
     </div>

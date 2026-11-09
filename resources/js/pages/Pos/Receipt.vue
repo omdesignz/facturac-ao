@@ -5,6 +5,7 @@ import { nextTick, onMounted } from 'vue';
 import { formatMinor, formatQuantity } from '@/lib/pos';
 import { buttonInk, buttonOutline } from '@/lib/pos-ui';
 import { printDocument as print } from '@/lib/print';
+import { formatRate } from '@/lib/rate';
 
 /**
  * The till receipt: the fiscal document in 72mm, plus what changed hands.
@@ -291,10 +292,12 @@ function close(): void {
                         }}</span>
                     </div>
                     <p class="text-black">
-                        Preço s/ IVA · IVA {{ line.tax_rate }}%<template
+                        Preço s/ IVA · IVA
+                        {{ formatRate(line.tax_rate) }}%<template
                             v-if="Number(line.discount_rate) > 0"
                         >
-                            · Desc. {{ line.discount_rate }}%</template
+                            · Desc.
+                            {{ formatRate(line.discount_rate) }}%</template
                         >
                     </p>
                 </li>
@@ -320,7 +323,7 @@ function close(): void {
                             :key="`${row.rate}-${row.exemption_code ?? ''}`"
                         >
                             <td class="pe-1">
-                                {{ row.rate }}%<template
+                                {{ formatRate(row.rate) }}%<template
                                     v-if="row.exemption_code"
                                 >
                                     · {{ row.exemption_code }}</template

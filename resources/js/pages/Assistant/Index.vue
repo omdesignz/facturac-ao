@@ -16,6 +16,7 @@ import {
     shouldShowQuestionCount,
 } from '@/lib/assistant';
 import type { AssistantContext, AssistantResponse } from '@/lib/assistant';
+import { buttonClass } from '@/lib/button';
 import { search } from '@/routes';
 import { acknowledgement, store } from '@/routes/assistant';
 
@@ -48,18 +49,19 @@ const MAX_REFERENCES = 2;
 const MIN_SEARCH_LENGTH = 2;
 const SEARCH_DEBOUNCE_MS = 200;
 
-const primaryButton =
-    'inline-flex h-10 items-center justify-center gap-2 rounded-full bg-brand-950 px-[1.125rem] text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-brand-950 dark:hover:bg-white';
+const primaryButton = buttonClass('ink', 'lg');
 /**
  * The acknowledgement button carries three lines of wording, so it grows with
- * its text and trades the pill for a radius that still looks right when tall.
+ * its text while keeping the same control radius.
  */
 const primaryButtonMultiline = `${primaryButton
     .replace('h-10', 'min-h-10 py-2')
-    .replace('rounded-full', 'rounded-3xl')} text-left`;
-const outlineButton =
-    'inline-flex min-h-10 items-center justify-center rounded-full px-[1.125rem] py-2 text-sm font-semibold text-zinc-800 ring-1 ring-zinc-900/10 focus-ring transition ring-inset hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5';
-const wellClasses = 'rounded-2xl bg-zinc-900/[0.04] p-5 dark:bg-white/[0.05]';
+    .replace('whitespace-nowrap', 'whitespace-normal')} text-left`;
+const outlineButton = buttonClass('outline', 'lg')
+    .replace('h-10', 'min-h-10 py-2')
+    .replace('whitespace-nowrap', 'whitespace-normal');
+const wellClasses =
+    'rounded-xl bg-[var(--surface-raised)] p-5 shadow-[var(--ui-card-shadow)]';
 
 const props = defineProps<{
     context: AssistantContext;
@@ -196,6 +198,14 @@ function cancelQuestion(): void {
 
     void nextTick(() => questionField.value?.focus());
 }
+
+/** "07/10/2026" from the stored calendar day, so no timezone can move it. */
+function calendarDay(value: string): string {
+    const [year, month, day] = value.slice(0, 10).split('-');
+
+    return `${day}/${month}/${year}`;
+}
+
 watch(
     () => [contextKey(props.context), props.provider],
     () => {
@@ -262,7 +272,9 @@ async function runSearch(term: string): Promise<void> {
                               hint: [
                                   document.document_type_label,
                                   document.customer_name,
-                                  document.document_date,
+                                  document.document_date
+                                      ? calendarDay(document.document_date)
+                                      : null,
                               ]
                                   .filter(Boolean)
                                   .join(' · '),
@@ -478,7 +490,7 @@ function submitFromKeyboard(event: KeyboardEvent): void {
 }
 
 const suggestionClasses =
-    'inline-flex min-h-9 items-center rounded-full bg-zinc-900/[0.04] px-3.5 py-1.5 text-left text-sm text-zinc-700 focus-ring transition hover:bg-zinc-900/[0.07] hover:text-zinc-950 dark:bg-white/[0.06] dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-white';
+    'inline-flex min-h-9 items-center rounded-lg bg-[var(--ui-well)] px-3.5 py-1.5 text-left text-sm text-[var(--ui-ink-2)] focus-ring transition hover:bg-[color-mix(in_oklch,var(--ui-ink)_9%,transparent)] hover:text-[var(--ui-ink)]';
 </script>
 <template>
     <AppLayout>
@@ -671,7 +683,7 @@ const suggestionClasses =
                             <li
                                 v-for="reference in references"
                                 :key="`${reference.kind}:${reference.public_id}`"
-                                class="inline-flex h-9 max-w-full items-center gap-1.5 rounded-full bg-zinc-900/[0.06] pr-1.5 pl-3 text-sm text-zinc-900 dark:bg-white/10 dark:text-white"
+                                class="inline-flex h-9 max-w-full items-center gap-1.5 rounded-lg bg-[var(--ui-well)] pr-1.5 pl-3 text-sm text-[var(--ui-ink)]"
                             >
                                 <component
                                     :is="
@@ -687,7 +699,7 @@ const suggestionClasses =
                                 }}</span>
                                 <button
                                     type="button"
-                                    class="relative grid size-6 shrink-0 place-items-center rounded-full text-zinc-500 focus-ring transition after:absolute after:-inset-2 after:content-[''] hover:bg-zinc-900/10 hover:text-zinc-950 dark:hover:bg-white/10 dark:hover:text-white"
+                                    class="relative grid size-6 shrink-0 place-items-center rounded-md text-zinc-500 focus-ring transition after:absolute after:-inset-2 after:content-[''] hover:bg-zinc-900/10 hover:text-zinc-950 dark:hover:bg-white/10 dark:hover:text-white"
                                     @click="removeReference(reference)"
                                 >
                                     <span class="sr-only"
@@ -841,7 +853,7 @@ const suggestionClasses =
                 <p
                     v-if="error"
                     role="alert"
-                    class="rounded-2xl bg-rose-50 px-4 py-3 text-sm/6 text-rose-800 dark:bg-rose-400/10 dark:text-rose-200"
+                    class="rounded-xl bg-[var(--ui-critical-wash)] px-4 py-3 text-sm/6 text-[var(--ui-critical)]"
                 >
                     {{ error }}
                 </p>

@@ -70,6 +70,11 @@ interface RegisterDocument {
     };
     gross_total_minor: number;
     currency_code: string;
+    balance: {
+        outstanding_minor: number;
+        label: string;
+        tone: 'danger' | 'neutral';
+    } | null;
     status: string;
     status_label: string;
     workflow_status: string;
@@ -412,7 +417,7 @@ function rowNumber(document: RegisterDocument): string {
 }
 
 const gridColumns =
-    'md:grid-cols-[2.75rem_9rem_minmax(8rem,1fr)_5rem_5rem_7.5rem_minmax(8.5rem,11rem)]';
+    'md:grid-cols-[2.75rem_minmax(6.5rem,0.7fr)_minmax(7rem,1fr)_4.5rem_7.5rem_7.75rem_minmax(10rem,1.5fr)]';
 
 /** The row is a real link; a plain click is handled in the page, not reloaded. */
 function skipReopening(event: MouseEvent, publicId: string): void {
@@ -505,7 +510,11 @@ const neighbours = computed(() => {
 const settlement = computed(() => {
     const snapshot = props.selected?.snapshot;
 
-    if (!snapshot || snapshot.outstanding_minor <= 0) {
+    if (
+        props.selected?.status === 'draft' ||
+        !snapshot ||
+        snapshot.outstanding_minor <= 0
+    ) {
         return null;
     }
 
@@ -659,7 +668,7 @@ function workflowIsActive(value: string): boolean {
 /* Formatters are built once: the list formats several figures per row. */
 const currencyFormatters = new Map<string, Intl.NumberFormat>();
 const wholeAmountFormatter = new Intl.NumberFormat('pt-AO', {
-    maximumFractionDigits: 0,
+    maximumFractionDigits: 2,
 });
 const longDateFormatter = new Intl.DateTimeFormat('pt-PT', {
     day: '2-digit',
@@ -693,7 +702,7 @@ function money(minor: number, currencyCode: string): string {
 }
 
 function wholeAmount(minor: number): string {
-    return wholeAmountFormatter.format(Math.round(minor / 100));
+    return wholeAmountFormatter.format(minor / 100);
 }
 
 function currencyLabel(currencyCode: string): string {
@@ -856,28 +865,26 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
     <AppLayout>
         <Head title="Documentos fiscais" />
 
-        <div
-            class="flex min-h-[calc(100dvh-4rem)] flex-col lg:min-h-[calc(100dvh-3rem)]"
-        >
+        <div class="flex min-h-[calc(100dvh-4rem)] flex-col">
             <div class="px-4 empty:hidden sm:px-6"><FlashBanner /></div>
 
             <!-- ------------------------------------------------ title bar -->
             <header
-                class="flex flex-wrap items-center gap-x-3 gap-y-2.5 border-b border-[var(--ui-line)] px-4 py-2.5 sm:px-6 md:h-[3.25rem] md:flex-nowrap md:py-0"
+                class="flex flex-wrap items-center gap-x-3 gap-y-4 px-4 pt-6 pb-5 sm:px-6"
             >
                 <h1 class="text-[0.8125rem] font-semibold text-[var(--ui-ink)]">
                     Documentos
                 </h1>
                 <nav
                     aria-label="Filtrar por estado"
-                    class="-mx-4 flex min-w-0 [scrollbar-width:none] gap-0.5 overflow-x-auto px-4 max-md:order-last max-md:w-[calc(100%+2rem)] md:mx-0 md:ms-2 md:px-0"
+                    class="-mx-4 flex min-w-0 [scrollbar-width:none] gap-0.5 overflow-x-auto px-4 max-md:order-last max-md:w-[calc(100%+2rem)] max-md:[mask-image:linear-gradient(to_right,#000_82%,transparent)] md:mx-0 md:ms-2 md:px-0"
                 >
                     <button
                         v-for="segment in statusSegments"
                         :key="segment.value"
                         type="button"
                         :aria-pressed="status === segment.value"
-                        class="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-[7px] px-2.5 text-[0.78125rem] focus-ring transition-colors pointer-coarse:h-9"
+                        class="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-[0.8125rem] focus-ring transition-colors pointer-coarse:h-11"
                         :class="
                             status === segment.value
                                 ? 'bg-[var(--surface-raised)] font-semibold text-[var(--ui-ink)] shadow-[var(--ui-control-shadow)]'
@@ -904,7 +911,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                 <span class="flex-1" />
                 <form
                     role="search"
-                    class="flex h-[1.875rem] items-center gap-2 rounded-[7px] bg-[var(--surface-raised)] px-2.5 text-[var(--ui-ink-3)] shadow-[var(--ui-control-shadow)] focus-within:shadow-[0_0_0_1px_var(--color-accent-400),0_0_0_4px_var(--ui-halo)] max-md:order-last max-md:w-full md:w-56 pointer-coarse:h-11"
+                    class="flex h-9 items-center gap-2 rounded-lg bg-[var(--surface-raised)] px-2.5 text-[var(--ui-ink-3)] shadow-[var(--ui-control-shadow)] focus-within:shadow-[0_0_0_1px_var(--color-accent-400),0_0_0_4px_var(--ui-halo)] max-md:order-last max-md:w-full md:w-56 pointer-coarse:h-11"
                     @submit.prevent="applyFilters"
                 >
                     <Search class="size-3.5 shrink-0" aria-hidden="true" />
@@ -1095,11 +1102,11 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
             </form>
 
             <!-- ------------------------------------------ list + inspector -->
-            <div class="flex min-h-0 flex-1 items-start">
+            <div class="flex min-h-0 flex-1 items-start gap-4 p-4 sm:p-6">
                 <section
                     aria-label="Documentos"
                     :aria-busy="loading"
-                    class="relative min-w-0 flex-1 transition-opacity duration-150 ease-out"
+                    class="relative min-w-0 flex-1 rounded-xl bg-[var(--surface-raised)] shadow-[var(--ui-card-shadow)] transition-opacity duration-150 ease-out"
                     :class="loading ? 'opacity-60 delay-150' : ''"
                 >
                     <div
@@ -1149,27 +1156,27 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                     </div>
 
                     <template v-else>
-                        <div
-                            :class="[
-                                gridColumns,
-                                'grid h-[2.125rem] items-center border-b border-[var(--ui-line)] pe-4 text-xs font-medium text-[var(--ui-ink-3)] max-md:hidden sm:pe-6',
-                            ]"
-                            aria-hidden="true"
-                        >
-                            <span />
-                            <span class="px-2">Documento</span>
-                            <span class="px-2">Cliente</span>
-                            <span class="px-2">Data</span>
-                            <span class="px-2">Vence</span>
-                            <span class="px-2 text-end">Total</span>
-                            <span class="ps-5 pe-2">AGT</span>
-                        </div>
-
                         <InfiniteScroll
                             data="documents"
                             :buffer="400"
                             :manual-after="4"
+                            class="overflow-x-auto rounded-xl"
                         >
+                            <div
+                                :class="[
+                                    gridColumns,
+                                    'grid h-[2.125rem] items-center border-b border-[var(--ui-line)] pe-4 text-xs font-medium text-[var(--ui-ink-3)] max-md:hidden sm:pe-6',
+                                ]"
+                                aria-hidden="true"
+                            >
+                                <span />
+                                <span class="px-2">Documento</span>
+                                <span class="px-2">Cliente</span>
+                                <span class="px-2">Data</span>
+                                <span class="px-2 text-end">Total</span>
+                                <span class="px-2">Cobrança</span>
+                                <span class="ps-5 pe-2">AGT</span>
+                            </div>
                             <template #next="scroll"
                                 ><LoadMore
                                     :shown="documents.data.length"
@@ -1312,14 +1319,23 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                                             row.document
                                                                 .gross_total_minor,
                                                         )
-                                                    }}</span
+                                                    }}
+                                                    <span
+                                                        class="text-xs font-normal text-[var(--ui-ink-3)]"
+                                                        >{{
+                                                            currencyLabel(
+                                                                row.document
+                                                                    .currency_code,
+                                                            )
+                                                        }}</span
+                                                    ></span
                                                 >
                                             </span>
                                             <span
-                                                class="mt-1 flex items-center justify-between gap-3"
+                                                class="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1"
                                             >
                                                 <span
-                                                    class="min-w-0 truncate text-xs text-[var(--ui-ink-3)]"
+                                                    class="min-w-0 text-xs text-[var(--ui-ink-3)]"
                                                     >{{
                                                         rowNumber(row.document)
                                                     }}
@@ -1343,6 +1359,34 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                                         )
                                                     "
                                                 />
+                                            </span>
+                                            <span
+                                                v-if="row.document.balance"
+                                                class="mt-1 flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--ui-ink-2)]"
+                                            >
+                                                <span
+                                                    >Cobrança:
+                                                    {{
+                                                        row.document.balance
+                                                            .label
+                                                    }}</span
+                                                >
+                                                <span
+                                                    v-if="
+                                                        row.document.balance
+                                                            .outstanding_minor >
+                                                        0
+                                                    "
+                                                    class="numeric"
+                                                    >{{
+                                                        money(
+                                                            row.document.balance
+                                                                .outstanding_minor,
+                                                            row.document
+                                                                .currency_code,
+                                                        )
+                                                    }}</span
+                                                >
                                             </span>
                                         </span>
 
@@ -1394,14 +1438,6 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                             }}</span
                                         >
                                         <span
-                                            class="px-2 numeric text-[var(--ui-ink-2)] max-md:hidden"
-                                            >{{
-                                                formatShortDate(
-                                                    row.document.due_date,
-                                                )
-                                            }}</span
-                                        >
-                                        <span
                                             class="px-2 text-end numeric font-semibold max-md:hidden"
                                             :class="
                                                 row.document.family ===
@@ -1419,8 +1455,38 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                                     row.document
                                                         .gross_total_minor,
                                                 )
-                                            }}</span
+                                            }}
+                                            <span
+                                                class="text-xs font-normal text-[var(--ui-ink-3)]"
+                                                >{{
+                                                    currencyLabel(
+                                                        row.document
+                                                            .currency_code,
+                                                    )
+                                                }}</span
+                                            ></span
                                         >
+                                        <span
+                                            class="min-w-0 px-2 max-md:hidden"
+                                        >
+                                            <StatusBadge
+                                                v-if="row.document.balance"
+                                                :label="
+                                                    row.document.balance.label
+                                                "
+                                                :tone="
+                                                    row.document.balance.tone
+                                                "
+                                            />
+                                            <span
+                                                v-else
+                                                class="text-[var(--ui-ink-3)]"
+                                                >—<span class="sr-only">
+                                                    Não se aplica à
+                                                    cobrança</span
+                                                ></span
+                                            >
+                                        </span>
                                         <span
                                             class="min-w-0 overflow-clip ps-5 pe-2 max-md:hidden"
                                         >
@@ -1516,7 +1582,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                         ref="detailPanel"
                         tabindex="-1"
                         :aria-labelledby="'document-detail-title'"
-                        class="fixed inset-y-0 inset-e-0 z-50 flex w-full flex-col overflow-y-auto overscroll-contain bg-[var(--surface-raised)] shadow-[var(--ui-pop-shadow)] outline-none sm:w-[23.75rem] xl:sticky xl:inset-bs-12 xl:z-auto xl:h-[calc(100dvh-3rem)] xl:shrink-0 xl:bg-[var(--surface-page)] xl:shadow-[inset_1px_0_0_var(--ui-line)]"
+                        class="fixed inset-y-0 inset-e-0 z-50 flex w-full flex-col overflow-y-auto overscroll-contain bg-[var(--surface-raised)] shadow-[var(--ui-pop-shadow)] outline-none sm:w-[21rem] xl:sticky xl:inset-bs-20 xl:z-auto xl:max-h-[calc(100dvh-6rem)] xl:shrink-0 xl:rounded-xl xl:shadow-[var(--ui-card-shadow)]"
                     >
                         <div
                             class="sticky inset-bs-0 z-10 flex h-11 shrink-0 items-center gap-1 border-b border-[var(--ui-line)] bg-[var(--surface-raised)] ps-5 pe-3 xl:bg-[var(--surface-page)]"
@@ -2104,6 +2170,7 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                     </dd>
                                     <template
                                         v-if="
+                                            selected.status !== 'draft' &&
                                             selected.snapshot
                                                 .outstanding_minor > 0
                                         "

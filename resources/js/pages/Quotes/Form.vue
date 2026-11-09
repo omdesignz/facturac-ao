@@ -13,6 +13,7 @@ import { computed } from 'vue';
 import AppButton from '@/components/AppButton.vue';
 import DateInput from '@/components/DateInput.vue';
 import DraftRecoveryNotice from '@/components/DraftRecoveryNotice.vue';
+import EmptyState from '@/components/EmptyState.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
 import FormError from '@/components/FormError.vue';
 import FormField from '@/components/FormField.vue';
@@ -645,9 +646,24 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
                                 </AppButton>
                             </header>
 
-                            <ul
-                                class="divide-y divide-zinc-100 dark:divide-white/10"
+                            <EmptyState
+                                v-if="form.lines.length === 0"
+                                bare
+                                :icon="ListOrdered"
+                                title="Ainda sem linhas"
+                                description="Um orçamento sem linhas vale 0 Kz. Adicione o que está a propor ao cliente."
                             >
+                                <AppButton
+                                    variant="ink"
+                                    size="sm"
+                                    @click="addLine"
+                                >
+                                    <Plus class="size-4" aria-hidden="true" />
+                                    Adicionar linha
+                                </AppButton>
+                            </EmptyState>
+
+                            <ul v-else class="divide-y divide-[var(--ui-line)]">
                                 <li
                                     v-for="(line, index) in form.lines"
                                     :key="index"

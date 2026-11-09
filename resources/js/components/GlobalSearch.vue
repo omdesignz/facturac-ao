@@ -26,6 +26,7 @@ import type { Component } from 'vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import { statusTone } from '@/lib/document-status';
 import type { StatusTone } from '@/lib/document-status';
+import { restoreDialogFocus } from '@/lib/focus';
 import {
     detectApplePlatform,
     isDialogOpen,
@@ -134,14 +135,14 @@ function normalise(value: string): string {
     return value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 }
 
-function wholeAmount(
+function formatAmount(
     minor: number,
     currencyCode: string,
 ): { figure: string; currency: string } {
     return {
         figure: new Intl.NumberFormat('pt-AO', {
-            maximumFractionDigits: 0,
-        }).format(Math.round(minor / 100)),
+            maximumFractionDigits: 2,
+        }).format(minor / 100),
         currency: currencyCode === 'AOA' ? 'Kz' : currencyCode,
     };
 }
@@ -159,8 +160,8 @@ const actions = computed<Result[]>(() =>
         ? [
               {
                   key: 'action:invoice',
-                  label: 'Emitir factura',
-                  hint: 'Novo documento fiscal',
+                  label: 'Nova factura',
+                  hint: 'Preparar um rascunho',
                   href: createInvoice.url(),
                   icon: FilePlus2,
                   primary: true,
@@ -261,7 +262,7 @@ const resultGroups = computed<ResultGroup[]>(() => {
               icon: FileText,
               detail: true,
               mono: document.document_no !== null,
-              amount: wholeAmount(
+              amount: formatAmount(
                   document.gross_total_minor,
                   document.currency_code,
               ),
@@ -368,6 +369,29 @@ const hasOnlyFallback = computed(
 );
 
 let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+let paletteOrigin: HTMLElement | null = null;
+let choiceRequested = false;
+
+/** A command activates on Enter or a result press, never on blur or Tab. */
+function requestChoice(): void {
+    choiceRequested = true;
+    setTimeout(() => {
+        choiceRequested = false;
+    }, 0);
+}
+
+watch(
+    open,
+    (isOpen) => {
+        if (isOpen && typeof document !== 'undefined') {
+            paletteOrigin =
+                document.activeElement instanceof HTMLElement
+                    ? document.activeElement
+                    : null;
+        }
+    },
+    { flush: 'sync' },
+);
 
 async function runSearch(term: string): Promise<void> {
     http.cancel();
@@ -423,10 +447,13 @@ function resetPalette(): void {
     documents.value = [];
     customers.value = [];
     answeredQuery.value = '';
+    const origin = paletteOrigin;
+    paletteOrigin = null;
+    void restoreDialogFocus(origin);
 }
 
 function choose(result: Result | null): void {
-    if (result === null) {
+    if (result === null || !open.value || !choiceRequested) {
         return;
     }
 
@@ -530,14 +557,14 @@ onBeforeUnmount(() => {
         <button
             v-else
             type="button"
-            class="group flex h-10 w-full max-w-md min-w-0 items-center gap-3 rounded-full bg-zinc-900/[0.04] pr-2 pl-3.5 text-left text-sm text-zinc-500 focus-ring transition hover:bg-zinc-900/[0.07] hover:text-zinc-700 max-xl:size-10 max-xl:w-10 max-xl:shrink-0 max-xl:justify-center max-xl:px-0 xl:min-w-44 dark:bg-white/[0.06] dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-zinc-200"
+            class="group flex h-10 w-full max-w-md min-w-0 items-center gap-3 rounded-lg bg-[var(--surface-raised)] ps-3.5 pe-2 text-left text-sm text-zinc-500 shadow-[var(--ui-control-shadow)] focus-ring transition hover:bg-zinc-900/[0.07] hover:text-zinc-700 max-xl:size-10 max-xl:w-10 max-xl:shrink-0 max-xl:justify-center max-xl:px-0 xl:min-w-44 dark:bg-white/[0.06] dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-zinc-200"
             aria-haspopup="dialog"
             :aria-keyshortcuts="isApplePlatform ? 'Meta+K' : 'Control+K'"
             @click="openPalette"
         >
             <Search class="size-4 shrink-0" aria-hidden="true" />
             <span class="min-w-0 flex-1 truncate max-xl:sr-only">
-                Pesquisar factura, cliente ou NIF…
+                Procurar…
             </span>
             <span
                 class="hidden shrink-0 items-center gap-1 xl:flex"
@@ -573,6 +600,7 @@ onBeforeUnmount(() => {
                         >
                             <Combobox
                                 :model-value="null"
+                                nullable
                                 @update:model-value="choose"
                             >
                                 <div class="flex items-center gap-2 p-2.5">
@@ -584,11 +612,18 @@ onBeforeUnmount(() => {
                                             aria-hidden="true"
                                         />
                                         <ComboboxInput
+                                            :display-value="() => query"
+                                            @keydown.enter.capture="
+                                                requestChoice
+                                            "
                                             class="h-full min-w-0 flex-1 bg-transparent text-[0.9375rem] text-zinc-950 outline-hidden placeholder:text-zinc-500 dark:text-white dark:placeholder:text-zinc-400"
                                             placeholder="Número, cliente, NIF ou página…"
                                             autocomplete="off"
                                             spellcheck="false"
                                             aria-label="Pesquisar"
+                                            @keydown.esc.capture.prevent.stop="
+                                                closePalette
+                                            "
                                             @change="
                                                 query = $event.target.value
                                             "
@@ -616,6 +651,7 @@ onBeforeUnmount(() => {
                                 </p>
 
                                 <ComboboxOptions
+                                    @mousedown.capture="requestChoice"
                                     static
                                     class="max-h-[min(28rem,45dvh)] scroll-py-2 overflow-y-auto overscroll-contain p-2 pt-0 sm:max-h-[min(28rem,65dvh)]"
                                     :class="

@@ -190,9 +190,7 @@ const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> =
     <AppLayout>
         <Head title="Guias e transporte" />
 
-        <div
-            class="flex min-h-[calc(100dvh-4rem)] flex-col lg:min-h-[calc(100dvh-3rem)]"
-        >
+        <div class="flex min-h-[calc(100dvh-4rem)] flex-col">
             <div class="px-4 empty:hidden sm:px-6"><FlashBanner /></div>
 
             <TitleBar section="Vender" title="Guias e transporte">

@@ -10,6 +10,7 @@ use App\Models\Customer;
 use App\Models\Establishment;
 use App\Models\FiscalDocument;
 use App\Models\FiscalDocumentEvent;
+use App\Models\FiscalDocumentSettlement;
 use App\Models\LegalEntity;
 use App\Models\User;
 use App\Models\Workspace;
@@ -136,6 +137,65 @@ test('the fiscal register unifies drafts and AGT workflow outcomes', function ()
             ->where('documents.data.1.workflow_status', 'draft')
             ->where('documents.data.1.can_edit', true)
             ->where('documents.data.1.can_print', false));
+});
+
+test('the register distinguishes current collection balances from fiscal workflow', function () {
+    $company = fiscalRegisterCompany();
+    $issued = ['status' => FiscalDocumentStatus::Issued, 'document_type' => FiscalDocumentType::Invoice];
+    $current = fiscalRegisterDocument($company, $issued + ['document_no' => 'FT BAL/1', 'due_date' => now()->addDay()]);
+    $overdue = fiscalRegisterDocument($company, $issued + ['document_no' => 'FT BAL/2', 'due_date' => now()->subDay()]);
+    $credited = fiscalRegisterDocument($company, $issued + ['document_no' => 'FT BAL/3']);
+    $credit = fiscalRegisterDocument($company, [
+        'status' => FiscalDocumentStatus::Issued,
+        'document_type' => FiscalDocumentType::CreditNote,
+        'document_no' => 'NC BAL/1',
+        'references_document_id' => $credited->id,
+    ]);
+    $paidOnIssue = fiscalRegisterDocument($company, [
+        'status' => FiscalDocumentStatus::Issued,
+        'document_type' => FiscalDocumentType::InvoiceReceipt,
+        'document_no' => 'FR BAL/1',
+    ]);
+    $receipt = fiscalRegisterDocument($company, [
+        'status' => FiscalDocumentStatus::Issued,
+        'document_type' => FiscalDocumentType::Receipt,
+        'document_no' => 'RG BAL/1',
+    ]);
+    FiscalDocumentSettlement::query()->create([
+        'workspace_id' => $company['workspace']->id,
+        'legal_entity_id' => $company['legal_entity']->id,
+        'fiscal_document_id' => $receipt->id,
+        'settled_document_id' => $overdue->id,
+        'settled_document_no' => $overdue->document_no,
+        'amount_minor' => 50_000,
+    ]);
+    $draft = fiscalRegisterDocument($company);
+
+    $this->actingAs($company['user'])->get(route('documents.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('documents.data', function ($rows) use ($current, $overdue, $credited, $paidOnIssue, $credit, $receipt, $draft): bool {
+                $byId = collect($rows)->keyBy('public_id');
+
+                expect($byId[$current->public_id]['balance'])->toBe([
+                    'outstanding_minor' => 114_000, 'label' => 'Por receber', 'tone' => 'neutral',
+                ])->and($byId[$overdue->public_id]['balance'])->toBe([
+                    'outstanding_minor' => 64_000, 'label' => 'Em atraso', 'tone' => 'danger',
+                ])->and($byId[$credited->public_id]['balance']['label'])->toBe('Sem saldo')
+                    ->and($byId[$paidOnIssue->public_id]['balance']['outstanding_minor'])->toBe(0)
+                    ->and($byId[$credit->public_id]['balance'])->toBeNull()
+                    ->and($byId[$receipt->public_id]['balance'])->toBeNull()
+                    ->and($byId[$draft->public_id]['balance'])->toBeNull();
+
+                return true;
+            })
+        );
+
+    $this->get(route('documents.index', ['documento' => $overdue->public_id]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('selected.balance.outstanding_minor', 64_000)
+            ->where('selected.snapshot.outstanding_minor', 64_000)
+        );
 });
 
 test('search and fiscal filters are scoped to the current legal entity', function () {

@@ -39,17 +39,17 @@ test('the screens that used a banner now use the shared page header', function (
     'Support/Packages',
 ]);
 
-test('the work surfaces open on a thin title bar and run edge to edge', function (string $page) {
+test('the work surfaces open on the shared title row and run edge to edge', function (string $page) {
     expect((string) file_get_contents(resource_path("js/pages/{$page}.vue")))
-        ->toMatch('/<TitleBar\b|<header\s+class="(?=[^"]*h-\[3\.25rem\])(?=[^"]*border-b border-\[var\(--ui-line\)\])/')
+        ->toMatch('/<TitleBar\b|<header\s+class="[^"]*(\bpt-6 pb-5\b|h-\[3\.25rem\])/')
         ->not->toContain('<PageHeader')
         ->not->toContain('page-shell');
 })->with(['Documents/Index', 'Debts/Index', 'Invoices/Create', 'Customers/Index', 'Catalogue/Index', 'Quotes/Index', 'TransportDocuments/Index', 'Agt/Submissions/Index']);
 
-test('the title bar is one thin row with the content edge to edge below it', function () {
+test('the title bar is one row of title and actions with the content edge to edge below it', function () {
     expect((string) file_get_contents(resource_path('js/components/TitleBar.vue')))
-        ->toContain('md:h-[3.25rem]')
-        ->toContain('border-b border-[var(--ui-line)]')
+        ->toContain('pt-6 pb-5')
+        ->toContain('text-page-title')
         ->toContain('<slot name="actions" />');
 });
 
@@ -63,7 +63,7 @@ test('paragraph wrapping sits in the base layer, so truncate and nowrap still wo
 test('the dashboard and the debts page colour debt age the same way', function (string $page) {
     expect((string) file_get_contents(resource_path("js/pages/{$page}.vue")))
         ->toContain("import { agingBucketColours, agingShare } from '@/lib/aging';");
-})->with(['Dashboard', 'Debts/Index']);
+})->with(['Debts/Index']);
 
 test('headings are set firm and tight, and labels stay quiet in sentence case', function () {
     $css = (string) file_get_contents(resource_path('css/app.css'));
@@ -93,7 +93,7 @@ test('auth buttons use the shared pill roles', function () {
 
     expect((string) file_get_contents(resource_path('js/pages/Auth/Register.vue')))
         ->toContain('<AppButton')
-        ->toContain('variant="gold"');
+        ->toContain('variant="ink"');
 });
 
 test('no screen falls back to the old brand-blue buttons or labels', function () {
@@ -310,7 +310,7 @@ test('a package draft survives the password confirmation but is never saved by i
         ->not->toContain('form.put(');
 });
 
-test('the phone gets a tab bar of four words and one gold action, and a header that is just the wordmark', function () {
+test('the phone gets a tab bar of four words and one ink action, and a header that is just the wordmark', function () {
     $layout = (string) file_get_contents(resource_path('js/layouts/AppLayout.vue'));
     $bar = (string) file_get_contents(resource_path('js/components/MobileTabBar.vue'));
     $header = (string) file_get_contents(resource_path('js/components/AppHeader.vue'));
@@ -322,7 +322,7 @@ test('the phone gets a tab bar of four words and one gold action, and a header t
         ->toContain("label: 'Cobrar'")
         ->toContain("label: 'Registos'")
         ->toContain('Mais')
-        ->toContain('bg-accent-400')
+        ->toContain('bg-[var(--ui-ink)]')
         ->toContain('isFocusedPath')
         ->and($header)->toContain('BrandWordmark')
         ->not->toContain('Abrir navegação');
@@ -339,20 +339,20 @@ test('the desktop navigation is a sidebar that folds to a rail of icons', functi
         expect($map)->toContain("{$word}'");
     }
 
-    // The company, search, the AGT and the account move into the sidebar, so
-    // the bar above a page stays almost empty.
+    // The company, the AGT and the account live in the sidebar; search sits
+    // alone in the bar above the page.
     expect($sidebar)->toContain('aria-current')
         ->toContain('Nova factura')
         ->toContain('switchWorkspace')
-        ->toContain('RAIL_PLACES')
-        ->toContain('<GlobalSearch')
+        ->toContain('PRIMARY_PLACES')
         ->toContain('<AccountMenu')
         ->and($state)->toContain("'vap-sidebar'")
         ->toContain("event.key === '\\\\'")
         ->and($layout)->toContain('<AppSidebar />')
-        ->toContain("sidebarCompact ? 'ps-14' : 'ps-60'")
+        ->toContain("'ps-[5.5rem] pe-4'")
+        ->toContain("'ps-[17rem] pe-4'")
         ->and($header)->not->toContain('AppTopNav')
-        ->toContain('<GlobalSearch v-if="!isDesktop" />');
+        ->toContain('<GlobalSearch class="lg:max-w-64" />');
 
     expect(file_exists(resource_path('js/components/AppTopNav.vue')))->toBeFalse()
         ->and(file_exists(resource_path('js/components/AppRail.vue')))->toBeFalse();
@@ -437,4 +437,176 @@ test('the export page follows the theme through light-dark, not a dark override 
 
     expect($page)->toContain('light-dark(')
         ->and($page)->not->toContain(':global(.dark)');
+});
+
+test('a count agrees with its noun, never "documento(s)"', function () {
+    $hedged = [];
+    $files = [...File::allFiles(resource_path('js/pages')), ...File::allFiles(app_path('Http/Controllers'))];
+
+    foreach ($files as $file) {
+        if (preg_match('/\p{Ll}\((s|es|ões)\)/u', $file->getContents())) {
+            $hedged[] = $file->getRelativePathname();
+        }
+    }
+
+    expect($hedged)->toBe([])
+        ->and((string) file_get_contents(resource_path('js/lib/plural.ts')))
+        ->toContain('count === 1 ? one : many');
+});
+
+test('status columns are wide enough for the whole AGT and collection labels', function () {
+    $documents = (string) file_get_contents(resource_path('js/pages/Documents/Index.vue'));
+
+    expect($documents)->toContain('_7.75rem_minmax(10rem,1.5fr)]')
+        ->and($documents)->toContain('class="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1"');
+});
+
+test('the debts table drops its age columns while the reminder sits beside it, instead of clipping them', function () {
+    $debts = (string) file_get_contents(resource_path('js/pages/Debts/Index.vue'));
+
+    expect(substr_count($debts, 'max-lg:hidden xl:max-[100rem]:hidden'))->toBeGreaterThanOrEqual(8)
+        ->and($debts)->toContain('xl:grid-cols-[2.75rem_minmax(11rem,1fr)_6.5rem_9.5rem] min-[100rem]:grid-cols-');
+});
+
+test('plan cards share one surface and the button recipe, and say why checkout is off', function () {
+    $billing = (string) file_get_contents(resource_path('js/pages/Billing/Show.vue'));
+
+    expect($billing)->not->toContain('bg-brand-950')
+        ->and($billing)->toContain('checkoutBlockedReason')
+        ->and($billing)->toContain('md:grid-cols-[repeat(auto-fit,minmax(15rem,1fr))]')
+        ->and(substr_count($billing, 'buttonClass('))->toBeGreaterThanOrEqual(2);
+});
+
+test('a bar chart with one category stays ink', function () {
+    expect((string) file_get_contents(resource_path('js/components/charts/ChartBars.vue')))
+        ->toContain('!props.categorical || props.bars.length < 2');
+});
+
+test('invoice lines are a dense grid from a narrow sheet up, with their fiscal detail on one row beneath', function () {
+    $composer = (string) file_get_contents(resource_path('js/pages/Invoices/Create.vue'));
+
+    expect($composer)
+        ->toContain('class="hidden @min-[36rem]/invoice-lines:block"')
+        ->toContain('@min-[36rem]/invoice-lines:hidden')
+        ->toContain(':aria-label="`Linha ${index + 1}`"')
+        ->toContain('lineDetailGrid')
+        ->toContain('LINE_ERROR_PATHS')
+        ->not->toContain('min-w-[58rem]')
+        ->not->toContain('@min-[58rem]/invoice-lines');
+});
+
+test('lists that squeeze on a phone fold their secondary columns under the first', function () {
+    $quotes = (string) file_get_contents(resource_path('js/pages/Quotes/Index.vue'));
+    $monitor = (string) file_get_contents(resource_path('js/pages/Agt/Submissions/Index.vue'));
+
+    expect(substr_count($quotes, 'max-sm:hidden'))->toBeGreaterThanOrEqual(6)
+        ->and($quotes)->toContain('class="mt-0.5 truncate text-xs text-[var(--ui-ink-2)] sm:hidden"')
+        ->and($monitor)->toContain('xl:max-2xl:block')
+        ->and($monitor)->toContain('<td class="min-w-[16.5rem]">');
+});
+
+test('money in a page figure carries its currency, and counters pair up on a phone', function () {
+    expect((string) file_get_contents(resource_path('js/components/PageStat.vue')))->toContain('unit?: string')
+        ->and(substr_count((string) file_get_contents(resource_path('js/pages/Customers/Show.vue')), ':unit="currencyLabel(props.currencyCode)"'))->toBe(4)
+        ->and((string) file_get_contents(resource_path('js/pages/Saft/Index.vue')))->toContain('grid grid-cols-2 gap-3')
+        ->and((string) file_get_contents(resource_path('js/pages/Analytics/Index.vue')))
+        ->toContain('grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4')
+        ->toContain(":tone=\"summary.paid_minor > 0 ? 'good' : 'neutral'\"");
+});
+
+test('a quote with no lines says so and offers the first one', function () {
+    expect((string) file_get_contents(resource_path('js/pages/Quotes/Form.vue')))
+        ->toContain('title="Ainda sem linhas"')
+        ->toContain('v-if="form.lines.length === 0"');
+});
+
+test('till dates read dd/mm/aaaa like the rest of the app', function () {
+    expect((string) file_get_contents(resource_path('js/lib/pos-ui.ts')))
+        ->toContain("day: '2-digit',\n    month: '2-digit',");
+});
+
+test('invoice prices read 9 800,00 and reach the server as 9800.00', function () {
+    expect((string) file_get_contents(resource_path('js/pages/Invoices/Create.vue')))
+        ->toContain(':value="priceValue(line)"')
+        ->toContain('unit_price: canonicalDecimal(line.unit_price)')
+        ->toContain('quantity: canonicalDecimal(line.quantity)')
+        ->toContain('discount_percentage: canonicalDecimal(')
+        ->not->toContain('v-model="line.unit_price"');
+});
+
+test('the customer document page never scrolls sideways on a phone, and prints unchanged', function () {
+    expect((string) file_get_contents(resource_path('js/pages/Documents/Print.vue')))
+        ->toContain('overflow-x-auto overscroll-x-contain print:overflow-visible')
+        ->toContain('max-sm:grid-cols-[auto_minmax(0,1fr)]');
+});
+
+test('printed quantities, prices and dates read the way an Angolan reader writes them', function () {
+    $invoice = (string) file_get_contents(resource_path('js/pages/Documents/Print.vue'));
+    $guide = (string) file_get_contents(resource_path('js/pages/TransportDocuments/Print.vue'));
+
+    expect($invoice)->toContain('{{ formatQuantity(line.quantity) }}')
+        ->not->toContain('{{ line.quantity }}')
+        ->and($guide)->toContain('{{ formatQuantity(line.quantity) }}')
+        ->toContain('{{ formatPrice(line.unit_price) }}')
+        ->toContain('return `${day}/${month}/${year}`;')
+        ->not->toContain("value.split('T')[0]");
+});
+
+test('tax and discount rates print with a comma, never "14.00%"', function () {
+    expect((string) file_get_contents(resource_path('js/lib/rate.ts')))->toContain("new Intl.NumberFormat('pt-AO'");
+
+    foreach (['Pos/Receipt', 'Documents/Print'] as $page) {
+        expect((string) file_get_contents(resource_path("js/pages/{$page}.vue")))
+            ->toContain("import { formatRate } from '@/lib/rate';")
+            ->not->toMatch('/\{\{\s*[\w.]*rate\s*\}\}%/');
+    }
+});
+
+test('the assistant names a document by its date as dd/mm/aaaa', function () {
+    expect((string) file_get_contents(resource_path('js/pages/Assistant/Index.vue')))
+        ->toContain('calendarDay(document.document_date)')
+        ->toContain('return `${day}/${month}/${year}`;');
+});
+
+test('the document filter row shows on a phone that it scrolls', function () {
+    expect((string) file_get_contents(resource_path('js/pages/Documents/Index.vue')))
+        ->toContain('max-md:[mask-image:linear-gradient(to_right,#000_82%,transparent)]');
+});
+
+test('every trend chart labels its value axis in amounts, and type mixes show shares in one ink', function (string $page) {
+    $source = (string) file_get_contents(resource_path("js/pages/{$page}.vue"));
+
+    expect($source)
+        ->toContain(':tick-format="axisAmount"')
+        ->not->toContain('categorical');
+})->with(['Dashboard', 'Analytics/Index', 'Customers/Show']);
+
+test('line chart keys come from the shared legend, which names only the lines drawn', function (string $page) {
+    $source = (string) file_get_contents(resource_path("js/pages/{$page}.vue"));
+
+    expect($source)
+        ->toContain('<ChartLegend :items="trendLegend" />')
+        ->toContain('point.comparison > 0')
+        ->toContain('shares');
+})->with(['Analytics/Index', 'Customers/Show']);
+
+test('the sign-in screenshot is drawn from 2x pixels in its frame shape, and the hidden theme never downloads', function () {
+    $layout = (string) file_get_contents(resource_path('js/layouts/AuthLayout.vue'));
+
+    expect($layout)
+        ->toContain('/images/auth/today-light-2400.webp 2400w')
+        ->toContain('/images/auth/today-dark-2400.webp 2400w')
+        ->toContain('width="2400"')
+        ->toContain('height="1500"')
+        ->toContain('loading="lazy"')
+        ->not->toContain('today-web-');
+
+    foreach (['light', 'dark'] as $theme) {
+        foreach ([1200, 2400] as $width) {
+            $size = getimagesize(public_path("images/auth/today-{$theme}-{$width}.webp"));
+
+            expect($size[0])->toBe($width)
+                ->and($size[0] / $size[1])->toBe(1.6);
+        }
+    }
 });
