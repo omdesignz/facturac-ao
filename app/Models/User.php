@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Notifications\ApnsClient;
+use App\Notifications\FcmClient;
 use App\Notifications\PushChannel;
 use App\NotificationTopic;
 use Database\Factories\UserFactory;
@@ -115,7 +116,7 @@ class User extends Authenticatable implements MustVerifyEmailContract, PasskeyUs
 
         // Asked last and only when wanted, so a user without the app costs no
         // query and queues no job that would find nowhere to deliver.
-        if ($this->wantsNotification($topic, 'push') && ApnsClient::isConfigured() && $this->pushDevices()->signedIn()->exists()) {
+        if ($this->wantsNotification($topic, 'push') && (ApnsClient::isConfigured() || FcmClient::isConfigured()) && $this->pushDevices()->signedIn()->exists()) {
             $channels[] = PushChannel::class;
         }
 

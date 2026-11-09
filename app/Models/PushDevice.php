@@ -11,19 +11,34 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Laravel\Sanctum\PersonalAccessToken;
 
 /**
- * A phone that Apple can deliver notifications to.
+ * A signed-in phone reachable through Apple or Firebase.
  *
  * @property int $id
  * @property int $user_id
  * @property int $personal_access_token_id
  * @property string $token
+ * @property string $provider
+ * @property string|null $bundle_id
+ * @property string|null $binding
+ * @property string|null $token_hash
  * @property string $environment 'sandbox' for a development build, 'production' otherwise
  */
-#[Fillable(['user_id', 'personal_access_token_id', 'token', 'environment'])]
+#[Fillable(['user_id', 'personal_access_token_id', 'token', 'token_hash', 'environment', 'provider', 'bundle_id', 'binding'])]
 class PushDevice extends Model
 {
     /** @use HasFactory<PushDeviceFactory> */
     use HasFactory;
+
+    protected $attributes = ['provider' => 'apns'];
+
+    protected $hidden = ['token', 'token_hash', 'binding'];
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $device): void {
+            $device->token_hash = hash('sha256', $device->provider.':'.$device->token);
+        });
+    }
 
     public const ENVIRONMENTS = ['sandbox', 'production'];
 

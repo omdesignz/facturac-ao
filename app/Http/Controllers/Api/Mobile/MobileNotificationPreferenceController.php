@@ -6,6 +6,7 @@ use App\Http\Requests\UpdateMobileNotificationPreferencesRequest;
 use App\Models\User;
 use App\Models\WorkspaceMembership;
 use App\Notifications\ApnsClient;
+use App\Notifications\FcmClient;
 use App\NotificationTopic;
 use App\WorkspaceRole;
 use Illuminate\Http\JsonResponse;
@@ -24,7 +25,7 @@ class MobileNotificationPreferenceController
         /** @var User $user */
         $user = $request->user();
 
-        return $this->respond($user);
+        return $this->respond($user, $request);
     }
 
     public function update(UpdateMobileNotificationPreferencesRequest $request): JsonResponse
@@ -40,10 +41,10 @@ class MobileNotificationPreferenceController
 
         $user->forceFill(['notification_preferences' => $preferences])->save();
 
-        return $this->respond($user);
+        return $this->respond($user, $request);
     }
 
-    private function respond(User $user): JsonResponse
+    private function respond(User $user, Request $request): JsonResponse
     {
         // A topic only some roles receive is offered only to someone who holds
         // one of them in at least one company.
@@ -55,9 +56,7 @@ class MobileNotificationPreferenceController
         ));
 
         return response()->json(['data' => [
-            // Without Apple's key nothing is sent, and the app says so rather
-            // than offering switches that do nothing.
-            'available' => ApnsClient::isConfigured(),
+            'available' => $request->query('provider', 'apns') === 'fcm' ? FcmClient::isConfigured() : ApnsClient::isConfigured(),
             'topics' => array_map(fn (NotificationTopic $topic): array => [
                 'key' => $topic->value,
                 'label' => $topic->label(),

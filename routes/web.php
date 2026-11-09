@@ -8,6 +8,7 @@ use App\Http\Controllers\AgtSeriesSyncController;
 use App\Http\Controllers\AgtSubmissionController;
 use App\Http\Controllers\AgtSubmissionRefreshController;
 use App\Http\Controllers\AnalyticsController;
+use App\Http\Controllers\AndroidAssetLinksController;
 use App\Http\Controllers\AppleAppSiteAssociationController;
 use App\Http\Controllers\AssistantController;
 use App\Http\Controllers\BillingCheckoutController;
@@ -87,6 +88,9 @@ Route::get('/', LandingController::class)->name('home');
 // Read by Apple, which needs it before the iPhone app may use passkeys here.
 Route::get('/.well-known/apple-app-site-association', AppleAppSiteAssociationController::class)
     ->name('apple-app-site-association');
+
+Route::get('/.well-known/assetlinks.json', AndroidAssetLinksController::class)
+    ->name('android-asset-links');
 
 // Public on purpose: someone deciding whether to sign up has to be able to read
 // the terms before they have an account.

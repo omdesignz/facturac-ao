@@ -38,7 +38,7 @@ class ApnsClient
     public function send(PushDevice $device, array $payload, ?string $collapseId = null): PushDelivery
     {
         $headers = [
-            'apns-topic' => (string) config('services.apns.bundle_id'),
+            'apns-topic' => $device->bundle_id ?? (string) config('services.apns.bundle_id'),
             'apns-push-type' => 'alert',
             'apns-priority' => '10',
             // News that took a day to reach a phone that was off is stale.
@@ -84,8 +84,8 @@ class ApnsClient
                 ->withHeaders($headers)
                 ->timeout(10)
                 ->post("https://{$host}/3/device/{$token}", $payload);
-        } catch (ConnectionException $exception) {
-            Log::warning('APNs could not be reached.', [...$context, 'error' => $exception->getMessage()]);
+        } catch (ConnectionException) {
+            Log::warning('APNs could not be reached.', $context);
 
             return PushDelivery::Failed;
         }

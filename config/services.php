@@ -41,6 +41,13 @@ return [
         'team_id' => env('APNS_TEAM_ID'),
         'private_key' => env('APNS_PRIVATE_KEY'),
         'bundle_id' => env('APNS_BUNDLE_ID', 'ao.facturac.app'),
+        'allowed_bundle_ids' => ['ao.facturac.app', 'ao.facturac.app.flutter'],
+    ],
+
+    'fcm' => [
+        'project_id' => env('FCM_PROJECT_ID'),
+        'client_email' => env('FCM_CLIENT_EMAIL'),
+        'private_key' => env('FCM_PRIVATE_KEY'),
     ],
 
     /*
@@ -49,6 +56,13 @@ return [
      */
     'ios' => [
         'app_id' => env('IOS_APP_ID'),
+    ],
+
+    // Explicit opt-in: the installed app's signing certificate, not the upload key.
+    // Comma-separated, colon-delimited SHA-256 fingerprints permit key rotation.
+    'android' => [
+        'passkey_package' => env('ANDROID_PASSKEY_PACKAGE'),
+        'passkey_sha256_cert_fingerprints' => explode(',', (string) env('ANDROID_PASSKEY_SHA256_CERT_FINGERPRINTS', '')),
     ],
 
     'slack' => [

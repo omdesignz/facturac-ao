@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Actions\Fortify\ResolveAndroidPasskeyAssociation;
 use App\Actions\Fortify\UpdateUserPassword;
 use App\Actions\Fortify\UpdateUserProfileInformation;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -28,8 +29,13 @@ class FortifyServiceProvider extends ServiceProvider
     /**
      * Bootstrap any application services.
      */
-    public function boot(): void
+    public function boot(ResolveAndroidPasskeyAssociation $androidAssociation): void
     {
+        config(['passkeys.allowed_origins' => array_values(array_unique([
+            ...config('fortify.passkeys.allowed_origins', [config('app.url')]),
+            ...$androidAssociation->origins(),
+        ]))]);
+
         Fortify::createUsersUsing(CreateNewUser::class);
         Fortify::updateUserProfileInformationUsing(UpdateUserProfileInformation::class);
         Fortify::updateUserPasswordsUsing(UpdateUserPassword::class);

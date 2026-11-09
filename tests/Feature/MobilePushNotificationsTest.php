@@ -321,3 +321,15 @@ test('a phone Apple no longer knows is forgotten, and a hiccup is not', function
     'too many requests' => [429, ['reason' => 'TooManyRequests'], false],
     'apple is down' => [503, ['reason' => 'ServiceUnavailable'], false],
 ]);
+
+test('Flutter Apple delivery uses the registered bundle and retains its account binding', function () {
+    configureApns();
+    $user = User::factory()->withWorkspace()->create();
+    $device = PushDevice::factory()->for($user)->create([
+        'bundle_id' => 'ao.facturac.app.flutter', 'binding' => str_repeat('b', 64),
+    ]);
+    Http::fake(['api.push.apple.com/*' => Http::response([], 200)]);
+    app(PushChannel::class)->send($user, overdueNotice($user));
+    Http::assertSent(fn (Request $request): bool => $request->hasHeader('apns-topic', 'ao.facturac.app.flutter')
+        && $request['binding'] === $device->binding);
+});
