@@ -9,6 +9,8 @@ use App\Models\LegalEntity;
 use App\Models\NotificationDigest;
 use App\Models\Quote;
 use App\Models\User;
+use App\Notifications\DocumentAcceptedByAgt;
+use App\Notifications\DocumentRejectedByAgt;
 use App\Notifications\InvoiceFellOverdue;
 use App\Notifications\QuoteWasAccepted;
 use App\NotificationTopic;
@@ -382,4 +384,24 @@ test('a customer past their limit is reported once', function () {
         ->all();
 
     expect($topics)->toContain(NotificationTopic::CreditLimitExceeded->value);
+});
+
+test('the backlog of acceptance notices is marked read and nothing else is touched', function () {
+    $user = User::factory()->withWorkspace()->create();
+    $store = fn (string $type, mixed $readAt = null) => $user->notifications()->create([
+        'id' => (string) Str::uuid(),
+        'type' => $type,
+        'data' => ['workspace_id' => $user->current_workspace_id, 'title' => 'FT 2026/1'],
+        'read_at' => $readAt,
+    ]);
+
+    $accepted = $store(DocumentAcceptedByAgt::class);
+    $alreadyRead = $store(DocumentAcceptedByAgt::class, now()->subWeek());
+    $rejected = $store(DocumentRejectedByAgt::class);
+
+    (require database_path('migrations/2026_11_10_155421_mark_agt_acceptance_notifications_as_read.php'))->up();
+
+    expect($accepted->refresh()->read_at)->not->toBeNull()
+        ->and($alreadyRead->refresh()->read_at->isSameDay(now()->subWeek()))->toBeTrue()
+        ->and($rejected->refresh()->read_at)->toBeNull();
 });
