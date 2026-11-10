@@ -330,7 +330,7 @@ test('the analytics page reports the period against the one before it', function
         $fixture,
         FiscalDocumentType::Invoice,
         400_000,
-        date: $now->subMonthNoOverflow()->startOfMonth()->addDay()->toDateString(),
+        date: $now->subMonthNoOverflow()->startOfMonth()->toDateString(),
     );
 
     $this->actingAs($fixture['owner'])
@@ -342,6 +342,46 @@ test('the analytics page reports the period against the one before it', function
             ->where('previousSummary.billed_minor', 400_000)
             ->where('period.key', 'this_month')
         );
+});
+
+test('a period still running is compared with the same stretch of the one before', function () {
+    CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-11-10 12:00', 'Africa/Luanda'));
+
+    try {
+        $month = AnalyticsPeriod::fromKey('this_month');
+        $quarter = AnalyticsPeriod::fromKey('this_quarter');
+        $year = AnalyticsPeriod::fromKey('this_year');
+        $rolling = AnalyticsPeriod::fromKey('last_12_months');
+        $closed = AnalyticsPeriod::fromKey('last_month');
+    } finally {
+        CarbonImmutable::setTestNow();
+    }
+
+    expect($month->end->toDateString())->toBe('2026-11-10')
+        ->and($month->previousStart->toDateString())->toBe('2026-10-01')
+        ->and($month->previousEnd->toDateString())->toBe('2026-10-10')
+        ->and($month->comparisonLabel)->toBe('Os mesmos dias do mês anterior')
+        ->and($quarter->previousStart->toDateString())->toBe('2026-07-01')
+        ->and($quarter->previousEnd->toDateString())->toBe('2026-08-10')
+        ->and($year->previousStart->toDateString())->toBe('2025-01-01')
+        ->and($year->previousEnd->toDateString())->toBe('2025-11-10')
+        ->and($rolling->previousEnd->toDateString())->toBe('2025-11-10')
+        ->and($closed->previousStart->toDateString())->toBe('2026-09-01')
+        ->and($closed->previousEnd->toDateString())->toBe('2026-09-30')
+        ->and($closed->comparisonLabel)->toBe('Mês anterior');
+});
+
+test('the last day of a long month is compared with the whole shorter month before it', function () {
+    CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-03-31 09:00', 'Africa/Luanda'));
+
+    try {
+        $month = AnalyticsPeriod::fromKey('this_month');
+    } finally {
+        CarbonImmutable::setTestNow();
+    }
+
+    expect($month->previousStart->toDateString())->toBe('2026-02-01')
+        ->and($month->previousEnd->toDateString())->toBe('2026-02-28');
 });
 
 test('an unknown period falls back to this month rather than erroring', function () {

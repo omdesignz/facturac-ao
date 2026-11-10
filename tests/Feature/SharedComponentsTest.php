@@ -134,6 +134,44 @@ test('the cookie banner scrolls inside itself on a short screen', function () {
         ->not->toContain('ease-in');
 });
 
+test('on a phone the cookie banner leaves the form beneath it in reach', function () {
+    expect(component('components/CookieConsent.vue'))
+        ->toContain('p-3.5')
+        ->toContain('max-sm:hidden')
+        ->toContain('max-sm:[&>*]:flex-1')
+        ->toContain('Apenas essenciais');
+});
+
+test('creating an account says what the password needs and lets it be read back', function () {
+    $register = (string) file_get_contents(resource_path('js/pages/Auth/Register.vue'));
+
+    expect($register)
+        ->toContain('id="password-hint"')
+        ->toContain('Pelo menos 12 caracteres')
+        ->toContain(':aria-pressed="passwordsShown"')
+        ->toContain("'Criar conta'")
+        ->toContain('Sem cartão para começar.')
+        ->not->toContain('Criar conta segura')
+        ->not->toContain('bg-white')
+        ->not->toContain('text-brand-700');
+});
+
+test('the overdue figure on Hoje says it covers every month, the board below one', function () {
+    expect(component('pages/Dashboard.vue'))->toContain('de todos os meses')
+        ->and(component('components/dashboard/DocumentBalanceOverview.vue'))
+        ->toContain('Documentos de venda de {{ period }}');
+});
+
+test('a phone document card does not repeat its total as the amount owed', function () {
+    expect(component('pages/Documents/Index.vue'))
+        ->toMatch('/outstanding_minor !==\s+row\.document\s+\.gross_total_minor/');
+});
+
+test('the page name in the bar matches the page it sits above', function () {
+    expect(component('lib/navigation.ts'))->toContain("name: 'Quem me deve'")->not->toContain("name: 'Dívidas'")
+        ->and(component('components/AppHeader.vue'))->toContain("'Notificações'");
+});
+
 /**
  * Every Vue file under resources/js except the folders another screen owns.
  *

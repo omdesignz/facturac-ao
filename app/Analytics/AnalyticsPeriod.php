@@ -12,6 +12,10 @@ use Carbon\CarbonInterface;
  * comparison is only honest if the two windows are the same shape: this month
  * against last month, this year against last year — never against "the previous
  * 30 days" when the current window is a calendar month of 28.
+ *
+ * A window still running is compared with the same stretch of the one before:
+ * the first ten days of this month against the first ten of last month. Set
+ * against a whole month, an ordinary tenth of November reads as a collapse.
  */
 class AnalyticsPeriod
 {
@@ -49,21 +53,21 @@ class AnalyticsPeriod
             'this_quarter' => self::spanning(
                 key: 'this_quarter',
                 label: 'Este trimestre',
-                comparisonLabel: 'Trimestre anterior',
+                comparisonLabel: 'O mesmo período do trimestre anterior',
                 start: $now->firstOfQuarter()->startOfDay(),
                 end: $now->endOfDay(),
-                previousStart: $now->subQuarter()->firstOfQuarter()->startOfDay(),
-                previousEnd: $now->subQuarter()->lastOfQuarter()->endOfDay(),
+                previousStart: $now->subMonthsNoOverflow(3)->firstOfQuarter()->startOfDay(),
+                previousEnd: $now->subMonthsNoOverflow(3)->endOfDay(),
                 granularity: 'month',
             ),
             'this_year' => self::spanning(
                 key: 'this_year',
                 label: 'Este ano',
-                comparisonLabel: 'Ano anterior',
+                comparisonLabel: 'O mesmo período do ano anterior',
                 start: $now->startOfYear(),
                 end: $now->endOfDay(),
-                previousStart: $now->subYear()->startOfYear(),
-                previousEnd: $now->subYear()->endOfYear(),
+                previousStart: $now->subYearNoOverflow()->startOfYear(),
+                previousEnd: $now->subYearNoOverflow()->endOfDay(),
                 granularity: 'month',
             ),
             'last_12_months' => self::spanning(
@@ -73,7 +77,7 @@ class AnalyticsPeriod
                 start: $now->subMonthsNoOverflow(11)->startOfMonth(),
                 end: $now->endOfDay(),
                 previousStart: $now->subMonthsNoOverflow(23)->startOfMonth(),
-                previousEnd: $now->subMonthsNoOverflow(12)->endOfMonth(),
+                previousEnd: $now->subMonthsNoOverflow(12)->endOfDay(),
                 granularity: 'month',
             ),
             default => self::monthly($now, key: 'this_month', label: 'Este mês'),
@@ -85,14 +89,18 @@ class AnalyticsPeriod
         string $key = 'last_month',
         string $label = 'Mês passado',
     ): self {
+        $stillRunning = $key === 'this_month';
+
         return self::spanning(
             key: $key,
             label: $label,
-            comparisonLabel: 'Mês anterior',
+            comparisonLabel: $stillRunning ? 'Os mesmos dias do mês anterior' : 'Mês anterior',
             start: $anchor->startOfMonth(),
-            end: $key === 'this_month' ? CarbonImmutable::now('Africa/Luanda')->endOfDay() : $anchor->endOfMonth(),
+            end: $stillRunning ? $anchor->endOfDay() : $anchor->endOfMonth(),
             previousStart: $anchor->subMonthNoOverflow()->startOfMonth(),
-            previousEnd: $anchor->subMonthNoOverflow()->endOfMonth(),
+            previousEnd: $stillRunning
+                ? $anchor->subMonthNoOverflow()->endOfDay()
+                : $anchor->subMonthNoOverflow()->endOfMonth(),
             granularity: 'day',
         );
     }

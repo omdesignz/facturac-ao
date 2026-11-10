@@ -17,7 +17,10 @@ const groups = [
         ],
     },
     {
-        items: [item('Clientes', '/customers'), item('Dívidas', '/dividas')],
+        items: [
+            item('Clientes', '/customers'),
+            item('Quem me deve', '/dividas'),
+        ],
     },
     { items: [item('Monitor AGT', '/agt/submissions')] },
     { items: [item('Conta e segurança', '/settings/security')] },

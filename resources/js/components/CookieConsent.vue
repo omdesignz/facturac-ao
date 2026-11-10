@@ -58,32 +58,32 @@ function saveSelection(): void {
     >
         <div
             v-if="visible"
-            class="fixed inset-x-0 bottom-0 z-[70] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-6 sm:pb-[max(1.5rem,env(safe-area-inset-bottom))]"
+            class="fixed inset-x-0 bottom-0 z-[70] p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:p-6 sm:pb-[max(1.5rem,env(safe-area-inset-bottom))]"
             role="region"
             aria-label="Consentimento de cookies"
         >
             <div
-                class="mx-auto max-h-[calc(100dvh-1rem-max(1rem,env(safe-area-inset-bottom)))] max-w-3xl overflow-y-auto overscroll-contain rounded-2xl bg-white p-5 shadow-2xl ring-1 ring-zinc-900/10 sm:max-h-[calc(100dvh-1.5rem-max(1.5rem,env(safe-area-inset-bottom)))] dark:bg-zinc-900 dark:ring-white/10"
+                class="mx-auto max-h-[calc(100dvh-1rem-max(1rem,env(safe-area-inset-bottom)))] max-w-3xl overflow-y-auto overscroll-contain rounded-2xl bg-white p-3.5 shadow-2xl ring-1 ring-zinc-900/10 sm:max-h-[calc(100dvh-1.5rem-max(1.5rem,env(safe-area-inset-bottom)))] sm:p-5 dark:bg-zinc-900 dark:ring-white/10"
             >
                 <div class="flex items-start gap-3">
                     <span
-                        class="grid size-9 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700 dark:bg-accent-400/10 dark:text-accent-300"
+                        class="grid size-9 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700 max-sm:hidden dark:bg-accent-400/10 dark:text-accent-300"
                     >
                         <Cookie class="size-5" aria-hidden="true" />
                     </span>
 
                     <div class="min-w-0 flex-1">
                         <p
-                            class="text-sm font-semibold text-zinc-950 dark:text-white"
+                            class="text-sm font-semibold text-zinc-950 max-sm:hidden dark:text-white"
                         >
                             Cookies
                         </p>
                         <p
-                            class="mt-1 text-sm/6 text-zinc-600 dark:text-zinc-400"
+                            class="text-[0.8125rem]/5 text-zinc-600 sm:mt-1 sm:text-sm/6 dark:text-zinc-400"
                         >
                             Usamos cookies essenciais para manter a sua sessão
-                            iniciada. Os restantes só com a sua autorização — e
-                            não usamos cookies de publicidade.
+                            iniciada. Os restantes só com a sua autorização, e
+                            nenhum é de publicidade.
                             <Link
                                 href="/cookies"
                                 class="font-medium text-brand-700 underline underline-offset-4 dark:text-accent-300"
@@ -158,7 +158,9 @@ function saveSelection(): void {
                             </label>
                         </div>
 
-                        <div class="mt-4 flex flex-wrap gap-2">
+                        <div
+                            class="mt-3 flex flex-wrap gap-2 sm:mt-4 max-sm:[&>*]:flex-1"
+                        >
                             <AppButton
                                 variant="ink"
                                 :disabled="saving"

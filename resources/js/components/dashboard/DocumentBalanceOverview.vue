@@ -70,11 +70,11 @@ const number = (value: number): string =>
             class="flex flex-wrap items-center gap-2 border-b border-[var(--ui-line)] pb-4"
         >
             <h2 id="document-overview-title" class="text-sm font-semibold">
-                Documentos de venda
+                Documentos de venda de {{ period }}
             </h2>
-            <span class="text-xs text-[var(--ui-ink-3)]"
-                >{{ number(summary.total) }} · {{ period }}</span
-            >
+            <span class="numeric text-xs text-[var(--ui-ink-3)]">{{
+                number(summary.total)
+            }}</span>
             <Link
                 :href="href"
                 class="ms-auto inline-flex min-h-8 items-center gap-1 rounded-lg px-2 text-xs font-medium text-[var(--ui-ink-2)] focus-ring hover:bg-[var(--ui-wash)] active:bg-[var(--ui-well)]"

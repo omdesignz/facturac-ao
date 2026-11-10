@@ -1375,7 +1375,11 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                                     v-if="
                                                         row.document.balance
                                                             .outstanding_minor >
-                                                        0
+                                                            0 &&
+                                                        row.document.balance
+                                                            .outstanding_minor !==
+                                                            row.document
+                                                                .gross_total_minor
                                                     "
                                                     class="numeric"
                                                     >{{

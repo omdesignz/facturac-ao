@@ -435,9 +435,15 @@ const chartPoints = computed(() =>
                             currencyLabel
                         }}</span></span
                     >
-                    <span class="text-xs text-[var(--ui-ink-3)]">{{
-                        plural(kpis.overdue_count, 'documento', 'documentos')
-                    }}</span>
+                    <span class="text-xs text-[var(--ui-ink-3)]"
+                        >{{
+                            plural(
+                                kpis.overdue_count,
+                                'documento',
+                                'documentos',
+                            )
+                        }}, de todos os meses</span
+                    >
                 </Link>
             </div>
 

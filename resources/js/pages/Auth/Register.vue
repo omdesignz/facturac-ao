@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Form, Head, Link } from '@inertiajs/vue3';
-import { LoaderCircle } from '@lucide/vue';
+import { Eye, EyeOff, LoaderCircle } from '@lucide/vue';
 import { onMounted, ref } from 'vue';
 import AppButton from '@/components/AppButton.vue';
 import FormField from '@/components/FormField.vue';
@@ -16,6 +16,9 @@ defineProps<{
 }>();
 
 const nameInput = ref<HTMLInputElement | null>(null);
+
+/** One switch for both fields: the pair is only useful read side by side. */
+const passwordsShown = ref(false);
 
 /**
  * Focus the first field on arrival only where there is a keyboard to answer
@@ -100,67 +103,90 @@ onMounted(() => {
                     placeholder="nome@empresa.ao"
             /></FormField>
 
-            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                <FormField
-                    for="password"
-                    label="Palavra-passe"
-                    :error="errors.password"
-                    error-id="password-error"
-                    ><input
-                        id="password"
-                        name="password"
-                        type="password"
-                        autocomplete="new-password"
-                        required
-                        :aria-invalid="errors.password ? 'true' : undefined"
-                        :aria-describedby="
-                            errors.password ? 'password-error' : undefined
-                        "
-                        class="block form-input"
-                /></FormField>
-                <FormField for="password-confirmation" label="Confirmar"
-                    ><input
-                        id="password-confirmation"
-                        name="password_confirmation"
-                        type="password"
-                        autocomplete="new-password"
-                        required
-                        class="block form-input"
-                /></FormField>
+            <div>
+                <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                    <FormField
+                        for="password"
+                        label="Palavra-passe"
+                        :error="errors.password"
+                        error-id="password-error"
+                        ><input
+                            id="password"
+                            name="password"
+                            :type="passwordsShown ? 'text' : 'password'"
+                            autocomplete="new-password"
+                            required
+                            :aria-invalid="errors.password ? 'true' : undefined"
+                            :aria-describedby="
+                                errors.password
+                                    ? 'password-error password-hint'
+                                    : 'password-hint'
+                            "
+                            class="block form-input"
+                    /></FormField>
+                    <FormField for="password-confirmation" label="Confirmar"
+                        ><input
+                            id="password-confirmation"
+                            name="password_confirmation"
+                            :type="passwordsShown ? 'text' : 'password'"
+                            autocomplete="new-password"
+                            required
+                            class="block form-input"
+                    /></FormField>
+                </div>
+
+                <div
+                    class="mt-2 flex items-start justify-between gap-3 text-xs/5 text-[var(--ui-ink-3)]"
+                >
+                    <p id="password-hint">
+                        Pelo menos 12 caracteres, com maiúsculas, minúsculas,
+                        números e um símbolo.
+                    </p>
+                    <button
+                        type="button"
+                        class="inline-flex shrink-0 items-center gap-1.5 rounded font-medium text-[var(--ui-ink-2)] focus-ring hover:text-[var(--ui-ink)] pointer-coarse:min-h-11"
+                        :aria-pressed="passwordsShown"
+                        @click="passwordsShown = !passwordsShown"
+                    >
+                        <EyeOff
+                            v-if="passwordsShown"
+                            class="size-3.5"
+                            aria-hidden="true"
+                        />
+                        <Eye v-else class="size-3.5" aria-hidden="true" />
+                        {{ passwordsShown ? 'Ocultar' : 'Mostrar' }}
+                    </button>
+                </div>
             </div>
 
-            <AppButton
-                variant="ink"
-                size="lg"
-                type="submit"
-                :disabled="processing"
-                class="w-full"
-            >
-                <LoaderCircle
-                    v-if="processing"
-                    class="size-4 animate-spin"
-                    aria-hidden="true"
-                />
-                {{ processing ? 'A criar…' : 'Criar conta segura' }}
-            </AppButton>
+            <div>
+                <AppButton
+                    variant="ink"
+                    size="lg"
+                    type="submit"
+                    :disabled="processing"
+                    class="w-full"
+                >
+                    <LoaderCircle
+                        v-if="processing"
+                        class="size-4 animate-spin"
+                        aria-hidden="true"
+                    />
+                    {{ processing ? 'A criar…' : 'Criar conta' }}
+                </AppButton>
+
+                <p class="mt-3 text-center text-xs text-[var(--ui-ink-3)]">
+                    Sem cartão para começar.
+                </p>
+            </div>
         </Form>
 
         <template v-if="googleEnabled">
-            <div class="relative my-7">
-                <div
-                    class="absolute inset-0 flex items-center"
-                    aria-hidden="true"
-                >
-                    <div
-                        class="w-full border-t border-zinc-200 dark:border-white/10"
-                    />
-                </div>
-                <div class="relative flex justify-center text-xs font-medium">
-                    <span
-                        class="bg-white px-4 text-zinc-500 dark:bg-zinc-950 dark:text-zinc-400"
-                        >ou use uma conta existente</span
-                    >
-                </div>
+            <div
+                class="my-6 flex items-center gap-3 text-xs text-[var(--ui-ink-3)]"
+            >
+                <span class="h-px flex-1 bg-[var(--ui-line)]" />ou use uma conta
+                existente<span class="h-px flex-1 bg-[var(--ui-line)]" />
             </div>
             <AppButton
                 variant="outline"
@@ -179,7 +205,7 @@ onMounted(() => {
                 Já tem conta?
                 <Link
                     :href="login.url()"
-                    class="rounded font-semibold text-brand-700 focus-ring hover:text-brand-600 dark:text-brand-300 dark:hover:text-brand-100"
+                    class="rounded font-semibold text-[var(--ui-ink)] focus-ring hover:underline hover:underline-offset-2"
                     >Entrar</Link
                 >
             </p>

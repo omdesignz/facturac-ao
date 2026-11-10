@@ -154,7 +154,7 @@ const baseGroups: NavigationGroup[] = [
                 icon: Users,
             },
             {
-                name: 'Dívidas',
+                name: 'Quem me deve',
                 href: debtsIndex.url(),
                 match: '/dividas',
                 icon: HandCoins,

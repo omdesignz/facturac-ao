@@ -33,7 +33,9 @@ const pageName = computed(() =>
         ? 'Hoje'
         : page.component === 'Invoices/Create'
           ? 'Nova factura'
-          : (activeItem.value?.name ?? 'Aplicação'),
+          : page.component === 'Notifications/Index'
+            ? 'Notificações'
+            : (activeItem.value?.name ?? 'Aplicação'),
 );
 
 /**
