@@ -32,7 +32,6 @@ import DataTable from '@/components/DataTable.vue';
 import FlashBanner from '@/components/FlashBanner.vue';
 import FormField from '@/components/FormField.vue';
 import PageHeader from '@/components/PageHeader.vue';
-import PageStat from '@/components/PageStat.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { buttonClass } from '@/lib/button';
@@ -393,9 +392,9 @@ function submitCheckout(): void {
                 <AccountSettingsNav />
                 <FlashBanner />
                 <PageHeader
-                    eyebrow="Configuração · Plano e cobrança"
+                    eyebrow="Configuração"
                     title="Plano e cobrança"
-                    description="Escolha o plano e o método de pagamento na página segura da WiPay. A assinatura só é activada após confirmação autenticada do pagamento."
+                    description="Escolha o plano e pague na página segura da WiPay. O plano fica activo quando o pagamento é confirmado."
                 >
                     <template #meta>
                         <StatusBadge
@@ -403,20 +402,6 @@ function submitCheckout(): void {
                             tone="info"
                         />
                         <StatusBadge :label="gateway.method" tone="neutral" />
-                    </template>
-                    <template #stats>
-                        <PageStat
-                            label="Operador"
-                            :value="gateway.provider"
-                            :detail="gateway.environment_label"
-                            compact
-                        />
-                        <PageStat
-                            label="Pagamento activo"
-                            :value="activePayment ? 'A aguardar' : 'Nenhum'"
-                            detail="Valor exacto e confirmação automática"
-                            compact
-                        />
                     </template>
                 </PageHeader>
 
@@ -499,8 +484,15 @@ function submitCheckout(): void {
                     </div>
                 </section>
 
+                <!-- The payment card exists only while a payment is under
+                     way. With none, the plan stands alone across the page. -->
                 <div
-                    class="grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(22rem,0.85fr)]"
+                    :class="[
+                        'grid gap-6',
+                        activePayment
+                            ? 'xl:grid-cols-[minmax(0,1.55fr)_minmax(22rem,0.85fr)]'
+                            : '',
+                    ]"
                 >
                     <section
                         v-if="activePayment"
@@ -601,31 +593,6 @@ function submitCheckout(): void {
                         </AppButton>
                     </section>
 
-                    <section
-                        v-else
-                        class="rounded-2xl surface p-7 text-center sm:p-10"
-                        aria-labelledby="no-payment-heading"
-                    >
-                        <span
-                            class="mx-auto grid size-12 place-items-center rounded-2xl bg-brand-50 text-brand-700 dark:bg-brand-400/10 dark:text-brand-300"
-                        >
-                            <Landmark class="size-6" aria-hidden="true" />
-                        </span>
-                        <h2
-                            id="no-payment-heading"
-                            class="mt-4 text-base font-semibold text-zinc-950 dark:text-white"
-                        >
-                            Nenhum pagamento pendente
-                        </h2>
-                        <p
-                            class="mx-auto mt-2 max-w-lg text-sm/6 text-zinc-500 dark:text-zinc-400"
-                        >
-                            Seleccione um plano abaixo. Antes de iniciar o
-                            pagamento, mostramos o valor, o período e todas as
-                            condições para uma confirmação consciente.
-                        </p>
-                    </section>
-
                     <aside
                         class="overflow-hidden rounded-2xl surface"
                         aria-labelledby="subscription-heading"
@@ -650,7 +617,15 @@ function submitCheckout(): void {
                             </div>
                         </div>
 
-                        <div v-if="subscription" class="p-5 sm:p-6">
+                        <div
+                            v-if="subscription"
+                            :class="[
+                                'p-5 sm:p-6',
+                                activePayment
+                                    ? ''
+                                    : 'lg:flex lg:items-center lg:justify-between lg:gap-10',
+                            ]"
+                        >
                             <div class="flex items-start gap-4">
                                 <span
                                     class="grid size-11 shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300"
@@ -680,7 +655,12 @@ function submitCheckout(): void {
                                 </div>
                             </div>
                             <dl
-                                class="mt-6 space-y-4 border-t border-zinc-100 pt-5 dark:border-white/5"
+                                :class="[
+                                    'mt-6 space-y-4 border-t border-zinc-100 pt-5 dark:border-white/5',
+                                    activePayment
+                                        ? ''
+                                        : 'lg:mt-0 lg:min-w-80 lg:border-t-0 lg:pt-0',
+                                ]"
                             >
                                 <div
                                     class="flex items-center justify-between gap-4"
@@ -734,8 +714,9 @@ function submitCheckout(): void {
                             <p
                                 class="mt-1 text-xs/5 text-zinc-500 dark:text-zinc-400"
                             >
-                                Os seus dados fiscais permanecem isolados; o
-                                plano define o acesso contínuo ao serviço.
+                                Escolha um plano abaixo para continuar a
+                                facturar. Os documentos que já emitiu não se
+                                perdem.
                             </p>
                         </div>
 
@@ -759,22 +740,17 @@ function submitCheckout(): void {
 
                 <section aria-labelledby="plans-heading">
                     <div class="mx-auto max-w-3xl text-center">
-                        <p
-                            class="text-sm font-semibold text-brand-700 dark:text-brand-300"
-                        >
-                            Planos configuráveis
-                        </p>
                         <h2
                             id="plans-heading"
-                            class="mt-2 text-3xl display text-zinc-950 dark:text-white"
+                            class="text-2xl display text-zinc-950 dark:text-white"
                         >
-                            Escolha o ritmo da sua empresa
+                            {{ subscription ? 'Mudar ou renovar' : 'Planos' }}
                         </h2>
                         <p
-                            class="mt-3 text-sm/6 text-zinc-500 dark:text-zinc-400"
+                            class="mt-2 text-sm/6 text-zinc-500 dark:text-zinc-400"
                         >
-                            Os preços são administrados na plataforma. O valor
-                            apresentado é o total da assinatura.
+                            O preço de cada plano é o total do período, em
+                            kwanzas.
                         </p>
                         <p
                             v-if="checkoutBlockedReason"
@@ -995,8 +971,13 @@ function submitCheckout(): void {
                                             >
                                         </li>
                                     </ul>
+                                    <!-- An offer to try it means nothing to
+                                         someone already on a plan. -->
                                     <p
-                                        v-if="card.offer.trial_days > 0"
+                                        v-if="
+                                            card.offer.trial_days > 0 &&
+                                            subscription === null
+                                        "
                                         :class="[
                                             'text-zinc-600 dark:text-zinc-300',
                                             'mt-6 text-sm/6 font-medium',
@@ -1202,8 +1183,7 @@ function submitCheckout(): void {
                             <p
                                 class="mt-1 text-sm/6 text-zinc-500 dark:text-zinc-400"
                             >
-                                As vinte cobranças mais recentes, com referência
-                                e estado preservados para auditoria.
+                                As vinte cobranças mais recentes.
                             </p>
                         </div>
                     </div>
@@ -1321,7 +1301,7 @@ function submitCheckout(): void {
 
                 <section
                     class="grid gap-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-5 sm:grid-cols-3 dark:border-white/10 dark:bg-white/[0.025]"
-                    aria-label="Garantias do fluxo de cobrança"
+                    aria-label="Como protegemos o pagamento"
                 >
                     <div class="flex gap-3">
                         <Banknote
@@ -1337,8 +1317,8 @@ function submitCheckout(): void {
                             <p
                                 class="mt-1 text-xs/5 text-zinc-500 dark:text-zinc-400"
                             >
-                                A confirmação é rejeitada se valor ou moeda não
-                                coincidirem.
+                                Só confirmamos o pagamento se o valor e a moeda
+                                forem os do plano.
                             </p>
                         </div>
                     </div>
@@ -1351,13 +1331,13 @@ function submitCheckout(): void {
                             <p
                                 class="text-sm font-semibold text-zinc-900 dark:text-white"
                             >
-                                Sem duplicações
+                                Sem pagar duas vezes
                             </p>
                             <p
                                 class="mt-1 text-xs/5 text-zinc-500 dark:text-zinc-400"
                             >
-                                Cliques repetidos e eventos repetidos são
-                                tratados idempotentemente.
+                                Clicar duas vezes ou repetir o pedido não cria
+                                uma segunda cobrança.
                             </p>
                         </div>
                     </div>
@@ -1370,13 +1350,13 @@ function submitCheckout(): void {
                             <p
                                 class="text-sm font-semibold text-zinc-900 dark:text-white"
                             >
-                                Evidência preservada
+                                Histórico guardado
                             </p>
                             <p
                                 class="mt-1 text-xs/5 text-zinc-500 dark:text-zinc-400"
                             >
-                                O histórico de pedidos e confirmações é
-                                preservado sem alterações.
+                                Os pedidos e as confirmações ficam guardados e
+                                não são alterados.
                             </p>
                         </div>
                     </div>

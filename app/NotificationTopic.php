@@ -52,7 +52,7 @@ enum NotificationTopic: string
     public function description(): string
     {
         return match ($this) {
-            self::DocumentAccepted => 'Quando a AGT confirma um documento comunicado.',
+            self::DocumentAccepted => 'Quando a AGT confirma um documento comunicado. Desligado de origem: é o que acontece a quase todos, e o estado do documento já o mostra.',
             self::DocumentRejected => 'Quando a AGT recusa um documento e é preciso corrigi-lo.',
             self::DocumentOpened => 'Na primeira vez que o cliente abre a ligação do documento que lhe enviou.',
             self::PaymentReceived => 'Quando um colega emite o recibo de um pagamento de cliente.',
@@ -102,7 +102,13 @@ enum NotificationTopic: string
      * Everything lands in the app; only what needs acting on outside the app
      * also lands in an inbox, so email stays worth reading. The phone buzzes
      * only for news about customers and money that someone can act on from
-     * the phone itself; every acceptance by the AGT would be noise there.
+     * the phone itself.
+     *
+     * An acceptance by the AGT is the one exception to landing in the app. It
+     * is what happens to nearly every document, so a shop issuing a hundred a
+     * day got a hundred identical lines and the refusal that needed reading
+     * was buried under them. The document's own status already says it was
+     * validated; anyone who wants the notice as well can switch it on.
      *
      * @return array{database: bool, mail: bool, push: bool}
      */
@@ -114,7 +120,7 @@ enum NotificationTopic: string
         }
 
         return [
-            'database' => true,
+            'database' => $this !== self::DocumentAccepted,
             'mail' => match ($this) {
                 self::DocumentRejected,
                 self::InvoiceOverdue,

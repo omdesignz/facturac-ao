@@ -7,16 +7,17 @@ use Carbon\CarbonImmutable;
 
 final class AgtStatusPresentation
 {
+    /**
+     * The one or two words a list shows for a document's AGT state.
+     *
+     * A validated document reads "Validada" for as long as that is the last
+     * thing the AGT reported. When it was observed, and how old the observation
+     * is, belong to {@see describe()} and the detail panel: said on every row,
+     * the age of the observation made each healthy document look like a problem.
+     */
     public static function label(FiscalDocument $document, CarbonImmutable $asOf): string
     {
-        $status = CurrentAgtState::status($document, $asOf);
-        if (! in_array($status->value, ['valid', 'invalid'], true)) {
-            return $status->label();
-        }
-        $view = self::describe($document, $asOf);
-
-        return ($status->value === 'valid' ? 'Validação reportada' : 'Invalidade reportada')
-            .($view['freshness'] === 'stale' ? ' (observação antiga)' : '');
+        return CurrentAgtState::status($document, $asOf)->label();
     }
 
     /** @return array<string, mixed> */

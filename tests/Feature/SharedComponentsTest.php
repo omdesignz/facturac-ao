@@ -368,3 +368,17 @@ test('form errors keep the 6px rhythm and announce once', function () {
         ->toContain('role="alert"')
         ->toContain('v-if="message"');
 });
+
+test('plan and billing speaks plainly and shows a payment card only while one is under way', function () {
+    $billing = component('pages/Billing/Show.vue');
+
+    expect($billing)
+        ->not->toContain('idempotentemente')
+        ->not->toContain('confirmação consciente')
+        ->not->toContain('Nenhum pagamento pendente')
+        ->not->toContain('Escolha o ritmo da sua empresa')
+        ->not->toContain('Planos configuráveis')
+        ->toContain('Clicar duas vezes ou repetir o pedido não cria')
+        // A trial is offered only to a company that has no plan yet.
+        ->toMatch('/card\.offer\.trial_days > 0 &&\s+subscription === null/');
+});

@@ -1,6 +1,7 @@
 <?php
 
 use App\AgtSubmissionStatus;
+use App\Fiscal\Documents\AgtStatusPresentation;
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
 use App\Models\AgtSubmission;
@@ -11,6 +12,7 @@ use App\Models\FiscalDocument;
 use App\Models\LegalEntity;
 use App\Models\StockLevel;
 use App\Models\User;
+use App\Notifications\DocumentRejectedByAgt;
 use App\WorkspaceRole;
 use Carbon\CarbonImmutable;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -233,6 +235,41 @@ test('on a quiet day the latest document leads and an invoice-receipt counts as 
             ->where('focus.steps.4.state', 'done')
             ->where('kpis.valid_today', 1)
         );
+});
+
+test('a validated document reads "Validada" however old the observation and says nothing to the bell', function () {
+    $fixture = dashboardFixture();
+
+    $document = dashboardDocument($fixture, [
+        'document_no' => 'FR 2026/23',
+        'document_type' => FiscalDocumentType::InvoiceReceipt,
+        'status' => FiscalDocumentStatus::Valid,
+    ]);
+
+    recordAuthoritativeAgtAcceptance($document);
+
+    $nextDay = CarbonImmutable::now()->addDay();
+
+    expect(AgtStatusPresentation::label($document->refresh(), CarbonImmutable::now()))->toBe('Validada')
+        ->and(AgtStatusPresentation::label($document, $nextDay))->toBe('Validada')
+        // The age of the observation is still there for the detail panel.
+        ->and(AgtStatusPresentation::describe($document, $nextDay)['freshness'])->toBe('stale')
+        // Acceptance is the ordinary outcome: nobody is told unless they asked.
+        ->and($fixture['owner']->notifications()->count())->toBe(0);
+});
+
+test('a document the AGT refuses still reaches the bell', function () {
+    $fixture = dashboardFixture();
+
+    $document = dashboardDocument($fixture, [
+        'document_no' => 'FT 2026/24',
+        'status' => FiscalDocumentStatus::Valid,
+    ]);
+
+    recordAuthoritativeAgtAcceptance($document, 'I');
+
+    expect(AgtStatusPresentation::label($document->refresh(), CarbonImmutable::now()->addDay()))->toBe('Inválida')
+        ->and($fixture['owner']->notifications()->pluck('type')->all())->toBe([DocumentRejectedByAgt::class]);
 });
 
 test('collections arrive after first paint, oldest debt first', function () {

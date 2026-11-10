@@ -142,7 +142,7 @@ test('support access cannot be silenced', function () {
 test('a topic the user never answered keeps its own default', function () {
     $user = User::factory()->create(['notification_preferences' => []]);
 
-    expect($user->wantsNotification(NotificationTopic::DocumentAccepted, 'database'))
+    expect($user->wantsNotification(NotificationTopic::InvoiceOverdue, 'database'))
         ->toBeTrue()
         // Accepted is the expected outcome, so it does not also fill an inbox.
         ->and($user->wantsNotification(NotificationTopic::DocumentAccepted, 'mail'))

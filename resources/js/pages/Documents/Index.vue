@@ -1264,8 +1264,12 @@ async function sendDocument(document: RegisterDocument): Promise<void> {
                                         cache-for="5s"
                                         :only="['selected']"
                                         :title="
-                                            row.document.workflow_message ??
-                                            undefined
+                                            row.document.workflow_status ===
+                                            'valid'
+                                                ? undefined
+                                                : (row.document
+                                                      .workflow_message ??
+                                                  undefined)
                                         "
                                         :aria-current="
                                             selected?.public_id ===
