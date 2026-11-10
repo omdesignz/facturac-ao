@@ -366,3 +366,26 @@ test('every call to open an account says the same thing', function () {
 
     expect(substr_count($page, 'Abrir conta grátis'))->toBeGreaterThanOrEqual(6);
 });
+
+test('the homepage opens on a situation and answers each one beside its own line', function () {
+    $page = file_get_contents(resource_path('js/pages/Landing.vue'));
+
+    // The first thing read is a moment in a shop; the certificate follows in
+    // the next sentence instead of being the headline every competitor uses.
+    expect($page)
+        ->toContain('A factura sai antes de o cliente sair')
+        ->toContain('Software de facturação certificado pela AGT')
+        ->not->toContain('Facture com software certificado pela AGT');
+
+    // Each situation opens its own answer, so on a phone nothing changes off
+    // screen: a button that says whether it is open, and the region it controls.
+    expect($page)
+        ->toContain(':aria-controls="`momento-detalhe-${index}`"')
+        ->toContain(':id="`momento-detalhe-${index}`"')
+        ->not->toContain('role="tablist"');
+
+    // The deadline is named once at the top and argued just before the prices.
+    expect($page)->toContain('href="#prazo"');
+    expect(strpos($page, 'id="momentos"'))->toBeLessThan(strpos($page, 'id="prazo"'));
+    expect(strpos($page, 'id="prazo"'))->toBeLessThan(strpos($page, 'id="precos"'));
+});

@@ -327,9 +327,7 @@ const moments: {
     },
 ];
 
-const selectedMoment = computed(() => moments[selectedMomentIndex.value]!);
-
-/** Arrow keys move between moments, as they do in any tab list. */
+/** Arrow keys move between moments, and open the one they land on. */
 function moveMoment(event: KeyboardEvent, index: number): void {
     if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') {
         return;
@@ -608,14 +606,17 @@ const questions: { question: string; answer: string }[] = [
                     <h1
                         class="font-display text-[length:clamp(2.75rem,1.45rem+6vw,6rem)] leading-[1.04] font-bold tracking-[-0.018em] text-balance [font-variant-ligatures:none]"
                     >
-                        Facture com software certificado pela AGT
+                        A factura sai antes de o cliente sair<span
+                            class="brand-dot"
+                            aria-hidden="true"
+                        />
                     </h1>
                     <p
                         class="mx-auto mt-6 max-w-2xl text-lg/7 text-pretty text-brand-600 sm:text-xl/8 dark:text-zinc-400"
                     >
-                        Facturas, recibos e ponto de venda, no telemóvel ou no
-                        computador. Cada documento sai assinado e é comunicado à
-                        AGT.
+                        Software de facturação certificado pela AGT, no
+                        telemóvel ou no computador. Cada documento sai assinado
+                        e é comunicado à AGT.
                     </p>
                     <div class="mt-8 flex flex-wrap justify-center gap-3">
                         <Link
@@ -633,6 +634,18 @@ const questions: { question: string; answer: string }[] = [
                     </div>
                     <p class="mt-4 text-sm text-brand-500 dark:text-zinc-400">
                         {{ trialDays }} dias grátis, sem cartão.
+                    </p>
+                    <p v-if="daysUntilMandatory > 0" class="mt-2 text-sm">
+                        <a
+                            href="#prazo"
+                            class="rounded text-brand-600 underline decoration-accent-400 decoration-2 underline-offset-4 focus-ring transition hover:text-brand-950 dark:text-zinc-300 dark:hover:text-white"
+                            >{{
+                                daysUntilMandatory === 1
+                                    ? 'Falta 1 dia'
+                                    : `Faltam ${daysUntilMandatory} dias`
+                            }}
+                            para a factura electrónica ser obrigatória</a
+                        >
                     </p>
                 </div>
 
@@ -697,174 +710,137 @@ const questions: { question: string; answer: string }[] = [
                 <p>Imagens da aplicação com dados de demonstração.</p>
             </section>
 
-            <!-- ------------------------------------------------------ deadline -->
-            <section id="prazo" class="px-5 pt-(--space-section) sm:px-8">
-                <div
-                    class="mx-auto grid max-w-6xl items-end gap-10 rounded-[2rem] bg-brand-950 p-8 text-white sm:p-12 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:p-16 dark:bg-zinc-900 dark:ring-1 dark:ring-white/10"
-                >
-                    <div>
-                        <h2
-                            class="font-display text-stamp font-bold whitespace-nowrap"
-                        >
-                            <span aria-hidden="true"
-                                >atenc<span class="brand-dot" />ao</span
-                            ><span class="sr-only">Atenção</span>
-                        </h2>
-                        <p
-                            v-if="daysUntilMandatory > 0"
-                            class="mt-6 flex items-baseline gap-3"
-                        >
-                            <span
-                                class="font-display numeric text-6xl font-bold tracking-[-0.03em] sm:text-7xl"
-                                >{{ daysUntilMandatory }}</span
-                            >
-                            <span class="text-zinc-400"
-                                >{{
-                                    daysUntilMandatory === 1 ? 'dia' : 'dias'
-                                }}
-                                até 1 de janeiro de 2027</span
-                            >
-                        </p>
-                    </div>
-                    <div>
-                        <p class="max-w-md text-lg/8 text-zinc-400">
-                            <template v-if="daysUntilMandatory > 0">
-                                <strong class="font-semibold text-white"
-                                    >A partir de 1 de janeiro de 2027,</strong
-                                >
-                                a factura electrónica é obrigatória para todas
-                                as empresas do Regime Geral e do Regime
-                                Simplificado.
-                            </template>
-                            <template v-else>
-                                <strong class="font-semibold text-white"
-                                    >Desde 1 de janeiro de 2027,</strong
-                                >
-                                a factura electrónica é obrigatória para todas
-                                as empresas do Regime Geral e do Regime
-                                Simplificado.
-                            </template>
-                        </p>
-                        <div class="mt-7 flex flex-wrap gap-3">
-                            <Link
-                                :href="register.url()"
-                                class="inline-flex h-11 items-center rounded-full bg-accent-400 px-5 text-sm font-semibold text-brand-950 focus-ring-inverted transition hover:bg-accent-300"
-                                >Abrir conta grátis</Link
-                            >
-                            <a
-                                href="#perguntas"
-                                class="inline-flex h-11 items-center rounded-full px-5 text-sm font-semibold text-white ring-1 ring-white/20 focus-ring-inverted transition ring-inset hover:bg-white/5"
-                                >O que muda</a
-                            >
-                        </div>
-                    </div>
-                </div>
-            </section>
-
             <!-- ------------------------------------------------------- moments -->
+            <!--
+                The page's argument, on the brand's black. Each situation is a
+                line of display type that ends on the dot; the one that is open
+                shows what happens here instead. On a phone the answer opens
+                under its own line, so nothing changes off screen.
+            -->
             <section
                 id="momentos"
-                class="mx-auto max-w-6xl px-5 pt-(--space-section) sm:px-8"
+                class="mt-16 bg-brand-950 text-white lg:mt-20 dark:bg-zinc-900"
             >
-                <div class="max-w-2xl">
+                <div class="mx-auto max-w-6xl px-5 py-20 sm:px-8 lg:py-28">
                     <h2
-                        class="font-display text-section font-bold text-balance"
+                        class="max-w-2xl font-display text-section font-bold text-balance"
                     >
                         O que fazer em cada situação
                     </h2>
-                </div>
 
-                <div
-                    class="mt-12 grid items-start gap-8 lg:grid-cols-2 lg:gap-14"
-                >
                     <div
-                        role="tablist"
+                        role="group"
                         aria-label="Escolher um momento do negócio"
-                        aria-orientation="vertical"
-                        class="border-bs border-zinc-900/10 lg:sticky lg:inset-bs-28 lg:self-start dark:border-white/10"
+                        class="mt-12 grid border-b border-white/10 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-x-16 lg:border-b-0"
                     >
-                        <button
+                        <template
                             v-for="(moment, index) in moments"
-                            :id="`momento-${index}`"
                             :key="moment.tag"
-                            type="button"
-                            role="tab"
-                            :aria-selected="index === selectedMomentIndex"
-                            aria-controls="momento-detalhe"
-                            :tabindex="index === selectedMomentIndex ? 0 : -1"
-                            class="flex w-full items-center justify-between gap-4 border-be border-zinc-900/10 px-1 py-4 text-start text-base/6 focus-ring transition lg:py-6 dark:border-white/10"
-                            :class="
-                                index === selectedMomentIndex
-                                    ? 'font-semibold text-brand-950 dark:text-white'
-                                    : 'text-brand-600 hover:text-brand-950 dark:text-zinc-400 dark:hover:text-white'
-                            "
-                            @click="selectedMomentIndex = index"
-                            @keydown="moveMoment($event, index)"
                         >
-                            <span>{{ moment.situation }}</span>
-                        </button>
-                    </div>
-
-                    <div
-                        id="momento-detalhe"
-                        role="tabpanel"
-                        :aria-labelledby="`momento-${selectedMomentIndex}`"
-                        class="rounded-3xl bg-brand-50 p-6 sm:p-8 lg:sticky lg:top-24 dark:bg-white/5"
-                    >
-                        <p
-                            class="font-display text-2xl/snug tracking-[-0.02em] text-balance sm:text-[1.75rem]/snug"
-                        >
-                            {{ selectedMoment.answer }}
-                        </p>
-                        <div
-                            class="mt-6 rounded-2xl bg-white p-5 shadow-[0_1px_2px_rgb(23_23_22/0.05),0_10px_24px_-14px_rgb(23_23_22/0.25)] dark:bg-zinc-900 dark:ring-1 dark:ring-white/10"
-                        >
-                            <div
-                                class="flex items-center justify-between gap-3"
+                            <h3
+                                class="border-t border-white/10 lg:col-start-1"
+                                :class="{
+                                    'lg:border-b': index === moments.length - 1,
+                                }"
                             >
-                                <span
-                                    class="text-sm text-brand-500 dark:text-zinc-400"
-                                    >{{ selectedMoment.proof.eyebrow }}</span
-                                >
-                                <span
-                                    class="rounded-full px-2.5 py-1 text-xs font-semibold"
-                                    :class="
-                                        proofToneClasses(
-                                            selectedMoment.proof.tone,
-                                        )
+                                <button
+                                    :id="`momento-${index}`"
+                                    type="button"
+                                    :aria-expanded="
+                                        index === selectedMomentIndex
                                     "
-                                    >{{ selectedMoment.proof.status }}</span
+                                    :aria-controls="`momento-detalhe-${index}`"
+                                    class="flex w-full items-baseline gap-4 py-5 text-start font-display text-xl/snug tracking-[-0.02em] focus-ring-inverted transition-colors sm:text-2xl/snug lg:py-6 lg:text-[1.75rem]/[1.2]"
+                                    :class="
+                                        index === selectedMomentIndex
+                                            ? 'text-white'
+                                            : 'text-zinc-400 hover:text-white'
+                                    "
+                                    @click="selectedMomentIndex = index"
+                                    @keydown="moveMoment($event, index)"
                                 >
-                            </div>
-                            <p class="mt-2 text-lg font-semibold">
-                                {{ selectedMoment.proof.title }}
-                            </p>
-                            <dl class="mt-3">
+                                    <span
+                                        class="size-2.5 shrink-0 rounded-full transition-colors"
+                                        :class="
+                                            index === selectedMomentIndex
+                                                ? 'bg-accent-400'
+                                                : 'bg-white/15'
+                                        "
+                                        aria-hidden="true"
+                                    />
+                                    <span class="text-pretty">{{
+                                        moment.situation
+                                    }}</span>
+                                </button>
+                            </h3>
+                            <div
+                                v-show="index === selectedMomentIndex"
+                                :id="`momento-detalhe-${index}`"
+                                role="region"
+                                :aria-labelledby="`momento-${index}`"
+                                class="pb-8 lg:sticky lg:top-24 lg:col-start-2 lg:row-start-1 lg:self-start lg:pb-0"
+                                :style="{
+                                    gridRowEnd: `span ${moments.length}`,
+                                }"
+                            >
+                                <p
+                                    class="text-lg/8 text-pretty text-zinc-200 lg:text-xl/8"
+                                >
+                                    {{ moment.answer }}
+                                </p>
                                 <div
-                                    v-for="row in selectedMoment.proof.rows"
-                                    :key="row.label"
-                                    class="flex justify-between gap-4 border-t border-zinc-900/5 py-2.5 text-sm dark:border-white/10"
+                                    class="mt-6 rounded-2xl bg-white p-5 text-brand-950 sm:p-6 dark:bg-zinc-950 dark:text-zinc-100 dark:ring-1 dark:ring-white/10"
                                 >
-                                    <dt
-                                        class="text-brand-500 dark:text-zinc-400"
+                                    <div
+                                        class="flex items-center justify-between gap-3"
                                     >
-                                        {{ row.label }}
-                                    </dt>
-                                    <dd
-                                        class="text-right font-medium"
-                                        :class="{ numeric: row.numeric }"
-                                    >
-                                        {{ row.value }}
-                                    </dd>
+                                        <span
+                                            class="text-sm text-brand-500 dark:text-zinc-400"
+                                            >{{ moment.proof.eyebrow }}</span
+                                        >
+                                        <span
+                                            class="rounded-full px-2.5 py-1 text-xs font-semibold"
+                                            :class="
+                                                proofToneClasses(
+                                                    moment.proof.tone,
+                                                )
+                                            "
+                                            >{{ moment.proof.status }}</span
+                                        >
+                                    </div>
+                                    <p class="mt-2 text-lg font-semibold">
+                                        {{ moment.proof.title }}
+                                    </p>
+                                    <dl class="mt-3">
+                                        <div
+                                            v-for="row in moment.proof.rows"
+                                            :key="row.label"
+                                            class="flex justify-between gap-4 border-t border-zinc-900/10 py-2.5 text-sm dark:border-white/10"
+                                        >
+                                            <dt
+                                                class="text-brand-500 dark:text-zinc-400"
+                                            >
+                                                {{ row.label }}
+                                            </dt>
+                                            <dd
+                                                class="text-right font-medium"
+                                                :class="{
+                                                    numeric: row.numeric,
+                                                }"
+                                            >
+                                                {{ row.value }}
+                                            </dd>
+                                        </div>
+                                    </dl>
                                 </div>
-                            </dl>
-                        </div>
-                        <p
-                            v-if="selectedMoment.proof.note"
-                            class="mt-4 text-sm text-brand-600 dark:text-zinc-400"
-                        >
-                            {{ selectedMoment.proof.note }}
-                        </p>
+                                <p
+                                    v-if="moment.proof.note"
+                                    class="mt-4 text-sm text-zinc-400"
+                                >
+                                    {{ moment.proof.note }}
+                                </p>
+                            </div>
+                        </template>
                     </div>
                 </div>
             </section>
@@ -933,7 +909,12 @@ const questions: { question: string; answer: string }[] = [
                                 <li
                                     v-for="promise in forSmallBusiness"
                                     :key="promise"
+                                    class="flex gap-3"
                                 >
+                                    <span
+                                        class="mt-[0.6em] size-1.5 shrink-0 rounded-full bg-accent-400"
+                                        aria-hidden="true"
+                                    />
                                     {{ promise }}
                                 </li>
                             </ul>
@@ -989,7 +970,15 @@ const questions: { question: string; answer: string }[] = [
                         <ul
                             class="grid gap-2 text-base text-brand-800 dark:text-zinc-200"
                         >
-                            <li v-for="promise in atTheCounter" :key="promise">
+                            <li
+                                v-for="promise in atTheCounter"
+                                :key="promise"
+                                class="flex gap-3"
+                            >
+                                <span
+                                    class="mt-[0.6em] size-1.5 shrink-0 rounded-full bg-accent-400"
+                                    aria-hidden="true"
+                                />
                                 {{ promise }}
                             </li>
                         </ul>
@@ -1112,6 +1101,70 @@ const questions: { question: string; answer: string }[] = [
                                 </dd>
                             </div>
                         </dl>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ------------------------------------------------------ deadline -->
+            <section id="prazo" class="px-5 pt-(--space-section) sm:px-8">
+                <div
+                    class="mx-auto grid max-w-6xl items-end gap-10 rounded-[2rem] bg-brand-950 p-8 text-white sm:p-12 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:p-16 dark:bg-zinc-900 dark:ring-1 dark:ring-white/10"
+                >
+                    <div>
+                        <h2
+                            class="font-display text-stamp font-bold whitespace-nowrap"
+                        >
+                            <span aria-hidden="true"
+                                >atenc<span class="brand-dot" />ao</span
+                            ><span class="sr-only">Atenção</span>
+                        </h2>
+                        <p
+                            v-if="daysUntilMandatory > 0"
+                            class="mt-6 flex items-baseline gap-3"
+                        >
+                            <span
+                                class="font-display numeric text-6xl font-bold tracking-[-0.03em] sm:text-7xl"
+                                >{{ daysUntilMandatory }}</span
+                            >
+                            <span class="text-zinc-400"
+                                >{{
+                                    daysUntilMandatory === 1 ? 'dia' : 'dias'
+                                }}
+                                até 1 de janeiro de 2027</span
+                            >
+                        </p>
+                    </div>
+                    <div>
+                        <p class="max-w-md text-lg/8 text-zinc-400">
+                            <template v-if="daysUntilMandatory > 0">
+                                <strong class="font-semibold text-white"
+                                    >A partir de 1 de janeiro de 2027,</strong
+                                >
+                                a factura electrónica é obrigatória para todas
+                                as empresas do Regime Geral e do Regime
+                                Simplificado.
+                            </template>
+                            <template v-else>
+                                <strong class="font-semibold text-white"
+                                    >Desde 1 de janeiro de 2027,</strong
+                                >
+                                a factura electrónica é obrigatória para todas
+                                as empresas do Regime Geral e do Regime
+                                Simplificado.
+                            </template>
+                        </p>
+                        <div class="mt-7 flex flex-wrap gap-3">
+                            <Link
+                                :href="register.url()"
+                                class="inline-flex h-11 items-center rounded-full bg-accent-400 px-5 text-sm font-semibold text-brand-950 focus-ring-inverted transition hover:bg-accent-300"
+                                >Abrir conta grátis</Link
+                            >
+                            <a
+                                href="#perguntas"
+                                class="inline-flex h-11 items-center rounded-full px-5 text-sm font-semibold text-white ring-1 ring-white/20 focus-ring-inverted transition ring-inset hover:bg-white/5"
+                                >O que muda</a
+                            >
+                        </div>
                     </div>
                 </div>
             </section>
