@@ -18,7 +18,7 @@ return [
         'support_phone' => env('PLATFORM_SUPPORT_PHONE', '+244 927 808 282'),
         'support_whatsapp' => env('PLATFORM_SUPPORT_WHATSAPP', '+244 927 808 282'),
         'support_hours' => 'Segunda a sexta, das 8h30 às 17h30 (WAT)',
-        'complaints_email' => env('PLATFORM_COMPLAINTS_EMAIL', 'reclamacoes@vapsolucoes.ao'),
+        'complaints_email' => env('PLATFORM_COMPLAINTS_EMAIL', 'geral@vapsolucoes.ao'),
 
         /** Working days we commit to a first reply on a complaint. */
         'complaints_response_days' => '5',
@@ -26,7 +26,7 @@ return [
         'company_legal_name' => 'VAP Soluções, Lda.',
         'company_nif' => '5000000000',
         'company_address' => 'Luanda, Angola',
-        'data_protection_email' => env('PLATFORM_DPO_EMAIL', 'privacidade@vapsolucoes.ao'),
+        'data_protection_email' => env('PLATFORM_DPO_EMAIL', 'geral@vapsolucoes.ao'),
     ],
 
     /*

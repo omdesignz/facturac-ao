@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  ci:
+  quality:
     runs-on: ubuntu-latest
 
     steps:
@@ -77,10 +77,42 @@ jobs:
         run: node --test tests/collection-follow-ups.test.mjs
 
       - name: Run CI Checks
-        run: composer ci:check
+        run: |
+          npm run lint:check
+          npm run format:check
+          npm run types:check
+          composer lint:check
+          composer types:check
+      - name: Developer examples and sandbox rendering
+        run: node --test tests/landing-developers-ui.test.mjs
 
-  postgres-fiscal-gate:
+  php-tests:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist
+      - run: cp .env.example .env
+      - run: php artisan key:generate
+      - name: PHP suite shard
+        run: php artisan test --compact --shard=${{ matrix.shard }}/4 --profile
+
+  postgres-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        partition: [1, 2, 3, 4, contracts]
     services:
       postgres:
         image: postgres:18.6
@@ -123,9 +155,11 @@ jobs:
       - name: PostgreSQL UTF-8 prerequisite
         run: php -r '$db = new PDO("pgsql:host=".getenv("DB_HOST").";port=".getenv("DB_PORT").";dbname=".getenv("DB_DATABASE"), getenv("DB_USERNAME"), getenv("DB_PASSWORD")); $encoding = $db->query("SHOW server_encoding")->fetchColumn(); if ($encoding !== "UTF8") { fwrite(STDERR, "PostgreSQL UTF8 required\n"); exit(1); } echo "server_encoding=$encoding\n";'
       - name: Fiscal migrations and actual process contention
-        run: php artisan test --compact --group=postgresql --exclude-group=ai-verification-schema
+        if: matrix.partition != 'contracts'
+        run: php artisan test --compact --group=postgresql --exclude-group=ai-verification-schema --shard=${{ matrix.partition }}/4 --profile
       # That suite accepts only this database name and expects it migrated, never reset.
       - name: Tenant AI schema contract in its own migrated database
+        if: matrix.partition == 'contracts'
         env:
           DB_DATABASE: facturac_test_phase7b3c1_r3_utf8
           PGPASSWORD: disposable-test-password
@@ -134,4 +168,26 @@ jobs:
           php artisan migrate --force --no-interaction
           php artisan test --compact tests/Unit/PostgresAiVerificationMigrationTest.php
       - name: Preserved session API and external read identity lifecycle gates
+        if: matrix.partition == 'contracts'
         run: php artisan test --compact tests/Feature/ReadFirstDocumentApiTest.php tests/Feature/AttributionIdentityTest.php tests/Feature/ExternalIntegrationTest.php tests/Feature/ExternalIntegrationReviewTest.php tests/Unit/IntegrationLifecycleTest.php tests/Feature/MasterDataReadApiTest.php tests/Feature/MasterDataScopeMigrationTest.php tests/Feature/MasterDataReadReviewTest.php tests/Feature/AgtObservationProjectionTest.php tests/Feature/AgtProjectionReviewTest.php tests/Feature/AgtSchemaTwoContractTest.php tests/Feature/PhaseFourFiscalIssuanceTest.php tests/Feature/QualifiedAgtStatusApiTest.php tests/Feature/QualifiedAgtScopeMigrationTest.php tests/Feature/QualifiedAgtReadReviewTest.php tests/Feature/BillingSummaryApiTest.php tests/Feature/BillingAnalyticsMigrationTest.php tests/Unit/CustomerCommandTest.php tests/Unit/CustomerCommandBoundaryTest.php tests/Unit/CustomerCommandMigrationTest.php tests/Unit/ServiceCommandTest.php tests/Unit/ServiceCommandBoundaryTest.php tests/Unit/ServiceCommandMigrationTest.php tests/Feature/AssistantFoundationTest.php tests/Feature/AiExecutionQuarantineTest.php tests/Feature/AssistantAuditClosureTest.php
+
+  ci:
+    if: always()
+    needs: [quality, php-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require all quality checks and PHP shards
+        env:
+          QUALITY: ${{ needs.quality.result }}
+          PHP_TESTS: ${{ needs.php-tests.result }}
+        run: test "$QUALITY" = success && test "$PHP_TESTS" = success
+
+  postgres-fiscal-gate:
+    if: always()
+    needs: [postgres-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every PostgreSQL partition
+        env:
+          POSTGRES_TESTS: ${{ needs.postgres-tests.result }}
+        run: test "$POSTGRES_TESTS" = success
