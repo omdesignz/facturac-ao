@@ -89,7 +89,14 @@ test('visitors can find the SDK, run a synthetic demo and understand its limits 
         /https:\/\/www.npmjs.com\/package\/@vapsolucoes.ao\/facturac/,
     );
     assert.match(sdk, /facturac-export --demo/);
-    assert.match(sdk, /dados fictícios/);
+    assert.match(sdk, /Sandbox local/);
+    assert.match(sdk, /facturac.documents.iterate/);
+    assert.match(sdk, /FACTURAC_TOKEN/);
+    assert.match(sdk, /Copiar código/);
+    assert.match(sdk, /Criar um cliente/);
+    assert.match(sdk, /FT DEMO\/3/);
+    assert.match(sdk, /Não simula autenticação/);
+    assert.match(sdk, /dados fictícios/i);
     assert.match(sdk, /não inclui emissão fiscal, pagamentos ou webhooks/);
     assert.match(sdk, /requer um pacote com integrações externas/);
     assert.doesNotMatch(sdk, /mailto:|Acesso à API incluído:|25 000|Kz/);

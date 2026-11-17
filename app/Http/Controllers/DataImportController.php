@@ -143,7 +143,7 @@ class DataImportController extends Controller
 
         $storagePath = $file->store(
             "imports/{$workspace->public_id}/{$legalEntity->public_id}",
-            'local',
+            (string) config('filesystems.private_disk', 'local'),
         );
 
         if (! is_string($storagePath)) {
@@ -166,7 +166,7 @@ class DataImportController extends Controller
                 'source' => $request->importSource(),
                 'status' => DataImportStatus::AwaitingMapping,
                 'original_name' => Str::limit($originalName, 255, ''),
-                'storage_disk' => 'local',
+                'storage_disk' => (string) config('filesystems.private_disk', 'local'),
                 'storage_path' => $storagePath,
                 'file_extension' => mb_strtolower($file->getClientOriginalExtension()),
                 'mime_type' => $file->getMimeType() ?? 'application/octet-stream',
@@ -184,7 +184,7 @@ class DataImportController extends Controller
             report($exception);
 
             if (! $dataImport instanceof DataImport) {
-                Storage::disk('local')->delete($storagePath);
+                Storage::disk((string) config('filesystems.private_disk', 'local'))->delete($storagePath);
             }
 
             return redirect()

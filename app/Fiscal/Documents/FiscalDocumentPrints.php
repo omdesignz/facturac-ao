@@ -84,7 +84,7 @@ class FiscalDocumentPrints
         }
 
         if ($print->logo_path !== null) {
-            $logo = Storage::disk('local')->get($print->logo_path);
+            $logo = Storage::disk((string) config('filesystems.private_disk', 'local'))->get($print->logo_path);
 
             if ($logo === null || ! hash_equals((string) $print->logo_sha256, hash('sha256', $logo))) {
                 $this->refuse($document, 'The logo the document was issued with is missing or altered.');
@@ -147,7 +147,7 @@ class FiscalDocumentPrints
     private function logo(LegalEntity $legalEntity): array
     {
         $path = $legalEntity->logo_path;
-        $contents = $path === null ? null : Storage::disk('local')->get($path);
+        $contents = $path === null ? null : Storage::disk((string) config('filesystems.private_disk', 'local'))->get($path);
 
         return $contents === null ? [null, null] : [$path, hash('sha256', $contents)];
     }

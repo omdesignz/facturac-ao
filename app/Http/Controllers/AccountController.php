@@ -60,7 +60,7 @@ class AccountController extends Controller
             ->withProperties(['workspace' => $workspace->public_id])
             ->log('workspace data exported');
 
-        return Storage::disk('local')->download(
+        return Storage::disk((string) config('filesystems.private_disk', 'local'))->download(
             $path,
             sprintf('%s-dados.zip', str($workspace->name)->slug()),
         );
@@ -113,7 +113,7 @@ class AccountController extends Controller
             return [];
         }
 
-        $disk = Storage::disk('local');
+        $disk = Storage::disk((string) config('filesystems.private_disk', 'local'));
         $exports = [];
 
         foreach ($disk->files(ExportWorkspaceData::DIRECTORY) as $file) {

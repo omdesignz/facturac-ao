@@ -28,38 +28,63 @@ use ZipArchive;
  */
 class ExportWorkspaceData
 {
-    /** Where finished archives live, relative to the local disk. */
+    /** Where finished archives live, relative to the private disk. */
     public const DIRECTORY = 'exports';
 
     /**
-     * Writes the archive and returns its path on the local disk.
+     * Writes the archive and returns its path on the private disk.
      */
     public function execute(Workspace $workspace, User $requestedBy): string
     {
-        $disk = Storage::disk('local');
-        $disk->makeDirectory(self::DIRECTORY);
+        $disk = Storage::disk((string) config('filesystems.private_disk', 'local'));
 
         $name = sprintf(
             '%s/%s-%s.zip',
             self::DIRECTORY,
             $workspace->public_id,
-            now()->format('Ymd-His'),
+            now()->format('Ymd-His').'-'.str()->uuid(),
         );
 
-        $path = $disk->path($name);
-        $archive = new ZipArchive;
-
-        if ($archive->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+        $path = tempnam(sys_get_temp_dir(), 'facturac-export-');
+        if ($path === false) {
             throw new RuntimeException('Não foi possível preparar o ficheiro de exportação.');
         }
 
-        $archive->addFromString('LEIA-ME.txt', $this->readme($workspace, $requestedBy));
+        try {
+            $archive = new ZipArchive;
+            if ($archive->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+                throw new RuntimeException('Não foi possível preparar o ficheiro de exportação.');
+            }
 
-        foreach ($this->tables($workspace) as $file => $rows) {
-            $archive->addFromString($file, $this->csv($rows));
+            try {
+                $archive->addFromString('LEIA-ME.txt', $this->readme($workspace, $requestedBy));
+                foreach ($this->tables($workspace) as $file => $rows) {
+                    if (! $archive->addFromString($file, $this->csv($rows))) {
+                        throw new RuntimeException('Não foi possível escrever o ficheiro de exportação.');
+                    }
+                }
+            } finally {
+                $closed = $archive->close();
+            }
+
+            if (! $closed) {
+                throw new RuntimeException('Não foi possível concluir o ficheiro de exportação.');
+            }
+
+            $stream = fopen($path, 'rb');
+            if ($stream === false) {
+                throw new RuntimeException('Não foi possível ler o ficheiro de exportação.');
+            }
+            try {
+                if (! $disk->writeStream($name, $stream)) {
+                    throw new RuntimeException('Não foi possível guardar o ficheiro de exportação.');
+                }
+            } finally {
+                fclose($stream);
+            }
+        } finally {
+            @unlink($path);
         }
-
-        $archive->close();
 
         return $name;
     }

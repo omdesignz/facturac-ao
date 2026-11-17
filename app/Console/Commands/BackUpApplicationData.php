@@ -6,9 +6,10 @@ use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Filesystem\Filesystem;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
-use Symfony\Component\Process\Process;
 use ZipArchive;
 
 /**
@@ -31,9 +32,8 @@ class BackUpApplicationData extends Command
     {
         $disk = Storage::disk((string) config('backup.disk', 'local'));
         $directory = (string) config('backup.directory', 'backups');
-        $disk->makeDirectory($directory);
 
-        $name = sprintf('%s/backup-%s.zip', $directory, now()->format('Y-m-d-His'));
+        $name = sprintf('%s/backup-%s.zip', $directory, now()->format('Y-m-d-His').'-'.str()->uuid());
         $workingCopy = tempnam(sys_get_temp_dir(), 'vap-backup');
 
         if ($workingCopy === false) {
@@ -53,8 +53,13 @@ class BackUpApplicationData extends Command
                 throw new RuntimeException('Não foi possível ler o arquivo gerado.');
             }
 
-            $disk->writeStream($name, $handle);
-            fclose($handle);
+            try {
+                if (! $disk->writeStream($name, $handle)) {
+                    throw new RuntimeException('Não foi possível guardar a cópia de segurança.');
+                }
+            } finally {
+                fclose($handle);
+            }
         } catch (RuntimeException $exception) {
             $this->error($exception->getMessage());
 
@@ -83,26 +88,62 @@ class BackUpApplicationData extends Command
             throw new RuntimeException('Não foi possível criar o arquivo.');
         }
 
-        $archive->addFromString('base-de-dados.sql', $this->databaseDump());
-        $archive->addFromString('LEIA-ME.txt', $this->readme());
+        $temporaryFiles = [];
+        try {
+            $archive->addFromString('base-de-dados.sql', $this->databaseDump());
+            $archive->addFromString('LEIA-ME.txt', $this->readme());
+            $source = Storage::disk((string) config('filesystems.private_disk', 'local'));
 
-        foreach ((array) config('backup.include', []) as $relative) {
-            $this->addDirectory($archive, (string) $relative);
+            foreach ((array) config('backup.include', []) as $relative) {
+                foreach ($source->allFiles((string) $relative) as $file) {
+                    $temporary = tempnam(sys_get_temp_dir(), 'facturac-backup-file-');
+                    if ($temporary === false) {
+                        throw new RuntimeException('Não foi possível preparar o ficheiro temporário.');
+                    }
+                    $temporaryFiles[] = $temporary;
+                    $input = $source->readStream($file);
+                    if (! is_resource($input)) {
+                        throw new RuntimeException('Não foi possível ler um ficheiro para a cópia de segurança.');
+                    }
+                    $output = fopen($temporary, 'wb');
+                    if ($output === false) {
+                        fclose($input);
+                        throw new RuntimeException('Não foi possível preparar o ficheiro temporário.');
+                    }
+                    try {
+                        if (stream_copy_to_stream($input, $output) === false) {
+                            throw new RuntimeException('Não foi possível copiar um ficheiro para a cópia de segurança.');
+                        }
+                    } finally {
+                        fclose($input);
+                        fclose($output);
+                    }
+                    if (! $archive->addFile($temporary, 'ficheiros/'.$file)) {
+                        throw new RuntimeException('Não foi possível adicionar um ficheiro à cópia de segurança.');
+                    }
+                }
+            }
+            if (! $archive->close()) {
+                throw new RuntimeException('Não foi possível concluir a cópia de segurança.');
+            }
+        } finally {
+            unset($archive);
+            foreach ($temporaryFiles as $temporary) {
+                @unlink($temporary);
+            }
         }
-
-        $archive->close();
     }
 
     /**
      * The database as SQL.
      *
      * SQLite is copied verbatim because the file is the database; MySQL goes
-     * through mysqldump.
+     * through mysqldump and PostgreSQL through pg_dump.
      */
     private function databaseDump(): string
     {
         $connection = $this->connectionName();
-        $config = (array) config("database.connections.{$connection}");
+        $config = DB::connection($connection)->getConfig();
 
         if (($config['driver'] ?? null) === 'sqlite') {
             $database = (string) ($config['database'] ?? '');
@@ -114,66 +155,46 @@ class BackUpApplicationData extends Command
             return (string) file_get_contents($database);
         }
 
-        $process = new Process(
-            [
+        $driver = $config['driver'] ?? null;
+        if ($driver === 'pgsql') {
+            $command = [
+                'pg_dump', '--no-password', '--no-owner', '--no-acl', '--format=plain',
+                '--host='.($config['host'] ?? '127.0.0.1'),
+                '--port='.($config['port'] ?? 5432),
+                '--username='.($config['username'] ?? ''),
+                (string) ($config['database'] ?? ''),
+            ];
+            $environment = [
+                'PGPASSWORD' => (string) ($config['password'] ?? ''),
+                'PGSSLMODE' => (string) ($config['sslmode'] ?? 'prefer'),
+                'PGCONNECT_TIMEOUT' => '15',
+            ];
+        } elseif (in_array($driver, ['mysql', 'mariadb'], true)) {
+            $command = [
                 'mysqldump',
                 '--host='.($config['host'] ?? '127.0.0.1'),
                 '--port='.($config['port'] ?? 3306),
                 '--user='.($config['username'] ?? ''),
-                '--single-transaction',
-                '--skip-lock-tables',
-                '--routines',
-                '--triggers',
+                '--single-transaction', '--skip-lock-tables', '--routines', '--triggers',
                 '--default-character-set=utf8mb4',
                 (string) ($config['database'] ?? ''),
-            ],
-            // The password goes through the environment, not the argument
-            // list: anything on the command line is readable by every other
-            // process on the machine through ps.
-            env: ['MYSQL_PWD' => (string) ($config['password'] ?? '')],
-        );
-
-        $process->setTimeout(600);
-        $process->run();
-
-        if (! $process->isSuccessful()) {
-            // The reason matters — "install mysqldump" is the wrong advice
-            // when the tool is present and the credentials are the problem.
-            throw new RuntimeException(
-                'A exportação da base de dados falhou: '.trim($process->getErrorOutput()),
-            );
+            ];
+            $environment = ['MYSQL_PWD' => (string) ($config['password'] ?? '')];
+        } else {
+            throw new RuntimeException('O motor da base de dados não suporta cópias de segurança.');
         }
 
-        return $process->getOutput();
+        $process = Process::timeout(600)->env($environment)->run($command);
+        if (! $process->successful()) {
+            throw new RuntimeException('A exportação da base de dados falhou: '.trim($process->errorOutput()));
+        }
+
+        return $process->output();
     }
 
     private function connectionName(): string
     {
         return (string) (config('backup.connection') ?? config('database.default'));
-    }
-
-    private function addDirectory(ZipArchive $archive, string $relative): void
-    {
-        $base = storage_path('app/'.trim($relative, '/'));
-
-        if (! is_dir($base)) {
-            return;
-        }
-
-        $files = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($base, \FilesystemIterator::SKIP_DOTS),
-        );
-
-        foreach ($files as $file) {
-            if (! $file instanceof \SplFileInfo || ! $file->isFile()) {
-                continue;
-            }
-
-            $archive->addFile(
-                $file->getPathname(),
-                'ficheiros/'.$relative.'/'.substr($file->getPathname(), strlen($base) + 1),
-            );
-        }
     }
 
     /**
@@ -229,7 +250,8 @@ class BackUpApplicationData extends Command
           2. mysql -u UTILIZADOR -p NOME_DA_BASE < base-de-dados.sql
              (em SQLite, substitua o ficheiro .sqlite pelo base-de-dados.sql,
               que é uma cópia binária do original.)
-          3. Copie o conteúdo de ficheiros/ para storage/app/.
+             PostgreSQL: psql -U UTILIZADOR -d NOME_DA_BASE -f base-de-dados.sql
+          3. Copie o conteúdo de ficheiros/ para o disco privado configurado.
           4. php artisan migrate --force
 
         Confirme sempre um restauro num ambiente separado antes de precisar

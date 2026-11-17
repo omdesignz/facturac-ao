@@ -20,7 +20,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class CompanyLogoController extends Controller
 {
-    /** Where logos live, relative to the local disk. */
+    /** Where logos live, relative to the private disk. */
     public const DIRECTORY = 'logos';
 
     public function __construct(private FiscalDocumentPrints $prints) {}
@@ -49,9 +49,12 @@ class CompanyLogoController extends Controller
             'logo.dimensions' => 'A imagem não pode passar de 2000×2000 pixéis.',
         ]);
 
-        $this->forget($legalEntity);
+        $path = $request->file('logo')->store(self::DIRECTORY, (string) config('filesystems.private_disk', 'local'));
+        if (! is_string($path)) {
+            return back()->withErrors(['logo' => 'Não foi possível guardar o logótipo. Tente novamente.']);
+        }
 
-        $path = $request->file('logo')->store(self::DIRECTORY, 'local');
+        $this->forget($legalEntity);
 
         $legalEntity->forceFill(['logo_path' => $path])->save();
 
@@ -81,9 +84,9 @@ class CompanyLogoController extends Controller
         Gate::authorize('view', $legalEntity);
 
         abort_if($legalEntity->logo_path === null, 404);
-        abort_unless(Storage::disk('local')->exists($legalEntity->logo_path), 404);
+        abort_unless(Storage::disk((string) config('filesystems.private_disk', 'local'))->exists($legalEntity->logo_path), 404);
 
-        return Storage::disk('local')->response($legalEntity->logo_path);
+        return Storage::disk((string) config('filesystems.private_disk', 'local'))->response($legalEntity->logo_path);
     }
 
     /**
@@ -94,7 +97,7 @@ class CompanyLogoController extends Controller
     private function forget(LegalEntity $legalEntity): void
     {
         if ($legalEntity->logo_path !== null && ! $this->prints->logoInUse($legalEntity, $legalEntity->logo_path)) {
-            Storage::disk('local')->delete($legalEntity->logo_path);
+            Storage::disk((string) config('filesystems.private_disk', 'local'))->delete($legalEntity->logo_path);
         }
     }
 
