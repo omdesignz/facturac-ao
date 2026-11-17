@@ -41,6 +41,8 @@ use App\Http\Controllers\GlobalSearchController;
 use App\Http\Controllers\HelpController;
 use App\Http\Controllers\HostedPaymentResumeController;
 use App\Http\Controllers\ImpersonationController;
+use App\Http\Controllers\IntegrationContractController;
+use App\Http\Controllers\IntegrationSettingsController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\LegalDocumentController;
 use App\Http\Controllers\NotificationController;
@@ -84,6 +86,9 @@ use Illuminate\Support\Facades\Route;
 
 // Public: the first thing a visitor without an account can see.
 Route::get('/', LandingController::class)->name('home');
+
+Route::get('/developers/contracts/{contract}', IntegrationContractController::class)
+    ->middleware('throttle:60,1')->name('integrations.contract');
 
 // Read by Apple, which needs it before the iPhone app may use passkeys here.
 Route::get('/.well-known/apple-app-site-association', AppleAppSiteAssociationController::class)
@@ -191,6 +196,18 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::post('/ajuda/reclamacoes', [HelpController::class, 'store'])
         ->middleware('throttle:5,1')
         ->name('help.complaints.store');
+
+    Route::middleware(['workspace', 'mfa', 'cache.headers:private;no_store', 'throttle:20,1'])->prefix('settings/integrations')->name('integrations.settings.')->group(function (): void {
+        Route::get('/', [IntegrationSettingsController::class, 'index'])->name('index');
+        Route::middleware('password.confirm:password.confirm,300')->group(function (): void {
+            Route::get('/confirm', [IntegrationSettingsController::class, 'reauthenticate'])->name('reauthenticate');
+            Route::post('/', [IntegrationSettingsController::class, 'store'])->name('store');
+            Route::post('/{integrationPublicId}/credentials/{credentialPublicId}/rotate', [IntegrationSettingsController::class, 'rotate'])->name('rotate');
+            Route::post('/{integrationPublicId}/credentials', [IntegrationSettingsController::class, 'replace'])->name('replace');
+        });
+        Route::delete('/{integrationPublicId}/credentials/{credentialPublicId}', [IntegrationSettingsController::class, 'destroy'])->name('revoke-credential');
+        Route::delete('/{integrationPublicId}', [IntegrationSettingsController::class, 'destroy'])->name('destroy');
+    });
 
     Route::middleware(['workspace', 'subscription'])->group(function (): void {
         Route::post('/session/renew', RenewWorkSessionController::class)
