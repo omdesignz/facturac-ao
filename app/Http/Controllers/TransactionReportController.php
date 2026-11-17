@@ -121,7 +121,7 @@ class TransactionReportController extends Controller
             && $transactionExport->user_id === $request->user()->id, 404);
         abort_if($transactionExport->expires_at->isPast(), 410, 'Este relatório expirou. Gere uma nova exportação.');
         abort_unless($transactionExport->status === 'ready', 409, 'O relatório ainda não está disponível.');
-        $disk = Storage::disk('local');
+        $disk = Storage::disk((string) config('filesystems.private_disk', 'local'));
         abort_unless($disk->exists($transactionExport->storagePath()), 410);
 
         return $disk->download($transactionExport->storagePath(), 'transaccoes-'.$transactionExport->filters['from'].'-'.$transactionExport->filters['to'].'.xlsx', [

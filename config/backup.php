@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'disk' => env('BACKUP_DISK', 'local'),
+    'disk' => env('BACKUP_DISK', env('PRIVATE_FILESYSTEM_DISK', 'local')),
 
     /*
     |--------------------------------------------------------------------------
@@ -48,17 +48,17 @@ return [
     | Stored files
     |--------------------------------------------------------------------------
     |
-    | Directories under storage/app to include alongside the database. Exports
+    | Directories on the private disk to include alongside the database. Exports
     | are excluded on purpose: they are derived from the database and would
     | double the size of every archive.
     |
     */
 
     'include' => [
-        'private/imports',
+        'imports',
         // Logos are what issued documents print; an old one is kept for as
         // long as any document still shows it.
-        'private/logos',
+        'logos',
     ],
 
 ];

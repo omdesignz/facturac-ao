@@ -106,12 +106,12 @@ class PdfSheet
     /** A stored logo file, by path, as a data URI. */
     public function logoFromPath(?string $path): ?string
     {
-        if ($path === null || ! Storage::disk('local')->exists($path)) {
+        if ($path === null || ! Storage::disk((string) config('filesystems.private_disk', 'local'))->exists($path)) {
             return null;
         }
 
-        $contents = Storage::disk('local')->get($path);
-        $mime = Storage::disk('local')->mimeType($path) ?: 'image/png';
+        $contents = Storage::disk((string) config('filesystems.private_disk', 'local'))->get($path);
+        $mime = Storage::disk((string) config('filesystems.private_disk', 'local'))->mimeType($path) ?: 'image/png';
 
         return 'data:'.$mime.';base64,'.base64_encode((string) $contents);
     }

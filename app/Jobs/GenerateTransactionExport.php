@@ -65,34 +65,47 @@ class GenerateTransactionExport implements ShouldBeUnique, ShouldQueueAfterCommi
         }
         $company = LegalEntity::query()->where('workspace_id', $export->workspace_id)->findOrFail($export->legal_entity_id);
         $export->update(['status' => 'processing', 'processed_documents' => 0]);
-        $disk = Storage::disk('local');
-        $temporary = $export->storagePath().'.part';
+        $disk = Storage::disk((string) config('filesystems.private_disk', 'local'));
+        $temporary = tempnam(sys_get_temp_dir(), 'facturac-report-');
+        if ($temporary === false) {
+            throw new RuntimeException('Unable to create the temporary export file.');
+        }
         $book = null;
         try {
-            if (! $disk->makeDirectory('transaction-exports')) {
-                throw new RuntimeException('Unable to create the private export directory.');
-            }
             $book = $workbook->build($company, $export->filters, $export->document_ids, function (int $processed) use ($export): void {
                 if ($processed % 50 === 0 || $processed === count($export->document_ids)) {
                     $export->update(['processed_documents' => $processed]);
                 }
             });
-            (new Xlsx($book))->save($disk->path($temporary));
+            (new Xlsx($book))->save($temporary);
             if (! $export->requesterHasAccess() || now()->greaterThanOrEqualTo($export->expires_at)) {
                 $this->failed(null);
 
                 return;
             }
-            if (! $disk->move($temporary, $export->storagePath())) {
-                throw new RuntimeException('Unable to publish the private export.');
+            $stream = fopen($temporary, 'rb');
+            if ($stream === false) {
+                throw new RuntimeException('Unable to read the completed export.');
+            }
+            try {
+                if (! $disk->writeStream($export->storagePath(), $stream)) {
+                    throw new RuntimeException('Unable to publish the private export.');
+                }
+            } finally {
+                fclose($stream);
+            }
+            if (! $export->requesterHasAccess() || now()->greaterThanOrEqualTo($export->expires_at)) {
+                $this->failed(null);
+
+                return;
             }
             activity('report')->causedBy(User::findOrFail($export->user_id))->performedOn($company)
-                ->withProperties(['export_id' => $export->public_id, 'documents' => count($export->document_ids), 'sha256' => hash_file('sha256', $disk->path($export->storagePath()))])
+                ->withProperties(['export_id' => $export->public_id, 'documents' => count($export->document_ids), 'sha256' => hash_file('sha256', $temporary)])
                 ->log('transactions exported to Excel in background');
             $export->update(['status' => 'ready']);
         } finally {
             $book?->disconnectWorksheets();
-            $disk->delete($temporary);
+            @unlink($temporary);
         }
     }
 
@@ -100,7 +113,7 @@ class GenerateTransactionExport implements ShouldBeUnique, ShouldQueueAfterCommi
     {
         $export = TransactionExport::find($this->exportId);
         if ($export !== null && $export->status !== 'ready') {
-            Storage::disk('local')->delete([$export->storagePath(), $export->storagePath().'.part']);
+            Storage::disk((string) config('filesystems.private_disk', 'local'))->delete([$export->storagePath(), $export->storagePath().'.part']);
             $export->update(['status' => 'failed', 'failure_message' => 'Não foi possível concluir o relatório. Verifique o acesso à empresa e tente um período menor.']);
         }
     }

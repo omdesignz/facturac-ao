@@ -14,7 +14,7 @@ class PruneTransactionExports extends Command
 
     public function handle(): int
     {
-        $disk = Storage::disk('local');
+        $disk = Storage::disk((string) config('filesystems.private_disk', 'local'));
         foreach (TransactionExport::query()->where('expires_at', '<=', now())->lazyById(100) as $export) {
             if ($disk->delete([$export->storagePath(), $export->storagePath().'.part'])) {
                 $export->delete();
