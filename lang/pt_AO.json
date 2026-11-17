@@ -1,0 +1,5 @@
+{
+    "The provided password was incorrect.": "A palavra-passe não está correcta.",
+    "The provided two factor authentication code was invalid.": "Este código não é válido. Use o código que a aplicação mostra agora.",
+    "The provided two factor recovery code was invalid.": "Este código de recuperação não é válido ou já foi usado."
+}

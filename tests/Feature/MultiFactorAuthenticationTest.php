@@ -78,6 +78,26 @@ test('a confirmed MFA user is challenged on the next password login', function (
     expect(session('login.id'))->toBe($user->id);
 });
 
+test('a refused login code is explained in Portuguese', function () {
+    $user = User::factory()->withWorkspace()->create();
+    $user->forceFill([
+        'two_factor_secret' => Fortify::currentEncrypter()->encrypt('challenge-secret'),
+        'two_factor_recovery_codes' => Fortify::currentEncrypter()->encrypt(json_encode(['recovery-code'])),
+        'two_factor_confirmed_at' => now(),
+    ])->save();
+    $this->mock(TwoFactorAuthenticationProvider::class)
+        ->shouldReceive('verify')
+        ->andReturnFalse();
+
+    $this->withSession(['login.id' => $user->id, 'login.remember' => false])
+        ->from(route('two-factor.login'))
+        ->post(route('two-factor.login.store'), ['code' => '000000'])
+        ->assertRedirect(route('two-factor.login'))
+        ->assertSessionHasErrors(['code' => 'Este código não é válido. Use o código que a aplicação mostra agora.']);
+
+    $this->assertGuest();
+});
+
 test('disabling MFA clears credentials and records an audit event', function () {
     $user = User::factory()->withWorkspace()->create();
     $user->forceFill([

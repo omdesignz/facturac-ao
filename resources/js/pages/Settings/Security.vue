@@ -22,6 +22,7 @@ import DataTable from '@/components/DataTable.vue';
 import FormError from '@/components/FormError.vue';
 import FormField from '@/components/FormField.vue';
 import GoogleMark from '@/components/GoogleMark.vue';
+import OneTimeCodeInput from '@/components/OneTimeCodeInput.vue';
 import PasskeyManager from '@/components/PasskeyManager.vue';
 import type { Passkey } from '@/components/PasskeyManager.vue';
 import SelectInput from '@/components/SelectInput.vue';
@@ -182,6 +183,10 @@ const recoveryRequest = useHttp<Record<string, never>, string[]>(
     {},
 );
 const copied = ref(false);
+/** The 2FA confirmation boxes, emptied when a code is refused. */
+const confirmationCode = ref<InstanceType<typeof OneTimeCodeInput> | null>(
+    null,
+);
 
 const recoveryCodeList = computed(() => recoveryRequest.response ?? []);
 
@@ -647,29 +652,24 @@ watch(
 
                             <Form
                                 v-bind="confirmTwoFactor.form()"
-                                :reset-on-error="['code']"
-                                class="mt-6 flex max-w-md flex-col gap-3 sm:flex-row sm:items-start"
-                                #default="{ errors, processing }"
+                                @error="confirmationCode?.clear()"
+                                class="mt-6 flex max-w-sm flex-col items-start gap-4"
+                                #default="{ errors, processing, submit }"
                             >
-                                <div class="flex-1">
-                                    <label
-                                        for="confirmation-code"
-                                        class="sr-only"
-                                        >Código de confirmação</label
-                                    >
-                                    <input
+                                <div class="w-full">
+                                    <OneTimeCodeInput
                                         id="confirmation-code"
+                                        ref="confirmationCode"
                                         name="code"
-                                        type="text"
-                                        inputmode="numeric"
-                                        pattern="[0-9]*"
-                                        autocomplete="one-time-code"
-                                        maxlength="6"
-                                        required
-                                        class="block form-input text-center font-mono text-lg tracking-[0.3em]"
-                                        placeholder="000000"
+                                        label="Código de confirmação"
+                                        :error="errors.code"
+                                        error-id="confirmation-code-error"
+                                        @complete="processing || submit()"
                                     />
-                                    <FormError :message="errors.code" />
+                                    <FormError
+                                        id="confirmation-code-error"
+                                        :message="errors.code"
+                                    />
                                 </div>
                                 <AppButton
                                     variant="ink"

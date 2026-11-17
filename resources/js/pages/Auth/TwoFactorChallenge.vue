@@ -4,13 +4,14 @@ import { KeyRound, LoaderCircle, Smartphone } from '@lucide/vue';
 import { ref, watch } from 'vue';
 import AppButton from '@/components/AppButton.vue';
 import FormField from '@/components/FormField.vue';
+import OneTimeCodeInput from '@/components/OneTimeCodeInput.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import { focusFirstInvalid } from '@/lib/focus';
 import { store as twoFactorLoginStore } from '@/routes/two-factor/login';
 
 const useRecoveryCode = ref(false);
 const recoveryInput = ref<HTMLInputElement | null>(null);
-const codeInput = ref<HTMLInputElement | null>(null);
+const codeInput = ref<InstanceType<typeof OneTimeCodeInput> | null>(null);
 
 /**
  * Switching between the two kinds of code swaps the field under the reader's
@@ -24,6 +25,21 @@ watch(
     },
     { flush: 'post' },
 );
+
+/**
+ * A refused code empties the boxes. The boxes clear themselves rather than
+ * through `reset-on-error`, which would only empty the hidden field and leave
+ * the old digits on screen, and the same message twice would not tell them.
+ */
+function onError(): void {
+    if (useRecoveryCode.value) {
+        focusFirstInvalid();
+
+        return;
+    }
+
+    codeInput.value?.clear();
+}
 </script>
 
 <template>
@@ -32,7 +48,7 @@ watch(
         :description="
             useRecoveryCode
                 ? 'Introduza um dos códigos de recuperação guardados quando activou os dois factores.'
-                : 'Abra a aplicação autenticadora e introduza o código actual de seis dígitos.'
+                : 'Abra a aplicação autenticadora e introduza os seis dígitos que mostra agora.'
         "
     >
         <Head title="Autenticação de dois factores" />
@@ -58,10 +74,10 @@ watch(
 
         <Form
             v-bind="twoFactorLoginStore.form()"
-            :reset-on-error="[useRecoveryCode ? 'recovery_code' : 'code']"
+            :reset-on-error="useRecoveryCode ? ['recovery_code'] : []"
             class="space-y-5"
-            @error="focusFirstInvalid()"
-            #default="{ errors, processing }"
+            @error="onError"
+            #default="{ errors, processing, submit }"
         >
             <FormField
                 v-if="useRecoveryCode"
@@ -91,22 +107,15 @@ watch(
                 label="Código da aplicação"
                 :error="errors.code"
                 error-id="code-error"
-                ><input
+                ><OneTimeCodeInput
                     id="code"
                     ref="codeInput"
                     name="code"
-                    type="text"
-                    inputmode="numeric"
-                    pattern="[0-9]*"
-                    autocomplete="one-time-code"
-                    autocapitalize="none"
-                    spellcheck="false"
-                    maxlength="6"
-                    required
-                    data-auth-autofocus
-                    :aria-invalid="errors.code ? 'true' : undefined"
-                    :aria-describedby="errors.code ? 'code-error' : undefined"
-                    class="block form-input py-3 ps-[calc(0.75rem+0.45em)] pe-3 text-center font-mono text-2xl tracking-[0.45em]"
+                    label="Código da aplicação"
+                    :error="errors.code"
+                    error-id="code-error"
+                    autofocus
+                    @complete="processing || submit()"
             /></FormField>
 
             <AppButton

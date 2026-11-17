@@ -89,6 +89,22 @@ for (const [name, fields] of screens) {
 
         assert.doesNotMatch(response.body, /Software certificado/);
 
+        if (name === 'TwoFactorChallenge') {
+            // One box per digit, one hidden field carrying the whole code, and
+            // only the first box offered to the phone's code autofill.
+            assert.equal(
+                (response.body.match(/aria-label="Dígito \d de 6"/g) ?? [])
+                    .length,
+                6,
+            );
+            assert.match(response.body, /type="hidden" name="code"/);
+            assert.equal(
+                (response.body.match(/autocomplete="one-time-code"/g) ?? [])
+                    .length,
+                1,
+            );
+        }
+
         if (name === 'ConfirmPassword') {
             assert.match(response.body, /href="\/dashboard"[^]*?Voltar à app/);
         }
