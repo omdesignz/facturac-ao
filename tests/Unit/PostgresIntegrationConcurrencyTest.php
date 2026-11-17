@@ -232,6 +232,7 @@ test('postgres monotonic last use cannot undo concurrent credential revocation',
 });
 
 test('postgres atomic shared quotas count all independent workers and workspace buckets', function () {
+    $this->freezeSecond();
     $results = pgIntegrationContend(function (): int {
         $accepted = 0;
         for ($i = 0; $i < 25; $i++) {
@@ -249,6 +250,11 @@ test('postgres atomic shared quotas count all independent workers and workspace 
     });
     expect(array_column($results, 'ok'))->toBe([true, true, true]);
     expect(array_sum(array_column($results, 'value')))->toBe(60);
+    expect(fn () => app(IntegrationRateLimiter::class)->consume(['integration:one' => 60, 'workspace:one' => 300]))
+        ->toThrow(HttpException::class);
+    $this->travel(1)->minute();
+    app(IntegrationRateLimiter::class)->consume(['integration:one' => 60, 'workspace:one' => 300]);
+    $this->travelBack();
 });
 
 test('postgres composite ownership and replacement constraints reject foreign relationships', function () {
