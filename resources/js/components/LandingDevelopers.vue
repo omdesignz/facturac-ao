@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ArrowRight } from '@lucide/vue';
 import { computed } from 'vue';
+import AppButton from '@/components/AppButton.vue';
 
 const props = defineProps<{
     supportEmail: string | null;
@@ -59,21 +60,25 @@ const capabilities = [
                     começar.
                 </p>
                 <div class="mt-7 flex flex-wrap gap-3">
-                    <a
+                    <AppButton
                         href="https://github.com/omdesignz/facturac-sdk#try-an-integration-in-five-minutes"
+                        external
+                        variant="ink"
+                        size="lg"
                         target="_blank"
                         rel="noopener noreferrer"
-                        class="inline-flex min-h-11 items-center gap-2 rounded-full bg-brand-950 px-5 py-3 text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 dark:bg-white dark:text-brand-950 dark:hover:bg-zinc-200"
                     >
                         Guia de integração
                         <ArrowRight class="size-4" aria-hidden="true" />
-                    </a>
-                    <a
+                    </AppButton>
+                    <AppButton
                         href="https://www.npmjs.com/package/@vapsolucoes.ao/facturac"
+                        external
+                        variant="outline"
+                        size="lg"
                         target="_blank"
                         rel="noopener noreferrer"
-                        class="inline-flex min-h-11 items-center rounded-full px-5 py-3 text-sm font-semibold ring-1 ring-brand-950/15 focus-ring transition ring-inset hover:bg-brand-50 dark:ring-white/20 dark:hover:bg-white/5"
-                        >Ver no npm</a
+                        >Ver no npm</AppButton
                     >
                 </div>
             </div>
@@ -157,18 +162,18 @@ const capabilities = [
             <div
                 class="flex flex-wrap items-center gap-4 lg:flex-col lg:items-stretch"
             >
-                <a
+                <AppButton
                     v-if="enquiryUrl"
                     :href="enquiryUrl"
-                    class="inline-flex min-h-11 items-center justify-center rounded-full bg-brand-950 px-5 py-3 text-sm font-semibold text-white focus-ring transition hover:bg-brand-800 dark:bg-white dark:text-brand-950 dark:hover:bg-zinc-200"
-                    >Falar sobre a minha integração</a
+                    external
+                    variant="ink"
+                    size="lg"
+                    >Falar sobre a minha integração</AppButton
                 >
-                <a
-                    href="#precos"
-                    class="inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold focus-ring transition hover:bg-brand-100 dark:hover:bg-white/5"
+                <AppButton href="#precos" external variant="quiet" size="lg"
                     >Consultar planos
                     <ArrowRight class="size-4" aria-hidden="true"
-                /></a>
+                /></AppButton>
             </div>
         </div>
     </section>
