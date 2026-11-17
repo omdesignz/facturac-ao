@@ -13,6 +13,7 @@ import PeriodSwitch from '@/components/billing/PeriodSwitch.vue';
 import BrandWordmark from '@/components/BrandWordmark.vue';
 import CookieConsent from '@/components/CookieConsent.vue';
 import DevicePhone from '@/components/DevicePhone.vue';
+import LandingDevelopers from '@/components/LandingDevelopers.vue';
 import { initialPeriod, periodOptions } from '@/lib/packages';
 import { currencyLabel } from '@/lib/pos-ui';
 import { login, register } from '@/routes';
@@ -52,6 +53,16 @@ const props = defineProps<{
 }>();
 
 const menuOpen = ref(false);
+
+const integrationPackages = computed(() => [
+    ...new Set(
+        (props.packages.length ? props.packages : props.plans)
+            .filter((offer) =>
+                offer.features.includes('API e integrações externas'),
+            )
+            .map((offer) => offer.name),
+    ),
+]);
 
 /*
  * Packages are priced for one payment period at a time. Only the periods some
@@ -187,6 +198,7 @@ const sections = [
 const footerSections = [
     sections[0]!,
     { href: '#balcao', label: 'Ponto de venda' },
+    { href: '#integracoes', label: 'API & SDK' },
     ...sections.slice(1),
 ];
 
@@ -1168,6 +1180,11 @@ const questions: { question: string; answer: string }[] = [
                     </div>
                 </div>
             </section>
+
+            <LandingDevelopers
+                :support-email="contact.support_email"
+                :integration-packages="integrationPackages"
+            />
 
             <!-- --------------------------------------------------------- plans -->
             <section
