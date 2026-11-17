@@ -102,6 +102,11 @@ jobs:
           tools: composer:v2
           coverage: none
       - run: composer install --no-interaction --prefer-dist
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit
       - run: cp .env.example .env
       - run: php artisan key:generate
       - name: PHP suite shard
