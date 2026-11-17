@@ -398,6 +398,9 @@ test('assistant customer scoped cap precedes search filters and never exposes a 
     foreach (array_chunk($rows, 1000) as $chunk) {
         DB::table('customers')->insert($chunk);
     }
+    if (DB::getDriverName() === 'pgsql') {
+        DB::statement('ANALYZE customers');
+    }
     assistantPlanner(assistantReadPlan([['tool' => 'searchCustomers', 'arguments' => ['q' => 'MATCH', 'status' => 'active']]]));
     $r = $this->actingAs($f['user'])->postJson($f['url'], assistantPayload($f, ['references' => []]))->assertStatus($count === 10000 ? 200 : 503);
     if ($count === 10000) {
