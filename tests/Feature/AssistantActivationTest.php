@@ -6,11 +6,16 @@ use App\Fiscal\AssistantProviderPermit;
 use App\Fiscal\AssistantProviderProfile;
 use App\Fiscal\AssistantProviderResponse;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 require_once __DIR__.'/../AssistantProviderFixtures.php';
+
+beforeEach(function () {
+    $this->travelTo(CarbonImmutable::parse('2026-10-08T12:00:00Z'));
+});
 
 /** Synthetic operator settings only; the key file never holds a real provider key. */
 function assistantActivationConfig(object $test): string
@@ -28,6 +33,7 @@ function assistantActivationConfig(object $test): string
 }
 
 afterEach(function () {
+    $this->travelBack();
     if (isset($this->assistantKey)) {
         @unlink($this->assistantKey);
     }

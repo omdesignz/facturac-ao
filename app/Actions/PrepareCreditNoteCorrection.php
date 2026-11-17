@@ -121,10 +121,10 @@ final readonly class PrepareCreditNoteCorrection
 
         return [
             'guide' => $guide,
-            'lines' => $draftLines->map(fn (FiscalDocumentLine $line): array => $this->formLine(
+            'lines' => array_values($draftLines->map(fn (FiscalDocumentLine $line): array => $this->formLine(
                 $byNumber->get((int) $line->reference_line_number),
                 $this->allowance->quantity($line),
-            ))->values()->all(),
+            ))->all()),
         ];
     }
 
@@ -161,12 +161,12 @@ final readonly class PrepareCreditNoteCorrection
                         'unit_of_measure' => $line->unit_of_measure,
                         'unit_price' => CanonicalNumber::fromMinorUnits($line->unit_price_base_minor)->value(),
                         'discount_percentage' => CanonicalNumber::fromBasisPoints($line->discount_rate_basis_points)->value(),
-                        'tax_treatment' => ($tax instanceof FiscalDocumentLineTax ? SupportedTaxTreatment::fromLegacyComponents(
+                        'tax_treatment' => $tax instanceof FiscalDocumentLineTax ? SupportedTaxTreatment::fromLegacyComponents(
                             $tax->tax_type,
                             $tax->tax_code,
                             CanonicalNumber::fromBasisPoints($tax->tax_rate_basis_points)->value(),
                             $tax->tax_exemption_code,
-                        ) : null)?->value ?? SupportedTaxTreatment::NotSubject->value,
+                        )->value : SupportedTaxTreatment::NotSubject->value,
                         'quantity' => $this->allowance->quantity($line),
                         'credited_quantity' => $this->allowance->unscaled($quantity - $left),
                         'creditable_quantity' => $this->allowance->unscaled($left),

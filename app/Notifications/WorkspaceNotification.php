@@ -8,6 +8,7 @@ use App\NotificationTopic;
 use App\WorkspaceRole;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Notification as NotificationFacade;
 
@@ -94,7 +95,7 @@ abstract class WorkspaceNotification extends Notification implements ShouldQueue
      * What the phone app opens when the notification is tapped, or null to
      * just open the app. The web link is no use there.
      *
-     * @return array{type: 'document'|'customer'|'quote', public_id: string, label: string}|null
+     * @return array{type: 'document'|'customer'|'quote'|'recurring', public_id: string, label: string}|null
      */
     public function pushTarget(): ?array
     {
@@ -143,7 +144,8 @@ abstract class WorkspaceNotification extends Notification implements ShouldQueue
             ->reject(fn (User $user): bool => $except !== null && $user->is($except))
             // A topic meant for some roles only never reaches the others.
             ->filter(function (User $user): bool {
-                $role = $user->pivot?->getAttribute('role');
+                $pivot = $user->getRelation('pivot');
+                $role = $pivot instanceof Pivot ? $pivot->getAttribute('role') : null;
                 $role = $role instanceof WorkspaceRole ? $role : WorkspaceRole::tryFrom((string) $role);
 
                 return $role === null || $this->topic()->isFor($role);

@@ -274,6 +274,8 @@ test('billing audit refusal outer transactions and unsupported timezone withhold
 })->with(['audit', 'buffer', 'transaction', 'timezone']);
 
 test('billing added quota and workspace concurrency guard are shared and fail safely', function () {
+    $this->freezeTime();
+
     $f = billingSummaryFixture();
     $this->withHeader('Authorization', 'Bearer '.$f['secret']);
     $store = Cache::store('database');

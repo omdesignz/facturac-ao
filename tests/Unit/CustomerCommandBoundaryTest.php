@@ -250,10 +250,9 @@ test('normative OpenAPI route scope schemas and status table match the runtime b
 });
 
 test('command write quota charges normalized aliases replays conflicts and unsupported methods', function () {
+    $this->freezeTime();
+
     $f = commandFixture();
-    while (time() % 60 > 40) {
-        usleep(100000);
-    }
     $this->postJson($f['url'], commandBody(), commandHeaders($f))->assertCreated();
     $this->postJson($f['url'], commandBody(), commandHeaders($f))->assertCreated();
     $this->postJson($f['url'], [...commandBody(), 'name' => 'Different'], commandHeaders($f))->assertStatus(409);
@@ -268,10 +267,9 @@ test('command write quota charges normalized aliases replays conflicts and unsup
 });
 
 test('command IP admission bounds invalid bearer attempts without generating evidence', function () {
+    $this->freezeTime();
+
     $f = commandFixture();
-    while (time() % 60 > 40) {
-        usleep(100000);
-    }
     for ($i = 0; $i < 60; $i++) {
         $this->postJson($f['url'], commandBody(), ['Authorization' => 'Bearer unknown', 'Idempotency-Key' => 'ip'])->assertUnauthorized();
     }
@@ -280,13 +278,12 @@ test('command IP admission bounds invalid bearer attempts without generating evi
 });
 
 test('command workspace budget cannot be reset by creating or rotating another identity', function () {
+    $this->freezeTime();
+
     $f = commandFixture();
     $secrets = [$f['secret']];
     for ($i = 0; $i < 3; $i++) {
         $secrets[] = app(IntegrationCredentials::class)->create($f['management'], $f['entity']->public_id, AgtEnvironment::Production, 'Quota'.$i, ['customers:create'])->revealOnce();
-    }
-    while (time() % 60 > 40) {
-        usleep(100000);
     }
     for ($i = 0; $i < 30; $i++) {
         $this->postJson($f['url'], ['name' => 'Missing NIF'], ['Authorization' => 'Bearer '.$secrets[$i % 4], 'Idempotency-Key' => 'invalid'])->assertStatus(422);

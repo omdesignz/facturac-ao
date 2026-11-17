@@ -45,11 +45,18 @@ class ResolveAndroidPasskeyAssociation
             return [];
         }
 
-        return array_map(
-            fn (string $fingerprint): string => 'android:apk-key-hash:'.rtrim(strtr(
-                base64_encode(hex2bin(str_replace(':', '', $fingerprint))), '+/', '-_',
-            ), '='),
-            $association['sha256_cert_fingerprints'],
-        );
+        $origins = [];
+
+        foreach ($association['sha256_cert_fingerprints'] as $fingerprint) {
+            $binary = hex2bin(str_replace(':', '', $fingerprint));
+
+            if ($binary === false) {
+                return [];
+            }
+
+            $origins[] = 'android:apk-key-hash:'.rtrim(strtr(base64_encode($binary), '+/', '-_'), '=');
+        }
+
+        return $origins;
     }
 }

@@ -171,6 +171,8 @@ test('external root and audit failures have sanitized debug-safe errors', functi
 });
 
 test('shared limiter rejects unsafe stores and two credentials share the integration quota', function () {
+    $this->freezeTime();
+
     $fixture = externalFixture();
     $this->withHeader('Authorization', 'Bearer '.$fixture['secret']);
     for ($i = 0; $i < 60; $i++) {
@@ -256,6 +258,8 @@ test('field and prefix redaction prevents accidental log persistence of integrat
 });
 
 test('anonymous IP quota cannot be multiplied with untrusted forwarded network headers', function () {
+    $this->freezeTime();
+
     $f = externalFixture();
     for ($i = 0; $i < 120; $i++) {
         $this->withHeader('X-Forwarded-For', '192.0.2.'.($i + 1))->getJson($f['url'])->assertUnauthorized();

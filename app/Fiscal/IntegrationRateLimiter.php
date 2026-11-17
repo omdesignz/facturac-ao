@@ -16,7 +16,7 @@ final class IntegrationRateLimiter
         if (! $store instanceof DatabaseStore) {
             throw new HttpException(503);
         }
-        $now = time();
+        $now = now()->getTimestamp();
         $window = intdiv($now, 60);
         $retry = 60 - $now % 60;
         $blocked = false;

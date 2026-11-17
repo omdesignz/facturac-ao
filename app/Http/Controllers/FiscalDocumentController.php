@@ -164,7 +164,7 @@ class FiscalDocumentController extends Controller
             ...$props['document'],
             'due_date' => null,
             'currency_code' => $source->currency_code,
-            'establishment_public_id' => $seed['establishment']?->public_id
+            'establishment_public_id' => $seed['establishment']->public_id
                 ?? $props['document']['establishment_public_id'],
             'customer_public_id' => $customer?->public_id,
             'customer' => $customer instanceof Customer ? [

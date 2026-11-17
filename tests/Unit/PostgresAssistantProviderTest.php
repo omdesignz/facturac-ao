@@ -31,6 +31,7 @@ beforeEach(function () {
         ->and(str_starts_with(DB::connection()->getDatabaseName(), 'facturac_test_'))->toBeTrue();
     expect(DB::selectOne('SHOW server_encoding')->server_encoding)->toBe('UTF8');
     $this->artisan('migrate:fresh', ['--force' => true])->assertExitCode(0);
+    $this->travelTo(CarbonImmutable::parse('2026-10-08T12:00:00Z'));
     config(['assistant.enabled' => true]);
     $this->secret = tempnam(sys_get_temp_dir(), 'phase7-pg-synthetic-');
     file_put_contents($this->secret, 'synthetic-not-a-real-provider-key');

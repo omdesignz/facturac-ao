@@ -214,6 +214,8 @@ test('API remains JSON under Inertia headers and has no consequential routes', f
 });
 
 test('rate limiting returns a safe correlated retry response without extra domain work', function () {
+    $this->freezeTime();
+
     $company = readApiCompany();
     $this->actingAs($company['user']);
     for ($i = 0; $i < 60; $i++) {

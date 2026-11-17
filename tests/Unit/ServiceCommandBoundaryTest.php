@@ -74,6 +74,8 @@ test('service duplicate decoded JSON members and unknown query reject', function
 });
 
 test('customer and service requests share the integration write budget', function () {
+    $this->freezeTime();
+
     $f = serviceFixture(['customers:create', 'catalogue:services:create']);
     for ($i = 0; $i < 10; $i++) {
         $url = $i % 2 === 0 ? $f['url'] : substr($f['url'], 0, -strlen('catalogue-services')).'customers';

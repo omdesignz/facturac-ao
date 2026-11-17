@@ -8,6 +8,7 @@ use App\Fiscal\AssistantProviderLedger;
 use App\Fiscal\AssistantProviderPermit;
 use App\Fiscal\AssistantProviderProfile;
 use App\Fiscal\AssistantProviderTransport;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Http\Client\Events\RequestSending;
 use Illuminate\Support\Facades\DB;
@@ -29,6 +30,7 @@ beforeEach(function () {
     expect(app()->environment())->toBe('testing');
     expect(DB::getDriverName() === 'pgsql' ? str_starts_with(DB::connection()->getDatabaseName(), 'facturac_test_') : DB::connection()->getDatabaseName() === ':memory:')->toBeTrue();
     $this->artisan('migrate:fresh', ['--force' => true])->assertExitCode(0);
+    $this->travelTo(CarbonImmutable::parse('2026-10-08T12:00:00Z'));
     config(['assistant.enabled' => true]);
     Http::preventStrayRequests();
     Mail::fake();
@@ -42,6 +44,7 @@ beforeEach(function () {
 });
 
 afterEach(function () {
+    $this->travelBack();
     @unlink($this->secret);
     Activity::flushEventListeners();
     while (DB::connection()->transactionLevel() > 0) {

@@ -321,6 +321,8 @@ test('sensitive read failures remove bindings and restore logging and event stat
 });
 
 test('new resources share all existing external quotas across alternating families', function () {
+    $this->freezeTime();
+
     $f = masterReadFixture();
     $this->withHeader('Authorization', 'Bearer '.$f['secret']);
     for ($i = 0; $i < 60; $i++) {
