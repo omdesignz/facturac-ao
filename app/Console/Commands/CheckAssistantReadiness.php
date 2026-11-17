@@ -22,8 +22,15 @@ class CheckAssistantReadiness extends Command
 {
     public function handle(): int
     {
+        $workspaceId = $this->argument('workspace');
+        if ($workspaceId !== null && ! is_string($workspaceId)) {
+            $this->components->error('Indique um identificador de empresa em texto.');
+
+            return self::FAILURE;
+        }
+
         $failures = 0;
-        foreach ($this->gates() as $gate => $missing) {
+        foreach ($this->gates($workspaceId) as $gate => $missing) {
             $failures += $missing === null ? 0 : 1;
             $this->components->twoColumnDetail($gate, $missing === null ? '<fg=green>pronto</>' : '<fg=red>'.$missing.'</>');
         }
@@ -35,7 +42,7 @@ class CheckAssistantReadiness extends Command
     }
 
     /** @return array<string, ?string> Gate label to what is missing, or null when it is ready. */
-    private function gates(): array
+    private function gates(?string $workspaceId): array
     {
         $provider = (array) config('assistant.provider');
         $now = CarbonImmutable::now('UTC');
@@ -67,8 +74,8 @@ class CheckAssistantReadiness extends Command
             $gates['Orçamento de utilização partilhado'] = $this->control(is_array($mapping) ? ($mapping['usage_budget_id'] ?? null) : null, null, $now);
         }
         $gates['Orçamento do assistente'] = $this->control($budget, $provider['approval_reference'] ?? null, $now);
-        if ($this->argument('workspace') !== null) {
-            $gates['Aprovação da empresa'] = $this->workspace((string) $this->argument('workspace'), $now);
+        if ($workspaceId !== null) {
+            $gates['Aprovação da empresa'] = $this->workspace($workspaceId, $now);
         }
 
         return $gates;

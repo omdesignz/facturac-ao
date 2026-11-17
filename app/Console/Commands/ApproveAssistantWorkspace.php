@@ -25,7 +25,15 @@ class ApproveAssistantWorkspace extends Command
 {
     public function handle(): int
     {
-        $owner = User::query()->where('email', (string) $this->argument('owner'))->first();
+        $ownerEmail = $this->argument('owner');
+        $workspaceId = $this->argument('workspace');
+        if (! is_string($ownerEmail) || ($workspaceId !== null && ! is_string($workspaceId))) {
+            $this->components->error('Indique o email do proprietário e um identificador de empresa em texto.');
+
+            return self::FAILURE;
+        }
+
+        $owner = User::query()->where('email', $ownerEmail)->first();
         $days = (int) $this->option('days');
         if (! $owner instanceof User || $days < 1 || $days > 730) {
             $this->components->error('Indique o email de uma conta existente e --days entre 1 e 730.');
@@ -34,7 +42,7 @@ class ApproveAssistantWorkspace extends Command
         }
         $owned = WorkspaceMembership::query()->where('user_id', $owner->id)->where('is_active', true)->where('role', WorkspaceRole::Owner)->pluck('workspace_id');
         $workspaces = Workspace::query()->whereIn('id', $owned)
-            ->when($this->argument('workspace') !== null, fn ($query) => $query->where('public_id', (string) $this->argument('workspace')))->get();
+            ->when($workspaceId !== null, fn ($query) => $query->where('public_id', $workspaceId))->get();
         if ($workspaces->count() !== 1) {
             $this->components->error($workspaces->isEmpty()
                 ? 'Esta conta não é proprietária activa dessa empresa.'

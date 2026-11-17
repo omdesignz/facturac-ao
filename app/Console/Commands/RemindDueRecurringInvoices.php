@@ -30,7 +30,14 @@ class RemindDueRecurringInvoices extends Command
 
     public function handle(SubscriptionAccess $subscriptions): int
     {
-        $today = CarbonImmutable::parse($this->option('on') ?? CarbonImmutable::now('Africa/Luanda')->toDateString());
+        $date = $this->option('on');
+        if ($date !== null && ! is_string($date)) {
+            $this->components->error('Indique --on como uma data em texto.');
+
+            return self::FAILURE;
+        }
+
+        $today = CarbonImmutable::parse($date ?? CarbonImmutable::now('Africa/Luanda')->toDateString());
         $tomorrow = $today->addDay();
         $sent = 0;
 

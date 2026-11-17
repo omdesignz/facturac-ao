@@ -34,6 +34,13 @@ class SendDailyClose extends Command
 
     public function handle(): int
     {
+        $date = $this->option('on');
+        if ($date !== null && ! is_string($date)) {
+            $this->components->error('Indique --on como uma data em texto.');
+
+            return self::FAILURE;
+        }
+
         $sent = 0;
         $hour = (int) config('notifications.daily_close_hour', 19);
 
@@ -52,7 +59,7 @@ class SendDailyClose extends Command
                 }
 
                 // The company's date, read on the app's clock as Hoje reads it.
-                $day = CarbonImmutable::parse($this->option('on') === null ? $local->toDateString() : (string) $this->option('on'));
+                $day = CarbonImmutable::parse($date ?? $local->toDateString());
 
                 $sent += $this->close($workspace, $legalEntity, $day, $recipients);
             }
