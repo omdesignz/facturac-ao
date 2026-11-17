@@ -36,9 +36,16 @@ class ScanForNotifiableStates extends Command
 
     public function handle(): int
     {
-        $today = $this->option('on') === null
+        $date = $this->option('on');
+        if ($date !== null && ! is_string($date)) {
+            $this->components->error('Indique --on como uma data em texto.');
+
+            return self::FAILURE;
+        }
+
+        $today = $date === null
             ? CarbonImmutable::parse(CarbonImmutable::now('Africa/Luanda')->toDateString())
-            : CarbonImmutable::parse((string) $this->option('on'));
+            : CarbonImmutable::parse($date);
 
         $raised = 0;
 

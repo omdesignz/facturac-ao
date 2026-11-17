@@ -20,7 +20,13 @@ class ManageSupportStaff extends Command
 {
     public function handle(): int
     {
-        $email = (string) $this->argument('email');
+        $email = $this->argument('email');
+        if (! is_string($email)) {
+            $this->components->error('Indique um endereço de email em texto.');
+
+            return self::FAILURE;
+        }
+
         $user = User::query()->where('email', $email)->first();
 
         if (! $user instanceof User) {
