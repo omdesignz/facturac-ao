@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import { after, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { createServer } from 'vite';
-import vue from '@vitejs/plugin-vue';
-import { createSSRApp, h } from 'vue';
-import { renderToString } from '@vue/server-renderer';
 import { createInertiaApp } from '@inertiajs/vue3';
+import vue from '@vitejs/plugin-vue';
+import { renderToString } from '@vue/server-renderer';
 import { provideSSRWidth } from '@vueuse/core';
+import { createServer } from 'vite';
+import { createSSRApp, h } from 'vue';
 
 const server = await createServer({
     configFile: false,
@@ -79,6 +79,7 @@ async function render(
                       setup(props, context) {
                           const state = Screen.setup(props, context);
                           inspectSetup(state);
+
                           return state;
                       },
                   }
@@ -87,15 +88,19 @@ async function render(
             const app = createSSRApp({ render: () => h(App, props) }).use(
                 plugin,
             );
+
             if (width !== undefined) {
                 provideSSRWidth(width, app);
             }
+
             app.config.warnHandler = (warning) => warnings.push(warning);
+
             return app;
         },
         render: renderToString,
     });
     assert.deepEqual(warnings, []);
+
     return response.body;
 }
 
@@ -264,11 +269,13 @@ async function invoiceEditor(overrides = {}) {
             editor = state;
         },
     );
+
     return { ...editor, html };
 }
 
 test('empty optional invoice sections start closed', async () => {
     const { html } = await invoiceEditor();
+
     for (const title of ['withholding-title', 'notes-title']) {
         const details = html.match(
             new RegExp(`<details\\b[^>]*aria-labelledby="${title}"[^>]*>`),
@@ -287,12 +294,14 @@ test('saved optional invoice content stays expanded on arrival', async () => {
             notes: 'Entregar na recepção.',
         },
     });
+
     for (const title of ['withholding-title', 'notes-title']) {
         const details = html.match(
             new RegExp(`<details\\b[^>]*aria-labelledby="${title}"[^>]*>`),
         )?.[0];
         assert.match(details, /\sopen(?:[\s=>])/);
     }
+
     assert.equal(form.notes, 'Entregar na recepção.');
     assert.equal(form.withholdings[0].rate_percentage, '6.5');
 });
@@ -338,6 +347,7 @@ test('server errors reveal optional and saved-customer fields before focus moves
 
 test('manual customer and article fields remain visible without opening disclosures', async () => {
     const { html } = await invoiceEditor();
+
     for (const id of [
         'customer-snapshot-fields',
         'mobile-line-details-line-1',
@@ -448,6 +458,7 @@ test('daily navigation keeps a rare active destination open under More', async (
         html,
         /href="\/orcamentos"[^]*?aria-current="page"|aria-current="page"[^]*?href="\/orcamentos"/,
     );
+
     for (const href of [
         '/customers',
         '/catalogue',
@@ -458,6 +469,7 @@ test('daily navigation keeps a rare active destination open under More', async (
     ]) {
         assert.ok(html.includes(`href="${href}"`), href);
     }
+
     assert.doesNotMatch(html, /href="\/support"/);
 });
 
@@ -489,9 +501,11 @@ test('support staff retain access to the internal destinations under More', asyn
 
 test('appearance choices and account navigation expose named keyboard controls', async () => {
     const appearance = await render('components/AppearancePicker');
+
     for (const label of ['Claro', 'Escuro', 'Sistema']) {
         assert.ok(appearance.includes(label));
     }
+
     assert.equal((appearance.match(/aria-pressed=/g) ?? []).length, 3);
     const nav = await render('components/AccountSettingsNav');
     assert.match(nav, /href="\/settings\/conta"/);

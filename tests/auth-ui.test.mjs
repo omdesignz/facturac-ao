@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { after, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { createServer } from 'vite';
-import vue from '@vitejs/plugin-vue';
-import { createSSRApp, h } from 'vue';
-import { renderToString } from '@vue/server-renderer';
 import { createInertiaApp } from '@inertiajs/vue3';
+import vue from '@vitejs/plugin-vue';
+import { renderToString } from '@vue/server-renderer';
+import { createServer } from 'vite';
+import { createSSRApp, h } from 'vue';
 
 const server = await createServer({
     configFile: false,
@@ -79,13 +79,16 @@ for (const [name, fields] of screens) {
         assert.match(response.body, /href="\/termos"/);
         assert.match(response.body, /Saltar para o conteúdo/);
         assert.match(response.body, /Empresa de demonstração/);
+
         for (const field of fields) {
             assert.ok(
                 response.body.includes(`name="${field}"`),
                 `Missing field: ${field}`,
             );
         }
+
         assert.doesNotMatch(response.body, /Software certificado/);
+
         if (name === 'ConfirmPassword') {
             assert.match(response.body, /href="\/dashboard"[^]*?Voltar à app/);
         }
@@ -121,6 +124,7 @@ test('the public entry page renders without unresolved components', async () => 
                 plugin,
             );
             app.config.warnHandler = (message) => warnings.push(message);
+
             return app;
         },
         render: renderToString,
