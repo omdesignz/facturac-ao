@@ -1,9 +1,21 @@
 <script setup lang="ts">
-import { ArrowRight } from '@lucide/vue';
+import { ArrowRight, Check, Copy } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import AppButton from '@/components/AppButton.vue';
-import { demoCommand, developerExamples } from '@/lib/developer-examples';
+import {
+    demoCommand,
+    demoSession,
+    developerExamples,
+    installCommand,
+    tokenize,
+} from '@/lib/developer-examples';
 
+/**
+ * The homepage's word to developers: what the API does, real code to read,
+ * and a demo that runs on their own machine without an account. Every panel
+ * is rendered and only hidden, so the code is there for search engines and
+ * for anyone reading the page without scripts.
+ */
 const props = defineProps<{
     supportEmail: string | null;
     integrationPackages: string[];
@@ -14,33 +26,75 @@ const enquiryUrl = computed(() =>
         ? `mailto:${props.supportEmail}?subject=${encodeURIComponent('API e integrações — facturac.ao')}`
         : null,
 );
-const selectedExample = ref(0);
-const example = computed(() => developerExamples[selectedExample.value]);
-const copyMessage = ref('');
 
-async function copyCode(value: string): Promise<void> {
+const tabs = [
+    ...developerExamples.map((example) => ({
+        id: example.id,
+        label: example.label,
+    })),
+    { id: 'sandbox', label: 'Experimentar' },
+];
+const selected = ref(tabs[0]!.id);
+const tabButtons = ref<HTMLButtonElement[]>([]);
+
+const highlighted = developerExamples.map((example) => ({
+    ...example,
+    tokens: tokenize(example.code),
+}));
+
+const copied = ref<string | null>(null);
+const copyMessage = ref('');
+let copiedTimer: ReturnType<typeof setTimeout> | undefined;
+
+async function copyText(value: string, key: string): Promise<void> {
     try {
         await navigator.clipboard.writeText(value);
+        copied.value = key;
         copyMessage.value = 'Copiado.';
+        clearTimeout(copiedTimer);
+        copiedTimer = setTimeout(() => {
+            copied.value = null;
+            copyMessage.value = '';
+        }, 1800);
     } catch {
-        copyMessage.value = 'Seleccione o código e copie manualmente.';
+        copyMessage.value = 'Seleccione o texto e copie manualmente.';
     }
 }
 
+const selectedCopy = computed(() =>
+    selected.value === 'sandbox'
+        ? demoCommand
+        : (developerExamples.find((example) => example.id === selected.value)
+              ?.code ?? ''),
+);
+
+/** Arrow keys move between tabs, as in any tab list. */
+function onTabKeydown(event: KeyboardEvent, index: number): void {
+    const step =
+        event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+
+    if (step === 0) {
+        return;
+    }
+
+    event.preventDefault();
+    const next = (index + step + tabs.length) % tabs.length;
+    selected.value = tabs[next]!.id;
+    tabButtons.value[next]?.focus();
+}
+
 const capabilities = [
-    {
-        title: 'Consultar e sincronizar',
-        detail: 'Documentos, clientes, catálogo e resumos de facturação para os seus sistemas.',
-    },
-    {
-        title: 'Criar clientes e serviços',
-        detail: 'Com permissões específicas e protecção contra pedidos repetidos.',
-    },
-    {
-        title: 'Experimentar primeiro',
-        detail: 'Uma demonstração local exporta dois documentos fictícios para CSV, sem conta nem chave.',
-    },
+    'Documentos, clientes e catálogo, página a página',
+    'O estado de cada documento na AGT',
+    'Clientes e serviços criados sem duplicar quando um pedido se repete',
+    'Uma chave por empresa, com as permissões que escolher',
 ];
+
+const tokenClass = {
+    keyword: 'text-accent-300',
+    string: 'text-[#d9e7b5]',
+    plain: '',
+} as const;
 </script>
 
 <template>
@@ -50,28 +104,37 @@ const capabilities = [
         class="mx-auto max-w-6xl scroll-mt-24 px-5 pt-(--space-section) sm:px-8"
     >
         <div
-            class="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-16"
+            class="grid gap-10 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-14"
         >
-            <div>
-                <p
-                    class="text-sm font-semibold tracking-wide text-brand-500 uppercase dark:text-zinc-400"
-                >
-                    API & SDK
-                </p>
+            <div class="lg:pt-2">
                 <h2
                     id="integracoes-heading"
-                    class="mt-4 font-display text-section font-bold text-balance"
+                    class="font-display text-section font-bold text-balance"
                 >
-                    O seu software.<br />Ligado ao facturac.
+                    O seu software, ligado ao facturac.ao
                 </h2>
                 <p
-                    class="mt-5 max-w-xl text-lg/8 text-brand-600 dark:text-zinc-400"
+                    class="mbs-4 text-lg/8 text-pretty text-brand-600 dark:text-zinc-400"
                 >
-                    Ligue o ERP, o CRM ou as ferramentas de contabilidade à sua
-                    empresa. O SDK oficial para JavaScript e TypeScript ajuda a
-                    começar.
+                    Uma API e um SDK para JavaScript e TypeScript, para o ERP, o
+                    CRM ou a contabilidade lerem e escreverem na sua empresa.
                 </p>
-                <div class="mt-7 flex flex-wrap gap-3">
+                <ul
+                    class="mbs-6 grid gap-2 text-base text-brand-800 dark:text-zinc-200"
+                >
+                    <li
+                        v-for="capability in capabilities"
+                        :key="capability"
+                        class="flex gap-3"
+                    >
+                        <span
+                            class="mt-[0.6em] size-1.5 shrink-0 rounded-full bg-accent-400"
+                            aria-hidden="true"
+                        />
+                        {{ capability }}
+                    </li>
+                </ul>
+                <div class="mbs-8 flex flex-wrap gap-3">
                     <AppButton
                         href="https://github.com/omdesignz/facturac-sdk#try-an-integration-in-five-minutes"
                         external
@@ -94,236 +157,207 @@ const capabilities = [
                     >
                 </div>
             </div>
+
+            <!-- The code, in a window of its own. -->
             <div
-                class="min-w-0 rounded-[2rem] bg-brand-950 p-6 text-white sm:p-8 dark:bg-zinc-900 dark:ring-1 dark:ring-white/10"
+                class="min-w-0 overflow-hidden rounded-2xl bg-brand-950 text-zinc-100 shadow-[0_30px_60px_-34px_rgb(23_23_22/0.55)] dark:bg-zinc-900 dark:ring-1 dark:ring-white/10"
             >
                 <div
-                    class="flex flex-wrap gap-2"
-                    aria-label="Escolher exemplo de integração"
+                    class="flex items-center gap-2 border-b border-white/10 px-2 py-2 sm:px-3"
                 >
-                    <button
-                        v-for="(item, index) in developerExamples"
-                        :key="item.id"
-                        type="button"
-                        :aria-pressed="selectedExample === index"
-                        aria-controls="sdk-example"
-                        class="rounded-full px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-lime-300"
-                        :class="
-                            selectedExample === index
-                                ? 'bg-white text-brand-950'
-                                : 'text-zinc-300 hover:bg-white/10'
-                        "
-                        @click="
-                            selectedExample = index;
-                            copyMessage = '';
-                        "
+                    <div
+                        role="tablist"
+                        aria-label="Exemplos de integração"
+                        class="flex min-w-0 flex-1 [scrollbar-width:none] gap-1 overflow-x-auto"
                     >
-                        {{ item.label }}
+                        <button
+                            v-for="(tab, index) in tabs"
+                            :id="`sdk-tab-${tab.id}`"
+                            ref="tabButtons"
+                            :key="tab.id"
+                            type="button"
+                            role="tab"
+                            :aria-selected="selected === tab.id"
+                            :aria-controls="`sdk-panel-${tab.id}`"
+                            :tabindex="selected === tab.id ? 0 : -1"
+                            :class="[
+                                'shrink-0 rounded-lg px-2.5 py-1.5 text-[0.8125rem] font-medium whitespace-nowrap focus-ring-inverted transition-colors sm:px-3',
+                                selected === tab.id
+                                    ? 'bg-white/10 text-white'
+                                    : 'text-zinc-400 hover:text-white',
+                            ]"
+                            @click="selected = tab.id"
+                            @keydown="onTabKeydown($event, index)"
+                        >
+                            {{ tab.label }}
+                        </button>
+                    </div>
+                    <button
+                        type="button"
+                        class="flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-zinc-300 focus-ring-inverted transition-colors hover:bg-white/10 hover:text-white"
+                        :aria-label="
+                            selected === 'sandbox'
+                                ? 'Copiar comando'
+                                : 'Copiar código'
+                        "
+                        @click="copyText(selectedCopy, selected)"
+                    >
+                        <Check
+                            v-if="copied === selected"
+                            class="size-3.5 text-accent-300"
+                            aria-hidden="true"
+                        />
+                        <Copy v-else class="size-3.5" aria-hidden="true" />
+                        <span class="max-sm:sr-only">{{
+                            copied === selected ? 'Copiado' : 'Copiar'
+                        }}</span>
                     </button>
                 </div>
-                <div id="sdk-example" class="mt-6">
-                    <p class="text-sm/6 text-zinc-300">
-                        {{ example.description }}
-                    </p>
+
+                <div
+                    v-for="example in highlighted"
+                    v-show="selected === example.id"
+                    :id="`sdk-panel-${example.id}`"
+                    :key="example.id"
+                    role="tabpanel"
+                    :aria-labelledby="`sdk-tab-${example.id}`"
+                >
                     <div
-                        class="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-zinc-400"
+                        class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-5 pt-4 text-xs text-zinc-400"
                     >
-                        <span>TypeScript · no servidor</span>
-                        <button
-                            type="button"
-                            class="rounded px-2 py-1 text-lime-200 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-lime-300"
-                            @click="copyCode(example.code)"
+                        <span class="font-mono text-zinc-300">{{
+                            example.file
+                        }}</span>
+                        <span
+                            >Permissão
+                            <code class="font-mono text-accent-300">{{
+                                example.scope
+                            }}</code></span
                         >
-                            Copiar código
-                        </button>
                     </div>
                     <pre
                         tabindex="0"
-                        aria-label="Código TypeScript do exemplo"
-                        class="mt-3 max-h-96 overflow-auto rounded-xl bg-black/20 p-4 font-mono text-xs/6 text-zinc-100"
-                    ><code>{{ example.code }}</code></pre>
-                    <p class="mt-4 font-mono text-xs text-lime-200">
-                        Permissão: {{ example.scope }}
-                    </p>
-                    <p class="mt-3 text-xs/6 text-zinc-400">
+                        :aria-label="`Código do exemplo: ${example.label}`"
+                        class="max-h-[22rem] overflow-auto px-5 py-4 font-mono text-[0.78125rem]/6 focus-ring-inverted"
+                    ><code><span v-for="(token, index) in example.tokens" :key="index" :class="tokenClass[token.kind]">{{ token.text }}</span></code></pre>
+                    <p
+                        class="border-t border-white/10 px-5 py-4 text-[0.8125rem]/6 text-zinc-400"
+                    >
+                        <span class="text-zinc-200">{{
+                            example.description
+                        }}</span>
                         {{ example.note }}
                     </p>
                 </div>
-                <p role="status" class="mt-2 text-xs text-lime-200">
-                    {{ copyMessage }}
-                </p>
+
+                <div
+                    v-show="selected === 'sandbox'"
+                    id="sdk-panel-sandbox"
+                    role="tabpanel"
+                    aria-labelledby="sdk-tab-sandbox"
+                >
+                    <div
+                        class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-5 pt-4 text-xs text-zinc-400"
+                    >
+                        <span class="font-mono text-zinc-300">Terminal</span>
+                        <span
+                            >Sandbox local, sem conta, Node.js 20 ou
+                            superior</span
+                        >
+                    </div>
+                    <pre
+                        tabindex="0"
+                        aria-label="Sessão de terminal da demonstração local"
+                        class="max-h-[22rem] overflow-auto px-5 py-4 font-mono text-[0.78125rem]/6 [overflow-wrap:anywhere] whitespace-pre-wrap focus-ring-inverted"
+                    ><code><span v-for="(line, index) in demoSession" :key="index" :class="['block min-h-6', line.kind === 'command' ? 'text-white' : 'text-zinc-400']"><span v-if="line.kind === 'command'" class="text-zinc-500 select-none">$ </span>{{ line.text }}</span></code></pre>
+                    <p
+                        class="border-t border-white/10 px-5 py-4 text-[0.8125rem]/6 text-zinc-400"
+                    >
+                        <span class="text-zinc-200"
+                            >Dois documentos com dados fictícios, exportados
+                            para CSV sem conta nem chave.</span
+                        >
+                        A demonstração corre no seu computador e não contacta a
+                        sua empresa nem a AGT. Não simula autenticação, limites
+                        de pedidos nem escritas. O ficheiro nunca é substituído,
+                        por isso use um nome novo em cada execução.
+                    </p>
+                </div>
             </div>
         </div>
+
+        <p role="status" class="sr-only">{{ copyMessage }}</p>
+
+        <!-- From reading to a real key, in one strip. -->
         <div
-            id="sandbox"
-            class="mt-10 grid gap-8 rounded-3xl border border-brand-950/10 p-6 sm:p-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] dark:border-white/10"
+            class="mt-10 grid gap-6 rounded-2xl p-5 shadow-[0_0_0_1px_rgb(23_23_22/0.1)] sm:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-center lg:gap-10 dark:shadow-[0_0_0_1px_rgb(255_255_255/0.1)]"
         >
-            <div>
-                <p
-                    class="text-xs font-semibold tracking-wide text-brand-500 uppercase dark:text-zinc-400"
-                >
-                    Sandbox local · sem conta nem chave
-                </p>
-                <h3 class="mt-3 font-display text-2xl font-semibold">
-                    Do terminal ao primeiro CSV.
-                </h3>
-                <p class="mt-3 text-sm/7 text-brand-600 dark:text-zinc-400">
-                    Experimente o SDK com dois documentos fictícios e paginação
-                    real. O npm descarrega o pacote; depois, a demonstração
-                    funciona localmente, sem contactar a sua empresa nem a AGT.
-                </p>
-                <p class="mt-4 text-xs/6 text-brand-500 dark:text-zinc-400">
-                    Node.js 20 ou superior. Escolha um nome de ficheiro novo em
-                    cada execução; o exportador não substitui ficheiros
-                    existentes.
-                </p>
-                <p class="mt-4 text-xs/6 text-brand-500 dark:text-zinc-400">
-                    Este sandbox cobre a leitura de documentos. Não simula
-                    autenticação, limites de pedidos ou escritas. Um ambiente de
-                    homologação alojado requer uma instalação e credenciais
-                    próprias.
-                </p>
-            </div>
             <div class="min-w-0">
+                <p class="font-semibold">Para começar</p>
                 <div
-                    class="flex items-center justify-between gap-3 text-xs font-medium"
+                    class="mt-3 flex min-w-0 items-center gap-2 rounded-xl bg-brand-950/[0.04] py-1.5 ps-4 pe-1.5 dark:bg-white/[0.06]"
                 >
-                    <span>1. Execute no terminal</span>
+                    <code
+                        class="min-w-0 flex-1 [scrollbar-width:none] overflow-x-auto font-mono text-[0.8125rem] whitespace-nowrap"
+                        ><span
+                            class="text-brand-400 select-none dark:text-zinc-500"
+                            >$ </span
+                        >{{ installCommand }}</code
+                    >
                     <button
                         type="button"
-                        class="rounded px-2 py-1 underline underline-offset-4 focus-visible:outline-2"
-                        @click="copyCode(demoCommand)"
+                        class="grid size-8 shrink-0 place-items-center rounded-lg text-brand-500 focus-ring transition-colors hover:bg-white hover:text-brand-950 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white"
+                        aria-label="Copiar o comando de instalação"
+                        @click="copyText(installCommand, 'install')"
                     >
-                        Copiar comando
+                        <Check
+                            v-if="copied === 'install'"
+                            class="size-4 text-accent-600"
+                            aria-hidden="true"
+                        />
+                        <Copy v-else class="size-4" aria-hidden="true" />
                     </button>
                 </div>
-                <pre
-                    tabindex="0"
-                    aria-label="Comando da demonstração local"
-                    class="mt-3 overflow-x-auto rounded-xl bg-brand-950 p-4 font-mono text-xs/6 break-all whitespace-pre-wrap text-white dark:bg-zinc-900"
-                ><code>{{ demoCommand }}</code></pre>
-                <p class="mt-4 text-xs font-medium">
-                    2. Abra facturac-demo.csv
+            </div>
+            <div class="text-[0.9375rem]/7 text-brand-600 dark:text-zinc-400">
+                <p>
+                    Depois, crie a chave em
+                    <strong class="font-semibold text-brand-950 dark:text-white"
+                        >Definições → Integrações e API</strong
+                    >
+                    e guarde-a só no servidor.
+                    <template v-if="integrationPackages.length">
+                        Acesso à API incluído:
+                        <strong
+                            v-for="(name, index) in integrationPackages"
+                            :key="name"
+                            class="font-semibold text-brand-950 dark:text-white"
+                            >{{ name
+                            }}{{
+                                index < integrationPackages.length - 1
+                                    ? ', '
+                                    : ''
+                            }}</strong
+                        >.
+                    </template>
+                    <template v-else>
+                        O acesso à API requer um pacote com integrações
+                        externas.
+                    </template>
                 </p>
-                <div
-                    class="mt-3 overflow-x-auto rounded-xl border border-brand-950/10 dark:border-white/10"
-                >
-                    <table class="w-full text-left text-xs">
-                        <caption class="sr-only">
-                            Pré-visualização dos dois documentos fictícios
-                            exportados. Valores em unidades mínimas.
-                        </caption>
-                        <thead class="bg-brand-50 dark:bg-white/5">
-                            <tr>
-                                <th class="px-3 py-2">Documento</th>
-                                <th class="px-3 py-2">Estado</th>
-                                <th class="px-3 py-2">gross_total_minor</th>
-                            </tr>
-                        </thead>
-                        <tbody
-                            class="divide-y divide-brand-950/10 dark:divide-white/10"
-                        >
-                            <tr>
-                                <td class="px-3 py-3">FT DEMO/3</td>
-                                <td class="px-3 py-3">issued</td>
-                                <td class="px-3 py-3 font-mono">150000 AOA</td>
-                            </tr>
-                            <tr>
-                                <td class="px-3 py-3">Sem número</td>
-                                <td class="px-3 py-3">draft</td>
-                                <td class="px-3 py-3 font-mono">50000 AOA</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <p class="mt-3 text-xs/6 text-brand-500 dark:text-zinc-400">
-                    Dados fictícios. O CSV inclui identificadores públicos,
-                    revisão e ambiente para reconciliação.
+                <p v-if="enquiryUrl" class="mt-2">
+                    <a
+                        :href="enquiryUrl"
+                        class="font-semibold text-brand-950 underline decoration-brand-950/25 underline-offset-4 focus-ring transition-colors hover:decoration-brand-950 dark:text-white dark:decoration-white/30 dark:hover:decoration-white"
+                        >Fale connosco sobre o seu sistema</a
+                    >
+                    e confirme a activação antes de ligar dados reais.
                 </p>
             </div>
         </div>
-        <div class="mt-8 grid gap-5 text-sm/6 sm:grid-cols-3">
-            <p>
-                <strong class="block">1. Instale o SDK</strong
-                ><code class="mt-2 block text-xs break-all"
-                    >npm install @vapsolucoes.ao/facturac</code
-                >
-            </p>
-            <p>
-                <strong class="block">2. Peça acesso à API</strong
-                ><span class="text-brand-600 dark:text-zinc-400"
-                    >Confirme a activação e crie a credencial em Definições →
-                    Integrações e API.</span
-                >
-            </p>
-            <p>
-                <strong class="block">3. Ligue o seu servidor</strong
-                ><span class="text-brand-600 dark:text-zinc-400"
-                    >Guarde a credencial em variáveis de ambiente. Nunca a
-                    inclua no navegador, na aplicação móvel ou no
-                    repositório.</span
-                >
-            </p>
-        </div>
-        <dl
-            class="mt-10 grid gap-6 border-t border-brand-950/10 pt-7 md:grid-cols-3 dark:border-white/10"
-        >
-            <div v-for="capability in capabilities" :key="capability.title">
-                <dt class="font-semibold">{{ capability.title }}</dt>
-                <dd class="mt-2 text-sm/6 text-brand-600 dark:text-zinc-400">
-                    {{ capability.detail }}
-                </dd>
-            </div>
-        </dl>
-        <div
-            class="mt-10 grid gap-7 rounded-3xl bg-brand-50 p-7 sm:p-9 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center dark:bg-white/5"
-        >
-            <div class="max-w-2xl">
-                <h3
-                    class="font-display text-2xl font-semibold tracking-[-0.02em]"
-                >
-                    API & Integrações para a sua equipa
-                </h3>
-                <p
-                    v-if="integrationPackages.length"
-                    class="mt-3 text-brand-700 dark:text-zinc-300"
-                >
-                    Acesso à API incluído:
-                    <strong class="font-semibold">{{
-                        integrationPackages.join(', ')
-                    }}</strong
-                    >.
-                </p>
-                <p v-else class="mt-3 text-brand-700 dark:text-zinc-300">
-                    O acesso à API requer um pacote com integrações externas.
-                </p>
-                <p class="mt-2 text-sm/6 text-brand-600 dark:text-zinc-400">
-                    Precisa de uma integração à medida? Fale com a equipa sobre
-                    o seu sistema e confirme a activação antes de ligar dados
-                    reais.
-                </p>
-                <p class="mt-3 text-sm/6 text-brand-600 dark:text-zinc-400">
-                    Nesta versão, a API não inclui emissão fiscal, pagamentos ou
-                    webhooks. O CSV de demonstração é um registo de documentos,
-                    não um livro contabilístico completo.
-                </p>
-            </div>
-            <div
-                class="flex flex-wrap items-center gap-4 lg:flex-col lg:items-stretch"
-            >
-                <AppButton
-                    v-if="enquiryUrl"
-                    :href="enquiryUrl"
-                    external
-                    variant="ink"
-                    size="lg"
-                    >Falar sobre a minha integração</AppButton
-                >
-                <AppButton href="#precos" external variant="quiet" size="lg"
-                    >Consultar planos
-                    <ArrowRight class="size-4" aria-hidden="true"
-                /></AppButton>
-            </div>
-        </div>
+        <p class="mt-4 text-sm text-brand-500 dark:text-zinc-500">
+            Nesta versão, a API não inclui emissão fiscal, pagamentos ou
+            webhooks.
+        </p>
     </section>
 </template>

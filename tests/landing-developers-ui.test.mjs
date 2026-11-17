@@ -95,6 +95,11 @@ test('visitors can find the SDK, run a synthetic demo and understand its limits 
     assert.match(sdk, /Copiar código/);
     assert.match(sdk, /Criar um cliente/);
     assert.match(sdk, /FT DEMO\/3/);
+    // Every example is in the page, hidden rather than missing, under one tab list.
+    assert.match(sdk, /role="tablist"/);
+    assert.equal((sdk.match(/role="tabpanel"/g) ?? []).length, 3);
+    assert.match(sdk, /cut -d, -f2,7,8 facturac-demo.csv/);
+    assert.doesNotMatch(sdk, /uppercase|·/);
     assert.match(sdk, /Não simula autenticação/);
     assert.match(sdk, /dados fictícios/i);
     assert.match(sdk, /não inclui emissão fiscal, pagamentos ou webhooks/);
