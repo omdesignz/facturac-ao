@@ -4,6 +4,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import AccountSettingsNav from '@/components/AccountSettingsNav.vue';
 import AppButton from '@/components/AppButton.vue';
 import FormField from '@/components/FormField.vue';
+import SelectInput from '@/components/SelectInput.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { confirmAction } from '@/lib/confirm';
 import { contract } from '@/routes/integrations';
@@ -321,34 +322,31 @@ function date(value: string): string {
                         label="Empresa"
                         for="integration-entity"
                         :error="form.errors.entity_public_id"
-                        ><select
+                    >
+                        <SelectInput
                             id="integration-entity"
                             v-model="form.entity_public_id"
-                            class="form-input"
+                            :options="
+                                entities.map((entity) => ({
+                                    value: entity.public_id,
+                                    label: entity.name,
+                                }))
+                            "
                             required
-                        >
-                            <option
-                                v-for="entity in entities"
-                                :key="entity.public_id"
-                                :value="entity.public_id"
-                            >
-                                {{ entity.name }}
-                            </option>
-                        </select></FormField
-                    >
+                    /></FormField>
                     <FormField
                         label="Ambiente"
                         for="integration-environment"
                         :error="form.errors.environment"
-                        ><select
+                    >
+                        <SelectInput
                             id="integration-environment"
                             v-model="form.environment"
-                            class="form-input"
-                        >
-                            <option value="production">Produção</option>
-                            <option value="homologation">Homologação</option>
-                        </select></FormField
-                    >
+                            :options="[
+                                { value: 'production', label: 'Produção' },
+                                { value: 'homologation', label: 'Homologação' },
+                            ]"
+                    /></FormField>
                 </div>
                 <fieldset class="space-y-3">
                     <legend class="mb-3 text-sm font-medium">Permissões</legend>
@@ -360,6 +358,7 @@ function date(value: string): string {
                             ><input
                                 v-model="form.scopes"
                                 type="checkbox"
+                                class="form-checkbox"
                                 :value="scope.value"
                                 :disabled="
                                     form.environment !== 'production' &&
