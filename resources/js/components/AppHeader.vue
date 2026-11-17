@@ -8,6 +8,7 @@ import AgtStateChip from '@/components/AgtStateChip.vue';
 import BrandWordmark from '@/components/BrandWordmark.vue';
 import GlobalSearch from '@/components/GlobalSearch.vue';
 import NotificationsMenu from '@/components/NotificationsMenu.vue';
+import SidebarToggle from '@/components/SidebarToggle.vue';
 import WorkSessionTimer from '@/components/WorkSessionTimer.vue';
 import WorkspaceSwitcher from '@/components/WorkspaceSwitcher.vue';
 import { useNavigation } from '@/lib/navigation';
@@ -35,7 +36,9 @@ const pageName = computed(() =>
           ? 'Nova factura'
           : page.component === 'Notifications/Index'
             ? 'Notificações'
-            : (activeItem.value?.name ?? 'Aplicação'),
+            : page.component === 'Settings/Integrations'
+              ? 'Integrações e API'
+              : (activeItem.value?.name ?? 'Aplicação'),
 );
 
 /**
@@ -78,6 +81,8 @@ onBeforeUnmount(() => {
             />
             <span class="sr-only">facturac.ao, ir para Hoje</span>
         </Link>
+
+        <SidebarToggle v-if="isDesktop" />
 
         <nav
             v-if="isDesktop"

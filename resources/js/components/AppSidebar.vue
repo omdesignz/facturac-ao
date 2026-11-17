@@ -16,8 +16,6 @@ import {
     Ellipsis,
     FilePlus2,
     House,
-    PanelLeftClose,
-    PanelLeftOpen,
     ShieldCheck,
 } from '@lucide/vue';
 import { computed, onBeforeUnmount, onMounted } from 'vue';
@@ -37,8 +35,10 @@ import { update as switchWorkspace } from '@/routes/workspace/current';
 
 /**
  * The desktop's navigation: the full list, or a 56px rail of icons that keeps
- * every place reachable (⌘\ switches between them). Daily work is pinned;
- * the full map remains available under Mais opções and in the phone's menu.
+ * every place reachable. ⌘\ or the toggle at the start of the bar above
+ * switches between them; the sidebar holds no control for its own width.
+ * Daily work is pinned; the full map remains under Mais opções and in the
+ * phone's menu.
  */
 interface SidebarEntry {
     key: string;
@@ -201,7 +201,7 @@ const tooltip =
         <div
             :class="[
                 'flex shrink-0 items-center',
-                sidebarCompact ? 'flex-col gap-2' : 'gap-0.5',
+                sidebarCompact ? 'flex-col gap-2' : '',
             ]"
         >
             <Menu
@@ -306,21 +306,6 @@ const tooltip =
                     </MenuItems>
                 </transition>
             </Menu>
-
-            <button
-                v-if="!sidebarCompact"
-                type="button"
-                class="group/item relative grid size-7 shrink-0 place-items-center rounded-md text-zinc-400 focus-ring transition-colors hover:bg-zinc-900/[0.05] hover:text-zinc-700 dark:hover:bg-white/[0.06] dark:hover:text-zinc-200"
-                aria-keyshortcuts="Meta+Backslash Control+Backslash"
-                @click="toggleSidebar"
-            >
-                <PanelLeftClose
-                    class="size-4"
-                    :stroke-width="1.8"
-                    aria-hidden="true"
-                />
-                <span class="sr-only">Recolher a barra lateral</span>
-            </button>
         </div>
 
         <nav
@@ -548,22 +533,6 @@ const tooltip =
                 }}</span>
             </Link>
         </template>
-
-        <button
-            v-if="sidebarCompact"
-            type="button"
-            :class="[itemBase, itemIdle, 'mt-0.5 size-9 justify-center']"
-            aria-keyshortcuts="Meta+Backslash Control+Backslash"
-            @click="toggleSidebar"
-        >
-            <PanelLeftOpen
-                class="size-[1.125rem] text-zinc-400 dark:text-zinc-500"
-                :stroke-width="1.8"
-                aria-hidden="true"
-            />
-            <span class="sr-only">Expandir a barra lateral</span>
-            <span :class="tooltip" aria-hidden="true">Expandir</span>
-        </button>
 
         <AccountMenu
             :placement="sidebarCompact ? 'rail' : 'sidebar'"

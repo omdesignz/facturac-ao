@@ -354,6 +354,17 @@ test('the desktop navigation is a sidebar that folds to a rail of icons', functi
         ->and($header)->not->toContain('AppTopNav')
         ->toContain('<GlobalSearch class="lg:max-w-64" />');
 
+    // The width toggle lives in the bar above the page, outside the sidebar,
+    // so it stays put whichever width the sidebar has.
+    $toggle = (string) file_get_contents(resource_path('js/components/SidebarToggle.vue'));
+    expect($header)->toContain('<SidebarToggle v-if="isDesktop" />')
+        ->and($sidebar)->not->toContain('PanelLeftClose')
+        ->not->toContain('PanelLeftOpen')
+        ->not->toContain('@click="toggleSidebar"')
+        ->and($toggle)->toContain('@click="toggleSidebar"')
+        ->toContain(':aria-expanded="!sidebarCompact"')
+        ->not->toContain('@lucide/vue');
+
     expect(file_exists(resource_path('js/components/AppTopNav.vue')))->toBeFalse()
         ->and(file_exists(resource_path('js/components/AppRail.vue')))->toBeFalse();
 });
