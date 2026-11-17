@@ -21,6 +21,7 @@
     {{-- Footer --}}
     <x-slot:footer>
         <x-mail::footer>
+            facturac.ao, Facturação electrónica para Angola
             © {{ date('Y') }} {{ \App\Models\PlatformSetting::get('company_legal_name') }}
             Apoio: {{ \App\Models\PlatformSetting::get('support_email') }}
             Privacidade: {{ url('/privacidade') }}

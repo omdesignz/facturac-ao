@@ -45,8 +45,8 @@ class FortifyServiceProvider extends ServiceProvider
 
         VerifyEmail::toMailUsing(fn (User $notifiable, string $url): MailMessage => (new MailMessage)
             ->subject('Confirme o seu email — facturac.ao')
-            ->greeting('Bem-vindo ao facturac.ao')
-            ->line('Confirme o seu endereço de email para começar a configurar a sua empresa e aceder à sua conta com segurança.')
+            ->greeting('Confirme o seu email')
+            ->line('Falta só confirmar este endereço para abrir a conta e começar a configurar a sua empresa.')
             ->action('Confirmar o meu email', $url)
             ->line('Esta ligação é válida durante '.config('auth.verification.expire', 60).' minutos.')
             ->line('Se não criou esta conta, pode ignorar este email.'));

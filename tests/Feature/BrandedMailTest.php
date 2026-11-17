@@ -27,7 +27,7 @@ test('transactional emails render the Facturac identity in HTML and plain text',
     $html = (string) $markdown->render($message->markdown, $message->data());
     $text = (string) $markdown->renderText($message->markdown, $message->data());
 
-    expect($html)->toContain('Facturação electrónica para Angola', '#eabd54', 'A equipa facturac.ao', 'mailto:geral@vapsolucoes.ao', 'Se o botão')
+    expect($html)->toContain('Facturação electrónica para Angola', '#f9b233', 'images/mail/wordmark.png', 'A equipa facturac.ao', 'mailto:geral@vapsolucoes.ao', 'Se o botão')
         ->not->toContain('laravel.com/img', 'Hello!', 'Regards,', 'All rights reserved')
         ->and($text)->toContain('facturac.ao', 'geral@vapsolucoes.ao', $message->actionUrl)
         ->not->toContain('Hello!', 'Regards,', 'All rights reserved');
@@ -55,7 +55,7 @@ test('welcome is queued after commit and replies reach the monitored inbox', fun
     app(MailChannel::class)->send(User::factory()->create(), $notification);
     $email = Mail::mailer('array')->getSymfonyTransport()->messages()->sole()->getOriginalMessage();
     expect($email->getReplyTo()[0]->getAddress())->toBe('geral@vapsolucoes.ao')
-        ->and($email->getSubject())->toBe('Bem-vindo ao facturac.ao')
+        ->and($email->getSubject())->toBe('Boas-vindas ao facturac.ao')
         ->and($email->getHtmlBody())->toContain(route('onboarding'), route('settings.security'));
 });
 

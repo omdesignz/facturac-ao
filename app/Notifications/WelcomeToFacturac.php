@@ -6,6 +6,8 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\HtmlString;
+use Illuminate\Support\Str;
 
 class WelcomeToFacturac extends Notification implements ShouldQueue
 {
@@ -24,14 +26,28 @@ class WelcomeToFacturac extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
+        $firstName = Str::of((string) ($notifiable->name ?? ''))->trim()->before(' ')->toString();
+
         return (new MailMessage)
-            ->subject('Bem-vindo ao facturac.ao')
-            ->greeting('A sua conta já tem casa.')
-            ->line('O seu email está confirmado. Já pode começar a preparar o espaço da sua empresa no facturac.ao.')
-            ->line('**1. Complete os dados da empresa.** Confira o NIF, a morada e o regime de IVA.')
-            ->line('**2. Proteja a sua conta.** Active a autenticação de dois factores em [Definições → Segurança]('.route('settings.security').').')
-            ->line('**3. Prepare a facturação.** Siga os passos de configuração e confirme a ligação à AGT antes de emitir documentos reais.')
+            ->subject('Boas-vindas ao facturac.ao')
+            ->greeting($firstName === '' ? 'Olá,' : "Olá, {$firstName}.")
+            ->line('O seu email está confirmado e a conta está aberta. Para emitir a primeira factura, faltam três passos:')
+            ->line($this->steps())
             ->action('Preparar a minha empresa', route('onboarding'))
-            ->line('Precisa de ajuda para começar? Responda a este email. A nossa equipa acompanha-o.');
+            ->line('Alguma dúvida pelo caminho? Responda a este email; quem o lê é a nossa equipa.');
+    }
+
+    /**
+     * The steps as one Markdown list, so they read as a sequence rather than
+     * three loose paragraphs. A plain line would have its line breaks folded
+     * into spaces.
+     */
+    private function steps(): HtmlString
+    {
+        return new HtmlString(implode("\n", [
+            '1. **Os dados da empresa.** Confirme o NIF, a morada e o regime de IVA.',
+            '2. **A ligação à AGT.** Siga a configuração e confirme a ligação antes de emitir documentos reais.',
+            '3. **A segurança da conta.** Active os dois factores em [Definições → Segurança]('.route('settings.security').').',
+        ]));
     }
 }
