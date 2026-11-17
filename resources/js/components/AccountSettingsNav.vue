@@ -1,30 +1,48 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { CreditCard, ShieldCheck, UserCog } from '@lucide/vue';
+import { CreditCard, Plug, ShieldCheck, UserCog } from '@lucide/vue';
+import { computed } from 'vue';
 import { show as billing } from '@/routes/billing';
+import { index as integrations } from '@/routes/integrations/settings';
 import { account, security } from '@/routes/settings';
+import type { CurrentWorkspace } from '@/types';
 
 const page = usePage();
-const links = [
-    {
-        label: 'A sua conta',
-        href: account.url(),
-        component: 'Settings/Account',
-        icon: UserCog,
-    },
-    {
-        label: 'Segurança',
-        href: security.url(),
-        component: 'Settings/Security',
-        icon: ShieldCheck,
-    },
-    {
-        label: 'Plano e cobrança',
-        href: billing.url(),
-        component: 'Billing/Show',
-        icon: CreditCard,
-    },
-];
+const links = computed(() =>
+    [
+        {
+            label: 'A sua conta',
+            href: account.url(),
+            component: 'Settings/Account',
+            icon: UserCog,
+        },
+        {
+            label: 'Segurança',
+            href: security.url(),
+            component: 'Settings/Security',
+            icon: ShieldCheck,
+        },
+        {
+            label: 'Integrações e API',
+            href: integrations.url(),
+            component: 'Settings/Integrations',
+            icon: Plug,
+        },
+        {
+            label: 'Plano e cobrança',
+            href: billing.url(),
+            component: 'Billing/Show',
+            icon: CreditCard,
+        },
+    ].filter(
+        (link) =>
+            link.component !== 'Settings/Integrations' ||
+            ['owner', 'administrator'].includes(
+                (page.props.currentWorkspace as CurrentWorkspace | null)
+                    ?.role ?? '',
+            ),
+    ),
+);
 </script>
 
 <template>

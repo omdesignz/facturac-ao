@@ -111,8 +111,18 @@ return [
     */
 
     'from' => [
-        'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
-        'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
+        'address' => env('MAIL_FROM_ADDRESS', 'noreply@facturac.ao'),
+        'name' => env('MAIL_FROM_NAME', 'facturac.ao'),
+    ],
+
+    'reply_to' => [
+        'address' => env('MAIL_REPLY_TO_ADDRESS', 'geral@vapsolucoes.ao'),
+        'name' => 'Equipa facturac.ao',
+    ],
+
+    'markdown' => [
+        'theme' => 'facturac',
+        'paths' => [resource_path('views/vendor/mail')],
     ],
 
 ];

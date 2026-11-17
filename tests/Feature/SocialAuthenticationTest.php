@@ -2,6 +2,8 @@
 
 use App\Models\SocialIdentity;
 use App\Models\User;
+use App\Notifications\WelcomeToFacturac;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Schema;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\User as SocialiteUser;
@@ -33,6 +35,7 @@ test('Google redirect uses the official Socialite driver', function () {
 });
 
 test('a verified Google identity creates a verified user without persisting OAuth tokens', function () {
+    Notification::fake();
     Socialite::fake('google', SocialiteUser::fake([
         'id' => 'google-user-100',
         'name' => 'Joana Neto',
@@ -47,6 +50,7 @@ test('a verified Google identity creates a verified user without persisting OAut
 
     $user = User::query()->where('email', 'joana@example.com')->firstOrFail();
     $identity = $user->socialIdentities()->firstOrFail();
+    Notification::assertSentToTimes($user, WelcomeToFacturac::class, 1);
 
     $this->assertAuthenticatedAs($user);
     expect($user->hasVerifiedEmail())->toBeTrue()

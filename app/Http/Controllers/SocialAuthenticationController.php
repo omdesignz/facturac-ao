@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Exceptions\SocialIdentityConflictException;
 use App\Models\SocialIdentity;
 use App\Models\User;
+use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -80,6 +81,7 @@ class SocialAuthenticationController extends Controller
                         'password' => Hash::make(Str::random(64)),
                     ]);
                     $user->forceFill(['email_verified_at' => now()])->save();
+                    event(new Verified($user));
                 } else {
                     $hasDifferentGoogleIdentity = $user->socialIdentities()
                         ->where('provider', 'google')
@@ -92,6 +94,7 @@ class SocialAuthenticationController extends Controller
 
                     if (! $user->hasVerifiedEmail()) {
                         $user->markEmailAsVerified();
+                        event(new Verified($user));
                     }
                 }
 
