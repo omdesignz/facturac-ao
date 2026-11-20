@@ -634,7 +634,9 @@ function date(value: string): string {
                                             class="size-4 shrink-0 text-[var(--ui-ink-3)]"
                                             aria-hidden="true"
                                         />
-                                        <div class="min-w-0 flex-1 basis-56 text-sm">
+                                        <div
+                                            class="min-w-0 flex-1 basis-56 text-sm"
+                                        >
                                             <p
                                                 class="truncate font-mono text-xs text-[var(--ui-ink)]"
                                             >
