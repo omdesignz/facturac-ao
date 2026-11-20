@@ -115,7 +115,7 @@ test('replacement requires no active keys and revocation is permanent', function
 test('published contracts are public allowlisted JSON and do not enable integrations', function () {
     config(['integrations.enabled' => false, 'integrations.commands_enabled' => false]);
     auth()->logout();
-    foreach (['read-v1', 'billing-v2', 'qualified-agt-v2', 'customer-create-v1', 'catalogue-service-create-v1'] as $contract) {
+    foreach (['read-v1', 'billing-v2', 'qualified-agt-v2', 'customer-create-v1', 'catalogue-service-create-v1', 'document-issue-v1'] as $contract) {
         $response = $this->get(route('integrations.contract', $contract))->assertOk()->assertHeader('Content-Type', 'application/json');
         expect($response->baseResponse->getFile()->getRealPath())->toBe(realpath(base_path('docs/openapi-external-'.$contract.'.json')));
     }

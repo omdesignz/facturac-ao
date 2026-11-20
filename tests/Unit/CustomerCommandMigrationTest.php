@@ -77,7 +77,7 @@ test('raw command reservations reject forged context state hashes and attributio
     expect(fn () => DB::transaction(fn () => DB::table('external_command_operations')->insert([...commandSchemaReservation($f), ...$changes])))->toThrow(QueryException::class);
     expect(DB::table('external_command_operations')->count())->toBe(0);
 })->with([
-    [['environment' => 'homologation']], [['command' => 'documents.issue']], [['capability_version' => 2]],
+    [['environment' => 'homologation']], [['command' => 'documents.cancel']], [['capability_version' => 2]],
     [['canonicalizer_version' => 'unknown']], [['key_hash' => 'bad']], [['fingerprint_hash' => str_repeat('Z', 64)]],
     [['state' => 'succeeded']], [['origin_sponsor_user_id' => null]], [['workspace_id' => 999999]], [['legal_entity_id' => 999999]],
     [['origin_sponsor_attribution_id' => '77777777-7777-4777-8777-777777777777']],

@@ -21,21 +21,26 @@ use Illuminate\Database\Eloquent\Builder;
  */
 final class PosSeriesResolver
 {
-    public function forEstablishment(LegalEntity $legalEntity, Establishment $establishment, FiscalDocumentType $type = FiscalDocumentType::InvoiceReceipt): ?FiscalSeries
+    public function forEstablishment(LegalEntity $legalEntity, Establishment $establishment, FiscalDocumentType $type = FiscalDocumentType::InvoiceReceipt, ?string $environment = null): ?FiscalSeries
     {
-        return $this->eligible($legalEntity, $establishment, $type)
+        return $this->eligible($legalEntity, $establishment, $type, $environment)
             ->orderByDesc('series_year')
             ->orderBy('series_code')
             ->first();
     }
 
-    public function exists(LegalEntity $legalEntity, Establishment $establishment, FiscalDocumentType $type = FiscalDocumentType::InvoiceReceipt): bool
+    public function exists(LegalEntity $legalEntity, Establishment $establishment, FiscalDocumentType $type = FiscalDocumentType::InvoiceReceipt, ?string $environment = null): bool
     {
-        return $this->eligible($legalEntity, $establishment, $type)->exists();
+        return $this->eligible($legalEntity, $establishment, $type, $environment)->exists();
     }
 
-    /** @return Builder<FiscalSeries> */
-    private function eligible(LegalEntity $legalEntity, Establishment $establishment, FiscalDocumentType $type = FiscalDocumentType::InvoiceReceipt): Builder
+    /**
+     * A null environment leaves the choice to the series, as the till and the
+     * phone do; the API names the one its credential is bound to.
+     *
+     * @return Builder<FiscalSeries>
+     */
+    private function eligible(LegalEntity $legalEntity, Establishment $establishment, FiscalDocumentType $type = FiscalDocumentType::InvoiceReceipt, ?string $environment = null): Builder
     {
         return FiscalSeries::query()
             ->where('workspace_id', $legalEntity->workspace_id)
@@ -47,6 +52,7 @@ final class PosSeriesResolver
             ->where('contingency_indicator', FiscalSeriesContingency::Normal)
             ->where('invoicing_method', 'FESF')
             ->whereColumn('next_number', '<=', 'last_authorized_number')
+            ->when($environment !== null, fn (Builder $query) => $query->where('environment', $environment))
             ->whereHas('agtConnection', fn (Builder $query) => $query
                 ->where('status', AgtConnectionStatus::Verified)
                 ->where('schema_version', '2.0'));

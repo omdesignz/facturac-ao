@@ -4,6 +4,7 @@ namespace App\Fiscal;
 
 use App\Models\CatalogueItem;
 use App\Models\Customer;
+use App\Models\FiscalDocument;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -12,7 +13,7 @@ use Spatie\Activitylog\Contracts\Activity;
 final class CommandAudit
 {
     public static function record(IntegrationCommandContext|HumanCustomerCommandContext|HumanServiceCommandContext $context, string $event, string $outcome,
-        ?string $operationId = null, Customer|CatalogueItem|null $customer = null, CommandCapability $capability = CommandCapability::CustomerCreate): void
+        ?string $operationId = null, Customer|CatalogueItem|FiscalDocument|null $customer = null, CommandCapability $capability = CommandCapability::CustomerCreate): void
     {
         abort_unless($customer === null || $customer instanceof ($capability->subjectClass()), 503);
         abort_unless(! ($context instanceof HumanCustomerCommandContext) || $capability === CommandCapability::CustomerCreate, 403);
@@ -20,7 +21,7 @@ final class CommandAudit
         if (! config('activitylog.enabled', true)) {
             throw new \RuntimeException('Required command audit is disabled.');
         }
-        if (in_array($event, ['external.command.authorized', 'external.command.replayed', 'customer.created', 'catalogue.service.created'], true) && DB::connection()->transactionLevel() === 0) {
+        if (in_array($event, ['external.command.authorized', 'external.command.replayed', 'customer.created', 'catalogue.service.created', 'fiscal-document.issued'], true) && DB::connection()->transactionLevel() === 0) {
             throw new \RuntimeException('Successful command audit requires its transaction.');
         }
         $machine = $context instanceof IntegrationCommandContext;
@@ -46,7 +47,7 @@ final class CommandAudit
             }
         }
         RequiredAudit::record(function () use ($causer, $properties, $event, $customer, $capability): ?\Spatie\Activitylog\Contracts\Activity {
-            $logger = activity($event === $capability->creationEvent() ? ($capability === CommandCapability::CustomerCreate ? 'customer' : 'catalogue-item') : 'capability')->causedBy($causer)->event($event)->withProperties($properties);
+            $logger = activity($event === $capability->creationEvent() ? $capability->subjectLog() : 'capability')->causedBy($causer)->event($event)->withProperties($properties);
             if ($customer !== null) {
                 $logger->performedOn($customer);
             }
@@ -55,7 +56,7 @@ final class CommandAudit
                     throw new \RuntimeException('Command audit connection mismatch.');
                 }
             });
-            $activity = $logger->log($capability === CommandCapability::CustomerCreate ? 'Customer command' : 'Catalogue service command');
+            $activity = $logger->log($capability->description());
             if ($activity instanceof Model && $activity->getConnection() !== DB::connection()) {
                 throw new \RuntimeException('Command audit connection mismatch.');
             }

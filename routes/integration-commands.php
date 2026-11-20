@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\ExternalCustomerCreateController;
+use App\Http\Controllers\Api\ExternalDocumentIssueController;
 use App\Http\Controllers\Api\ExternalServiceCreateController;
 use Illuminate\Support\Facades\Route;
 
@@ -9,3 +10,6 @@ Route::post('workspaces/{workspacePublicId}/legal-entities/{entityPublicId}/envi
 
 Route::post('workspaces/{workspacePublicId}/legal-entities/{entityPublicId}/environments/{environment}/catalogue-services', ExternalServiceCreateController::class)
     ->name('integrations.commands.v1.catalogue-services.create');
+
+Route::post('workspaces/{workspacePublicId}/legal-entities/{entityPublicId}/environments/{environment}/documents', ExternalDocumentIssueController::class)
+    ->name('integrations.commands.v1.documents.issue');

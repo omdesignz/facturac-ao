@@ -1,0 +1,841 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "Facturac document issue command",
+        "version": "1.0.0",
+        "description": "Issue an invoice (FT), an invoice-receipt (FR) or a credit note (NC) from a server-side integration. The document is numbered from the company's production series, signed and queued for the AGT exactly as one issued on facturac.ao. Read it back, with its number and AGT status, through the read contract (documents:read) and the AGT status contract (documents:agt-status:read)."
+    },
+    "security": [
+        {
+            "IntegrationBearer": []
+        }
+    ],
+    "paths": {
+        "/api/integrations/commands/v1/workspaces/{workspacePublicId}/legal-entities/{entityPublicId}/environments/{environment}/documents": {
+            "parameters": [
+                {
+                    "name": "workspacePublicId",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string",
+                        "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+                        "description": "Public identifier (ULID); either case accepted."
+                    },
+                    "description": "The workspace the credential is bound to."
+                },
+                {
+                    "name": "entityPublicId",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string",
+                        "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+                        "description": "Public identifier (ULID); either case accepted."
+                    },
+                    "description": "The company the credential is bound to."
+                },
+                {
+                    "name": "environment",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string",
+                        "enum": [
+                            "production"
+                        ]
+                    },
+                    "description": "Issuing is production-only. A homologation series is never used."
+                },
+                {
+                    "name": "Idempotency-Key",
+                    "in": "header",
+                    "required": true,
+                    "schema": {
+                        "type": "string",
+                        "pattern": "^[ -~]{1,128}$"
+                    },
+                    "description": "One key per document you mean to issue, for example your order number. Sending the same key and body again returns the original result and spends no second number; the same key with a different body is IDEMPOTENCY_CONFLICT. A refused request writes nothing, so the key may be reused once the cause is fixed."
+                },
+                {
+                    "name": "X-Client-Request-ID",
+                    "in": "header",
+                    "required": false,
+                    "schema": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9._-]{1,64}$"
+                    },
+                    "description": "Your correlation id; recorded in the audit, not part of the fingerprint."
+                }
+            ],
+            "post": {
+                "operationId": "externalDocumentIssueV1",
+                "summary": "Issue one invoice, invoice-receipt or credit note",
+                "description": "Requires the documents:issue scope on both the integration and the credential, and a sponsor who is still an active owner or administrator with two-factor authentication. The sponsor is recorded as the issuer; the audit names the integration. Prices, taxes and descriptions of catalogue lines, and everything a credit note copies from its invoice, are read on the server: expected_total_minor is how you confirm the gross total you expect, and a different total issues nothing.",
+                "x-capability": "documents.issue",
+                "x-required-scope": "documents:issue",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DocumentIssueRequest"
+                            },
+                            "examples": {
+                                "invoice": {
+                                    "summary": "FT for a saved customer, from the catalogue",
+                                    "value": {
+                                        "document_type": "FT",
+                                        "customer_public_id": "01jd5q2m3n4p5r6s7t8v9w0x1y",
+                                        "lines": [
+                                            {
+                                                "catalogue_item_public_id": "01jd5q8a9b0c1d2e3f4g5h6j7k",
+                                                "quantity": "2"
+                                            }
+                                        ],
+                                        "notes": "Encomenda 1001",
+                                        "expected_total_minor": "22800"
+                                    }
+                                },
+                                "invoiceReceipt": {
+                                    "summary": "FR to the final consumer, with a one-off line",
+                                    "value": {
+                                        "document_type": "FR",
+                                        "payment_method": "CD",
+                                        "lines": [
+                                            {
+                                                "description": "Entrega ao domicílio",
+                                                "unit_price_minor": "150000",
+                                                "tax_treatment": "IVA_NOR_14",
+                                                "service": true,
+                                                "quantity": "1"
+                                            }
+                                        ],
+                                        "expected_total_minor": "171000"
+                                    }
+                                },
+                                "creditNote": {
+                                    "summary": "NC for one unit of line 1 of an accepted invoice",
+                                    "value": {
+                                        "document_type": "NC",
+                                        "references_document_public_id": "01jd5qa1b2c3d4e5f6g7h8j9k0",
+                                        "reason": "Devolução de mercadoria",
+                                        "lines": [
+                                            {
+                                                "line_number": 1,
+                                                "quantity": "1"
+                                            }
+                                        ],
+                                        "expected_total_minor": "11400"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Issued, or an earlier issue replayed with the same key and body. Byte-identical on replay.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "description": "Fresh per request, replays included."
+                            },
+                            "Idempotency-Replayed": {
+                                "schema": {
+                                    "type": "string",
+                                    "enum": [
+                                        "false",
+                                        "true"
+                                    ]
+                                },
+                                "description": "true when this answers an earlier request with the same key and body."
+                            },
+                            "Cache-Control": {
+                                "schema": {
+                                    "type": "string"
+                                },
+                                "description": "private, no-store"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DocumentIssueResult"
+                                },
+                                "example": {
+                                    "data": {
+                                        "public_id": "01jd5qa1b2c3d4e5f6g7h8j9k0"
+                                    },
+                                    "meta": {
+                                        "operation_id": "f98ee06e-70bf-4b2e-a6e4-5437db577c25"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Malformed JSON or duplicate members.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "description": "Fresh per request, replays included."
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "x-codes": [
+                                    "INVALID_REQUEST"
+                                ],
+                                "example": {
+                                    "error": {
+                                        "code": "INVALID_REQUEST",
+                                        "message": "Não foi possível concluir o pedido."
+                                    },
+                                    "meta": {
+                                        "request_id": "0b9c6c3e-6a0e-4a55-9a8e-2f4d2bb1c6a1"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing, malformed, expired or revoked credential.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "description": "Fresh per request, replays included."
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "x-codes": [
+                                    "UNAUTHENTICATED"
+                                ],
+                                "example": {
+                                    "error": {
+                                        "code": "UNAUTHENTICATED",
+                                        "message": "Não foi possível concluir o pedido."
+                                    },
+                                    "meta": {
+                                        "request_id": "0b9c6c3e-6a0e-4a55-9a8e-2f4d2bb1c6a1"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Credential lacks documents:issue, names another company or environment, the sponsor no longer qualifies, or the plan does not include integrations or invoicing.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "description": "Fresh per request, replays included."
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "x-codes": [
+                                    "FORBIDDEN"
+                                ],
+                                "example": {
+                                    "error": {
+                                        "code": "FORBIDDEN",
+                                        "message": "Não foi possível concluir o pedido."
+                                    },
+                                    "meta": {
+                                        "request_id": "0b9c6c3e-6a0e-4a55-9a8e-2f4d2bb1c6a1"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Only POST.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "description": "Fresh per request, replays included."
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "x-codes": [
+                                    "METHOD_NOT_ALLOWED"
+                                ],
+                                "example": {
+                                    "error": {
+                                        "code": "METHOD_NOT_ALLOWED",
+                                        "message": "Não foi possível concluir o pedido."
+                                    },
+                                    "meta": {
+                                        "request_id": "0b9c6c3e-6a0e-4a55-9a8e-2f4d2bb1c6a1"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "IDEMPOTENCY_CONFLICT: the key was used with a different body. COMMAND_IN_PROGRESS: another request holds the integration; retry after Retry-After. DOCUMENT_BLOCKED: the document cannot be issued now, and message says why (no usable production series, AGT connection not ready, the invoice to credit is not yet accepted by the AGT or already fully credited, …). Nothing is written.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "description": "Fresh per request, replays included."
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "x-codes": [
+                                    "IDEMPOTENCY_CONFLICT",
+                                    "COMMAND_IN_PROGRESS",
+                                    "DOCUMENT_BLOCKED"
+                                ],
+                                "example": {
+                                    "error": {
+                                        "code": "DOCUMENT_BLOCKED",
+                                        "message": "Não há série de Factura disponível. Peça uma série à AGT em facturac.ao."
+                                    },
+                                    "meta": {
+                                        "request_id": "0b9c6c3e-6a0e-4a55-9a8e-2f4d2bb1c6a1"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "413": {
+                        "description": "Body over 64 KiB.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "description": "Fresh per request, replays included."
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "x-codes": [
+                                    "PAYLOAD_TOO_LARGE"
+                                ],
+                                "example": {
+                                    "error": {
+                                        "code": "PAYLOAD_TOO_LARGE",
+                                        "message": "Não foi possível concluir o pedido."
+                                    },
+                                    "meta": {
+                                        "request_id": "0b9c6c3e-6a0e-4a55-9a8e-2f4d2bb1c6a1"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "415": {
+                        "description": "Content-Type is not application/json.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "description": "Fresh per request, replays included."
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "x-codes": [
+                                    "UNSUPPORTED_MEDIA_TYPE"
+                                ],
+                                "example": {
+                                    "error": {
+                                        "code": "UNSUPPORTED_MEDIA_TYPE",
+                                        "message": "Não foi possível concluir o pedido."
+                                    },
+                                    "meta": {
+                                        "request_id": "0b9c6c3e-6a0e-4a55-9a8e-2f4d2bb1c6a1"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "A field is missing, of the wrong type or not allowed for this document type; a customer, article or invoice was not found; a credit would exceed what is left of a line; or the gross total differs from expected_total_minor. fields names each one. Nothing is written.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "description": "Fresh per request, replays included."
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "x-codes": [
+                                    "VALIDATION_FAILED"
+                                ],
+                                "example": {
+                                    "error": {
+                                        "code": "VALIDATION_FAILED",
+                                        "message": "Não foi possível concluir o pedido.",
+                                        "fields": {
+                                            "expected_total_minor": "O total mudou desde que a factura foi apresentada. Reveja-a antes de continuar."
+                                        }
+                                    },
+                                    "meta": {
+                                        "request_id": "0b9c6c3e-6a0e-4a55-9a8e-2f4d2bb1c6a1"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Rate limited. Writes share one budget per integration (10 a minute) and per workspace (30 a minute) across all commands.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "description": "Fresh per request, replays included."
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "x-codes": [
+                                    "RATE_LIMITED"
+                                ],
+                                "example": {
+                                    "error": {
+                                        "code": "RATE_LIMITED",
+                                        "message": "Não foi possível concluir o pedido."
+                                    },
+                                    "meta": {
+                                        "request_id": "0b9c6c3e-6a0e-4a55-9a8e-2f4d2bb1c6a1"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Temporarily unavailable; retry with the same key.",
+                        "headers": {
+                            "X-Request-ID": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "description": "Fresh per request, replays included."
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "x-codes": [
+                                    "SERVICE_UNAVAILABLE"
+                                ],
+                                "example": {
+                                    "error": {
+                                        "code": "SERVICE_UNAVAILABLE",
+                                        "message": "Não foi possível concluir o pedido."
+                                    },
+                                    "meta": {
+                                        "request_id": "0b9c6c3e-6a0e-4a55-9a8e-2f4d2bb1c6a1"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "IntegrationBearer": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "fcr1.<credential ULID>.<secret>",
+                "description": "Created under Definições › Integrações e API with the documents:issue scope, production only."
+            }
+        },
+        "schemas": {
+            "PublicId": {
+                "type": "string",
+                "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+                "description": "Public identifier (ULID); either case accepted."
+            },
+            "DocumentIssueRequest": {
+                "oneOf": [
+                    {
+                        "$ref": "#/components/schemas/InvoiceRequest"
+                    },
+                    {
+                        "$ref": "#/components/schemas/InvoiceReceiptRequest"
+                    },
+                    {
+                        "$ref": "#/components/schemas/CreditNoteRequest"
+                    }
+                ],
+                "discriminator": {
+                    "propertyName": "document_type",
+                    "mapping": {
+                        "FT": "#/components/schemas/InvoiceRequest",
+                        "FR": "#/components/schemas/InvoiceReceiptRequest",
+                        "NC": "#/components/schemas/CreditNoteRequest"
+                    }
+                }
+            },
+            "InvoiceRequest": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                    "document_type",
+                    "customer_public_id",
+                    "lines",
+                    "expected_total_minor"
+                ],
+                "properties": {
+                    "document_type": {
+                        "const": "FT"
+                    },
+                    "customer_public_id": {
+                        "$ref": "#/components/schemas/PublicId",
+                        "description": "An active customer of this company. Its payment terms set the due date."
+                    },
+                    "notes": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 1000,
+                        "description": "Printed on the document."
+                    },
+                    "lines": {
+                        "type": "array",
+                        "minItems": 1,
+                        "maxItems": 200,
+                        "items": {
+                            "$ref": "#/components/schemas/SaleLine"
+                        }
+                    },
+                    "expected_total_minor": {
+                        "type": "string",
+                        "pattern": "^[1-9][0-9]{0,14}$",
+                        "description": "Gross total you expect, in cents (kwanza × 100), as a string."
+                    }
+                }
+            },
+            "InvoiceReceiptRequest": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                    "document_type",
+                    "payment_method",
+                    "lines",
+                    "expected_total_minor"
+                ],
+                "properties": {
+                    "document_type": {
+                        "const": "FR"
+                    },
+                    "customer_public_id": {
+                        "$ref": "#/components/schemas/PublicId",
+                        "description": "Omit to issue to the final consumer (Consumidor final, 999999999)."
+                    },
+                    "payment_method": {
+                        "type": "string",
+                        "enum": [
+                            "NU",
+                            "CH",
+                            "CD",
+                            "CC",
+                            "CO",
+                            "TB",
+                            "DE",
+                            "CS",
+                            "LC",
+                            "OU"
+                        ],
+                        "description": "AGT payment mechanism: NU cash, CD Multicaixa/debit card, CC credit card, TB bank transfer, … Paid in full on the document date."
+                    },
+                    "notes": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 1000
+                    },
+                    "lines": {
+                        "type": "array",
+                        "minItems": 1,
+                        "maxItems": 200,
+                        "items": {
+                            "$ref": "#/components/schemas/SaleLine"
+                        }
+                    },
+                    "expected_total_minor": {
+                        "type": "string",
+                        "pattern": "^[1-9][0-9]{0,14}$",
+                        "description": "Gross total you expect, in cents, as a string."
+                    }
+                }
+            },
+            "CreditNoteRequest": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                    "document_type",
+                    "references_document_public_id",
+                    "reason",
+                    "lines",
+                    "expected_total_minor"
+                ],
+                "properties": {
+                    "document_type": {
+                        "const": "NC"
+                    },
+                    "references_document_public_id": {
+                        "$ref": "#/components/schemas/PublicId",
+                        "description": "An FT or FR of this company, issued in production and accepted by the AGT. Customer, prices and taxes are copied from it."
+                    },
+                    "reason": {
+                        "type": "string",
+                        "minLength": 5,
+                        "maxLength": 60
+                    },
+                    "lines": {
+                        "type": "array",
+                        "minItems": 1,
+                        "maxItems": 200,
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                                "line_number",
+                                "quantity"
+                            ],
+                            "properties": {
+                                "line_number": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "description": "Line number on the invoice; each at most once."
+                                },
+                                "quantity": {
+                                    "type": "string",
+                                    "pattern": "^(0|[1-9][0-9]{0,14})(\\.[0-9]{1,4})?$",
+                                    "description": "Greater than zero, up to four decimal places, as a string."
+                                }
+                            }
+                        }
+                    },
+                    "expected_total_minor": {
+                        "type": "string",
+                        "pattern": "^[1-9][0-9]{0,14}$",
+                        "description": "Gross total of the note you expect, in cents, as a string."
+                    }
+                }
+            },
+            "SaleLine": {
+                "oneOf": [
+                    {
+                        "title": "Catalogue line",
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                            "catalogue_item_public_id",
+                            "quantity"
+                        ],
+                        "properties": {
+                            "catalogue_item_public_id": {
+                                "$ref": "#/components/schemas/PublicId",
+                                "description": "An active article or service; its price (or the customer's price), tax and description are used."
+                            },
+                            "quantity": {
+                                "type": "string",
+                                "pattern": "^(0|[1-9][0-9]{0,14})(\\.[0-9]{1,4})?$",
+                                "description": "Greater than zero, up to four decimal places, as a string."
+                            },
+                            "discount_percentage": {
+                                "type": "string",
+                                "pattern": "^(100(\\.0{1,2})?|(0|[1-9][0-9]?)(\\.[0-9]{1,2})?)$",
+                                "description": "Percentage 0–100, up to two decimal places. Omit for none."
+                            }
+                        }
+                    },
+                    {
+                        "title": "One-off line",
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                            "description",
+                            "unit_price_minor",
+                            "tax_treatment",
+                            "quantity"
+                        ],
+                        "properties": {
+                            "description": {
+                                "type": "string",
+                                "minLength": 2,
+                                "maxLength": 200
+                            },
+                            "unit_price_minor": {
+                                "type": "string",
+                                "pattern": "^[1-9][0-9]{0,14}$",
+                                "description": "Unit price before tax, in cents, as a string."
+                            },
+                            "tax_treatment": {
+                                "type": "string",
+                                "enum": [
+                                    "IVA_NOR_14",
+                                    "IVA_ISE_M00",
+                                    "NS_M02",
+                                    "IVA_ISE_M04"
+                                ]
+                            },
+                            "service": {
+                                "type": "boolean",
+                                "default": false,
+                                "description": "true for a service, false (default) for goods."
+                            },
+                            "quantity": {
+                                "type": "string",
+                                "pattern": "^(0|[1-9][0-9]{0,14})(\\.[0-9]{1,4})?$",
+                                "description": "Greater than zero, up to four decimal places, as a string."
+                            },
+                            "discount_percentage": {
+                                "type": "string",
+                                "pattern": "^(100(\\.0{1,2})?|(0|[1-9][0-9]?)(\\.[0-9]{1,2})?)$",
+                                "description": "Percentage 0–100, up to two decimal places. Omit for none."
+                            }
+                        }
+                    }
+                ]
+            },
+            "DocumentIssueResult": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                    "data",
+                    "meta"
+                ],
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                            "public_id"
+                        ],
+                        "properties": {
+                            "public_id": {
+                                "$ref": "#/components/schemas/PublicId"
+                            }
+                        }
+                    },
+                    "meta": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                            "operation_id"
+                        ],
+                        "properties": {
+                            "operation_id": {
+                                "type": "string",
+                                "format": "uuid"
+                            }
+                        }
+                    }
+                }
+            },
+            "Error": {
+                "type": "object",
+                "required": [
+                    "error",
+                    "meta"
+                ],
+                "properties": {
+                    "error": {
+                        "type": "object",
+                        "required": [
+                            "code",
+                            "message"
+                        ],
+                        "properties": {
+                            "code": {
+                                "type": "string"
+                            },
+                            "message": {
+                                "type": "string",
+                                "description": "Generic, except for DOCUMENT_BLOCKED where it says why."
+                            },
+                            "fields": {
+                                "type": "object",
+                                "additionalProperties": {
+                                    "type": "string"
+                                },
+                                "description": "VALIDATION_FAILED only: field path (for example lines.0.quantity) → what to change."
+                            }
+                        }
+                    },
+                    "meta": {
+                        "type": "object",
+                        "required": [
+                            "request_id"
+                        ],
+                        "properties": {
+                            "request_id": {
+                                "type": "string",
+                                "format": "uuid"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "x-quotas": {
+        "lifetime_completed_commands_per_integration": 100000
+    }
+}

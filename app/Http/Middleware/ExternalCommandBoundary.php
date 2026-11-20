@@ -5,7 +5,9 @@ namespace App\Http\Middleware;
 use App\Billing\SubscriptionAccess;
 use App\Fiscal\CommandAudit;
 use App\Fiscal\CommandCapability;
+use App\Fiscal\CommandRefused;
 use App\Fiscal\CustomerCreateInput;
+use App\Fiscal\DocumentIssueInput;
 use App\Fiscal\IntegrationCommandContext;
 use App\Fiscal\IntegrationRateLimiter;
 use App\Fiscal\ServiceCreateInput;
@@ -39,8 +41,13 @@ final class ExternalCommandBoundary
         $context = null;
         $previous = null;
         $json = '';
-        $capability = preg_match('~\Aapi/integrations/commands/v1/workspaces/[^/]+/legal-entities/[^/]+/environments/[^/]+/catalogue-services\z~', $request->decodedPath()) === 1
-            ? CommandCapability::ServiceCreate : CommandCapability::CustomerCreate;
+        $capability = match (preg_match('~\Aapi/integrations/commands/v1/workspaces/[^/]+/legal-entities/[^/]+/environments/[^/]+/(catalogue-services|documents)\z~', $request->decodedPath(), $target) === 1 ? $target[1] : null) {
+            'catalogue-services' => CommandCapability::ServiceCreate,
+            'documents' => CommandCapability::DocumentIssue,
+            default => CommandCapability::CustomerCreate,
+        };
+        // A document carries up to 200 lines; the create commands stay small.
+        $limit = $capability === CommandCapability::DocumentIssue ? 65536 : 4096;
         try {
             abort_unless(config('integrations.enabled') && config('integrations.commands_enabled'), 404);
             abort_unless($request->isSecure(), 403);
@@ -53,8 +60,8 @@ final class ExternalCommandBoundary
             if ($request->getRealMethod() === 'POST') {
                 abort_unless(preg_match('/\Aapplication\/json(?:\s*;\s*charset\s*=\s*utf-8)?\z/i', $request->header('Content-Type', '')) === 1 && ! $request->headers->has('Content-Encoding'), 415);
                 $content = $request->getContent(true);
-                $json = is_resource($content) ? stream_get_contents($content, 4097) : $request->getContent();
-                abort_unless(is_string($json) && strlen($json) <= 4096, 413);
+                $json = is_resource($content) ? stream_get_contents($content, $limit + 1) : $request->getContent();
+                abort_unless(is_string($json) && strlen($json) <= $limit, 413);
             }
             $authorization = $request->headers->all('authorization');
             abort_unless(count($authorization) === 1 && preg_match('/\ABearer ([^\s,]+)\z/i', $authorization[0], $parts) === 1, 401);
@@ -65,7 +72,7 @@ final class ExternalCommandBoundary
             foreach (['X-Impersonate-User', 'X-On-Behalf-Of', 'X-Agent-ID', 'X-Act-As', 'X-Delegation-ID'] as $header) {
                 abort_if($request->headers->has($header), 403);
             }
-            abort_unless(preg_match('~\Aapi/integrations/commands/v1/workspaces/([^/]+)/legal-entities/([^/]+)/environments/([^/]+)/(?:customers|catalogue-services)\z~', $request->decodedPath(), $route) === 1, 404);
+            abort_unless(preg_match('~\Aapi/integrations/commands/v1/workspaces/([^/]+)/legal-entities/([^/]+)/environments/([^/]+)/(?:customers|catalogue-services|documents)\z~', $request->decodedPath(), $route) === 1, 404);
             foreach ([$route[1], $route[2]] as $id) {
                 abort_unless(preg_match('/\A[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}\z/', $id) === 1, 422);
             }
@@ -80,15 +87,23 @@ final class ExternalCommandBoundary
             abort_unless(preg_match('/\A[\x20-\x7e]{1,128}\z/', $key) === 1 && trim($key) !== '', 422);
             $request->attributes->set('command_context', $context);
             $request->attributes->set('command_key', $key);
-            $request->attributes->set('command_input', $capability === CommandCapability::CustomerCreate ? CustomerCreateInput::external($json) : ServiceCreateInput::external($json));
+            $request->attributes->set('command_input', match ($capability) {
+                CommandCapability::CustomerCreate => CustomerCreateInput::external($json),
+                CommandCapability::ServiceCreate => ServiceCreateInput::external($json),
+                CommandCapability::DocumentIssue => DocumentIssueInput::external($json),
+            });
             $response = $next($request);
+            $refusal = $request->attributes->get('command_refusal');
+            if ($refusal instanceof CommandRefused && $response->getStatusCode() === $refusal->getStatusCode()) {
+                throw $refusal;
+            }
             abort_if($response->getStatusCode() >= 400, $response->getStatusCode(), $response->headers->get('X-Command-Error-Code', ''), array_filter(['Allow' => $response->headers->get('Allow'), 'Retry-After' => $response->headers->get('Retry-After')]));
         } catch (\Throwable $exception) {
             $status = $exception instanceof HttpExceptionInterface ? $exception->getStatusCode() : 503;
             $status = in_array($status, [400, 401, 403, 404, 405, 409, 413, 415, 422, 429, 503], true) ? $status : 503;
             $code = match ($status) {
                 400 => 'INVALID_REQUEST', 401 => 'UNAUTHENTICATED', 403 => 'FORBIDDEN', 404 => 'NOT_FOUND', 405 => 'METHOD_NOT_ALLOWED',
-                409 => in_array($exception->getMessage(), ['IDEMPOTENCY_CONFLICT', 'COMMAND_IN_PROGRESS', 'CUSTOMER_CONFLICT', 'CATALOGUE_CONFLICT'], true) ? $exception->getMessage() : 'COMMAND_IN_PROGRESS',
+                409 => in_array($exception->getMessage(), ['IDEMPOTENCY_CONFLICT', 'COMMAND_IN_PROGRESS', 'CUSTOMER_CONFLICT', 'CATALOGUE_CONFLICT', 'DOCUMENT_BLOCKED'], true) ? $exception->getMessage() : 'COMMAND_IN_PROGRESS',
                 413 => 'PAYLOAD_TOO_LARGE', 415 => 'UNSUPPORTED_MEDIA_TYPE', 422 => 'VALIDATION_FAILED', 429 => 'RATE_LIMITED', default => 'SERVICE_UNAVAILABLE',
             };
             if ($context !== null && in_array($status, [401, 403], true)) {
@@ -99,7 +114,14 @@ final class ExternalCommandBoundary
                     $code = 'SERVICE_UNAVAILABLE';
                 }
             }
-            $response = response()->json(['error' => ['code' => $code, 'message' => 'Não foi possível concluir o pedido.'], 'meta' => ['request_id' => $requestId]], $status,
+            $error = ['code' => $code, 'message' => 'Não foi possível concluir o pedido.'];
+            if ($exception instanceof CommandRefused && $exception->getStatusCode() === $status) {
+                $error['message'] = $exception->detail ?? $error['message'];
+                if ($exception->fields !== []) {
+                    $error['fields'] = $exception->fields;
+                }
+            }
+            $response = response()->json(['error' => $error, 'meta' => ['request_id' => $requestId]], $status,
                 $exception instanceof HttpExceptionInterface ? array_intersect_key($exception->getHeaders(), array_flip(['Allow', 'Retry-After'])) : []);
         } finally {
             if ($previous !== null) {
