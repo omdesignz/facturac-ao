@@ -7,6 +7,7 @@ import {
     demoSession,
     developerExamples,
     installCommand,
+    sdkVersion,
     tokenize,
 } from '@/lib/developer-examples';
 
@@ -85,6 +86,7 @@ function onTabKeydown(event: KeyboardEvent, index: number): void {
 
 const capabilities = [
     'Documentos, clientes e catálogo, página a página',
+    'Facturas, facturas-recibo e notas de crédito com o SDK 0.3.0',
     'O estado de cada documento na AGT',
     'Clientes e serviços criados sem duplicar quando um pedido se repete',
     'Uma chave por empresa, com as permissões que escolher',
@@ -153,7 +155,7 @@ const tokenClass = {
                         size="lg"
                         target="_blank"
                         rel="noopener noreferrer"
-                        >Ver no npm</AppButton
+                        >SDK {{ sdkVersion }} no npm</AppButton
                     >
                 </div>
             </div>
@@ -197,7 +199,7 @@ const tokenClass = {
                         class="flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-zinc-300 focus-ring-inverted transition-colors hover:bg-white/10 hover:text-white"
                         :aria-label="
                             selected === 'sandbox'
-                                ? 'Copiar comando'
+                                ? 'Copiar comandos'
                                 : 'Copiar código'
                         "
                         @click="copyText(selectedCopy, selected)"
@@ -274,13 +276,16 @@ const tokenClass = {
                         class="border-t border-white/10 px-5 py-4 text-[0.8125rem]/6 text-zinc-400"
                     >
                         <span class="text-zinc-200"
-                            >Dois documentos com dados fictícios, exportados
-                            para CSV sem conta nem chave.</span
+                            >Experimente emissão e exportação com dados
+                            fictícios, sem conta nem chave.</span
                         >
-                        A demonstração corre no seu computador e não contacta a
-                        sua empresa nem a AGT. Não simula autenticação, limites
-                        de pedidos nem escritas. O ficheiro nunca é substituído,
-                        por isso use um nome novo em cada execução.
+                        A emissão simula três exemplos fixos (FT, FR e NC),
+                        repetição de pedidos e conflitos de idempotência. Corre
+                        no seu computador: não emite documentos reais nem
+                        contacta a AGT. Não simula autenticação, limites de
+                        pedidos, cálculo fiscal ou assinatura. O estado reinicia
+                        em cada execução. Na exportação CSV, use um nome de
+                        ficheiro novo para não substituir dados.
                     </p>
                 </div>
             </div>
@@ -356,8 +361,10 @@ const tokenClass = {
             </div>
         </div>
         <p class="mt-4 text-sm text-brand-500 dark:text-zinc-500">
-            Nesta versão, a API não inclui emissão fiscal, pagamentos ou
-            webhooks.
+            O SDK suporta emissão fiscal com activação no servidor e
+            configuração fiscal válida. A resposta de emissão não confirma a
+            aceitação pela AGT. Pagamentos autónomos, cancelamentos e webhooks
+            não estão incluídos.
         </p>
     </section>
 </template>

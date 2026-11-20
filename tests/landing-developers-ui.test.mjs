@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { createInertiaApp } from '@inertiajs/vue3';
 import vue from '@vitejs/plugin-vue';
 import { renderToString } from '@vue/server-renderer';
+import ts from 'typescript';
 import { createServer } from 'vite';
 import { createSSRApp, h } from 'vue';
 
@@ -97,12 +98,19 @@ test('visitors can find the SDK, run a synthetic demo and understand its limits 
     assert.match(sdk, /FT DEMO\/3/);
     // Every example is in the page, hidden rather than missing, under one tab list.
     assert.match(sdk, /role="tablist"/);
-    assert.equal((sdk.match(/role="tabpanel"/g) ?? []).length, 3);
+    assert.equal((sdk.match(/role="tabpanel"/g) ?? []).length, 4);
     assert.match(sdk, /cut -d, -f2,7,8 facturac-demo.csv/);
     assert.doesNotMatch(sdk, /uppercase|·/);
     assert.match(sdk, /Não simula autenticação/);
     assert.match(sdk, /dados fictícios/i);
-    assert.match(sdk, /não inclui emissão fiscal, pagamentos ou webhooks/);
+    assert.match(sdk, /SDK 0.3.0 no npm/);
+    assert.match(sdk, /Emitir factura/);
+    assert.match(sdk, /facturac-issue-demo --demo/);
+    assert.match(sdk, /documents:issue/);
+    assert.match(sdk, /não emite documentos reais/);
+    assert.match(sdk, /activação no servidor/);
+    assert.match(sdk, /não confirma a aceitação pela AGT/);
+    assert.doesNotMatch(sdk, /facturac@0\.2\.0|não inclui emissão fiscal/);
     assert.match(sdk, /requer um pacote com integrações externas/);
     assert.doesNotMatch(sdk, /mailto:|Acesso à API incluído:|25 000|Kz/);
 });
@@ -140,4 +148,74 @@ test('legacy API plans are deduplicated, but do not override current packages', 
         await render({ plans, packages: [offer('Essencial', ['Facturação'])] }),
     );
     assert.doesNotMatch(current, /Acesso à API incluído:|Integração legada/);
+});
+
+test('the displayed issuance example sends string totals and the persisted operation key', async () => {
+    const { developerExamples, demoCommand } = await server.ssrLoadModule(
+        '/resources/js/lib/developer-examples.ts',
+    );
+    const example = developerExamples.find((item) => item.id === 'issue');
+    const calls = [];
+    const env = {
+        FACTURAC_TOKEN: 'synthetic-token',
+        FACTURAC_WORKSPACE_ID: '01J00000000000000000000000',
+        FACTURAC_ENTITY_ID: '01J00000000000000000000001',
+        FACTURAC_CUSTOMER_ID: '01J00000000000000000000002',
+        FACTURAC_ITEM_ID: '01J00000000000000000000003',
+        FACTURAC_EXPECTED_TOTAL_MINOR: '22800',
+        FACTURAC_OPERATION_KEY: 'persisted-order-1001',
+    };
+    class Client {
+        constructor(options) {
+            this.options = options;
+        }
+        documents = {
+            issue: async (payload, options) => {
+                calls.push({ connection: this.options, payload, options });
+
+                return {
+                    data: { public_id: 'synthetic-id' },
+                    meta: { operation_id: 'synthetic-operation' },
+                };
+            },
+        };
+    }
+    const source = example.code.replace(
+        "import { Facturac } from '@vapsolucoes.ao/facturac';",
+        '',
+    );
+    const { outputText } = ts.transpileModule(source, {
+        compilerOptions: {
+            target: ts.ScriptTarget.ES2022,
+            module: ts.ModuleKind.ESNext,
+        },
+    });
+    const AsyncFunction = Object.getPrototypeOf(
+        async function () {},
+    ).constructor;
+    const execute = new AsyncFunction(
+        'Facturac',
+        'process',
+        'console',
+        outputText,
+    );
+    await execute(Client, { env }, { log() {} });
+    await execute(Client, { env }, { log() {} });
+    assert.deepEqual(calls[0], calls[1]);
+    assert.equal(calls[0].connection.environment, 'production');
+    assert.deepEqual(calls[0].payload, {
+        document_type: 'FT',
+        customer_public_id: env.FACTURAC_CUSTOMER_ID,
+        lines: [
+            { catalogue_item_public_id: env.FACTURAC_ITEM_ID, quantity: '2' },
+        ],
+        expected_total_minor: '22800',
+    });
+    assert.deepEqual(calls[0].options, {
+        idempotencyKey: env.FACTURAC_OPERATION_KEY,
+    });
+    assert.deepEqual(demoCommand.split('\n'), [
+        'npm exec --yes --package=@vapsolucoes.ao/facturac@0.3.0 -- facturac-issue-demo --demo',
+        'npm exec --yes --package=@vapsolucoes.ao/facturac@0.3.0 -- facturac-export --demo ./facturac-demo.csv',
+    ]);
 });
