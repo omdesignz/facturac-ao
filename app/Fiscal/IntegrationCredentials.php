@@ -151,13 +151,13 @@ final class IntegrationCredentials
     /** @param list<string> $scopes */
     private function scopes(array $scopes): void
     {
-        Validator::make(['scopes' => $scopes], ['scopes' => ['array'], 'scopes.*' => ['required', 'string', 'distinct:strict', 'in:documents:read,customers:read,catalogue:read,documents:agt-status:read,analytics:billing:read,customers:create,catalogue:services:create']])->validate();
+        Validator::make(['scopes' => $scopes], ['scopes' => ['array'], 'scopes.*' => ['required', 'string', 'distinct:strict', 'in:documents:read,customers:read,catalogue:read,documents:agt-status:read,analytics:billing:read,customers:create,catalogue:services:create,documents:issue']])->validate();
     }
 
     /** @param list<string> $scopes */
     private function scopeEnvironment(array $scopes, AgtEnvironment $environment): void
     {
-        abort_if($environment !== AgtEnvironment::Production && array_intersect($scopes, ['customers:read', 'catalogue:read', 'analytics:billing:read', 'customers:create', 'catalogue:services:create']) !== [], 422);
+        abort_if($environment !== AgtEnvironment::Production && array_intersect($scopes, ['customers:read', 'catalogue:read', 'analytics:billing:read', 'customers:create', 'catalogue:services:create', 'documents:issue']) !== [], 422);
     }
 
     private function outsideTransaction(): void

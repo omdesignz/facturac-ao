@@ -54,8 +54,7 @@ final class CommandDatabase
         try {
             return $operation();
         } catch (QueryException $exception) {
-            $nif = (($exception->errorInfo[0] ?? '') === '23505' && str_contains((string) ($exception->errorInfo[2] ?? ''), '"'.($capability === CommandCapability::CustomerCreate ? 'customers_entity_tax_id_unique' : 'catalogue_items_entity_code_unique').'"'))
-                || (DB::getDriverName() === 'sqlite' && str_contains((string) ($exception->errorInfo[2] ?? ''), ($capability === CommandCapability::CustomerCreate ? 'UNIQUE constraint failed: customers.legal_entity_id, customers.tax_identification_number' : 'UNIQUE constraint failed: catalogue_items.legal_entity_id, catalogue_items.code')));
+            $nif = $capability->isConflict($exception);
             throw new HttpException($nif ? 409 : 503, $nif ? $capability->conflict() : '');
         } finally {
             if ($events !== null) {

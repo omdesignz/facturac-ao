@@ -84,10 +84,7 @@ final class CommandIdempotency
             $this->rollback();
             $conflict = $exception instanceof HttpException && $exception->getMessage() === 'IDEMPOTENCY_CONFLICT';
             CommandAudit::record($context, $conflict ? 'external.command.idempotency-conflict' : 'external.command.failed', $committing ? 'outcome_unknown' : 'rolled_back', $conflict ? null : $operationId, capability: $capability);
-            if ($exception instanceof QueryException && ($exception->errorInfo[0] ?? '') === '23505' && str_contains((string) ($exception->errorInfo[2] ?? ''), '"'.($capability === CommandCapability::CustomerCreate ? 'customers_entity_tax_id_unique' : 'catalogue_items_entity_code_unique').'"')) {
-                throw new HttpException(409, $capability->conflict());
-            }
-            if ($exception instanceof QueryException && DB::getDriverName() === 'sqlite' && str_contains((string) ($exception->errorInfo[2] ?? ''), ($capability === CommandCapability::CustomerCreate ? 'UNIQUE constraint failed: customers.legal_entity_id, customers.tax_identification_number' : 'UNIQUE constraint failed: catalogue_items.legal_entity_id, catalogue_items.code'))) {
+            if ($exception instanceof QueryException && $capability->isConflict($exception)) {
                 throw new HttpException(409, $capability->conflict());
             }
             throw $exception;

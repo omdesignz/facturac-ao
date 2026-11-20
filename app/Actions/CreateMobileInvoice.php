@@ -18,6 +18,7 @@ use App\Models\FiscalDocument;
 use App\Models\LegalEntity;
 use App\Models\MobileInvoice;
 use App\Models\User;
+use App\PaymentMethod;
 use App\SubscriptionFeature;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
@@ -132,31 +133,10 @@ final readonly class CreateMobileInvoice
         $establishment = $this->establishment($legalEntity)
             ?? throw FiscalFinalizationBlocked::because('Esta empresa não tem um estabelecimento activo.');
 
-        $draft = $this->saveDraft->execute($legalEntity, $user, [
-            'document_type' => FiscalDocumentType::Invoice->value,
-            'document_date' => now('Africa/Luanda')->toDateString(),
-            'due_date' => $this->dueDate($customer),
-            'currency_code' => $legalEntity->currency_code,
-            'withholdings' => [],
-            'establishment_public_id' => $establishment->public_id,
-            'customer_public_id' => $customer->public_id,
-            // A saved customer's own details are read by the draft.
-            'customer' => FinalConsumer::profile(),
-            'notes' => $invoice['notes'] ?? null,
-            'references_document_public_id' => null,
-            'adjustment_reason' => null,
-            'lines' => $this->lines($legalEntity, $customer, $invoice['lines']),
-        ]);
-
-        // The customer is billed what the screen showed, or not at all.
-        if ($draft->gross_total_minor !== $invoice['expected_total_minor']) {
-            throw ValidationException::withMessages([
-                'expected_total_minor' => 'O total mudou desde que a factura foi apresentada. Reveja-a antes de continuar.',
-            ]);
-        }
+        $draft = $this->draft($legalEntity, $user, $establishment, FiscalDocumentType::Invoice, $customer, $invoice);
 
         if ($invoice['issue']) {
-            $this->issue($legalEntity, $establishment, $draft, $user);
+            $this->issue($legalEntity, $establishment, $draft, $user, FiscalDocumentType::Invoice);
         }
 
         return MobileInvoice::query()->create([
@@ -169,13 +149,84 @@ final readonly class CreateMobileInvoice
     }
 
     /**
+     * Drafts and issues an invoice or an invoice-receipt in the caller's
+     * transaction, numbered from a series of the given fiscal environment.
+     *
+     * For the API: its command ledger, not a client key, is what brings a
+     * retried request back to the document it made. An invoice-receipt without
+     * a customer is made out to the final consumer.
+     *
+     * @param  array{document_type: FiscalDocumentType, customer_public_id: string|null, lines: Lines, notes?: string|null, payment_method?: PaymentMethod|null, expected_total_minor: int}  $document
+     *
+     * @throws FiscalFinalizationBlocked
+     * @throws ValidationException
+     */
+    public function issueDocument(LegalEntity $legalEntity, User $user, array $document, string $environment): FiscalDocument
+    {
+        $type = $document['document_type'];
+        abort_unless(in_array($type, [FiscalDocumentType::Invoice, FiscalDocumentType::InvoiceReceipt], true), 422);
+
+        $customer = $document['customer_public_id'] === null ? null : $this->customer($legalEntity, $document['customer_public_id']);
+        abort_if($customer === null && $type !== FiscalDocumentType::InvoiceReceipt, 422);
+
+        $establishment = $this->establishment($legalEntity)
+            ?? throw FiscalFinalizationBlocked::because('Esta empresa não tem um estabelecimento activo.');
+        $draft = $this->draft($legalEntity, $user, $establishment, $type, $customer, $document);
+        $this->issue($legalEntity, $establishment, $draft, $user, $type, $environment);
+
+        return $draft->refresh();
+    }
+
+    /**
+     * The draft, checked against the total the caller was shown.
+     *
+     * @param  array{lines: Lines, notes?: string|null, payment_method?: PaymentMethod|null, expected_total_minor: int}  $invoice
+     */
+    private function draft(LegalEntity $legalEntity, User $user, Establishment $establishment, FiscalDocumentType $type, ?Customer $customer, array $invoice): FiscalDocument
+    {
+        $today = now('Africa/Luanda')->toDateString();
+        $payment = $type->isPaidOnIssue() ? [
+            'payment_method' => ($invoice['payment_method'] ?? null)?->value,
+            'payment_amount_minor' => null,
+            'payment_date' => $today,
+            'settlements' => [],
+        ] : [];
+
+        $draft = $this->saveDraft->execute($legalEntity, $user, [
+            'document_type' => $type->value,
+            'document_date' => $today,
+            'due_date' => $type->isPaidOnIssue() || $customer === null ? null : $this->dueDate($customer),
+            'currency_code' => $legalEntity->currency_code,
+            'withholdings' => [],
+            'establishment_public_id' => $establishment->public_id,
+            'customer_public_id' => $customer?->public_id,
+            // A saved customer's own details are read by the draft.
+            'customer' => FinalConsumer::profile(),
+            'notes' => $invoice['notes'] ?? null,
+            'references_document_public_id' => null,
+            'adjustment_reason' => null,
+            ...$payment,
+            'lines' => $this->lines($legalEntity, $customer, $invoice['lines']),
+        ]);
+
+        // The customer is billed what the screen showed, or not at all.
+        if ($draft->gross_total_minor !== $invoice['expected_total_minor']) {
+            throw ValidationException::withMessages([
+                'expected_total_minor' => 'O total mudou desde que a factura foi apresentada. Reveja-a antes de continuar.',
+            ]);
+        }
+
+        return $draft;
+    }
+
+    /**
      * The fiscal lines, in the order the phone sent them: catalogue lines read
      * from the catalogue, one-off lines from what the person typed.
      *
      * @param  Lines  $lines
      * @return list<array{operation_type: string, operation_date: string|null, product_code: string, product_description: string, quantity: string, unit_of_measure: string, unit_price: string, discount_percentage: string, tax_type: string, tax_code: string|null, tax_percentage: string, tax_exemption_code: string|null}>
      */
-    private function lines(LegalEntity $legalEntity, Customer $customer, array $lines): array
+    private function lines(LegalEntity $legalEntity, ?Customer $customer, array $lines): array
     {
         $fromCatalogue = array_filter($lines, fn (array $line): bool => isset($line['catalogue_item_public_id']));
         $positions = array_keys($fromCatalogue);
@@ -251,10 +302,10 @@ final readonly class CreateMobileInvoice
         return 'AV-'.strtoupper(substr(sha1($normalised), 0, 8));
     }
 
-    private function issue(LegalEntity $legalEntity, Establishment $establishment, FiscalDocument $draft, User $user): void
+    private function issue(LegalEntity $legalEntity, Establishment $establishment, FiscalDocument $draft, User $user, FiscalDocumentType $type, ?string $environment = null): void
     {
-        $series = $this->series->forEstablishment($legalEntity, $establishment, FiscalDocumentType::Invoice)
-            ?? throw FiscalFinalizationBlocked::because('Não há série de Factura disponível. Peça uma série à AGT em facturac.ao.');
+        $series = $this->series->forEstablishment($legalEntity, $establishment, $type, $environment)
+            ?? throw FiscalFinalizationBlocked::because('Não há série de '.$type->label().' disponível. Peça uma série à AGT em facturac.ao.');
 
         $this->issue->execute($draft, $user, $series->public_id, $draft->revision);
     }

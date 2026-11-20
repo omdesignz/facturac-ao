@@ -159,6 +159,30 @@ final readonly class CreateMobileCreditNote
             return $existing;
         }
 
+        $draft = $this->issueNote($legalEntity, $user, $source, $note);
+
+        return MobileInvoice::query()->create([
+            'workspace_id' => $legalEntity->workspace_id,
+            'legal_entity_id' => $legalEntity->id,
+            'fiscal_document_id' => $draft->id,
+            'client_key' => $note['client_key'],
+            'created_by_user_id' => $user->id,
+        ]);
+    }
+
+    /**
+     * Drafts and issues the note in the caller's transaction, after locking
+     * the invoice and checking again that it can still be corrected. Shared
+     * with the API, whose credential names the fiscal environment to number
+     * the note in.
+     *
+     * @param  array{reason: string, lines: Lines, expected_total_minor: int}  $note
+     *
+     * @throws FiscalFinalizationBlocked
+     * @throws ValidationException
+     */
+    public function issueNote(LegalEntity $legalEntity, User $user, FiscalDocument $source, array $note, ?string $environment = null): FiscalDocument
+    {
         // Two notes against one invoice wait for each other, so neither can
         // credit what the other has just taken.
         $source = FiscalDocument::query()->whereKey($source->getKey())->lockForUpdate()->firstOrFail();
@@ -171,7 +195,7 @@ final readonly class CreateMobileCreditNote
 
         $establishment = $this->establishment($source)
             ?? throw FiscalFinalizationBlocked::because('O estabelecimento desta factura já não está activo.');
-        $series = $this->series->forEstablishment($legalEntity, $establishment, FiscalDocumentType::CreditNote)
+        $series = $this->series->forEstablishment($legalEntity, $establishment, FiscalDocumentType::CreditNote, $environment)
             ?? throw FiscalFinalizationBlocked::because('Não há série de Nota de Crédito disponível. Peça uma série à AGT em facturac.ao.');
         $customer = $this->customer($source);
 
@@ -203,13 +227,7 @@ final readonly class CreateMobileCreditNote
 
         $this->issue->execute($draft, $user, $series->public_id, $draft->revision);
 
-        return MobileInvoice::query()->create([
-            'workspace_id' => $legalEntity->workspace_id,
-            'legal_entity_id' => $legalEntity->id,
-            'fiscal_document_id' => $draft->id,
-            'client_key' => $note['client_key'],
-            'created_by_user_id' => $user->id,
-        ]);
+        return $draft;
     }
 
     /**

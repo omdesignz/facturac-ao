@@ -135,10 +135,17 @@ const scopes = [
         group: 'write',
         production: true,
     },
+    {
+        value: 'documents:issue',
+        label: 'Emitir documentos',
+        detail: 'Facturas, facturas-recibo e notas de crédito, comunicadas à AGT.',
+        group: 'write',
+        production: true,
+    },
 ] as const;
 const scopeGroups = [
     { key: 'read', label: 'Consultar' },
-    { key: 'write', label: 'Criar' },
+    { key: 'write', label: 'Criar e emitir' },
 ] as const;
 const ENVIRONMENTS: Record<string, string> = {
     production: 'Produção',
@@ -150,6 +157,7 @@ const references = [
     { id: 'qualified-agt-v2', label: 'Estado na AGT' },
     { id: 'customer-create-v1', label: 'Criar cliente' },
     { id: 'catalogue-service-create-v1', label: 'Criar serviço' },
+    { id: 'document-issue-v1', label: 'Emitir documento' },
 ];
 
 function scopeLabel(value: string): string {
