@@ -43,8 +43,10 @@ return [
         'agt.series.store',
         'imports.commit',
 
-        // Moves money, or the references that collect it.
+        // Moves money, the references that collect it, or turns a paid plan on
+        // without payment through a free-time code.
         'billing.checkout',
+        'billing.coupon.redeem',
         'billing.payments.resume',
         'billing.references.refresh',
         'billing.references.simulate',
