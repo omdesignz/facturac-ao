@@ -90,6 +90,13 @@ class StoreSubscriptionCouponRequest extends FormRequest
                     }
                 },
             ],
+            'free_days' => [
+                'exclude_unless:discount_type,'.SubscriptionCouponDiscountType::FreeDays->value,
+                'required',
+                'integer',
+                'min:1',
+                'max:'.SubscriptionCoupon::maximumFreeDays(),
+            ],
             'currency_code' => ['required', 'string', Rule::in((array) config('fiscal.currencies', ['AOA']))],
         ];
     }
@@ -106,6 +113,9 @@ class StoreSubscriptionCouponRequest extends FormRequest
             'percent_off.max' => 'A percentagem vai de 1 a 99.',
             'amount_off.required' => 'Indique o valor do desconto.',
             'amount_off.regex' => 'Escreva o valor com até duas casas decimais.',
+            'free_days.required' => 'Indique quantos dias grátis o código dá.',
+            'free_days.min' => 'O código tem de dar pelo menos 1 dia grátis.',
+            'free_days.max' => 'O código pode dar até '.SubscriptionCoupon::maximumFreeDays().' dias grátis.',
             'max_redemptions.min' => 'O limite tem de ser pelo menos 1.',
             'expires_on.after_or_equal' => 'A validade não pode terminar antes de hoje.',
         ];
@@ -145,6 +155,7 @@ class StoreSubscriptionCouponRequest extends FormRequest
             'amount_off_minor' => $type === SubscriptionCouponDiscountType::Fixed
                 ? StoreSubscriptionPackageRequest::minorUnits((string) $validated['amount_off'])
                 : null,
+            'free_days' => $type === SubscriptionCouponDiscountType::FreeDays ? (int) $validated['free_days'] : null,
             'currency_code' => (string) $validated['currency_code'],
         ];
     }

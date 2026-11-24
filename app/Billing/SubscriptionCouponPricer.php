@@ -42,6 +42,14 @@ final class SubscriptionCouponPricer
             throw BillingActionRefused::because('Este código já atingiu o limite de utilizações.');
         }
 
+        if ($coupon->givesFreeDays()) {
+            if ($coupon->grantedFreeDays() <= 0) {
+                throw BillingActionRefused::because('Este código não se aplica a este plano.');
+            }
+
+            return new SubscriptionCouponQuote($coupon, $plan->amount_minor, $plan->amount_minor, $coupon->grantedFreeDays());
+        }
+
         $discount = $coupon->discountFor($plan->amount_minor);
 
         if ($coupon->currency_code !== $plan->currency_code || $discount <= 0

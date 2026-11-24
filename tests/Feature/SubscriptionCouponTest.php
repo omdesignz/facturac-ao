@@ -97,6 +97,7 @@ test('the preview shows the discounted figure before anything is charged', funct
             'list_amount_minor' => 25_000_00,
             'discount_minor' => 5_000_00,
             'amount_minor' => 20_000_00,
+            'free_days' => 0,
         ]);
 
     expect(SubscriptionCharge::query()->doesntExist())->toBeTrue()
@@ -460,4 +461,181 @@ test('staff see each code with its uses; customers cannot reach the page', funct
         ->assertNotFound();
 
     expect(SubscriptionCoupon::query()->count())->toBe(1);
+});
+
+/* ------------------------------------------------------------- free time */
+
+/** @param array{user: User, workspace: Workspace, plan: SubscriptionPlan} $company */
+function redeemFreeCoupon(array $company, string $code): TestResponse
+{
+    return test()->actingAs($company['user'])
+        ->withSession(['auth.password_confirmed_at' => time()])
+        ->post(route('billing.coupon.redeem'), [
+            'plan_public_id' => $company['plan']->public_id,
+            'coupon_code' => $code,
+        ]);
+}
+
+test('a free-time code previews as nothing to pay for its days', function () {
+    $company = couponCompany(25_000_00);
+    SubscriptionCoupon::factory()->freeDays(30)->create(['code' => 'MES-GRATIS', 'description' => null]);
+
+    previewCoupon($company, 'mes-gratis')
+        ->assertOk()
+        ->assertExactJson([
+            'code' => 'MES-GRATIS',
+            'description' => null,
+            'list_amount_minor' => 25_000_00,
+            'discount_minor' => 25_000_00,
+            'amount_minor' => 0,
+            'free_days' => 30,
+        ]);
+});
+
+test('a free-time code turns the plan on for its days with no payment', function () {
+    $this->freezeSecond();
+    $company = couponCompany(25_000_00);
+    $coupon = SubscriptionCoupon::factory()->freeDays(30)->create(['code' => 'MES-GRATIS']);
+
+    redeemFreeCoupon($company, 'MES-GRATIS')
+        ->assertSessionHasNoErrors()
+        ->assertRedirect(route('billing.show'))
+        ->assertSessionHas('success');
+
+    $subscription = WorkspaceSubscription::query()->sole();
+    $charge = SubscriptionCharge::query()->sole();
+
+    expect($subscription->status)->toBe(WorkspaceSubscriptionStatus::Active)
+        ->and($subscription->subscription_plan_id)->toBe($company['plan']->id)
+        ->and($subscription->current_period_ends_at->equalTo(now()->addDays(30)))->toBeTrue()
+        ->and($charge->amount_minor)->toBe(0)
+        ->and($charge->status)->toBe(SubscriptionChargeStatus::Paid)
+        ->and($charge->active_checkout_key)->toBeNull()
+        ->and($charge->workspace_subscription_id)->toBe($subscription->id)
+        ->and($coupon->heldRedemptions()->count())->toBe(1)
+        ->and(Payment::query()->doesntExist())->toBeTrue();
+    Http::assertNothingSent();
+
+    $this->actingAs($company['user'])->get(route('billing.show'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('subscription.status', 'active')
+            ->where('activePayment', null)
+            ->where('charges.0.amount_minor', 0)
+            ->where('charges.0.coupon.code', 'MES-GRATIS'));
+});
+
+test('free days are added after the period already paid for on the same plan', function () {
+    $this->freezeSecond();
+    $company = couponCompany();
+    $paidUntil = now()->addDays(10);
+    WorkspaceSubscription::factory()->create([
+        'workspace_id' => $company['workspace']->id,
+        'subscription_plan_id' => $company['plan']->id,
+        'status' => WorkspaceSubscriptionStatus::Active,
+        'current_period_started_at' => now()->subDays(20),
+        'current_period_ends_at' => $paidUntil,
+    ]);
+    SubscriptionCoupon::factory()->freeDays(15)->create(['code' => 'EXTRA']);
+
+    redeemFreeCoupon($company, 'EXTRA')->assertSessionHasNoErrors();
+
+    expect(WorkspaceSubscription::query()->sole()->current_period_ends_at->equalTo($paidUntil->addDays(15)))->toBeTrue();
+});
+
+test('a free-time code does not replace another plan still paid for', function () {
+    $company = couponCompany();
+    $paidPlan = SubscriptionPlan::factory()->create();
+    WorkspaceSubscription::factory()->create([
+        'workspace_id' => $company['workspace']->id,
+        'subscription_plan_id' => $paidPlan->id,
+        'status' => WorkspaceSubscriptionStatus::Active,
+        'current_period_started_at' => now()->subDays(5),
+        'current_period_ends_at' => now()->addDays(25),
+    ]);
+    SubscriptionCoupon::factory()->freeDays(30)->create(['code' => 'TROCA']);
+
+    redeemFreeCoupon($company, 'TROCA')
+        ->assertSessionHasErrors(['coupon_code' => 'Já tem outro plano activo. Use este código no plano actual ou depois de o período terminar.']);
+
+    expect(WorkspaceSubscription::query()->sole()->subscription_plan_id)->toBe($paidPlan->id)
+        ->and(SubscriptionCharge::query()->doesntExist())->toBeTrue();
+});
+
+test('free-time and money-off codes each stay in their own flow', function () {
+    $company = couponCompany();
+    SubscriptionCoupon::factory()->freeDays(30)->create(['code' => 'GRATIS']);
+    SubscriptionCoupon::factory()->percentOff(20)->create(['code' => 'VINTE']);
+
+    checkoutWithCoupon($company, 'GRATIS')
+        ->assertSessionHasErrors(['coupon_code' => 'Este código dá tempo grátis e não precisa de pagamento.']);
+    redeemFreeCoupon($company, 'VINTE')
+        ->assertSessionHasErrors(['coupon_code' => 'Este código dá desconto num pagamento. Continue para a WiPay para o usar.']);
+
+    expect(SubscriptionCharge::query()->doesntExist())->toBeTrue()
+        ->and(WorkspaceSubscription::query()->doesntExist())->toBeTrue();
+});
+
+test('a free-time code is used once per company, expires and runs out like any code', function () {
+    $first = couponCompany();
+    $second = couponCompany();
+    $third = couponCompany();
+    SubscriptionCoupon::factory()->freeDays(7)->limitedTo(2)->create(['code' => 'SEMANA', 'expires_at' => now()->addMinute()]);
+
+    redeemFreeCoupon($first, 'SEMANA')->assertSessionHasNoErrors();
+    redeemFreeCoupon($first, 'SEMANA')->assertSessionHasErrors(['coupon_code' => 'Esta empresa já usou este código.']);
+    redeemFreeCoupon($second, 'SEMANA')->assertSessionHasNoErrors();
+    redeemFreeCoupon($third, 'SEMANA')->assertSessionHasErrors(['coupon_code' => 'Este código já atingiu o limite de utilizações.']);
+
+    SubscriptionCoupon::query()->sole()->update(['max_redemptions' => null]);
+    $this->travel(2)->minutes();
+    redeemFreeCoupon($third, 'SEMANA')->assertSessionHasErrors(['coupon_code' => 'Este código já expirou.']);
+
+    expect(SubscriptionCharge::query()->count())->toBe(2);
+});
+
+test('a free-time code waits while a payment is in progress', function () {
+    $company = couponCompany();
+    SubscriptionCoupon::factory()->freeDays(30)->create(['code' => 'ESPERA']);
+    checkoutWithCoupon($company, null)->assertSessionHasNoErrors();
+
+    redeemFreeCoupon($company, 'ESPERA')
+        ->assertSessionHas('error', 'Conclua ou verifique o pagamento pendente antes de usar um código de desconto.');
+
+    expect(SubscriptionCharge::query()->count())->toBe(1)
+        ->and(WorkspaceSubscription::query()->doesntExist())->toBeTrue();
+});
+
+test('redeeming free time needs two-step verification', function () {
+    $company = couponCompany();
+    $company['user']->forceFill(['two_factor_secret' => null, 'two_factor_recovery_codes' => null, 'two_factor_confirmed_at' => null])->save();
+    SubscriptionCoupon::factory()->freeDays(30)->create(['code' => 'SEGURO']);
+
+    redeemFreeCoupon($company, 'SEGURO')->assertRedirect(route('settings.security'));
+
+    expect(WorkspaceSubscription::query()->doesntExist())->toBeTrue();
+});
+
+test('the free-days ceiling is configurable and holds codes made before it changed', function () {
+    config()->set('billing.coupons.max_free_days', 30);
+    $staff = User::factory()->supportStaff()->withWorkspace()->create();
+    $payload = ['code' => 'LONGO', 'discount_type' => 'free_days', 'currency_code' => 'AOA', 'is_active' => true];
+
+    $this->actingAs($staff)->withSession(couponStaffSession())
+        ->post(route('support.coupons.store'), [...$payload, 'free_days' => 31])
+        ->assertSessionHasErrors(['free_days' => 'O código pode dar até 30 dias grátis.']);
+    $this->actingAs($staff)->withSession(couponStaffSession())
+        ->post(route('support.coupons.store'), [...$payload, 'free_days' => 30])
+        ->assertSessionHasNoErrors();
+
+    $coupon = SubscriptionCoupon::query()->sole();
+    expect($coupon->discount_type)->toBe(SubscriptionCouponDiscountType::FreeDays)
+        ->and($coupon->free_days)->toBe(30)
+        ->and($coupon->percent_off)->toBeNull();
+
+    $this->actingAs($staff)->withSession(couponStaffSession())
+        ->get(route('support.coupons.index'))
+        ->assertInertia(fn (Assert $page) => $page->where('maxFreeDays', 30)->where('coupons.0.free_days', 30));
+
+    config()->set('billing.coupons.max_free_days', 14);
+    previewCoupon(couponCompany(), 'LONGO')->assertOk()->assertJsonPath('free_days', 14);
 });

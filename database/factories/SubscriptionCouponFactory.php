@@ -24,6 +24,7 @@ class SubscriptionCouponFactory extends Factory
             'discount_type' => SubscriptionCouponDiscountType::Percentage,
             'percent_off' => 20,
             'amount_off_minor' => null,
+            'free_days' => null,
             'currency_code' => 'AOA',
             'max_redemptions' => null,
             'expires_at' => null,
@@ -47,6 +48,16 @@ class SubscriptionCouponFactory extends Factory
             'discount_type' => SubscriptionCouponDiscountType::Fixed,
             'percent_off' => null,
             'amount_off_minor' => $amountMinor,
+        ]);
+    }
+
+    public function freeDays(int $days): static
+    {
+        return $this->state(fn (): array => [
+            'discount_type' => SubscriptionCouponDiscountType::FreeDays,
+            'percent_off' => null,
+            'amount_off_minor' => null,
+            'free_days' => $days,
         ]);
     }
 

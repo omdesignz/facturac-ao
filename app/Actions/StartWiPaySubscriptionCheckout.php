@@ -78,6 +78,10 @@ final readonly class StartWiPaySubscriptionCheckout
             }
 
             $quote = $couponCode === null ? null : $this->couponPricer->quote($workspace, $plan, $couponCode, lockForUpdate: true);
+
+            if ($quote?->isFree() === true) {
+                throw BillingActionRefused::because('Este código dá tempo grátis e não precisa de pagamento.');
+            }
             $startsAt = CarbonImmutable::now('Africa/Luanda');
             $charge = SubscriptionCharge::query()->create([
                 'workspace_id' => $workspace->id,

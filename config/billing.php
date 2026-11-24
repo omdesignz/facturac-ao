@@ -12,4 +12,9 @@ return [
         'review_after_minutes' => (int) env('WIPAY_REVIEW_AFTER_MINUTES', 1440),
         'maximum_amount_minor' => (int) env('WIPAY_MAXIMUM_AMOUNT_MINOR', 3_000_000_000),
     ],
+
+    'coupons' => [
+        // The most days of a plan a single code may give for free.
+        'max_free_days' => (int) env('BILLING_COUPON_MAX_FREE_DAYS', 30),
+    ],
 ];

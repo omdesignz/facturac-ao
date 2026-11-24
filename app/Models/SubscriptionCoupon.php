@@ -26,6 +26,7 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property SubscriptionCouponDiscountType $discount_type
  * @property int|null $percent_off
  * @property int|null $amount_off_minor
+ * @property int|null $free_days
  * @property string $currency_code
  * @property int|null $max_redemptions
  * @property CarbonImmutable|null $expires_at
@@ -38,6 +39,7 @@ use Spatie\Activitylog\Support\LogOptions;
     'discount_type',
     'percent_off',
     'amount_off_minor',
+    'free_days',
     'currency_code',
     'max_redemptions',
     'expires_at',
@@ -97,6 +99,26 @@ class SubscriptionCoupon extends Model
         return $this->expires_at !== null && ! $this->expires_at->isAfter($at ?? CarbonImmutable::now());
     }
 
+    /** The most free days any code may give, from config. */
+    public static function maximumFreeDays(): int
+    {
+        return max(1, (int) config('billing.coupons.max_free_days', 30));
+    }
+
+    public function givesFreeDays(): bool
+    {
+        return $this->discount_type === SubscriptionCouponDiscountType::FreeDays;
+    }
+
+    /**
+     * The days of free access this code gives, held to today's ceiling: lowering
+     * the setting also shortens codes created before it was lowered.
+     */
+    public function grantedFreeDays(): int
+    {
+        return $this->givesFreeDays() ? max(0, min((int) $this->free_days, self::maximumFreeDays())) : 0;
+    }
+
     /**
      * The discount on a price, in minor units, never more than the price.
      * A percentage rounds down, so the customer never pays a fraction of a
@@ -107,6 +129,7 @@ class SubscriptionCoupon extends Model
         $discount = match ($this->discount_type) {
             SubscriptionCouponDiscountType::Percentage => intdiv($amountMinor * (int) $this->percent_off, 100),
             SubscriptionCouponDiscountType::Fixed => (int) $this->amount_off_minor,
+            SubscriptionCouponDiscountType::FreeDays => $amountMinor,
         };
 
         return max(0, min($discount, $amountMinor));
@@ -128,6 +151,7 @@ class SubscriptionCoupon extends Model
             'discount_type' => SubscriptionCouponDiscountType::class,
             'percent_off' => 'integer',
             'amount_off_minor' => 'integer',
+            'free_days' => 'integer',
             'max_redemptions' => 'integer',
             'expires_at' => 'immutable_datetime',
             'is_active' => 'boolean',

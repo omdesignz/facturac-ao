@@ -37,6 +37,7 @@ class SubscriptionCouponController extends Controller
                 'label' => $type->label(),
             ], SubscriptionCouponDiscountType::cases()),
             'currencies' => array_values((array) config('fiscal.currencies', ['AOA'])),
+            'maxFreeDays' => SubscriptionCoupon::maximumFreeDays(),
         ]);
     }
 
@@ -78,6 +79,7 @@ class SubscriptionCouponController extends Controller
             'discount_type' => $coupon->discount_type->value,
             'percent_off' => $coupon->percent_off,
             'amount_off_minor' => $coupon->amount_off_minor,
+            'free_days' => $coupon->free_days,
             'currency_code' => $coupon->currency_code,
             'max_redemptions' => $coupon->max_redemptions,
             'used_count' => (int) $coupon->getAttribute('used_count'),

@@ -51,7 +51,10 @@ import {
 } from '@/lib/packages';
 import { currencyLabel } from '@/lib/pos-ui';
 import { checkout } from '@/routes/billing';
-import { preview as previewCoupon } from '@/routes/billing/coupon';
+import {
+    preview as previewCoupon,
+    redeem as redeemCoupon,
+} from '@/routes/billing/coupon';
 import { resume } from '@/routes/billing/payments';
 import { security } from '@/routes/settings';
 
@@ -179,6 +182,8 @@ interface CouponQuote {
     list_amount_minor: number;
     discount_minor: number;
     amount_minor: number;
+    /** Days of the plan for free, with no payment; 0 for money off. */
+    free_days: number;
 }
 
 const couponOpen = ref(false);
@@ -194,6 +199,13 @@ const couponError = computed(
         checkoutForm.errors.coupon_code ??
         null,
 );
+
+/** The applied code gives days for free: nothing goes to WiPay. */
+const freeDays = computed(() => appliedCoupon.value?.free_days ?? 0);
+
+function daysLabel(days: number): string {
+    return days === 1 ? '1 dia' : `${days} dias`;
+}
 
 /** The figure the customer pays: the plan's price, less any applied code. */
 const amountDue = computed(
@@ -484,19 +496,22 @@ function submitCheckout(): void {
     }
 
     checkoutForm.coupon_code = appliedCoupon.value?.code ?? '';
-    checkoutForm.post(checkout.url(), {
-        preserveScroll: true,
-        onSuccess: () => {
-            selectedPlan.value = null;
+    checkoutForm.post(
+        freeDays.value > 0 ? redeemCoupon.url() : checkout.url(),
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                selectedPlan.value = null;
+            },
+            onError: (errors) => {
+                // The code stopped applying between the preview and the payment.
+                if (errors.coupon_code) {
+                    appliedCoupon.value = null;
+                    couponOpen.value = true;
+                }
+            },
         },
-        onError: (errors) => {
-            // The code stopped applying between the preview and the payment.
-            if (errors.coupon_code) {
-                appliedCoupon.value = null;
-                couponOpen.value = true;
-            }
-        },
-    });
+    );
 }
 </script>
 
@@ -1374,6 +1389,13 @@ function submitCheckout(): void {
                                                 WiPay ·
                                                 {{ charge.payment.public_id }}
                                             </span>
+                                            <span
+                                                v-else-if="
+                                                    charge.coupon &&
+                                                    charge.amount_minor === 0
+                                                "
+                                                >Grátis com código</span
+                                            >
                                             <span v-else>—</span>
                                         </td>
                                         <td
@@ -1554,13 +1576,23 @@ function submitCheckout(): void {
                                     as="h2"
                                     class="mt-5 pr-10 text-lg font-semibold text-zinc-950 dark:text-white"
                                 >
-                                    Continuar para a WiPay
+                                    {{
+                                        freeDays > 0
+                                            ? 'Activar tempo grátis'
+                                            : 'Continuar para a WiPay'
+                                    }}
                                 </DialogTitle>
                                 <p
                                     class="mt-2 text-sm/6 text-zinc-500 dark:text-zinc-400"
                                 >
-                                    Confirme os dados antes de criar uma
-                                    instrução de pagamento para o plano
+                                    <template v-if="freeDays > 0"
+                                        >Confirme antes de activar sem pagamento
+                                        o plano</template
+                                    ><template v-else
+                                        >Confirme os dados antes de criar uma
+                                        instrução de pagamento para o
+                                        plano</template
+                                    >
                                     <strong
                                         class="font-semibold text-zinc-900 dark:text-white"
                                         >{{ selectedPlan?.name }}</strong
@@ -1596,7 +1628,11 @@ function submitCheckout(): void {
                                         <dd
                                             class="text-sm font-semibold text-zinc-900 dark:text-white"
                                         >
-                                            {{ selectedPlan.interval_label }}
+                                            {{
+                                                freeDays > 0
+                                                    ? `${daysLabel(freeDays)} grátis`
+                                                    : selectedPlan.interval_label
+                                            }}
                                         </dd>
                                     </div>
                                     <template v-if="appliedCoupon">
@@ -1625,7 +1661,11 @@ function submitCheckout(): void {
                                             <dt
                                                 class="text-sm text-zinc-500 dark:text-zinc-400"
                                             >
-                                                Desconto
+                                                {{
+                                                    freeDays > 0
+                                                        ? 'Tempo grátis'
+                                                        : 'Desconto'
+                                                }}
                                                 <span
                                                     class="font-mono text-xs text-zinc-700 dark:text-zinc-300"
                                                     >{{
@@ -1781,6 +1821,7 @@ function submitCheckout(): void {
                                 </div>
 
                                 <FormField
+                                    v-if="freeDays === 0"
                                     class="mt-5"
                                     for="payment-customer-phone"
                                     label="Telemóvel do pagador"
@@ -1834,6 +1875,21 @@ function submitCheckout(): void {
                                 >
 
                                 <div
+                                    v-if="freeDays > 0"
+                                    class="mt-5 flex gap-3 rounded-xl bg-[var(--ui-wash)] p-3 text-xs/5 text-[var(--ui-ink-2)]"
+                                >
+                                    <CheckCircle2
+                                        class="mt-0.5 size-4 shrink-0 text-emerald-600 dark:text-emerald-400"
+                                        aria-hidden="true"
+                                    />
+                                    O plano fica activo já, sem pagamento,
+                                    durante {{ daysLabel(freeDays) }}. Se já tem
+                                    este plano activo, os dias somam-se ao
+                                    período actual. Para continuar depois,
+                                    renove aqui com a WiPay.
+                                </div>
+                                <div
+                                    v-else
                                     class="mt-5 flex gap-3 rounded-xl bg-amber-50 p-3 text-xs/5 text-amber-800 ring-1 ring-amber-600/15 dark:bg-amber-400/10 dark:text-amber-100 dark:ring-amber-400/20"
                                 >
                                     <CircleAlert
@@ -1878,12 +1934,21 @@ function submitCheckout(): void {
                                             class="size-4 animate-spin"
                                             aria-hidden="true"
                                         />
+                                        <TicketPercent
+                                            v-else-if="freeDays > 0"
+                                            class="size-4"
+                                            aria-hidden="true"
+                                        />
                                         <Landmark
                                             v-else
                                             class="size-4"
                                             aria-hidden="true"
                                         />
-                                        Continuar para a WiPay
+                                        {{
+                                            freeDays > 0
+                                                ? `Activar ${daysLabel(freeDays)} grátis`
+                                                : 'Continuar para a WiPay'
+                                        }}
                                     </AppButton>
                                 </div>
                             </DialogPanel>

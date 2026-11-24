@@ -28,9 +28,10 @@ interface CouponRow {
     public_id: string;
     code: string;
     description: string | null;
-    discount_type: 'percentage' | 'fixed';
+    discount_type: 'percentage' | 'fixed' | 'free_days';
     percent_off: number | null;
     amount_off_minor: number | null;
+    free_days: number | null;
     currency_code: string;
     max_redemptions: number | null;
     used_count: number;
@@ -45,6 +46,8 @@ const props = defineProps<{
     coupons: CouponRow[];
     discountTypes: { value: string; label: string }[];
     currencies: string[];
+    /** The most free days one code may give, set in the billing config. */
+    maxFreeDays: number;
 }>();
 
 const dialogOpen = ref(false);
@@ -57,6 +60,7 @@ const form = useForm({
     description: '',
     discount_type: 'percentage',
     percent_off: '' as string | number,
+    free_days: '' as string | number,
     amount_off: '',
     currency_code: 'AOA',
     max_redemptions: '' as string | number,
@@ -80,7 +84,15 @@ function discountLabel(row: CouponRow): string {
         return `${row.percent_off ?? 0}%`;
     }
 
+    if (row.discount_type === 'free_days') {
+        return daysLabel(row.free_days ?? 0);
+    }
+
     return `${formatMinor(row.amount_off_minor ?? 0)} ${currencyLabel(row.currency_code)}`;
+}
+
+function daysLabel(days: number): string {
+    return days === 1 ? '1 dia grátis' : `${days} dias grátis`;
 }
 
 function usageLabel(row: CouponRow): string {
@@ -126,6 +138,7 @@ function openCreate(): void {
         description: '',
         discount_type: 'percentage',
         percent_off: '',
+        free_days: '',
         amount_off: '',
         currency_code: props.currencies[0] ?? 'AOA',
         max_redemptions: '',
@@ -145,6 +158,7 @@ function openEdit(row: CouponRow): void {
         description: row.description ?? '',
         discount_type: row.discount_type,
         percent_off: row.percent_off ?? '',
+        free_days: row.free_days ?? '',
         amount_off: '',
         currency_code: row.currency_code,
         max_redemptions: row.max_redemptions ?? '',
@@ -173,6 +187,7 @@ function submit(): void {
         code: data.code.trim().toUpperCase(),
         description: data.description.trim() === '' ? null : data.description,
         percent_off: data.percent_off === '' ? null : Number(data.percent_off),
+        free_days: data.free_days === '' ? null : Number(data.free_days),
         amount_off: parseAmount(amountText.value)?.decimal ?? amountText.value,
         max_redemptions:
             data.max_redemptions === '' ? null : Number(data.max_redemptions),
@@ -434,6 +449,40 @@ async function remove(row: CouponRow): Promise<void> {
                             />
                             <span class="field-adornment-end">%</span>
                         </div>
+                    </FormField>
+
+                    <FormField
+                        v-else-if="form.discount_type === 'free_days'"
+                        for="coupon-free-days"
+                        label="Dias grátis"
+                        :error="form.errors.free_days"
+                        error-id="coupon-free-days-error"
+                    >
+                        <div class="relative">
+                            <input
+                                id="coupon-free-days"
+                                v-model="form.free_days"
+                                type="text"
+                                inputmode="numeric"
+                                maxlength="3"
+                                autocomplete="off"
+                                :readonly="editing !== null"
+                                class="block form-input pe-14 text-end numeric"
+                                :aria-invalid="
+                                    form.errors.free_days ? 'true' : undefined
+                                "
+                                :aria-describedby="
+                                    form.errors.free_days
+                                        ? 'coupon-free-days-error'
+                                        : 'coupon-free-days-hint'
+                                "
+                            />
+                            <span class="field-adornment-end">dias</span>
+                        </div>
+                        <p id="coupon-free-days-hint" class="field-hint">
+                            Até {{ maxFreeDays }} dias. O plano escolhido fica
+                            activo sem pagamento.
+                        </p>
                     </FormField>
 
                     <FormField

@@ -14,6 +14,7 @@ use App\Http\Controllers\AssistantController;
 use App\Http\Controllers\BillingCheckoutController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\BillingCouponPreviewController;
+use App\Http\Controllers\BillingCouponRedemptionController;
 use App\Http\Controllers\CatalogueItemController;
 use App\Http\Controllers\CompanyBankDetailsController;
 use App\Http\Controllers\CompanyLogoController;
@@ -281,6 +282,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::post('/settings/billing/coupon', BillingCouponPreviewController::class)
             ->middleware('throttle:10,1')
             ->name('billing.coupon.preview');
+        Route::post('/settings/billing/coupon/redeem', BillingCouponRedemptionController::class)
+            ->middleware(['mfa', 'password.confirm', 'throttle:6,1'])
+            ->name('billing.coupon.redeem');
         Route::post('/settings/billing/payments/{payment}/resume', HostedPaymentResumeController::class)
             ->middleware(['mfa', 'password.confirm', 'throttle:6,1'])
             ->name('billing.payments.resume');
