@@ -6,7 +6,14 @@ import {
     TransitionChild,
     TransitionRoot,
 } from '@headlessui/vue';
-import { Head, Link, useForm, usePage, usePoll } from '@inertiajs/vue3';
+import {
+    Head,
+    Link,
+    useForm,
+    useHttp,
+    usePage,
+    usePoll,
+} from '@inertiajs/vue3';
 import {
     BadgeCheck,
     Banknote,
@@ -21,6 +28,7 @@ import {
     ReceiptText,
     RefreshCw,
     ShieldCheck,
+    TicketPercent,
     TriangleAlert,
     X,
 } from '@lucide/vue';
@@ -43,6 +51,7 @@ import {
 } from '@/lib/packages';
 import { currencyLabel } from '@/lib/pos-ui';
 import { checkout } from '@/routes/billing';
+import { preview as previewCoupon } from '@/routes/billing/coupon';
 import { resume } from '@/routes/billing/payments';
 import { security } from '@/routes/settings';
 
@@ -113,6 +122,11 @@ interface SubscriptionCharge {
     created_at: string | null;
     paid_at: string | null;
     plan_name: string;
+    coupon: {
+        code: string;
+        list_amount_minor: number;
+        discount_minor: number;
+    } | null;
     reference: PaymentReference | null;
     payment: HostedPayment | null;
 }
@@ -151,8 +165,102 @@ const props = defineProps<{
 
 const page = usePage();
 const selectedPlan = ref<SubscriptionPlan | null>(null);
-const checkoutForm = useForm({ plan_public_id: '', customer_phone: '' });
+const checkoutForm = useForm({
+    plan_public_id: '',
+    customer_phone: '',
+    coupon_code: '',
+});
 const resumeForm = useForm({});
+
+/** What the plan costs with a discount code, as the server priced it. */
+interface CouponQuote {
+    code: string;
+    description: string | null;
+    list_amount_minor: number;
+    discount_minor: number;
+    amount_minor: number;
+}
+
+const couponOpen = ref(false);
+const couponText = ref('');
+const appliedCoupon = ref<CouponQuote | null>(null);
+const couponRequest = useHttp<
+    { plan_public_id: string; coupon_code: string },
+    CouponQuote
+>(previewCoupon(), { plan_public_id: '', coupon_code: '' });
+const couponError = computed(
+    () =>
+        couponRequest.errors.coupon_code ??
+        checkoutForm.errors.coupon_code ??
+        null,
+);
+
+/** The figure the customer pays: the plan's price, less any applied code. */
+const amountDue = computed(
+    () =>
+        appliedCoupon.value?.amount_minor ??
+        selectedPlan.value?.amount_minor ??
+        0,
+);
+
+function resetCoupon(): void {
+    couponOpen.value = false;
+    couponText.value = '';
+    appliedCoupon.value = null;
+    couponRequest.clearErrors();
+    checkoutForm.clearErrors('coupon_code');
+}
+
+async function applyCoupon(): Promise<void> {
+    if (selectedPlan.value === null || couponRequest.processing) {
+        return;
+    }
+
+    checkoutForm.clearErrors('coupon_code');
+    appliedCoupon.value = null;
+
+    if (couponText.value.trim() === '') {
+        couponRequest.setError('coupon_code', 'Escreva o código de desconto.');
+
+        return;
+    }
+
+    couponRequest.plan_public_id = selectedPlan.value.public_id;
+    couponRequest.coupon_code = couponText.value.trim();
+
+    try {
+        const quote = await couponRequest.submit();
+
+        // A refusal answers 422: the reason is in couponRequest.errors.
+        if (quote) {
+            appliedCoupon.value = quote;
+        }
+    } catch {
+        couponRequest.setError(
+            'coupon_code',
+            'Não foi possível verificar o código. Aguarde um momento e tente outra vez.',
+        );
+    }
+}
+
+function removeCoupon(): void {
+    appliedCoupon.value = null;
+    couponText.value = '';
+    couponRequest.clearErrors();
+    checkoutForm.clearErrors('coupon_code');
+}
+
+// Editing the code after it was applied means it has to be checked again.
+watch(couponText, (text) => {
+    if (
+        appliedCoupon.value !== null &&
+        text.trim().toUpperCase() !== appliedCoupon.value.code
+    ) {
+        appliedCoupon.value = null;
+    }
+
+    couponRequest.clearErrors();
+});
 
 const mfaEnabled = computed(
     () => page.props.auth.user?.two_factor_enabled === true,
@@ -360,6 +468,7 @@ function openCheckout(plan: SubscriptionPlan): void {
 
     checkoutForm.clearErrors();
     checkoutForm.plan_public_id = plan.public_id;
+    resetCoupon();
     selectedPlan.value = plan;
 }
 
@@ -374,10 +483,18 @@ function submitCheckout(): void {
         return;
     }
 
+    checkoutForm.coupon_code = appliedCoupon.value?.code ?? '';
     checkoutForm.post(checkout.url(), {
         preserveScroll: true,
         onSuccess: () => {
             selectedPlan.value = null;
+        },
+        onError: (errors) => {
+            // The code stopped applying between the preview and the payment.
+            if (errors.coupon_code) {
+                appliedCoupon.value = null;
+                couponOpen.value = true;
+            }
         },
     });
 }
@@ -1217,6 +1334,26 @@ function submitCheckout(): void {
                                             >
                                                 {{ charge.public_id }}
                                             </p>
+                                            <p
+                                                v-if="charge.coupon"
+                                                class="mt-0.5 inline-flex items-center gap-1 text-xs text-[var(--ui-ink-3)]"
+                                            >
+                                                <TicketPercent
+                                                    class="size-3.5"
+                                                    aria-hidden="true"
+                                                />
+                                                Código
+                                                <span class="font-mono">{{
+                                                    charge.coupon.code
+                                                }}</span>
+                                                · −{{
+                                                    formatMoney(
+                                                        charge.coupon
+                                                            .discount_minor,
+                                                        charge.currency_code,
+                                                    )
+                                                }}
+                                            </p>
                                         </td>
                                         <td
                                             class="text-sm whitespace-nowrap text-zinc-600 dark:text-zinc-300"
@@ -1462,6 +1599,52 @@ function submitCheckout(): void {
                                             {{ selectedPlan.interval_label }}
                                         </dd>
                                     </div>
+                                    <template v-if="appliedCoupon">
+                                        <div
+                                            class="flex items-center justify-between gap-4 px-4 py-3"
+                                        >
+                                            <dt
+                                                class="text-sm text-zinc-500 dark:text-zinc-400"
+                                            >
+                                                Preço do plano
+                                            </dt>
+                                            <dd
+                                                class="numeric text-sm text-zinc-500 line-through dark:text-zinc-400"
+                                            >
+                                                {{
+                                                    formatMoney(
+                                                        appliedCoupon.list_amount_minor,
+                                                        selectedPlan.currency_code,
+                                                    )
+                                                }}
+                                            </dd>
+                                        </div>
+                                        <div
+                                            class="flex items-center justify-between gap-4 px-4 py-3"
+                                        >
+                                            <dt
+                                                class="text-sm text-zinc-500 dark:text-zinc-400"
+                                            >
+                                                Desconto
+                                                <span
+                                                    class="font-mono text-xs text-zinc-700 dark:text-zinc-300"
+                                                    >{{
+                                                        appliedCoupon.code
+                                                    }}</span
+                                                >
+                                            </dt>
+                                            <dd
+                                                class="numeric text-sm font-semibold text-emerald-700 dark:text-emerald-300"
+                                            >
+                                                −{{
+                                                    formatMoney(
+                                                        appliedCoupon.discount_minor,
+                                                        selectedPlan.currency_code,
+                                                    )
+                                                }}
+                                            </dd>
+                                        </div>
+                                    </template>
                                     <div
                                         class="flex items-center justify-between gap-4 px-4 py-3"
                                     >
@@ -1472,16 +1655,130 @@ function submitCheckout(): void {
                                         </dt>
                                         <dd
                                             class="numeric text-lg font-semibold text-zinc-950 dark:text-white"
+                                            aria-live="polite"
                                         >
                                             {{
                                                 formatMoney(
-                                                    selectedPlan.amount_minor,
+                                                    amountDue,
                                                     selectedPlan.currency_code,
                                                 )
                                             }}
                                         </dd>
                                     </div>
                                 </dl>
+
+                                <div class="mt-4">
+                                    <button
+                                        v-if="!couponOpen && !appliedCoupon"
+                                        type="button"
+                                        class="inline-flex items-center gap-1.5 rounded-md text-sm font-medium text-[var(--ui-ink-2)] focus-ring hover:text-[var(--ui-ink)]"
+                                        :disabled="checkoutForm.processing"
+                                        @click="couponOpen = true"
+                                    >
+                                        <TicketPercent
+                                            class="size-4"
+                                            aria-hidden="true"
+                                        />
+                                        Tem um código de desconto?
+                                    </button>
+
+                                    <div
+                                        v-else-if="appliedCoupon"
+                                        class="flex items-center justify-between gap-3 rounded-lg bg-[var(--ui-wash)] px-3 py-2 text-sm"
+                                        role="status"
+                                    >
+                                        <span
+                                            class="inline-flex min-w-0 items-center gap-2 text-[var(--ui-ink-2)]"
+                                        >
+                                            <CheckCircle2
+                                                class="size-4 shrink-0 text-emerald-600 dark:text-emerald-400"
+                                                aria-hidden="true"
+                                            />
+                                            <span class="truncate"
+                                                >Código
+                                                <strong
+                                                    class="font-mono font-semibold text-[var(--ui-ink)]"
+                                                    >{{
+                                                        appliedCoupon.code
+                                                    }}</strong
+                                                >
+                                                aplicado<template
+                                                    v-if="
+                                                        appliedCoupon.description
+                                                    "
+                                                >
+                                                    ·
+                                                    {{
+                                                        appliedCoupon.description
+                                                    }}</template
+                                                ></span
+                                            >
+                                        </span>
+                                        <AppButton
+                                            variant="quiet"
+                                            size="sm"
+                                            :disabled="checkoutForm.processing"
+                                            @click="removeCoupon"
+                                        >
+                                            Remover
+                                        </AppButton>
+                                    </div>
+
+                                    <FormField
+                                        v-else
+                                        for="payment-coupon-code"
+                                        label="Código de desconto"
+                                        :error="couponError ?? undefined"
+                                        error-id="payment-coupon-error"
+                                    >
+                                        <div class="flex gap-2">
+                                            <input
+                                                id="payment-coupon-code"
+                                                v-model="couponText"
+                                                type="text"
+                                                maxlength="32"
+                                                autocomplete="off"
+                                                autocapitalize="characters"
+                                                spellcheck="false"
+                                                class="form-input min-w-0 flex-1 font-mono uppercase"
+                                                :disabled="
+                                                    checkoutForm.processing ||
+                                                    couponRequest.processing
+                                                "
+                                                :aria-invalid="
+                                                    couponError
+                                                        ? 'true'
+                                                        : undefined
+                                                "
+                                                :aria-describedby="
+                                                    couponError
+                                                        ? 'payment-coupon-error'
+                                                        : undefined
+                                                "
+                                                @keydown.enter.prevent="
+                                                    applyCoupon
+                                                "
+                                            />
+                                            <AppButton
+                                                variant="outline"
+                                                :disabled="
+                                                    checkoutForm.processing ||
+                                                    couponRequest.processing
+                                                "
+                                                @click="applyCoupon"
+                                            >
+                                                <LoaderCircle
+                                                    v-if="
+                                                        couponRequest.processing
+                                                    "
+                                                    class="size-4 animate-spin"
+                                                    aria-hidden="true"
+                                                />
+                                                Aplicar
+                                            </AppButton>
+                                        </div>
+                                    </FormField>
+                                </div>
 
                                 <FormField
                                     class="mt-5"

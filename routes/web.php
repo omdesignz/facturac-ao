@@ -13,6 +13,7 @@ use App\Http\Controllers\AppleAppSiteAssociationController;
 use App\Http\Controllers\AssistantController;
 use App\Http\Controllers\BillingCheckoutController;
 use App\Http\Controllers\BillingController;
+use App\Http\Controllers\BillingCouponPreviewController;
 use App\Http\Controllers\CatalogueItemController;
 use App\Http\Controllers\CompanyBankDetailsController;
 use App\Http\Controllers\CompanyLogoController;
@@ -68,6 +69,7 @@ use App\Http\Controllers\SecurityController;
 use App\Http\Controllers\SessionController;
 use App\Http\Controllers\SocialAuthenticationController;
 use App\Http\Controllers\StockController;
+use App\Http\Controllers\SubscriptionCouponController;
 use App\Http\Controllers\SubscriptionPackageController;
 use App\Http\Controllers\SupportComplaintController;
 use App\Http\Controllers\SupportController;
@@ -182,6 +184,19 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::delete('/pacotes/{package}', [SubscriptionPackageController::class, 'destroy'])
             ->middleware('password.confirm')
             ->name('support.packages.destroy');
+
+        Route::get('/cupoes', [SubscriptionCouponController::class, 'index'])
+            ->middleware(['password.confirm', 'cache.headers:private;no_store'])
+            ->name('support.coupons.index');
+        Route::post('/cupoes', [SubscriptionCouponController::class, 'store'])
+            ->middleware('password.confirm')
+            ->name('support.coupons.store');
+        Route::put('/cupoes/{coupon}', [SubscriptionCouponController::class, 'update'])
+            ->middleware('password.confirm')
+            ->name('support.coupons.update');
+        Route::delete('/cupoes/{coupon}', [SubscriptionCouponController::class, 'destroy'])
+            ->middleware('password.confirm')
+            ->name('support.coupons.destroy');
     });
 
     Route::post('/termos/aceitar', [TermsAcceptanceController::class, 'store'])
@@ -263,6 +278,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::post('/settings/billing/checkout', BillingCheckoutController::class)
             ->middleware(['mfa', 'password.confirm', 'throttle:6,1'])
             ->name('billing.checkout');
+        Route::post('/settings/billing/coupon', BillingCouponPreviewController::class)
+            ->middleware('throttle:10,1')
+            ->name('billing.coupon.preview');
         Route::post('/settings/billing/payments/{payment}/resume', HostedPaymentResumeController::class)
             ->middleware(['mfa', 'password.confirm', 'throttle:6,1'])
             ->name('billing.payments.resume');

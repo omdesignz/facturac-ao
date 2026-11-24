@@ -26,6 +26,7 @@ import {
     Sparkles,
     Store,
     Tags,
+    TicketPercent,
     Truck,
     UserCog,
     Users,
@@ -54,6 +55,7 @@ import { account as accountSettings, security } from '@/routes/settings';
 import { index as stockIndex } from '@/routes/stock';
 import { index as supportIndex } from '@/routes/support';
 import { index as supportComplaints } from '@/routes/support/complaints';
+import { index as supportCoupons } from '@/routes/support/coupons';
 import { index as supportPackages } from '@/routes/support/packages';
 import { edit as supportSettings } from '@/routes/support/settings';
 import { index as transactionReports } from '@/routes/transaction-reports';
@@ -316,6 +318,12 @@ const internalGroup: NavigationGroup = {
             href: supportPackages.url(),
             match: '/support/pacotes',
             icon: Layers,
+        },
+        {
+            name: 'Códigos de desconto',
+            href: supportCoupons.url(),
+            match: '/support/cupoes',
+            icon: TicketPercent,
         },
         {
             name: 'Definições',
