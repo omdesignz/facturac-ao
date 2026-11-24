@@ -389,3 +389,12 @@ test('the homepage opens on a situation and answers each one beside its own line
     expect(strpos($page, 'id="momentos"'))->toBeLessThan(strpos($page, 'id="prazo"'));
     expect(strpos($page, 'id="prazo"'))->toBeLessThan(strpos($page, 'id="precos"'));
 });
+
+test('the certification line names the certificate and version but not its issue date', function () {
+    $page = (string) file_get_contents(resource_path('js/pages/Landing.vue'));
+
+    expect($page)->toContain("number: 'FE/419/AGT/2026'")
+        ->toContain("version: '1.1.0'")
+        ->not->toContain('28/10/2026')
+        ->not->toContain('issuedOn');
+});

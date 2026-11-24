@@ -452,13 +452,13 @@ const included: { group: string; items: string[] }[] = [
 ];
 
 /**
- * The AGT certificate, quoted exactly as issued (certificate of 28/10/2026 for
- * facturac.ao version 1.1.0). Nothing here goes beyond what it states.
+ * The AGT certificate, quoted exactly as issued for facturac.ao version 1.1.0.
+ * Nothing here goes beyond what it states; the issue date is left out because
+ * it tells a buyer nothing.
  */
 const certification = {
     number: 'FE/419/AGT/2026',
     version: '1.1.0',
-    issuedOn: '28/10/2026',
 };
 
 /** Moving over is a real sequence, so it is the one place numbers are used. */
@@ -716,8 +716,7 @@ const questions: { question: string; answer: string }[] = [
                 <h2 class="font-semibold text-brand-950 dark:text-white">
                     Certificado da AGT n.º
                     <span class="numeric">{{ certification.number }}</span
-                    >, de {{ certification.issuedOn }}, para a versão
-                    {{ certification.version }}.
+                    >, para a versão {{ certification.version }}.
                 </h2>
                 <p>Imagens da aplicação com dados de demonstração.</p>
             </section>
