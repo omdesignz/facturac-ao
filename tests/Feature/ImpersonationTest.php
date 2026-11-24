@@ -6,9 +6,13 @@ use App\Models\FiscalDocument;
 use App\Models\ImpersonationSession;
 use App\Models\LegalEntity;
 use App\Models\RecurringInvoice;
+use App\Models\SubscriptionCoupon;
+use App\Models\SubscriptionCouponRedemption;
+use App\Models\SubscriptionPlan;
 use App\Models\TransportDocument;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceSubscription;
 use App\Notifications\AccountAccessedBySupport;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
@@ -372,6 +376,23 @@ test('irreversible actions are refused and the attempt is recorded', function ()
         ->sole();
 
     expect($activity->properties['route'])->toBe('billing.checkout');
+});
+
+test('support cannot turn a plan on for free as the customer', function () {
+    startSession();
+    $plan = SubscriptionPlan::factory()->create();
+    SubscriptionCoupon::factory()->freeDays(30)->create(['code' => 'MES-GRATIS']);
+
+    // Even with a password confirmation in the session, the route is refused
+    // before it is reached.
+    $this->withSession(['auth.password_confirmed_at' => time()])
+        ->post(route('billing.coupon.redeem'), ['plan_public_id' => $plan->public_id, 'coupon_code' => 'MES-GRATIS'])
+        ->assertRedirect()
+        ->assertSessionHas('error');
+
+    expect(ImpersonationSession::query()->sole()->blocked_count)->toBe(1)
+        ->and(WorkspaceSubscription::query()->doesntExist())->toBeTrue()
+        ->and(SubscriptionCouponRedemption::query()->doesntExist())->toBeTrue();
 });
 
 test('the customer security controls cannot be touched', function () {
