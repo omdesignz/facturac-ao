@@ -2,11 +2,14 @@
 
 namespace App\Actions;
 
+use App\Billing\SubscriptionCouponPricer;
 use App\Billing\WiPay\WiPayConfiguration;
 use App\BillingPaymentEventType;
 use App\EmisPaymentReferenceStatus;
+use App\Exceptions\BillingActionRefused;
 use App\Models\Payment;
 use App\Models\SubscriptionCharge;
+use App\Models\SubscriptionCoupon;
 use App\Models\SubscriptionPlan;
 use App\Models\User;
 use App\Models\Workspace;
@@ -24,10 +27,18 @@ final readonly class StartWiPaySubscriptionCheckout
     public function __construct(
         private WiPayConfiguration $configuration,
         private CreateHostedPayment $createPayment,
+        private SubscriptionCouponPricer $couponPricer,
     ) {}
 
-    public function execute(Workspace $workspace, SubscriptionPlan $plan, User $actor, string $customer): Payment
+    /**
+     * @param  string|null  $couponCode  A discount code the customer typed; the charge is created at the discounted amount.
+     *
+     * @throws BillingActionRefused when the discount code does not apply.
+     */
+    public function execute(Workspace $workspace, SubscriptionPlan $plan, User $actor, string $customer, ?string $couponCode = null): Payment
     {
+        $couponCode = $couponCode === null || trim($couponCode) === '' ? null : SubscriptionCoupon::normaliseCode($couponCode);
+
         $this->configuration->assertAvailable();
 
         if (! $actor->can('update', $workspace) || ! $plan->is_active || $plan->currency_code !== 'AOA'
@@ -40,9 +51,9 @@ final readonly class StartWiPaySubscriptionCheckout
             throw new DomainException('Os pagamentos de teste não podem activar assinaturas em produção.');
         }
 
-        $payment = DB::transaction(function () use ($workspace, $plan, $actor, $customer): Payment {
+        $payment = DB::transaction(function () use ($workspace, $plan, $actor, $customer, $couponCode): Payment {
             Workspace::query()->whereKey($workspace->id)->lockForUpdate()->firstOrFail();
-            $existing = SubscriptionCharge::query()->with(['hostedPayment', 'paymentReference'])
+            $existing = SubscriptionCharge::query()->with(['hostedPayment', 'paymentReference', 'couponRedemption.coupon'])
                 ->where('workspace_id', $workspace->id)->where('active_checkout_key', (string) $workspace->id)
                 ->lockForUpdate()->first();
 
@@ -59,9 +70,18 @@ final readonly class StartWiPaySubscriptionCheckout
                     throw new DomainException('Conclua ou verifique o pagamento pendente antes de escolher outro plano.');
                 }
 
+                if ($couponCode !== null && $existing->couponRedemption?->coupon->code !== $couponCode) {
+                    throw new DomainException('Conclua ou verifique o pagamento pendente antes de usar um código de desconto.');
+                }
+
                 return $existing->hostedPayment;
             }
 
+            $quote = $couponCode === null ? null : $this->couponPricer->quote($workspace, $plan, $couponCode, lockForUpdate: true);
+
+            if ($quote?->isFree() === true) {
+                throw BillingActionRefused::because('Este código dá tempo grátis e não precisa de pagamento.');
+            }
             $startsAt = CarbonImmutable::now('Africa/Luanda');
             $charge = SubscriptionCharge::query()->create([
                 'workspace_id' => $workspace->id,
@@ -69,7 +89,7 @@ final readonly class StartWiPaySubscriptionCheckout
                 'created_by_user_id' => $actor->id,
                 'checkout_token' => (string) Str::ulid(),
                 'active_checkout_key' => (string) $workspace->id,
-                'amount_minor' => $plan->amount_minor,
+                'amount_minor' => $quote?->amountMinor() ?? $plan->amount_minor,
                 'currency_code' => $plan->currency_code,
                 'provider_fee_basis_points' => 0,
                 'estimated_provider_fee_minor' => 0,
@@ -78,6 +98,15 @@ final readonly class StartWiPaySubscriptionCheckout
                 'period_ends_at' => $plan->interval->advance($startsAt),
                 'due_at' => $startsAt->addMinutes(max(5, (int) config('billing.wipay.review_after_minutes'))),
             ]);
+
+            if ($quote !== null) {
+                $charge->couponRedemption()->create([
+                    'subscription_coupon_id' => $quote->coupon->id,
+                    'workspace_id' => $workspace->id,
+                    'list_amount_minor' => $quote->listAmountMinor,
+                    'discount_minor' => $quote->discountMinor,
+                ]);
+            }
 
             return $charge->hostedPayment()->create([
                 'workspace_id' => $workspace->id,

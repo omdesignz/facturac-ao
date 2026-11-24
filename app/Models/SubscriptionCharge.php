@@ -99,6 +99,12 @@ class SubscriptionCharge extends Model
         return $this->hasOne(EmisPaymentReference::class);
     }
 
+    /** @return HasOne<SubscriptionCouponRedemption, $this> */
+    public function couponRedemption(): HasOne
+    {
+        return $this->hasOne(SubscriptionCouponRedemption::class);
+    }
+
     /** @return MorphOne<Payment, $this> */
     public function hostedPayment(): MorphOne
     {

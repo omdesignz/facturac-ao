@@ -28,6 +28,7 @@ class StartSubscriptionCheckoutRequest extends FormRequest
                     ->where('is_active', true),
             ],
             'customer_phone' => ['required', 'string', 'regex:/\A9\d{8}\z/'],
+            'coupon_code' => ['nullable', 'string', 'max:32', 'regex:'.PreviewSubscriptionCouponRequest::CODE_PATTERN],
         ];
     }
 
@@ -37,6 +38,8 @@ class StartSubscriptionCheckoutRequest extends FormRequest
         return [
             'customer_phone.required' => 'Indique o telemóvel para o pagamento.',
             'customer_phone.regex' => 'Use nove dígitos, começando por 9, sem o indicativo +244.',
+            'coupon_code.regex' => 'Este código não existe ou já não está disponível.',
+            'coupon_code.max' => 'Este código não existe ou já não está disponível.',
         ];
     }
 }

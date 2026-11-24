@@ -6,7 +6,14 @@ import {
     TransitionChild,
     TransitionRoot,
 } from '@headlessui/vue';
-import { Head, Link, useForm, usePage, usePoll } from '@inertiajs/vue3';
+import {
+    Head,
+    Link,
+    useForm,
+    useHttp,
+    usePage,
+    usePoll,
+} from '@inertiajs/vue3';
 import {
     BadgeCheck,
     Banknote,
@@ -21,6 +28,7 @@ import {
     ReceiptText,
     RefreshCw,
     ShieldCheck,
+    TicketPercent,
     TriangleAlert,
     X,
 } from '@lucide/vue';
@@ -43,6 +51,10 @@ import {
 } from '@/lib/packages';
 import { currencyLabel } from '@/lib/pos-ui';
 import { checkout } from '@/routes/billing';
+import {
+    preview as previewCoupon,
+    redeem as redeemCoupon,
+} from '@/routes/billing/coupon';
 import { resume } from '@/routes/billing/payments';
 import { security } from '@/routes/settings';
 
@@ -113,6 +125,11 @@ interface SubscriptionCharge {
     created_at: string | null;
     paid_at: string | null;
     plan_name: string;
+    coupon: {
+        code: string;
+        list_amount_minor: number;
+        discount_minor: number;
+    } | null;
     reference: PaymentReference | null;
     payment: HostedPayment | null;
 }
@@ -151,8 +168,111 @@ const props = defineProps<{
 
 const page = usePage();
 const selectedPlan = ref<SubscriptionPlan | null>(null);
-const checkoutForm = useForm({ plan_public_id: '', customer_phone: '' });
+const checkoutForm = useForm({
+    plan_public_id: '',
+    customer_phone: '',
+    coupon_code: '',
+});
 const resumeForm = useForm({});
+
+/** What the plan costs with a discount code, as the server priced it. */
+interface CouponQuote {
+    code: string;
+    description: string | null;
+    list_amount_minor: number;
+    discount_minor: number;
+    amount_minor: number;
+    /** Days of the plan for free, with no payment; 0 for money off. */
+    free_days: number;
+}
+
+const couponOpen = ref(false);
+const couponText = ref('');
+const appliedCoupon = ref<CouponQuote | null>(null);
+const couponRequest = useHttp<
+    { plan_public_id: string; coupon_code: string },
+    CouponQuote
+>(previewCoupon(), { plan_public_id: '', coupon_code: '' });
+const couponError = computed(
+    () =>
+        couponRequest.errors.coupon_code ??
+        checkoutForm.errors.coupon_code ??
+        null,
+);
+
+/** The applied code gives days for free: nothing goes to WiPay. */
+const freeDays = computed(() => appliedCoupon.value?.free_days ?? 0);
+
+function daysLabel(days: number): string {
+    return days === 1 ? '1 dia' : `${days} dias`;
+}
+
+/** The figure the customer pays: the plan's price, less any applied code. */
+const amountDue = computed(
+    () =>
+        appliedCoupon.value?.amount_minor ??
+        selectedPlan.value?.amount_minor ??
+        0,
+);
+
+function resetCoupon(): void {
+    couponOpen.value = false;
+    couponText.value = '';
+    appliedCoupon.value = null;
+    couponRequest.clearErrors();
+    checkoutForm.clearErrors('coupon_code');
+}
+
+async function applyCoupon(): Promise<void> {
+    if (selectedPlan.value === null || couponRequest.processing) {
+        return;
+    }
+
+    checkoutForm.clearErrors('coupon_code');
+    appliedCoupon.value = null;
+
+    if (couponText.value.trim() === '') {
+        couponRequest.setError('coupon_code', 'Escreva o código de desconto.');
+
+        return;
+    }
+
+    couponRequest.plan_public_id = selectedPlan.value.public_id;
+    couponRequest.coupon_code = couponText.value.trim();
+
+    try {
+        const quote = await couponRequest.submit();
+
+        // A refusal answers 422: the reason is in couponRequest.errors.
+        if (quote) {
+            appliedCoupon.value = quote;
+        }
+    } catch {
+        couponRequest.setError(
+            'coupon_code',
+            'Não foi possível verificar o código. Aguarde um momento e tente outra vez.',
+        );
+    }
+}
+
+function removeCoupon(): void {
+    appliedCoupon.value = null;
+    couponText.value = '';
+    couponRequest.clearErrors();
+    checkoutForm.clearErrors('coupon_code');
+}
+
+// Editing the code after it was applied means it has to be checked again.
+watch(couponText, (text) => {
+    if (
+        appliedCoupon.value !== null &&
+        text.trim().toUpperCase() !== appliedCoupon.value.code
+    ) {
+        appliedCoupon.value = null;
+    }
+
+    couponRequest.clearErrors();
+});
 
 const mfaEnabled = computed(
     () => page.props.auth.user?.two_factor_enabled === true,
@@ -360,6 +480,7 @@ function openCheckout(plan: SubscriptionPlan): void {
 
     checkoutForm.clearErrors();
     checkoutForm.plan_public_id = plan.public_id;
+    resetCoupon();
     selectedPlan.value = plan;
 }
 
@@ -374,12 +495,23 @@ function submitCheckout(): void {
         return;
     }
 
-    checkoutForm.post(checkout.url(), {
-        preserveScroll: true,
-        onSuccess: () => {
-            selectedPlan.value = null;
+    checkoutForm.coupon_code = appliedCoupon.value?.code ?? '';
+    checkoutForm.post(
+        freeDays.value > 0 ? redeemCoupon.url() : checkout.url(),
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                selectedPlan.value = null;
+            },
+            onError: (errors) => {
+                // The code stopped applying between the preview and the payment.
+                if (errors.coupon_code) {
+                    appliedCoupon.value = null;
+                    couponOpen.value = true;
+                }
+            },
         },
-    });
+    );
 }
 </script>
 
@@ -1217,6 +1349,26 @@ function submitCheckout(): void {
                                             >
                                                 {{ charge.public_id }}
                                             </p>
+                                            <p
+                                                v-if="charge.coupon"
+                                                class="mt-0.5 inline-flex items-center gap-1 text-xs text-[var(--ui-ink-3)]"
+                                            >
+                                                <TicketPercent
+                                                    class="size-3.5"
+                                                    aria-hidden="true"
+                                                />
+                                                Código
+                                                <span class="font-mono">{{
+                                                    charge.coupon.code
+                                                }}</span>
+                                                · −{{
+                                                    formatMoney(
+                                                        charge.coupon
+                                                            .discount_minor,
+                                                        charge.currency_code,
+                                                    )
+                                                }}
+                                            </p>
                                         </td>
                                         <td
                                             class="text-sm whitespace-nowrap text-zinc-600 dark:text-zinc-300"
@@ -1237,6 +1389,13 @@ function submitCheckout(): void {
                                                 WiPay ·
                                                 {{ charge.payment.public_id }}
                                             </span>
+                                            <span
+                                                v-else-if="
+                                                    charge.coupon &&
+                                                    charge.amount_minor === 0
+                                                "
+                                                >Grátis com código</span
+                                            >
                                             <span v-else>—</span>
                                         </td>
                                         <td
@@ -1417,13 +1576,23 @@ function submitCheckout(): void {
                                     as="h2"
                                     class="mt-5 pr-10 text-lg font-semibold text-zinc-950 dark:text-white"
                                 >
-                                    Continuar para a WiPay
+                                    {{
+                                        freeDays > 0
+                                            ? 'Activar tempo grátis'
+                                            : 'Continuar para a WiPay'
+                                    }}
                                 </DialogTitle>
                                 <p
                                     class="mt-2 text-sm/6 text-zinc-500 dark:text-zinc-400"
                                 >
-                                    Confirme os dados antes de criar uma
-                                    instrução de pagamento para o plano
+                                    <template v-if="freeDays > 0"
+                                        >Confirme antes de activar sem pagamento
+                                        o plano</template
+                                    ><template v-else
+                                        >Confirme os dados antes de criar uma
+                                        instrução de pagamento para o
+                                        plano</template
+                                    >
                                     <strong
                                         class="font-semibold text-zinc-900 dark:text-white"
                                         >{{ selectedPlan?.name }}</strong
@@ -1459,9 +1628,63 @@ function submitCheckout(): void {
                                         <dd
                                             class="text-sm font-semibold text-zinc-900 dark:text-white"
                                         >
-                                            {{ selectedPlan.interval_label }}
+                                            {{
+                                                freeDays > 0
+                                                    ? `${daysLabel(freeDays)} grátis`
+                                                    : selectedPlan.interval_label
+                                            }}
                                         </dd>
                                     </div>
+                                    <template v-if="appliedCoupon">
+                                        <div
+                                            class="flex items-center justify-between gap-4 px-4 py-3"
+                                        >
+                                            <dt
+                                                class="text-sm text-zinc-500 dark:text-zinc-400"
+                                            >
+                                                Preço do plano
+                                            </dt>
+                                            <dd
+                                                class="numeric text-sm text-zinc-500 line-through dark:text-zinc-400"
+                                            >
+                                                {{
+                                                    formatMoney(
+                                                        appliedCoupon.list_amount_minor,
+                                                        selectedPlan.currency_code,
+                                                    )
+                                                }}
+                                            </dd>
+                                        </div>
+                                        <div
+                                            class="flex items-center justify-between gap-4 px-4 py-3"
+                                        >
+                                            <dt
+                                                class="text-sm text-zinc-500 dark:text-zinc-400"
+                                            >
+                                                {{
+                                                    freeDays > 0
+                                                        ? 'Tempo grátis'
+                                                        : 'Desconto'
+                                                }}
+                                                <span
+                                                    class="font-mono text-xs text-zinc-700 dark:text-zinc-300"
+                                                    >{{
+                                                        appliedCoupon.code
+                                                    }}</span
+                                                >
+                                            </dt>
+                                            <dd
+                                                class="numeric text-sm font-semibold text-emerald-700 dark:text-emerald-300"
+                                            >
+                                                −{{
+                                                    formatMoney(
+                                                        appliedCoupon.discount_minor,
+                                                        selectedPlan.currency_code,
+                                                    )
+                                                }}
+                                            </dd>
+                                        </div>
+                                    </template>
                                     <div
                                         class="flex items-center justify-between gap-4 px-4 py-3"
                                     >
@@ -1472,10 +1695,11 @@ function submitCheckout(): void {
                                         </dt>
                                         <dd
                                             class="numeric text-lg font-semibold text-zinc-950 dark:text-white"
+                                            aria-live="polite"
                                         >
                                             {{
                                                 formatMoney(
-                                                    selectedPlan.amount_minor,
+                                                    amountDue,
                                                     selectedPlan.currency_code,
                                                 )
                                             }}
@@ -1483,7 +1707,121 @@ function submitCheckout(): void {
                                     </div>
                                 </dl>
 
+                                <div class="mt-4">
+                                    <button
+                                        v-if="!couponOpen && !appliedCoupon"
+                                        type="button"
+                                        class="inline-flex items-center gap-1.5 rounded-md text-sm font-medium text-[var(--ui-ink-2)] focus-ring hover:text-[var(--ui-ink)]"
+                                        :disabled="checkoutForm.processing"
+                                        @click="couponOpen = true"
+                                    >
+                                        <TicketPercent
+                                            class="size-4"
+                                            aria-hidden="true"
+                                        />
+                                        Tem um código de desconto?
+                                    </button>
+
+                                    <div
+                                        v-else-if="appliedCoupon"
+                                        class="flex items-center justify-between gap-3 rounded-lg bg-[var(--ui-wash)] px-3 py-2 text-sm"
+                                        role="status"
+                                    >
+                                        <span
+                                            class="inline-flex min-w-0 items-center gap-2 text-[var(--ui-ink-2)]"
+                                        >
+                                            <CheckCircle2
+                                                class="size-4 shrink-0 text-emerald-600 dark:text-emerald-400"
+                                                aria-hidden="true"
+                                            />
+                                            <span class="truncate"
+                                                >Código
+                                                <strong
+                                                    class="font-mono font-semibold text-[var(--ui-ink)]"
+                                                    >{{
+                                                        appliedCoupon.code
+                                                    }}</strong
+                                                >
+                                                aplicado<template
+                                                    v-if="
+                                                        appliedCoupon.description
+                                                    "
+                                                >
+                                                    ·
+                                                    {{
+                                                        appliedCoupon.description
+                                                    }}</template
+                                                ></span
+                                            >
+                                        </span>
+                                        <AppButton
+                                            variant="quiet"
+                                            size="sm"
+                                            :disabled="checkoutForm.processing"
+                                            @click="removeCoupon"
+                                        >
+                                            Remover
+                                        </AppButton>
+                                    </div>
+
+                                    <FormField
+                                        v-else
+                                        for="payment-coupon-code"
+                                        label="Código de desconto"
+                                        :error="couponError ?? undefined"
+                                        error-id="payment-coupon-error"
+                                    >
+                                        <div class="flex gap-2">
+                                            <input
+                                                id="payment-coupon-code"
+                                                v-model="couponText"
+                                                type="text"
+                                                maxlength="32"
+                                                autocomplete="off"
+                                                autocapitalize="characters"
+                                                spellcheck="false"
+                                                class="form-input min-w-0 flex-1 font-mono uppercase"
+                                                :disabled="
+                                                    checkoutForm.processing ||
+                                                    couponRequest.processing
+                                                "
+                                                :aria-invalid="
+                                                    couponError
+                                                        ? 'true'
+                                                        : undefined
+                                                "
+                                                :aria-describedby="
+                                                    couponError
+                                                        ? 'payment-coupon-error'
+                                                        : undefined
+                                                "
+                                                @keydown.enter.prevent="
+                                                    applyCoupon
+                                                "
+                                            />
+                                            <AppButton
+                                                variant="outline"
+                                                :disabled="
+                                                    checkoutForm.processing ||
+                                                    couponRequest.processing
+                                                "
+                                                @click="applyCoupon"
+                                            >
+                                                <LoaderCircle
+                                                    v-if="
+                                                        couponRequest.processing
+                                                    "
+                                                    class="size-4 animate-spin"
+                                                    aria-hidden="true"
+                                                />
+                                                Aplicar
+                                            </AppButton>
+                                        </div>
+                                    </FormField>
+                                </div>
+
                                 <FormField
+                                    v-if="freeDays === 0"
                                     class="mt-5"
                                     for="payment-customer-phone"
                                     label="Telemóvel do pagador"
@@ -1537,6 +1875,21 @@ function submitCheckout(): void {
                                 >
 
                                 <div
+                                    v-if="freeDays > 0"
+                                    class="mt-5 flex gap-3 rounded-xl bg-[var(--ui-wash)] p-3 text-xs/5 text-[var(--ui-ink-2)]"
+                                >
+                                    <CheckCircle2
+                                        class="mt-0.5 size-4 shrink-0 text-emerald-600 dark:text-emerald-400"
+                                        aria-hidden="true"
+                                    />
+                                    O plano fica activo já, sem pagamento,
+                                    durante {{ daysLabel(freeDays) }}. Se já tem
+                                    este plano activo, os dias somam-se ao
+                                    período actual. Para continuar depois,
+                                    renove aqui com a WiPay.
+                                </div>
+                                <div
+                                    v-else
                                     class="mt-5 flex gap-3 rounded-xl bg-amber-50 p-3 text-xs/5 text-amber-800 ring-1 ring-amber-600/15 dark:bg-amber-400/10 dark:text-amber-100 dark:ring-amber-400/20"
                                 >
                                     <CircleAlert
@@ -1581,12 +1934,21 @@ function submitCheckout(): void {
                                             class="size-4 animate-spin"
                                             aria-hidden="true"
                                         />
+                                        <TicketPercent
+                                            v-else-if="freeDays > 0"
+                                            class="size-4"
+                                            aria-hidden="true"
+                                        />
                                         <Landmark
                                             v-else
                                             class="size-4"
                                             aria-hidden="true"
                                         />
-                                        Continuar para a WiPay
+                                        {{
+                                            freeDays > 0
+                                                ? `Activar ${daysLabel(freeDays)} grátis`
+                                                : 'Continuar para a WiPay'
+                                        }}
                                     </AppButton>
                                 </div>
                             </DialogPanel>

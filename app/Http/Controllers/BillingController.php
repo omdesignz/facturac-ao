@@ -32,7 +32,7 @@ class BillingController extends Controller
             ->where('workspace_id', $workspace->id)
             ->first();
         $charges = SubscriptionCharge::query()
-            ->with(['plan', 'paymentReference', 'hostedPayment'])
+            ->with(['plan', 'paymentReference', 'hostedPayment', 'couponRedemption.coupon'])
             ->where('workspace_id', $workspace->id)
             ->latest('id')
             ->limit(20)
@@ -79,6 +79,11 @@ class BillingController extends Controller
                 'created_at' => $charge->created_at?->toIso8601String(),
                 'paid_at' => $charge->paid_at?->toIso8601String(),
                 'plan_name' => $charge->plan->name,
+                'coupon' => $charge->couponRedemption === null ? null : [
+                    'code' => $charge->couponRedemption->coupon->code,
+                    'list_amount_minor' => $charge->couponRedemption->list_amount_minor,
+                    'discount_minor' => $charge->couponRedemption->discount_minor,
+                ],
                 'payment' => $charge->hostedPayment === null ? null : $this->paymentProps($charge->hostedPayment, $configuration, $gatewayAvailable),
                 'reference' => $charge->paymentReference === null
                     ? null
