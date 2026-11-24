@@ -403,6 +403,104 @@ test('MFA protects final issuance even when the password was recently confirmed'
         ->and($company['series']->fresh()->next_number)->toBe(100);
 });
 
+test('the issue dialog asks for the password itself instead of sending the person away', function () {
+    $company = phaseFourState();
+    Queue::fake();
+    $payload = [
+        'revision' => $company['draft']->revision,
+        'series_public_id' => $company['series']->public_id,
+    ];
+
+    $this->actingAs($company['user'])
+        ->from(route('invoices.edit', $company['draft']))
+        ->post(route('invoices.issue', $company['draft']), $payload)
+        ->assertRedirect(route('invoices.edit', $company['draft']))
+        ->assertSessionHasErrors(['password' => 'Escreva a sua palavra-passe para emitir.']);
+
+    $this->post(route('invoices.issue', $company['draft']), [...$payload, 'password' => 'not-the-password'])
+        ->assertSessionHasErrors(['password' => 'A palavra-passe não está correcta.']);
+
+    expect($company['draft']->fresh()->status)->toBe(FiscalDocumentStatus::Draft)
+        ->and($company['series']->fresh()->next_number)->toBe(100)
+        ->and(session('auth.password_confirmed_at'))->toBeNull();
+
+    $this->post(route('invoices.issue', $company['draft']), [...$payload, 'password' => 'password'])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect(route('documents.index', ['documento' => $company['draft']->public_id]))
+        ->assertSessionHas('success');
+
+    expect($company['draft']->fresh()->status)->toBe(FiscalDocumentStatus::Issued)
+        ->and(session('auth.password_confirmed_at'))->toBeInt();
+});
+
+test('a password confirmed in the last three hours is not asked again, and an older one is', function () {
+    $company = phaseFourState();
+    Queue::fake();
+
+    $this->actingAs($company['user'])
+        ->withSession(['auth.password_confirmed_at' => time() - 10_801])
+        ->post(route('invoices.issue', $company['draft']), [
+            'revision' => $company['draft']->revision,
+            'series_public_id' => $company['series']->public_id,
+        ])
+        ->assertSessionHasErrors('password');
+
+    $this->withSession(['auth.password_confirmed_at' => time() - 60])
+        ->post(route('invoices.issue', $company['draft']), [
+            'revision' => $company['draft']->revision,
+            'series_public_id' => $company['series']->public_id,
+        ])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect(route('documents.index', ['documento' => $company['draft']->public_id]));
+});
+
+test('a new invoice can be issued from the composer before it is saved', function () {
+    $company = phaseFourState();
+
+    $this->actingAs($company['user'])
+        ->get(route('invoices.create'))
+        ->assertInertia(fn ($page) => $page
+            ->component('Invoices/Create')
+            ->where('permissions.issue', true)
+            ->where('guardrails.mfa_enabled', true)
+            ->where('guardrails.password_confirmed', false));
+
+    $this->withSession(phaseFourPasswordSession())
+        ->get(route('invoices.create'))
+        ->assertInertia(fn ($page) => $page->where('guardrails.password_confirmed', true));
+});
+
+test('when the owner waives two-step verification for issuing, issuing needs only the password', function () {
+    $company = phaseFourState();
+    Queue::fake();
+    $company['user']->forceFill([
+        'two_factor_secret' => null,
+        'two_factor_recovery_codes' => null,
+        'two_factor_confirmed_at' => null,
+    ])->save();
+    $company['draft']->workspace->forceFill(['requires_mfa_to_issue' => false])->save();
+
+    $this->actingAs($company['user'])
+        ->get(route('invoices.edit', $company['draft']))
+        ->assertInertia(fn ($page) => $page
+            ->where('guardrails.mfa_enabled', false)
+            ->where('guardrails.issuing_verified', true));
+
+    $this->post(route('invoices.issue', $company['draft']), [
+        'revision' => $company['draft']->revision,
+        'series_public_id' => $company['series']->public_id,
+        'password' => 'password',
+    ])->assertSessionHasNoErrors()
+        ->assertRedirect(route('documents.index', ['documento' => $company['draft']->public_id]));
+
+    expect($company['draft']->fresh()->status)->toBe(FiscalDocumentStatus::Issued);
+
+    // The waiver is for issuing only: other sensitive operations still ask.
+    $this->withSession(phaseFourPasswordSession())
+        ->put(route('agt.connection.update'), [])
+        ->assertRedirect(route('settings.security'));
+});
+
 test('series synchronization applies the AGT contract without ever rewinding the local cursor', function () {
     $company = phaseFourState();
     Http::preventStrayRequests();

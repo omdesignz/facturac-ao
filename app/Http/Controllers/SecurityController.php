@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Fiscal\IssuingVerification;
 use App\Http\ActiveSessions;
 use App\Models\WorkspaceMembership;
 use App\NotificationTopic;
+use App\WorkspaceRole;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -27,6 +29,11 @@ class SecurityController extends Controller
                 'enabled' => $user->two_factor_secret !== null,
                 'confirmed' => $user->hasEnabledTwoFactorAuthentication(),
                 'required_for_role' => $membership->role->requiresMultiFactorAuthentication(),
+            ],
+            // The company's choice, shown to everyone and changed only by the owner.
+            'issuingVerification' => [
+                'required' => IssuingVerification::requiredFor($request->attributes->get('currentWorkspace')),
+                'can_change' => $membership->role === WorkspaceRole::Owner,
             ],
             'passkeys' => $user->passkeys()
                 ->latest()

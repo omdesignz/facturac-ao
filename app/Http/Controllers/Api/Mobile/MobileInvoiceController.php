@@ -11,6 +11,7 @@ use App\Exceptions\BillingActionRefused;
 use App\Exceptions\FiscalFinalizationBlocked;
 use App\Exceptions\SubscriptionRequired;
 use App\Fiscal\Documents\MobileDocumentReceipt;
+use App\Fiscal\IssuingVerification;
 use App\Fiscal\SupportedTaxTreatment;
 use App\Http\Requests\PreviewMobileInvoiceRequest;
 use App\Http\Requests\StoreMobileInvoiceRequest;
@@ -53,7 +54,7 @@ class MobileInvoiceController
         $reason = match (true) {
             ! $canCreate => 'A sua função nesta empresa não permite criar facturas.',
             ! $subscription->allows($legalEntity->workspace_id, SubscriptionFeature::Invoicing) => 'O plano actual não inclui facturação. Veja a assinatura em facturac.ao.',
-            ! $user->hasEnabledTwoFactorAuthentication() => 'Para emitir, active a autenticação em dois passos em facturac.ao. Pode guardar rascunhos.',
+            ! IssuingVerification::satisfiedBy($user, $legalEntity->workspace_id) => 'Para emitir, active a autenticação em dois passos em facturac.ao. Pode guardar rascunhos.',
             ! $this->invoices->canBeNumbered($legalEntity) => 'Não há série de Factura disponível. Pode guardar rascunhos.',
             default => null,
         };
@@ -135,7 +136,7 @@ class MobileInvoiceController
             return $this->refusal('INVOICE_NOT_ALLOWED', 'A sua função nesta empresa não permite criar facturas.', Response::HTTP_FORBIDDEN);
         }
 
-        if ($issue && ! $user->hasEnabledTwoFactorAuthentication()) {
+        if ($issue && ! IssuingVerification::satisfiedBy($user, $legalEntity->workspace_id)) {
             return $this->refusal('TWO_FACTOR_REQUIRED_TO_ISSUE', 'Active a autenticação em dois passos em facturac.ao para emitir.', Response::HTTP_FORBIDDEN);
         }
 

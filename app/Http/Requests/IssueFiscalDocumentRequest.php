@@ -29,6 +29,12 @@ class IssueFiscalDocumentRequest extends FormRequest
     {
         return [
             'revision' => ['required', 'integer', 'min:1'],
+            'password' => [
+                Rule::requiredIf(! $this->passwordRecentlyConfirmed()),
+                'nullable',
+                'string',
+                'current_password:web',
+            ],
             'series_public_id' => [
                 'required',
                 'string',
@@ -49,5 +55,38 @@ class IssueFiscalDocumentRequest extends FormRequest
                 }),
             ],
         ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'password.required' => 'Escreva a sua palavra-passe para emitir.',
+            'password.current_password' => 'A palavra-passe não está correcta.',
+        ];
+    }
+
+    /**
+     * Whether the person confirmed their password within the usual window, the
+     * same test the password.confirm middleware applies.
+     */
+    public function passwordRecentlyConfirmed(): bool
+    {
+        $confirmedAt = (int) $this->session()->get('auth.password_confirmed_at', 0);
+
+        return time() - $confirmedAt < (int) config('auth.password_timeout', 10800);
+    }
+
+    /**
+     * A password typed here counts as a confirmation, so the next issue within
+     * the window does not ask again.
+     */
+    protected function passedValidation(): void
+    {
+        if ($this->filled('password')) {
+            $this->session()->put('auth.password_confirmed_at', time());
+        }
     }
 }

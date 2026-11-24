@@ -13,6 +13,7 @@ use App\Exceptions\FiscalFinalizationBlocked;
 use App\Exceptions\SubscriptionRequired;
 use App\Fiscal\Documents\MobileDocumentReceipt;
 use App\Fiscal\Documents\MobileQuotePresenter;
+use App\Fiscal\IssuingVerification;
 use App\Fiscal\Pos\PosSeriesResolver;
 use App\FiscalDocumentType;
 use App\Http\Requests\MobileListRequest;
@@ -185,7 +186,7 @@ class MobileQuoteController
             'expected_total_minor' => ['required', 'integer', 'min:0', 'max:999999999999999'],
         ], ['password.required' => 'Confirme a palavra-passe para emitir.']);
 
-        if (! $user->hasEnabledTwoFactorAuthentication()) {
+        if (! IssuingVerification::satisfiedBy($user, $legalEntity->workspace_id)) {
             return $this->refusal('TWO_FACTOR_REQUIRED_TO_ISSUE', 'Active a autenticação em dois passos em facturac.ao para emitir.', Response::HTTP_FORBIDDEN);
         }
 

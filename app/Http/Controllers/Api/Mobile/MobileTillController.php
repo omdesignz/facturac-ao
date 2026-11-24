@@ -14,6 +14,7 @@ use App\Fiscal\Calculation\CalculatedFiscalLine;
 use App\Fiscal\Calculation\FiscalCalculator;
 use App\Fiscal\Documents\CatalogueDocumentLines;
 use App\Fiscal\Documents\MobileDocumentReceipt;
+use App\Fiscal\IssuingVerification;
 use App\Fiscal\Pos\FinalConsumer;
 use App\Fiscal\Pos\MobileTillState;
 use App\Fiscal\Pos\PosPresenter;
@@ -61,7 +62,7 @@ class MobileTillController
         $legalEntity = $this->legalEntity($request);
         $user = $this->user($request);
 
-        if (! $user->hasEnabledTwoFactorAuthentication()) {
+        if (! IssuingVerification::satisfiedBy($user, $legalEntity->workspace_id)) {
             return $this->needsTwoFactor();
         }
 
@@ -130,7 +131,7 @@ class MobileTillController
         $user = $this->user($request);
         abort_unless($posSession->legal_entity_id === $legalEntity->id, 404);
 
-        if (! $user->hasEnabledTwoFactorAuthentication()) {
+        if (! IssuingVerification::satisfiedBy($user, $legalEntity->workspace_id)) {
             return $this->needsTwoFactor();
         }
 
@@ -157,7 +158,7 @@ class MobileTillController
         $user = $this->user($request);
         abort_unless($posSession->legal_entity_id === $legalEntity->id, 404);
 
-        if (! $user->hasEnabledTwoFactorAuthentication()) {
+        if (! IssuingVerification::satisfiedBy($user, $legalEntity->workspace_id)) {
             return $this->needsTwoFactor();
         }
 
@@ -182,7 +183,7 @@ class MobileTillController
         $user = $this->user($request);
         abort_unless($posSession->legal_entity_id === $legalEntity->id, 404);
 
-        if (! $user->hasEnabledTwoFactorAuthentication()) {
+        if (! IssuingVerification::satisfiedBy($user, $legalEntity->workspace_id)) {
             return $this->needsTwoFactor();
         }
 

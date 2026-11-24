@@ -124,6 +124,21 @@ test('without two-factor authentication the phone can only keep drafts', functio
     expect(FiscalDocument::query()->count())->toBe(0);
 });
 
+test('when the owner waives two-step verification for issuing, the phone issues with the password', function () {
+    $company = phoneInvoiceCompany();
+    $company['owner']->forceFill(['two_factor_confirmed_at' => null, 'two_factor_secret' => null])->save();
+    $company['legalEntity']->workspace->forceFill(['requires_mfa_to_issue' => false])->save();
+
+    $this->withToken($company['token'])->getJson(route('mobile.v1.invoices.setup'))
+        ->assertJsonPath('data.can_issue', true)
+        ->assertJsonPath('data.reason', null);
+
+    $this->withToken($company['token'])
+        ->postJson(route('mobile.v1.invoices.store'), phoneInvoicePayload($company))
+        ->assertCreated()
+        ->assertJsonPath('data.is_issued', true);
+});
+
 test('the preview works the figures out on the server and writes nothing', function () {
     $company = phoneInvoiceCompany();
 

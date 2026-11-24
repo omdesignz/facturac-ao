@@ -43,6 +43,7 @@ use App\Http\Controllers\HostedPaymentResumeController;
 use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\IntegrationContractController;
 use App\Http\Controllers\IntegrationSettingsController;
+use App\Http\Controllers\IssuingVerificationController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\LegalDocumentController;
 use App\Http\Controllers\NotificationController;
@@ -253,6 +254,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::get('/settings/security', SecurityController::class)
             ->middleware('password.confirm')
             ->name('settings.security');
+        Route::put('/settings/security/emissao', IssuingVerificationController::class)
+            ->middleware(['password.confirm', 'throttle:6,1'])
+            ->name('settings.issuing-verification.update');
         Route::get('/settings/billing', BillingController::class)
             ->middleware('cache.headers:private;no_store')
             ->name('billing.show');
@@ -391,7 +395,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::put('/guias/{transportDocument}', [TransportDocumentController::class, 'update'])
             ->name('transport-documents.update');
         Route::post('/guias/{transportDocument}/emitir', TransportDocumentIssueController::class)
-            ->middleware(['mfa', 'password.confirm', 'throttle:10,1'])
+            ->middleware(['mfa:issuing', 'password.confirm', 'throttle:10,1'])
             ->name('transport-documents.issue');
         Route::post('/guias/{transportDocument}/anular', TransportDocumentCancellationController::class)
             ->middleware(['mfa', 'password.confirm', 'throttle:10,1'])
@@ -419,8 +423,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             '/documents/invoices/{fiscalDocument}/enviar',
             FiscalDocumentDeliveryController::class,
         )->middleware('throttle:20,1')->name('invoices.send');
+        // The password is asked inside the issue dialog (IssueFiscalDocumentRequest)
+        // rather than on a separate page, so issuing never loses its place.
         Route::post('/documents/invoices/{fiscalDocument}/issue', FiscalDocumentIssueController::class)
-            ->middleware(['mfa', 'password.confirm', 'throttle:10,1'])
+            ->middleware(['mfa:issuing', 'throttle:10,1'])
             ->name('invoices.issue');
         // Ponto de venda. Opening a shift is the moment of password
         // confirmation; an open shift is then the standing authority to sell,
@@ -429,7 +435,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             ->middleware('cache.headers:private;no_store')
             ->name('pos.show');
         Route::post('/ponto-de-venda/turnos', [PosSessionController::class, 'store'])
-            ->middleware(['mfa', 'password.confirm'])
+            ->middleware(['mfa:issuing', 'password.confirm'])
             ->name('pos.sessions.store');
         Route::get('/ponto-de-venda/turnos', [PosSessionController::class, 'index'])
             ->middleware('cache.headers:private;no_store')
@@ -438,13 +444,13 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             ->middleware('cache.headers:private;no_store')
             ->name('pos.sessions.show');
         Route::post('/ponto-de-venda/turnos/{posSession}/fecho', PosSessionCloseController::class)
-            ->middleware('mfa')
+            ->middleware('mfa:issuing')
             ->name('pos.sessions.close');
         Route::post('/ponto-de-venda/turnos/{posSession}/movimentos', [PosCashMovementController::class, 'store'])
-            ->middleware('mfa')
+            ->middleware('mfa:issuing')
             ->name('pos.cash-movements.store');
         Route::post('/ponto-de-venda/turnos/{posSession}/vendas', [PosSaleController::class, 'store'])
-            ->middleware(['mfa', 'throttle:120,1'])
+            ->middleware(['mfa:issuing', 'throttle:120,1'])
             ->name('pos.sales.store');
         Route::get('/ponto-de-venda/vendas/{posSale}/talao', PosSaleReceiptController::class)
             ->middleware('cache.headers:private;no_store')

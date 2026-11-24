@@ -27,8 +27,10 @@ import PasskeyManager from '@/components/PasskeyManager.vue';
 import type { Passkey } from '@/components/PasskeyManager.vue';
 import SelectInput from '@/components/SelectInput.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
+import ToggleSwitch from '@/components/ToggleSwitch.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { confirmAction } from '@/lib/confirm';
+import { update as updateIssuingVerification } from '@/routes/settings/issuing-verification';
 import { update as updateNotifications } from '@/routes/settings/notifications';
 import {
     destroy as destroySession,
@@ -89,7 +91,45 @@ const props = defineProps<{
     };
     notificationTopics: NotificationTopicState[];
     sessions: ActiveSession[];
+    issuingVerification: {
+        required: boolean;
+        can_change: boolean;
+    };
 }>();
+
+const issuingVerificationForm = useForm({
+    requires_mfa_to_issue: props.issuingVerification.required,
+});
+
+/**
+ * The owner's switch for the whole company. Turning it off is the risky
+ * direction, so it says what changes before it is saved.
+ */
+async function setIssuingVerification(required: boolean): Promise<void> {
+    if (!required) {
+        const confirmed = await confirmAction({
+            title: 'Deixar de pedir a verificação em dois passos para emitir?',
+            message:
+                'Quem pode emitir nesta empresa passa a emitir só com a palavra-passe. Entrar na conta, a ligação à AGT, o plano e as integrações continuam a pedir a verificação.',
+            confirmLabel: 'Deixar de pedir',
+        });
+
+        if (!confirmed) {
+            issuingVerificationForm.requires_mfa_to_issue = true;
+
+            return;
+        }
+    }
+
+    issuingVerificationForm.requires_mfa_to_issue = required;
+    issuingVerificationForm.put(updateIssuingVerification.url(), {
+        preserveScroll: true,
+        onError: () => {
+            issuingVerificationForm.requires_mfa_to_issue =
+                props.issuingVerification.required;
+        },
+    });
+}
 
 const workSessionForm = useForm({
     work_session_minutes: props.workSessionPreference.minutes,
@@ -819,6 +859,49 @@ watch(
                                 </button>
                             </Form>
                         </div>
+                    </div>
+                </section>
+
+                <section class="rounded-2xl surface p-6">
+                    <h2 class="font-semibold text-zinc-950 dark:text-white">
+                        Para emitir documentos
+                    </h2>
+                    <p
+                        class="mt-1 max-w-xl text-sm/6 text-zinc-500 dark:text-zinc-400"
+                    >
+                        Vale para toda a empresa: facturas, recibos, notas,
+                        guias e vendas no ponto de venda, na web e no telemóvel.
+                        A palavra-passe continua a ser pedida antes de emitir.
+                    </p>
+                    <div class="mt-5">
+                        <ToggleSwitch
+                            v-if="issuingVerification.can_change"
+                            :model-value="
+                                issuingVerificationForm.requires_mfa_to_issue
+                            "
+                            :disabled="issuingVerificationForm.processing"
+                            @change="setIssuingVerification"
+                        >
+                            <template #label
+                                >Pedir a verificação em dois passos</template
+                            >
+                            <template #description
+                                >Só o dono da empresa muda esta opção.</template
+                            >
+                        </ToggleSwitch>
+                        <p v-else class="text-sm/6 text-[var(--ui-ink-2)]">
+                            {{
+                                issuingVerification.required
+                                    ? 'Esta empresa pede a verificação em dois passos para emitir. Só o dono a pode dispensar.'
+                                    : 'O dono da empresa dispensou a verificação em dois passos para emitir.'
+                            }}
+                        </p>
+                        <FormError
+                            :message="
+                                issuingVerificationForm.errors
+                                    .requires_mfa_to_issue
+                            "
+                        />
                     </div>
                 </section>
 

@@ -267,6 +267,12 @@ const props = defineProps<{
         schema_version: string;
         number_assigned: boolean;
         mfa_enabled: boolean;
+        /** Two-step verification is on, or the owner waived it for issuing. */
+        issuing_verified: boolean;
+        /** The owner may waive two-step verification for issuing, in Segurança. */
+        can_waive_mfa: boolean;
+        /** Whether the password was confirmed recently; if not, the issue dialog asks for it. */
+        password_confirmed: boolean;
     };
 }>();
 
@@ -897,7 +903,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', saveOnShortcut));
 const issueForm = useForm({
     revision: props.document.revision,
     series_public_id: '',
+    password: '',
 });
+
+/** Set when Emitir had to save first; the confirmation opens once the save lands. */
+const issueAfterSave = ref(false);
 
 const hasErrors = computed(() => Object.keys(form.errors).length > 0);
 const selectedCustomer = computed(() =>
@@ -1014,31 +1024,39 @@ const canOpenIssue = computed(
     () =>
         props.document.public_id !== null &&
         props.permissions.issue &&
-        props.guardrails.mfa_enabled &&
+        props.guardrails.issuing_verified &&
         compatibleSeries.value.length > 0 &&
         issueForm.series_public_id !== '' &&
         !form.isDirty &&
         !form.processing,
 );
+/**
+ * Emitir is available before the draft is saved: pressing it saves first and
+ * then asks to confirm, so issuing is never a two-trip errand.
+ */
+const canStartIssue = computed(
+    () =>
+        props.permissions.issue &&
+        props.guardrails.issuing_verified &&
+        compatibleSeries.value.length > 0 &&
+        issueForm.series_public_id !== '' &&
+        props.establishments.length > 0 &&
+        !form.processing &&
+        !issueForm.processing,
+);
 const issueBlockReason = computed(() => {
-    if (props.document.public_id === null) {
-        return 'Guarde primeiro o rascunho.';
-    }
-
     if (!props.permissions.issue) {
         return 'O seu papel não permite emitir este documento.';
     }
 
-    if (!props.guardrails.mfa_enabled) {
-        return 'Active a autenticação multifactor para emitir.';
+    if (!props.guardrails.issuing_verified) {
+        return props.guardrails.can_waive_mfa
+            ? 'Active a verificação em dois passos para emitir, ou dispense-a para a empresa em Segurança.'
+            : 'Active a verificação em dois passos para emitir.';
     }
 
     if (compatibleSeries.value.length === 0) {
         return 'Não existe uma série AGT compatível com o local, tipo e ano.';
-    }
-
-    if (form.isDirty) {
-        return 'Guarde as alterações antes de emitir.';
     }
 
     return null;
@@ -1699,6 +1717,7 @@ function submit(): void {
     }
 
     const submitted = JSON.parse(JSON.stringify(form.data()));
+    let saved = false;
     recovery.beforeSave();
     form.transform((data) => ({
         ...data,
@@ -1759,11 +1778,22 @@ function submit(): void {
                     revision: props.document.revision,
                 });
                 recovery.saved();
+                saved = true;
             },
             onError: () => {
                 void showFirstProblem();
             },
-            onFinish: recovery.finished,
+            onFinish: () => {
+                recovery.finished();
+
+                // Only now is the form no longer processing, so the
+                // confirmation can open.
+                if (issueAfterSave.value && saved) {
+                    void nextTick(openIssueDialog);
+                }
+
+                issueAfterSave.value = false;
+            },
         },
     );
 }
@@ -1774,7 +1804,24 @@ function openIssueDialog(): void {
     }
 
     issueForm.clearErrors();
+    issueForm.password = '';
     issueDialogOpen.value = true;
+}
+
+/** Saves anything unsaved, then opens the confirmation. */
+function startIssue(): void {
+    if (!canStartIssue.value) {
+        return;
+    }
+
+    if (props.document.public_id === null || form.isDirty) {
+        issueAfterSave.value = true;
+        submit();
+
+        return;
+    }
+
+    openIssueDialog();
 }
 
 function closeIssueDialog(): void {
@@ -1796,6 +1843,7 @@ function confirmIssue(): void {
             issueDialogOpen.value = false;
             recovery.discard();
         },
+        onFinish: () => issueForm.reset('password'),
     });
 }
 </script>
@@ -4529,7 +4577,7 @@ function confirmIssue(): void {
                             </p>
 
                             <Link
-                                v-if="!guardrails.mfa_enabled"
+                                v-if="!guardrails.issuing_verified"
                                 :href="security.url()"
                                 class="inline-flex w-fit items-center gap-1.5 rounded text-xs font-semibold text-[var(--ui-gold-ink)] focus-ring hover:underline pointer-coarse:min-h-11"
                             >
@@ -4540,10 +4588,7 @@ function confirmIssue(): void {
                                 Configurar a verificação em dois passos
                             </Link>
                             <Link
-                                v-else-if="
-                                    document.public_id !== null &&
-                                    compatibleSeries.length === 0
-                                "
+                                v-else-if="compatibleSeries.length === 0"
                                 :href="agtConnection.url()"
                                 class="inline-flex w-fit items-center gap-1.5 rounded text-xs font-semibold text-[var(--ui-gold-ink)] focus-ring hover:underline"
                             >
@@ -4556,9 +4601,10 @@ function confirmIssue(): void {
 
                             <AppButton
                                 variant="gold"
-                                :disabled="!canOpenIssue"
+                                :disabled="!canStartIssue"
+                                :aria-busy="issueAfterSave && form.processing"
                                 class="w-full"
-                                @click="openIssueDialog"
+                                @click="startIssue"
                             >
                                 <Send class="size-4" aria-hidden="true" />
                                 Emitir e enviar à AGT
@@ -4757,6 +4803,39 @@ function confirmIssue(): void {
                                             Fica no histórico com o seu nome, a
                                             hora e a assinatura do documento.
                                         </p>
+
+                                        <FormField
+                                            v-if="
+                                                !guardrails.password_confirmed
+                                            "
+                                            label="A sua palavra-passe"
+                                            for="issue-password"
+                                            error-id="issue-password-error"
+                                            :error="issueForm.errors.password"
+                                            class="mt-4"
+                                        >
+                                            <input
+                                                id="issue-password"
+                                                v-model="issueForm.password"
+                                                type="password"
+                                                name="password"
+                                                autocomplete="current-password"
+                                                required
+                                                autofocus
+                                                class="block form-input"
+                                                :aria-invalid="
+                                                    Boolean(
+                                                        issueForm.errors
+                                                            .password,
+                                                    )
+                                                "
+                                                :aria-describedby="
+                                                    issueForm.errors.password
+                                                        ? 'issue-password-error'
+                                                        : undefined
+                                                "
+                                            />
+                                        </FormField>
 
                                         <div
                                             v-if="

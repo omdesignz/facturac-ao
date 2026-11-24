@@ -297,7 +297,7 @@ test('the pre-filled note saves and issues on the usual path, password included'
     $this->post(route('invoices.issue', $draft), [
         'revision' => $draft->revision,
         'series_public_id' => $company['noteSeries']->public_id,
-    ])->assertRedirect(route('password.confirm'));
+    ])->assertSessionHasErrors('password');
     expect($draft->fresh()->status)->toBe(FiscalDocumentStatus::Draft);
 
     $this->withSession(['auth.password_confirmed_at' => time()])

@@ -33,7 +33,7 @@ class FiscalDocumentIssueController extends Controller
         );
 
         try {
-            $submission = $issueFiscalDocument->execute(
+            $issueFiscalDocument->execute(
                 $fiscalDocument,
                 $user,
                 (string) $request->validated('series_public_id'),
@@ -43,8 +43,10 @@ class FiscalDocumentIssueController extends Controller
             return back()->with('error', $exception->getMessage());
         }
 
+        // Straight to the issued document, where sending it to the customer and
+        // the PDF are one click away; the AGT delivery carries on by itself.
         return redirect()
-            ->route('agt.submissions.index', ['submission' => $submission->public_id])
+            ->route('documents.index', ['documento' => $fiscalDocument->public_id])
             ->with('success', 'Factura emitida. A entrega à AGT prossegue em segundo plano.');
     }
 }

@@ -8,6 +8,7 @@ use App\Actions\RecurringRunRefused;
 use App\Billing\SubscriptionAccess;
 use App\Fiscal\Documents\MobileDocumentReceipt;
 use App\Fiscal\Documents\MobileRecurringPresenter;
+use App\Fiscal\IssuingVerification;
 use App\Models\Customer;
 use App\Models\LegalEntity;
 use App\Models\RecurringInvoice;
@@ -96,7 +97,7 @@ class MobileRecurringController
 
         // A run that issues files with the AGT, as issuing from the phone always does.
         if ($profile->auto_issue) {
-            if (! $user->hasEnabledTwoFactorAuthentication()) {
+            if (! IssuingVerification::satisfiedBy($user, $profile->workspace_id)) {
                 return $this->refusal('TWO_FACTOR_REQUIRED_TO_ISSUE', 'Active a autenticação em dois passos em facturac.ao para emitir.', Response::HTTP_FORBIDDEN);
             }
 

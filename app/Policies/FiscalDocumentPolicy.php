@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Fiscal\IssuingVerification;
 use App\Models\FiscalDocument;
 use App\Models\User;
 use App\Models\WorkspaceMembership;
@@ -53,7 +54,7 @@ class FiscalDocumentPolicy
     {
         return $fiscalDocument->isMutable()
             && $user->hasVerifiedEmail()
-            && $user->hasEnabledTwoFactorAuthentication()
+            && IssuingVerification::satisfiedBy($user, $fiscalDocument->workspace_id)
             && $this->canPrepareDocuments(WorkspaceMembership::query()
                 ->where('user_id', $user->id)
                 ->where('workspace_id', $fiscalDocument->workspace_id)

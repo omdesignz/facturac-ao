@@ -3,6 +3,7 @@
 namespace App\Fiscal\Pos;
 
 use App\Billing\SubscriptionAccess;
+use App\Fiscal\IssuingVerification;
 use App\Models\LegalEntity;
 use App\Models\PosRegister;
 use App\Models\PosSession;
@@ -46,7 +47,7 @@ final readonly class MobileTillState
         $reason = match (true) {
             ! Gate::allows('create', PosSession::class) => 'A sua função nesta empresa não permite vender.',
             ! $this->subscription->allows($legalEntity->workspace_id, SubscriptionFeature::Pos) => 'O plano actual não inclui o ponto de venda. Veja a assinatura em facturac.ao.',
-            ! $user->hasEnabledTwoFactorAuthentication() => 'Para vender, active a autenticação em dois passos em facturac.ao.',
+            ! IssuingVerification::satisfiedBy($user, $legalEntity->workspace_id) => 'Para vender, active a autenticação em dois passos em facturac.ao.',
             $registers->isEmpty() => 'Esta empresa ainda não tem caixas. Crie uma em facturac.ao.',
             default => null,
         };

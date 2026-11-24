@@ -4,6 +4,7 @@ namespace App\Fiscal\Documents;
 
 use App\Billing\SubscriptionAccess;
 use App\Fiscal\Agt\Support\CanonicalNumber;
+use App\Fiscal\IssuingVerification;
 use App\Fiscal\Pos\PosSeriesResolver;
 use App\FiscalDocumentType;
 use App\Models\Customer;
@@ -86,7 +87,7 @@ final readonly class MobileQuotePresenter
             $document->document_no !== null => null,
             Gate::denies('issue', $document) => 'A sua função nesta empresa não permite emitir facturas.',
             ! $this->subscription->allows($legalEntity->workspace_id, SubscriptionFeature::Invoicing) => 'O plano actual não inclui facturação. Gira o plano em facturac.ao.',
-            ! $user->hasEnabledTwoFactorAuthentication() => 'Para emitir, active a autenticação em dois passos em facturac.ao.',
+            ! IssuingVerification::satisfiedBy($user, $legalEntity->workspace_id) => 'Para emitir, active a autenticação em dois passos em facturac.ao.',
             ! $this->series->exists($legalEntity, $document->establishment, FiscalDocumentType::Invoice) => 'Não há série de Factura disponível.',
             default => null,
         };

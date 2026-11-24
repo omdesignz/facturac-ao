@@ -8,6 +8,7 @@ use App\Billing\SubscriptionAccess;
 use App\Exceptions\BillingActionRefused;
 use App\Exceptions\SubscriptionRequired;
 use App\Fiscal\Documents\MobileTransportDocumentPresenter;
+use App\Fiscal\IssuingVerification;
 use App\Http\Requests\MobileListRequest;
 use App\Http\Requests\PreviewMobileTransportDocumentRequest;
 use App\Http\Requests\StoreMobileTransportDocumentRequest;
@@ -49,7 +50,7 @@ class MobileTransportDocumentController
         $reason = match (true) {
             Gate::denies('create', TransportDocument::class) => 'A sua função nesta empresa não permite emitir guias.',
             ! $subscription->allows($legalEntity->workspace_id, SubscriptionFeature::Transport) => 'O plano actual não inclui guias de transporte. Veja a assinatura em facturac.ao.',
-            ! $this->user($request)->hasEnabledTwoFactorAuthentication() => 'Para emitir, active a autenticação em dois passos em facturac.ao.',
+            ! IssuingVerification::satisfiedBy($this->user($request), $legalEntity->workspace_id) => 'Para emitir, active a autenticação em dois passos em facturac.ao.',
             default => null,
         };
 
@@ -143,7 +144,7 @@ class MobileTransportDocumentController
             return $this->refusal('TRANSPORT_NOT_ALLOWED', 'A sua função nesta empresa não permite emitir guias.', Response::HTTP_FORBIDDEN);
         }
 
-        if (! $user->hasEnabledTwoFactorAuthentication()) {
+        if (! IssuingVerification::satisfiedBy($user, $legalEntity->workspace_id)) {
             return $this->refusal('TWO_FACTOR_REQUIRED_TO_ISSUE', 'Active a autenticação em dois passos em facturac.ao para emitir.', Response::HTTP_FORBIDDEN);
         }
 

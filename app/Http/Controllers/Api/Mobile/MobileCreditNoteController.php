@@ -9,6 +9,7 @@ use App\Exceptions\BillingActionRefused;
 use App\Exceptions\FiscalFinalizationBlocked;
 use App\Exceptions\SubscriptionRequired;
 use App\Fiscal\Documents\MobileDocumentReceipt;
+use App\Fiscal\IssuingVerification;
 use App\Http\Requests\PreviewMobileCreditNoteRequest;
 use App\Http\Requests\StoreMobileCreditNoteRequest;
 use App\Models\FiscalDocument;
@@ -47,7 +48,7 @@ class MobileCreditNoteController
         $reason = match (true) {
             Gate::denies('create', FiscalDocument::class) => 'A sua função nesta empresa não permite emitir notas de crédito.',
             ! $subscription->allows($legalEntity->workspace_id, SubscriptionFeature::Invoicing) => 'O plano actual não inclui facturação. Veja a assinatura em facturac.ao.',
-            ! $user->hasEnabledTwoFactorAuthentication() => 'Para emitir, active a autenticação em dois passos em facturac.ao.',
+            ! IssuingVerification::satisfiedBy($user, $legalEntity->workspace_id) => 'Para emitir, active a autenticação em dois passos em facturac.ao.',
             default => $this->notes->refusal($source)
                 ?? ($this->notes->canBeNumbered($source) ? null : 'Não há série de Nota de Crédito disponível. Peça uma série à AGT em facturac.ao.'),
         };
@@ -83,7 +84,7 @@ class MobileCreditNoteController
             return $this->refusal('CREDIT_NOTE_NOT_ALLOWED', 'A sua função nesta empresa não permite emitir notas de crédito.', Response::HTTP_FORBIDDEN);
         }
 
-        if (! $user->hasEnabledTwoFactorAuthentication()) {
+        if (! IssuingVerification::satisfiedBy($user, $legalEntity->workspace_id)) {
             return $this->refusal('TWO_FACTOR_REQUIRED_TO_ISSUE', 'Active a autenticação em dois passos em facturac.ao para emitir.', Response::HTTP_FORBIDDEN);
         }
 

@@ -8,6 +8,7 @@ use App\Actions\ResolveCustomerPrices;
 use App\Actions\SaveFiscalDocumentDraft;
 use App\Fiscal\Agt\Support\CanonicalNumber;
 use App\Fiscal\Documents\CurrentAgtState;
+use App\Fiscal\IssuingVerification;
 use App\Fiscal\SupportedTaxTreatment;
 use App\FiscalDocumentStatus;
 use App\FiscalDocumentType;
@@ -28,6 +29,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\PaymentMethod;
 use App\WithholdingType;
+use App\WorkspaceRole;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -403,14 +405,23 @@ class FiscalDocumentController extends Controller
             'currencies' => (array) config('fiscal.currencies', ['AOA']),
             'withholdingTypes' => WithholdingType::options(),
             'permissions' => [
+                // A new document can be issued by whoever may prepare one: the
+                // composer saves it first, then asks to confirm.
                 'issue' => $document instanceof FiscalDocument
-                    && Gate::allows('issue', $document),
+                    ? Gate::allows('issue', $document)
+                    : Gate::allows('create', FiscalDocument::class),
             ],
             'guardrails' => [
                 'draft_only' => true,
                 'schema_version' => (string) config('agt.schema_version', '2.0'),
                 'number_assigned' => false,
                 'mfa_enabled' => request()->user()?->hasEnabledTwoFactorAuthentication() === true,
+                // Two-step verification, or the owner's waiver of it for issuing.
+                'issuing_verified' => ($user = request()->user()) instanceof User
+                    && IssuingVerification::satisfiedBy($user, $legalEntity->workspace_id),
+                'can_waive_mfa' => request()->attributes->get('currentWorkspaceMembership')?->role === WorkspaceRole::Owner,
+                'password_confirmed' => time() - (int) request()->session()->get('auth.password_confirmed_at', 0)
+                    < (int) config('auth.password_timeout', 10800),
             ],
         ];
     }

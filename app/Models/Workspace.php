@@ -27,6 +27,16 @@ class Workspace extends Model
         return ['public_id'];
     }
 
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'requires_mfa_to_issue' => 'boolean',
+        ];
+    }
+
     public function getRouteKeyName(): string
     {
         return 'public_id';
